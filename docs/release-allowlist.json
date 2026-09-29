@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "description": "Default deny. This baseline approves only the two reviewed root legal documents and is intentionally NOT a runnable release approval. Add individually reviewed, exact hash-bound artifact rules and managed-resource rules after build. EXCLUDE policy and local-dependency fingerprints cannot be overridden here. A separate release-specific manifest may be supplied to Test-ReleaseCandidate.ps1.",
+  "requiredFiles": [
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "files": [
+    {
+      "path": "LICENSE",
+      "kind": "license",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "reviewStatus": "PASS",
+      "evidence": "Reviewed project GPLv3 text and project third-party notices; does not approve binary redistribution.",
+      "requiredNotices": []
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "kind": "license",
+      "sha256": "f8bc27a841e9d28a0a19485881426e01199a6d1d29919d109cd4f8112084e848",
+      "reviewStatus": "PASS",
+      "evidence": "Reviewed project GPLv3 text and project third-party notices; does not approve binary redistribution.",
+      "requiredNotices": []
+    }
+  ],
+  "assemblies": [],
+  "excludedSha256": [],
+  "forbiddenFileNames": [
+    "UnityEmbeddedMono32.zip",
+    "UnityEmbeddedMono64.zip",
+    "UnityEmbeddedIl2Cpp64.zip",
+    "UnityMono.zip",
+    "CloudMeadow.zip",
+    "UnrealRuntime.zip",
+    "classdata.tpk",
+    "oo2core_9_win64.dll"
+  ]
+}
