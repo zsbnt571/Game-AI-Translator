@@ -13,13 +13,13 @@ SDK 注意：从仓库根目录执行以下命令。部分子目录的 `global.j
 
 ## OCR 运行环境
 
-编译成功不代表 OCR 环境已安装。为保留当前程序行为，源码仍保留旧开发环境的默认运行时路径；新环境必须在可执行文件旁创建 `dependencies.json` 显式指定自己的运行时目录：
+编译成功不代表 OCR 环境已安装。Alpha 默认只检查可执行文件目录内的 `runtime/`。如需使用另一个程序目录内的相对位置，可在可执行文件旁创建 `dependencies.json`：
 
 ```json
 {"RuntimeRoot":"runtime"}
 ```
 
-相对路径按可执行文件目录解析。OCR Python 环境、模型及相关依赖需自行准备；历史实验室安装脚本不能视为当前应用完整安装器。不要提交自己的运行环境、模型或含个人设置的配置文件。
+相对路径按可执行文件目录解析；绝对路径或越出程序目录的路径会被拒绝，并退回本地 `runtime/` 的缺失状态。OCR Python 环境、模型及相关依赖需自行准备；历史实验室安装脚本不能视为当前应用完整安装器。不要提交自己的运行环境、模型或含个人设置的配置文件。
 
 ## 不随源码上传的依赖
 
@@ -51,11 +51,11 @@ dotnet build .\Source\Screenshot\ScreenshotTranslationUiTester.csproj -c Release
 dotnet publish .\Source\UnrealCatalog\FusionUnrealCatalog.csproj -c Release -o .\artifacts\UnrealCatalog
 ```
 
-该工具默认可在没有 Oodle 的情况下构建，但资源提取仍要求合法本地提供匹配固定哈希的 Oodle。默认不复制此 DLL；显式内部开关 `-p:FusionIncludeLocalDependencies=true` 保留本地构建期校验和复制，内部产物不得发布。具体限制见 `Native/PROVENANCE.md`。主程序不再整体复制相邻 UnrealCatalog 输出；经审查的工具文件需单独暂存到程序旁 `tools/unreal-catalog/`。
+该工具默认可在没有 Oodle 的情况下构建，但资源提取仍要求合法本地提供匹配固定哈希的 Oodle。默认不复制此 DLL；显式内部开关 `-p:FusionIncludeLocalDependencies=true` 保留本地构建期 SHA 校验，但不复制文件；运行时使用本地导入器生成的统一 runtime-payloads 目录和清单。具体限制见 `Native/PROVENANCE.md`。主程序不再整体复制相邻 UnrealCatalog 输出；经审查的工具文件需单独暂存到程序旁 `tools/unreal-catalog/`。
 
 Unity IL2CPP 插件重新编译需要对应 BepInEx / Il2CppInterop 引用，可通过 `-p:LoaderDirectory=<dependency-directory>` 指定。Mono 插件脚本需要本地 Unity/BepInEx/框架引用。PowerShell 插件脚本从 PATH 定位 dotnet，也可通过 `-DotNet` 指定；直接编译脚本接受 `-SdkVersion`（默认 10.0.103）。专用构建必须传入 `-GameRoot`。字体生成需指定 `--source-root` 或 `FUSION_FONT_BUILD_ROOT`，该目录含 `FontSource/` 及可选的 `Tools/font-build-python/`。
 
-保留一项实际运行例外：`FusionConfiguration.cs` 的旧运行时默认路径。更改它会改变现有启动行为，因此本轮未替换。在其他机器上按上述方式设置 `dependencies.json`，候选不会静默重定向共享 OCR 环境。标准 Windows/.NET Framework/SDK 路径仍属于平台要求，不是个人开发目录。
+Alpha 不使用旧开发环境的 OCR 路径，不读取共享 OCR 安装，也不自动下载运行环境。标准 Windows/.NET Framework/SDK 路径属于平台要求，不是个人开发目录。完整运行条件见 [Alpha 启动说明](ALPHA-START.md)。
 
 诊断输入已参数化。`FUSION_TEST_GAME_ROOT` 必须是现存、绝对路径的隔离副本目录，不能是盘符根；游戏探针拒绝越界和目录链接。RuntimeProbe 从 `FusionBuildRoot` 引用主程序，SafetyInspect 可传入 `-p:CoreDir=<dependency-directory>`，默认使用本地 `artifacts/LoaderReferences`。构建探针不等于授权启动游戏。
 

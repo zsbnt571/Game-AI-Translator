@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>GameTranslator</AssemblyName>
     <RootNamespace>ScreenshotTranslationUiTester</RootNamespace>
-    <Version>0.6.0.85</Version><FileVersion>0.6.0.85</FileVersion><AssemblyVersion>0.6.0.85</AssemblyVersion><InformationalVersion>0.6.0.85-fusion-r1</InformationalVersion>
+    <Version>0.6.0-alpha</Version><FileVersion>0.6.0.85</FileVersion><AssemblyVersion>0.6.0.85</AssemblyVersion><InformationalVersion>0.6.0-alpha</InformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj-core-v2\**;bin-core-v2\**;obj-verify\**;bin-verify\**;obj-temporary-wda\**;bin-temporary-wda\**;obj-settings12\**;bin-settings12\**;obj-consolidation-task-a\**;bin-consolidation-task-a\**;obj-mega-r1\**;bin-mega-r1\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
@@ -37,7 +37,6 @@
     <EmbeddedResource Include="GodotTranslationBridge.gd" LogicalName="Fusion.GodotTranslationBridge.gd" />
     <EmbeddedResource Include="Godot4TranslationBridge.gd" LogicalName="Fusion.Godot4TranslationBridge.gd" />
     <Content Include="GodotSmazNotice.txt" Link="licenses\GodotSmazNotice.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Condition="'$(FusionIncludeLocalDependencies)' == 'true'" Include="..\Plugin\UnityEmbedded\Resources\classdata.tpk" Link="adapters\unity\classdata.tpk" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\Plugin\UnityEmbedded\Licenses\**\*" Link="licenses\UnityEmbedded\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup><EmbeddedResource Include="RenpyGameDataBridge.rpy" LogicalName="Fusion.RenpyGameDataBridge.rpy" />

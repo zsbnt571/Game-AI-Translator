@@ -1,5 +1,6 @@
 """Persistent PaddleOCR PP-OCRv6 medium CPU worker; oneDNN is intentionally disabled."""
 import contextlib, json, os, sys, time, traceback
+from rapid_health import no_network
 sys.stdin.reconfigure(encoding="utf-8")
 sys.stdout.reconfigure(encoding="utf-8", errors="strict", line_buffering=True)
 sys.stderr.reconfigure(encoding="utf-8", errors="backslashreplace", line_buffering=True)
@@ -17,7 +18,7 @@ def ensure_engine():
     global ocr, load_ms
     if ocr is not None: return
     started=time.perf_counter()
-    with contextlib.redirect_stdout(sys.stderr):
+    with contextlib.redirect_stdout(sys.stderr), no_network():
         from paddleocr import PaddleOCR
         ocr=PaddleOCR(text_detection_model_name="PP-OCRv6_medium_det",
             text_recognition_model_name="PP-OCRv6_medium_rec", use_doc_orientation_classify=False,
@@ -58,7 +59,8 @@ for line in sys.stdin:
         req=json.loads(line); command=req.get("command")
         if command=="shutdown": break
         if command=="check":
-            import paddle, paddleocr, paddlex
+            with no_network():
+                import paddle, paddleocr, paddlex
             emit({"engineStatus":"ENVIRONMENT_READY","errorMessage":"","model":
                 f"paddle={paddle.__version__}; paddleocr={getattr(paddleocr,'__version__','unknown')}; paddlex={getattr(paddlex,'__version__','unknown')}; oneDNN=disabled","blocks":[]})
         elif command=="recognize": emit(recognize(req["imagePath"]))

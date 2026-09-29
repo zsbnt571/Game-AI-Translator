@@ -50,6 +50,8 @@ internal sealed class GameArtworkDialog:Form
     private readonly ListBox matches=new(){Height=108,Width=300,DisplayMember="Name"};
     private readonly ArtworkCropPreview preview=new(){Dock=DockStyle.Fill};
     private readonly Label status=new(){AutoSize=true,MaximumSize=new(520,0)};
+    private readonly Label captureAvailability=new(){AutoSize=true,MaximumSize=new(290,0),Name="CoverCaptureAvailability"};
+    private Button captureButton=null!;
     private readonly Button save=new GameActionButton("保存图片"){Primary=true};
     private readonly List<Control> busyControls=[];
     private bool loading,busy,dirty;
@@ -74,7 +76,8 @@ internal sealed class GameArtworkDialog:Form
         kind.Items.AddRange(["封面","图标"]);source.Items.AddRange(["跟随全局默认","本地自动","网上匹配"]);ratio.Items.AddRange(["原始比例","横版 16:9","竖版 2:3","正方形"]);
         Label("编辑图片");Row(kind);Label("默认来源");Row(source);
         var apply=Action("应用来源",ApplySourceAsync);Row(apply);Label("手动选择");
-        Row(Action("从文件选择",ChooseFileAsync),Action("截取游戏画面",CaptureAsync));
+        captureButton=Action("截取游戏画面",CaptureAsync);captureButton.Name="CoverCaptureAction";
+        Row(Action("从文件选择",ChooseFileAsync),captureButton);controls.Controls.Add(captureAvailability);RefreshCaptureAvailability();
         Label("网上查找 · Steam 图片");query.Text=game.Name;Row(query,Action("查找",SearchAsync));controls.Controls.Add(matches);
         Row(Action("预览所选图片",LoadMatchAsync));
         var picture=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Margin=Padding.Empty};picture.ColumnStyles.Add(new(SizeType.Percent,100));picture.RowStyles.Add(new(SizeType.Percent,100));picture.RowStyles.Add(new(SizeType.AutoSize));picture.RowStyles.Add(new(SizeType.AutoSize));
@@ -107,7 +110,13 @@ internal sealed class GameArtworkDialog:Form
         catch(ArtworkUnavailableException ex){if(!IsDisposed)status.Text=ex.Message;}
         catch(HttpRequestException ex){if(!IsDisposed)status.Text="网上图片暂时无法读取"+(ex.StatusCode is { } code?"（HTTP "+(int)code+"）":"")+"，原图已保留，请稍后重试。";}
         catch(Exception ex){if(!IsDisposed)status.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
-        finally{busy=false;if(!IsDisposed)foreach(var c in busyControls)c.Enabled=true;}
+        finally{busy=false;if(!IsDisposed){foreach(var c in busyControls)c.Enabled=true;RefreshCaptureAvailability();}}
+    }
+    private void RefreshCaptureAvailability()
+    {
+        bool available=GameWindowCover.Available;
+        captureButton.Enabled=!busy&&available;captureAvailability.Visible=!available;
+        captureAvailability.Text=available?"":GameWindowCover.MissingMessage;
     }
     private Task ChooseFileAsync()
     {

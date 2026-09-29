@@ -5,9 +5,9 @@ namespace ScreenshotTranslationUiTester;
 
 public static class BuildIdentity
 {
-    public const string ProductName="Game Translator";
+    public const string ProductName="Game AI Translator";
     public static readonly string BuildVersion=typeof(BuildIdentity).Assembly.GetName().Version?.ToString()??"Unavailable";
-    public static string DisplayVersion=>"Fusion R1 · "+BuildVersion;
+    public static string DisplayVersion=>ProductName+" · "+(typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??BuildVersion);
     public const string StableApplicationId="GameTranslator.Fusion.20260914";
     public static string ProductVersion=>DisplayVersion;
     public static string BuildId=>DisplayVersion;

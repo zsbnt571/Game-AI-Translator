@@ -19,15 +19,7 @@ internal static class ModelManagerOperations
 
     internal static string ResolveRapidPython(string applicationRoot)
     {
-        var runtimeRoot = FusionRuntime.Root;
-        var candidates = new[]
-        {
-            Path.Combine(runtimeRoot, "python", "python.exe"),
-            Path.Combine(runtimeRoot, "rapid", "Scripts", "python.exe"),
-            Path.Combine(runtimeRoot, "venv", "Scripts", "python.exe"),
-            Path.Combine(applicationRoot, "tools", "python", "Scripts", "python.exe")
-        };
-        return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
+        return OcrDependencyChecker.ResolvePython(FusionRuntime.Root);
     }
 
     internal static string QuarantinePath(string path) => path + ".quarantine";
@@ -54,12 +46,6 @@ internal static class ModelManagerOperations
 
     internal static string ResolveVisionRoot(string applicationRoot)
     {
-        var pointer=Path.Combine(applicationRoot,"vision-runtime","location.txt");
-        if(File.Exists(pointer))
-        {
-            var configured=File.ReadAllText(pointer).Trim().Trim('"');
-            if(Directory.Exists(configured))return configured;
-        }
         return Path.Combine(applicationRoot,"vision-runtime");
     }
 }

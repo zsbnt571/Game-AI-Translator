@@ -2,7 +2,7 @@
 
 [简体中文](README.md) | **English**
 
-Fusion R1 is a Windows desktop game translation tool. This repository contains the **0.6.0.85** source baseline, including screenshot translation, engine-specific in-game translation, a game library and selected game-data editing features.
+Game AI Translator is an AI game translation tool for Windows. The current target is **v0.6.0-alpha**, based on Fusion R1 **0.6.0.85**, with screenshot translation, engine-specific in-game translation, a game library and selected game-data editing features.
 
 ## Feature overview
 
@@ -21,13 +21,15 @@ The project is under development. Support does not guarantee every game, UI or t
 
 | Engine / runtime | Compatibility | Status | Known limitations |
 | --- | --- | --- | --- |
-| RPG Maker MV/MZ | Relatively high | ✅ Recommended to try first | Good results with standard text; custom plugins, text systems and packaging may require additional support. This does not cover every RPG Maker generation |
-| Ren’Py | Relatively high | ✅ Recommended to try first | Standard dialogue and text structures work relatively well; custom scripts, interfaces and data structures may differ |
+| RPG Maker MV/MZ | Supported / under validation | ⚠️ Alpha validation | Standard-text adapters exist; current Alpha core workflows still need real-game validation. Custom plugins, text systems and packaging may require additional support. This does not cover every RPG Maker generation |
+| Ren’Py | Supported / under validation | ⚠️ Alpha validation | Standard dialogue and text adapters exist; current Alpha core workflows still need real-game validation. Custom scripts, interfaces and data structures may differ |
 | Unity Mono | Medium | ⚠️ Usable in some games | Missing translations or glyphs, text-box sizing, wrapping and special menu/tutorial/skill UI compatibility vary |
 | Unity IL2CPP | Low | 🧪 Experimental | Some games do not translate at all; loader integration, metadata compatibility and text capture need further work |
 | Unreal Engine | Medium-low | 🧪 Experimental | Some games translate, but UI capture failures, missing text, incomplete replacement and crash reports remain; crash causes need individual diagnosis |
 | Godot | Not fully rated | 🧪 Test integration | Extraction and runtime bridges exist; text latency, font-size and layout concerns remain |
 | Other / unknown engines | Unknown | ❓ Unverified | Detection or integration may fail; a library engine label alone does not establish support |
+
+These descriptions are not per-engine real-game acceptance results for this Alpha. Earlier positive feedback does not replace installation, translation and restoration verification of the current candidate.
 
 **Mono and IL2CPP are common Unity runtime backends, not Unreal Engine categories.**
 
@@ -41,6 +43,18 @@ Results depend on:
 - Existing mods or third-party loaders.
 
 Two games using the same engine can behave differently. The goal is reusable engine-level support with fewer game-specific fixes; universal compatibility has not been achieved.
+
+## Alpha feature scope
+
+The desktop requires the user-installed .NET 8 Desktop Runtime (Windows x64). Settings, API configuration, the library and dependency status are available independently. Unity/Unreal payloads and the OCR environment are not bundled or automatically downloaded. Missing dependencies disable the corresponding feature while the application remains usable.
+
+- RPG Maker/Ren’Py bridges are project source; real-game compatibility remains under validation.
+- Unity Mono/IL2CPP installation requires lawfully supplied, pinned runtime packages with matching hashes.
+- The Unreal resource catalogue worker is not included, so new resource extraction is unavailable. Existing valid catalogues remain subject to the original adapter checks; runtime integration still needs the external payload.
+- Automatic cover capture is not included; importing local cover images remains available.
+- The Screenshot Translator page opens, but OCR requires separately and lawfully prepared Python, RapidOCR, ONNX Runtime and models at the pinned versions.
+
+See the [Alpha startup guide](docs/ALPHA-START.en.md), [engine dependencies](docs/RUNTIME-PAYLOADS.en.md) and [OCR dependencies](docs/OCR-LOCAL-DEPENDENCIES.en.md). Back up original files and saves before modifying a game.
 
 ## In-game translation
 

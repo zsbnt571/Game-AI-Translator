@@ -37,9 +37,10 @@ internal static class FusionSecrets
 
 internal static class FusionRuntime
 {
-    internal const string DefaultRoot = @"E:\ST-Release\Releases\P10-R4\app\runtime";
+    internal static string DefaultRoot => Path.Combine(AppContext.BaseDirectory, "runtime");
     internal static string Root { get; private set; } = DefaultRoot;
-    internal const string ReadOnlyMessage = "Fusion R1 只读复用现用版运行环境；请在现用版中维护依赖，本候选不会修复、删除或移动它。";
+    internal const string ReadOnlyMessage = "OCR 环境和模型由用户合法提供，本 Alpha 不打包或下载；依赖检查不会修复、删除或移动文件。";
+    internal static string ConfigurationWarning { get; private set; } = "";
     internal static bool IsSharedPath(string path)
     {
         var root = Path.GetFullPath(Root).TrimEnd(Path.DirectorySeparatorChar);
@@ -54,16 +55,31 @@ internal static class FusionRuntime
     }
     internal static void Initialize()
     {
+        Root = DefaultRoot;
+        ConfigurationWarning = "";
         var file = Path.Combine(AppContext.BaseDirectory, "dependencies.json");
         if (File.Exists(file))
         {
-            using var doc = JsonDocument.Parse(File.ReadAllText(file));
-            var configuredRoot = doc.RootElement.GetProperty("RuntimeRoot").GetString();
-            // A shared local installation can retain an absolute path. Portable
-            // packages resolve their relative runtime beside this executable,
-            // independently of the working directory used by a shortcut.
-            Root = string.IsNullOrWhiteSpace(configuredRoot) ? DefaultRoot
-                : Path.GetFullPath(configuredRoot, AppContext.BaseDirectory);
+            try
+            {
+                if (new FileInfo(file).Length > 16384) throw new InvalidDataException("Runtime configuration is too large.");
+                using var doc = JsonDocument.Parse(File.ReadAllText(file));
+                var configuredRoot = doc.RootElement.GetProperty("RuntimeRoot").GetString();
+                if (!string.IsNullOrWhiteSpace(configuredRoot))
+                {
+                    if (Path.IsPathRooted(configuredRoot)) throw new InvalidDataException("Only app-local relative runtime paths are allowed.");
+                    var resolved = Path.GetFullPath(configuredRoot, AppContext.BaseDirectory);
+                    var appRoot = Path.GetFullPath(AppContext.BaseDirectory).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+                    if (!resolved.StartsWith(appRoot, StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidDataException("Runtime path leaves the application directory.");
+                    Root = resolved;
+                }
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or KeyNotFoundException or InvalidOperationException or ArgumentException)
+            {
+                ConfigurationWarning = "运行环境配置无效；仅检查程序目录内的 runtime，不读取其他位置。";
+                Root = DefaultRoot;
+            }
         }
         Environment.SetEnvironmentVariable("ST_BACKGROUND_RUNTIME_ROOT", Root);
         Environment.SetEnvironmentVariable("ST_BACKGROUND_MODEL_PATH", Path.Combine(Root,"background","lama_fp32.onnx"));

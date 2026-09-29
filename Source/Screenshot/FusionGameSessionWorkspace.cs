@@ -97,6 +97,7 @@ public sealed partial class MainForm
         _sessionRetryTranslation=IconButton("重试失败","refresh",(_,_)=>SelectedTranslationSession()?.Translation?.RetryFailures(),false,108);_sessionRetryTranslation.Visible=false;
         _installGameButton=IconButton("应用翻译配置","refresh",async(_,_)=>await RunGameActionAsync("install"),false,128);
         WorkspaceAdd(left,WorkspaceRow(_sessionEnableTranslation,_launchGameButton,_sessionRetryTranslation,_installGameButton));WorkspaceAdd(left,_sessionTranslationState);
+        WorkspaceAdd(left,BuildSelectedGameDependencyStatus());
         var leftSurface=new WorkspaceSurface{Dock=DockStyle.Fill,AutoSize=true,Padding=new(1),Margin=new(0,0,8,0)};leftSurface.Controls.Add(left);translation.Controls.Add(leftSurface,0,0);
         var display=WorkspaceColumn();display.Dock=DockStyle.Top;display.AutoSize=true;display.Padding=new(16);
         var displayHeading=WorkspaceLabel("显示设置");displayHeading.Font=new Font("Microsoft YaHei UI",12,FontStyle.Bold);WorkspaceAdd(display,displayHeading);
@@ -124,7 +125,7 @@ public sealed partial class MainForm
                     translation.SetCellPosition(displaySurface,new TableLayoutPanelCellPosition(stacked?0:1,stacked?1:0));
                     leftSurface.Margin=stacked?new Padding(0,0,0,8):new Padding(0,0,8,0);displaySurface.Margin=stacked?Padding.Empty:new Padding(8,0,0,0);translation.ResumeLayout(true);
                 }
-                int width=Math.Max(120,translation.ClientSize.Width/(stacked?1:2)-42*DeviceDpi/96);foreach(var label in new[]{_embeddedEffective,_sessionTranslationState})label.MaximumSize=new(width,0);
+                int width=Math.Max(120,translation.ClientSize.Width/(stacked?1:2)-42*DeviceDpi/96);foreach(var label in new[]{_embeddedEffective,_sessionTranslationState,_selectedRuntimeDependency})label.MaximumSize=new(width,0);
             }
             finally{stackingTranslation=false;}
         };
@@ -323,6 +324,7 @@ public sealed partial class MainForm
         RenderGameModificationState();
         RenderRenpyModificationState();
         RenderGameDiagnosticState();
+        ApplySelectedGameDependencyState(game);
     }
 
     private async Task RefreshOtherGameSessionsAsync()

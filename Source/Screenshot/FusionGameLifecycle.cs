@@ -35,7 +35,7 @@ public sealed partial class MainForm
             Log("event=start");
             var result=await GameWindowCover.CaptureAsync(path,true,cancel.Token,Log);
             using var bitmap=result.Image;
-            if(bitmap is null){Log("event=failed "+result.Diagnostic);return;}
+            if(bitmap is null){Log("event=failed "+result.Diagnostic);if(!IsDisposed&&SameGame(path,_selectedGame?.ExePath)&&result.Diagnostic.Contains("code=helper-missing"))SetLabelText(_mediaStatus,result.Message);return;}
             bool Valid()=>!cancel.IsCancellationRequested&&result.Target is not null&&GameLibraryWindowIdentity.Matches(result.Target);
             bool saved=await Task.Run(()=>store.SaveImage(record,bitmap,true,null,cancel.Token,Valid,version,manual:false,origin:"automatic"),cancel.Token);
             Log(saved?"event=committed":"event=commit-rejected reason=stale-record-or-window");

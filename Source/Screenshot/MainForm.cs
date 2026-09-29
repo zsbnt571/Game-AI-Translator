@@ -116,7 +116,7 @@ public sealed partial class MainForm : Form, IMessageFilter
 
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96F, 96F);
-        Text = $"FUSION R1 · {BuildIdentity.BuildVersion}";
+        Text = BuildIdentity.DisplayVersion;
         FormBorderStyle = FormBorderStyle.None;
         Padding = new Padding(5);
         ClientSize = new Size(1440, 880);
@@ -782,7 +782,6 @@ public sealed partial class MainForm : Form, IMessageFilter
 
     private async Task RunStartupHealthCheckAsync()
     {
-        var rapid = _ocrRuntimeManager.GetStatus(OcrEngineKind.Rapid);
         var rapidProbe = await _ocrRuntimeManager.CheckAsync(OcrEngineKind.Rapid, CancellationToken.None);
         var visionRoot = ResolveBundledVisionRoot();
         var ppModel = Path.Combine(visionRoot, "paddlex", "official_models", "PP-DocLayout-S");
@@ -791,20 +790,16 @@ public sealed partial class MainForm : Form, IMessageFilter
         var providerReady = !string.IsNullOrWhiteSpace(CurrentSettings.ApiUrl)
             && !string.IsNullOrWhiteSpace(CurrentSettings.ApiKey)
             && !string.IsNullOrWhiteSpace(CurrentSettings.Model);
-        var rapidReady = rapid.Ready && rapidProbe.Ready;
+        var rapidReady = rapidProbe.Ready;
         if (_homeOcrStatus is not null)
             _homeOcrStatus.Text = $"本地环境：RapidOCR {(rapidReady ? "正常" : "需恢复")} · 快捷键 {(AppDataPaths.DisableGlobalInput ? "本次启动禁用" : _hotKeyRegistered ? "正常" : "未注册")}";
         if (_homeApiStatus is not null)
             _homeApiStatus.Text = providerReady ? "翻译 Provider：已配置" : "翻译 Provider：尚未配置，请在设置 → 翻译中填写";
 
         var riskyPath = AppContext.BaseDirectory.Any(ch => ch > 127);
-        if (!ModelManagerOperations.RequiredStartupComponentsReady(rapidReady, _hotKeyRegistered || AppDataPaths.DisableGlobalInput))
+        if (!rapidReady)
         {
-            _statusLabel.Text = "首次运行检查发现本地组件或快捷键需要处理；请点击“检查并修复运行环境”。";
-            AppDialog.Show(this, "首次运行检查",
-                "本地运行环境未完全就绪。请使用主页的“检查并修复运行环境”入口。",
-                AppDialogKind.Warning,
-                $"Rapid={rapidReady}; PP-S=OFF (OptionalInstalled={ppInstalled}); HotKey={_hotKeyRegistered}; Runtime={_ocrRuntimeManager.RuntimeRoot}; Vision={visionRoot}");
+            _statusLabel.Text = "OCR 可选依赖未就绪；设置和游戏库仍可使用。详情见设置 → 运行依赖。";
         }
         else if (riskyPath)
         {
@@ -1113,6 +1108,12 @@ public sealed partial class MainForm : Form, IMessageFilter
 
     private async void BeginCapture()
     {
+        if (!_captureDiagnostics.Enabled && !CursorCaptureStageDump.Enabled)
+        {
+            var dependencies = await OcrDependencyChecker.CheckAsync(AppContext.BaseDirectory, CancellationToken.None, FusionRuntime.Root);
+            ApplyOcrAvailability(dependencies);
+            if (!dependencies.Ready) { _statusLabel.Text = "截图文字识别不可用：" + dependencies.Detail; return; }
+        }
         if (_captureOpen) return;
         if(CursorCaptureStageDump.Enabled&&!CursorCaptureStageDump.TryBeginRun(out var dumpError))
         {

@@ -37,6 +37,11 @@ public sealed partial class MainForm
         item.Text=!supported?"翻译并启动（暂不支持）":!ready?"翻译并启动（先设置方案）":"翻译并启动";
         item.Enabled=supported&&ready&&stopped&&!busy;
         item.ToolTipText=!supported?"当前游戏尚无内嵌翻译适配，可使用普通启动。":!ready?"请先在游戏详情页设置翻译方案。":"使用此游戏的翻译方案启动。";
+        if (SameGame(game.ExePath, _selectedGame?.ExePath) && _selectedDependenciesReady != true)
+        {
+            item.Enabled=false;
+            item.ToolTipText="请先在游戏详情中检查运行依赖；缺失依赖不影响普通启动或恢复。";
+        }
     }
 
     private async Task ResolveLibraryTranslationMenuAsync(string path,ToolStripItem item,int epoch)

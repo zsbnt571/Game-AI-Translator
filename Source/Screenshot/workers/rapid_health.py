@@ -94,6 +94,9 @@ def repair(allow_network):
     before = inspect_models()
     result = dict(engineStatus="ERROR", code="REPAIR_FAILED", before=before,
                   downloadsAttempted=0, downloaded=[], restored=[], errorMessage="")
+    if allow_network:
+        result.update(code="LOCAL_DEPENDENCY_REQUIRED", errorMessage="本 Alpha 不下载 OCR 模型；请自行合法提供固定版本的本地依赖。")
+        return result
     deadline = time.monotonic() + 65
     try:
         root = model_root()

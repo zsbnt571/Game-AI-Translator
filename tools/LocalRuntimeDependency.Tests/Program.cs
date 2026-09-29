@@ -2,9 +2,12 @@ using System.Security.Cryptography;
 using GameAiTranslator.Runtime;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using System.Text.Json;
 
 string temporary = Path.Combine(Path.GetTempPath(), "GameAiTranslator-LocalDependency-" + Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(temporary);
+string? priorRoot = Environment.GetEnvironmentVariable(LocalRuntimeDependency.RootEnvironmentVariable);
+Environment.SetEnvironmentVariable(LocalRuntimeDependency.RootEnvironmentVariable, null);
 int passed = 0, failed = 0;
 byte[] fixture = System.Text.Encoding.UTF8.GetBytes("offline synthetic dependency fixture");
 string sha = Convert.ToHexString(SHA256.HashData(fixture));
@@ -47,14 +50,13 @@ try
     });
     Test("wrong classdata is not passed to the parser", () =>
     {
-        var target = Path.Combine(temporary, "adapters", "unity"); Directory.CreateDirectory(target);
-        File.WriteAllBytes(Path.Combine(target, "classdata.tpk"), fixture);
+        WritePackage(LocalRuntimeDependency.ClassData, fixture);
         using var result = LocalRuntimeDependency.TryOpenClassData(temporary, out var warning);
         Check(result is null && warning?.Contains("integrity") == true);
     });
     Test("wrong Oodle is not passed to the native loader", () =>
     {
-        File.WriteAllBytes(Path.Combine(temporary, "oo2core_9_win64.dll"), fixture);
+        WritePackage(LocalRuntimeDependency.Oodle, fixture);
         Expect<IOException>(() => LocalRuntimeDependency.OpenOodle(temporary), "integrity");
     });
     Test("verified file remains locked against mutation on Windows", () =>
@@ -93,7 +95,7 @@ try
         Test("pinned classdata produces identical parser output through path and verified stream", () =>
         {
             string source = Path.Combine(suppliedRoot, "Source", "Plugin", "UnityEmbedded", "Resources", "classdata.tpk");
-            File.Copy(source, Path.Combine(temporary, "adapters", "unity", "classdata.tpk"), true);
+            WritePackage(LocalRuntimeDependency.ClassData, File.ReadAllBytes(source));
             using var verified = LocalRuntimeDependency.TryOpenClassData(temporary, out var warning);
             Check(verified is not null && warning is null);
             var oldManager = new AssetsManager(); var newManager = new AssetsManager();
@@ -111,7 +113,7 @@ try
         Test("legally supplied pinned Oodle is accepted without executing it", () =>
         {
             string source = Path.Combine(suppliedRoot, "Source", "UnrealCatalog", "Native", "oo2core_9_win64.dll");
-            File.Copy(source, Path.Combine(temporary, "oo2core_9_win64.dll"), true);
+            WritePackage(LocalRuntimeDependency.Oodle, File.ReadAllBytes(source));
             using var verified = LocalRuntimeDependency.OpenOodle(temporary);
             Check(Convert.ToHexString(SHA256.HashData(verified)) == LocalRuntimeDependency.OodleSha256);
         });
@@ -120,11 +122,20 @@ try
 }
 finally
 {
+    Environment.SetEnvironmentVariable(LocalRuntimeDependency.RootEnvironmentVariable, priorRoot);
     // The path is a newly generated test-owned directory, never an application or game directory.
     Directory.Delete(temporary, true);
 }
 Console.WriteLine($"Local runtime dependency checks: {passed} passed, {failed} failed.");
 return failed == 0 ? 0 : 1;
+
+void WritePackage(RuntimeDependencyDescriptor package, byte[] bytes)
+{
+    string target = Path.Combine(LocalRuntimeDependency.ResolveRoot(temporary), LocalRuntimeDependency.RelativePath(package));
+    Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+    File.WriteAllBytes(target, bytes);
+    File.WriteAllText(target + ".json", JsonSerializer.Serialize(package));
+}
 
 void Test(string name, Action test)
 {

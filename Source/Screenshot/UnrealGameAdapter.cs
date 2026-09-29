@@ -271,6 +271,7 @@ internal static class UnrealGameAdapter
         string worker=Path.Combine(AppContext.BaseDirectory,"tools","unreal-catalog","FusionUnrealCatalog.exe");
         if(!File.Exists(worker))throw new IOException("缺少虚幻文本提取工具。");
         var info=new ProcessStartInfo(worker){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
+        info.Environment[RuntimePayloadProvider.RootEnvironmentVariable]=RuntimePayloadProvider.ResolveRoot();
         info.ArgumentList.Add(engine.Paks);info.ArgumentList.Add($"GAME_UE{engine.Major}_{engine.Minor}");info.ArgumentList.Add(temporary);
         using var process=Process.Start(info)??throw new IOException("无法启动文本提取工具。");var stdout=process.StandardOutput.ReadToEndAsync();var stderr=process.StandardError.ReadToEndAsync();
         try

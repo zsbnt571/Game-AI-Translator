@@ -1,0 +1,11 @@
+# Alpha desktop readiness checks
+
+Windows-only offline integration checks for the real WinForms main window, settings/profile save, DPAPI readback, EXE import/file-drop events, engine recognition, missing optional dependencies and ordinary exit. Synthetic PE headers and inert text sentinels are generated in a dedicated test directory; no games, real keys, translation APIs or external dependency downloads are used.
+
+Build this test project from an existing .NET 8 SDK/cache. Copy its output next to the application **inside a disposable, independent test copy**, never the final distribution or development installation. Run `AlphaReadiness.Tests first <absolute-evidence-directory>`, then `AlphaReadiness.Tests readback <same-evidence-directory>`. The test modifies only the test application's local data and sibling fixture/evidence directories. It refuses source checkout roots. The key is a synthetic non-service placeholder; no connection test is invoked.
+
+The harness uses the application's real bootstrap, forms, handlers and installer through reflection. It also records loaded managed module paths. It does not prove absence of all filesystem reads, clean-OS compatibility, physical mouse/drag behavior, or real game compatibility. Review the resulting page images separately. Never include its generated binary, test data, logs or screenshots in a Release.
+
+The additional `invalid-root` phase supplies a synthetic relative payload-root override. It verifies that all eight dependency states report Invalid, the settings page and retry control remain available, and the game library can still open. It does not change the installation or validation rules.
+
+The `cover` phase exercises the missing optional cover helper, actual artwork controls, local image availability, immediate manual/automatic missing results, and return to unavailable after a local presence sentinel is removed. The sentinel is inert, never executed, and removed in a `finally` block. This phase does not save an API profile or verify DPAPI; use `first` and `readback` for those separate requirements. Its success must not replace a failed profile-save result. Progress logs help diagnose blocked UI checks and remain private test outputs.

@@ -56,7 +56,7 @@ internal sealed class ModelManagerForm : Form
         var model=Path.Combine(ResolveVisionRoot(),"paddlex","official_models","PP-DocLayout-S");
         AddRow("PP-DocLayout-S（实验）",Directory.Exists(model)?"产品关闭":"未提供（非必需）",model,"pp-s");
         var python=ModelManagerOperations.ResolveRapidPython(_applicationRoot);
-        AddRow("捆绑 Python",File.Exists(python)?"存在，待加载验证":"缺失",python,"rapid-runtime");
+        AddRow("本地提供的 Python",File.Exists(python)?"存在，待版本与加载验证":"Missing",python,"rapid-runtime");
         using var timeout=CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);timeout.CancelAfter(TimeSpan.FromSeconds(50));
         var check=await _ocr.CheckAsync(OcrEngineKind.Rapid,timeout.Token);
         if(IsDisposed||_lifetime.IsCancellationRequested)return;

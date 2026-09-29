@@ -13,13 +13,13 @@ Run the commands below from the repository root. Subdirectory `global.json` file
 
 ## OCR runtime configuration
 
-Compilation does not install the OCR environment. To preserve existing behaviour, the source still retains a legacy development-machine runtime fallback. On a new machine, explicitly configure your runtime with a `dependencies.json` next to the executable:
+Compilation does not install the OCR environment. Alpha checks only `runtime/` inside the executable directory by default. To select another application-local relative location, create `dependencies.json` next to the executable:
 
 ```json
 {"RuntimeRoot":"runtime"}
 ```
 
-Relative paths resolve against the executable directory. Python environments, models and their dependencies must be prepared separately. Historical laboratory setup scripts are not a complete installer for the current application. Do not commit local environments, models or personal settings.
+Relative paths resolve against the executable directory. Absolute paths or paths outside that directory are rejected, leaving the local `runtime/` dependency state Missing. Python environments, models and their dependencies must be prepared separately. Historical laboratory setup scripts are not a complete installer for the current application. Do not commit local environments, models or personal settings.
 
 ## Dependencies excluded from source control
 
@@ -53,11 +53,11 @@ Output defaults to `artifacts/Desktop`. Override it with `-p:FusionBuildRoot=...
 dotnet publish .\Source\UnrealCatalog\FusionUnrealCatalog.csproj -c Release -o .\artifacts\UnrealCatalog
 ```
 
-The worker builds without Oodle by default, but extraction still requires an authorized local binary matching the pinned hash. The default build does not copy it. The explicit internal option `-p:FusionIncludeLocalDependencies=true` retains build-time validation and copying; internal output must not be released. See [`Native/PROVENANCE.md`](../Source/UnrealCatalog/Native/PROVENANCE.md). The desktop no longer copies the neighbouring UnrealCatalog directory wholesale. Independently reviewed worker files must be staged separately under `tools/unreal-catalog/` beside the desktop.
+The worker builds without Oodle by default, but extraction still requires an authorized local binary matching the pinned hash. The default build does not copy it. The explicit internal option `-p:FusionIncludeLocalDependencies=true` retains build-time SHA validation but does not copy the file; runtime use requires the unified runtime-payloads directory and descriptor produced by the local importer. See [`Native/PROVENANCE.md`](../Source/UnrealCatalog/Native/PROVENANCE.md). The desktop no longer copies the neighbouring UnrealCatalog directory wholesale. Independently reviewed worker files must be staged separately under `tools/unreal-catalog/` beside the desktop.
 
 Rebuilding Unity IL2CPP plugins requires the corresponding BepInEx / Il2CppInterop references; use `-p:LoaderDirectory=<dependency-directory>`. Mono plugin scripts require local Unity/BepInEx/framework references. PowerShell plugin scripts resolve `dotnet` from PATH and accept `-DotNet` (and compiler scripts `-SdkVersion`, default 10.0.103). Specialized builds require an explicit `-GameRoot`; no personal installation directory is assumed. The font generator requires `--source-root` or `FUSION_FONT_BUILD_ROOT`, containing `FontSource/` and optionally `Tools/font-build-python/`.
 
-One retained runtime exception is the legacy default in `FusionConfiguration.cs`: changing that fallback would change existing startup behaviour. Set `dependencies.json` as described above on another machine; the candidate does not silently redirect a shared OCR installation. Standard Windows/.NET Framework/SDK paths also remain platform requirements, not personal development locations.
+Alpha does not use a legacy development-machine OCR path, read a shared OCR installation, or download the runtime automatically. Standard Windows/.NET Framework/SDK paths are platform requirements, not personal development locations. See the [Alpha startup guide](ALPHA-START.en.md) for complete runtime requirements.
 
 Diagnostic inputs are now explicit. `FUSION_TEST_GAME_ROOT` must be an absolute, existing isolated-copy directory, never a drive root; game probes reject paths outside it and directory links. RuntimeProbe references the main build under `FusionBuildRoot`; SafetyInspect uses `-p:CoreDir=<dependency-directory>` or the local `artifacts/LoaderReferences` directory. Building a probe does not authorize launching a game.
 

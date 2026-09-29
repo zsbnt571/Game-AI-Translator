@@ -29,12 +29,16 @@ public sealed partial class MainForm
         var import=IconButton("导入图片","image",(_,_)=>{
             using var dialog=new OpenFileDialog{Filter="图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",Title="打开需要翻译的图片"};if(dialog.ShowDialog(this)!=DialogResult.OK)return;
             try{using var image=new Bitmap(dialog.FileName);CreateAndShowPreview(new CaptureResult(new Bitmap(image),PreviewMode.OcrAndTranslate));}catch(Exception ex){ShowFusionError(ex);}});
+        _screenshotCaptureButton=capture;_screenshotImportButton=import;capture.Name="ScreenshotCapture";import.Name="ScreenshotImport";
+        capture.Enabled=import.Enabled=false;
         var top=new TableLayoutPanel{ColumnCount=2,AutoSize=true,Padding=new(20,0,6,0),Margin=new(0,0,0,4)};top.ColumnStyles.Add(new(SizeType.Percent,100));top.ColumnStyles.Add(new(SizeType.AutoSize));
         var heading=WorkspaceRow(WorkspaceLabel("截图翻译",true),WorkspaceLabel("截图与记录，都在这里"));heading.WrapContents=false;top.Controls.Add(heading,0,0);
         var topActions=WorkspaceRow(capture,import);topActions.WrapContents=false;topActions.Dock=DockStyle.None;topActions.Anchor=AnchorStyles.Right;top.Controls.Add(topActions,1,0);WorkspaceAdd(root,top,SizeType.Absolute,48);
         _shotProfile.Width=168;var edit=IconButton("","settings",(_,_)=>EditModeProfile(false),false,34);edit.AccessibleName="编辑截图翻译方案";
         var plan=WorkspaceRow(WorkspaceLabel("翻译方案"),_shotProfile,edit);plan.Padding=new(20,0,0,4);WorkspaceAdd(root,plan);
-        _homeOcrStatus=new Label();_homeApiStatus=new Label();
+        _homeOcrStatus=new Label{AutoSize=true,MaximumSize=new(1050,0),Name="ScreenshotOcrAvailability",Text="OCR — Missing：请在设置 → 运行依赖中检查本地环境。"};_homeApiStatus=new Label();
+        var dependencyRow=WorkspaceRow(_homeOcrStatus,IconButton("检查 OCR","refresh",async(_,_)=>await RefreshOcrAvailabilityAsync(),false,112));dependencyRow.Padding=new(20,0,0,4);WorkspaceAdd(root,dependencyRow);
+        page.VisibleChanged+=async(_,_)=>{if(page.Visible)await RefreshOcrAvailabilityAsync();};
         var body=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty};body.ColumnStyles.Add(new(SizeType.Percent,38));body.ColumnStyles.Add(new(SizeType.Percent,62));
         var leftHost=new WorkspaceSurface{Dock=DockStyle.Fill,Padding=new(18,12,14,8),Margin=new(0,0,5,0)};var left=WorkspaceColumn();
         var listTitle=WorkspaceLabel("翻译记录");listTitle.Font=new Font("Microsoft YaHei UI",12,FontStyle.Bold);WorkspaceAdd(left,WorkspaceRow(listTitle,_galleryRecordCount));

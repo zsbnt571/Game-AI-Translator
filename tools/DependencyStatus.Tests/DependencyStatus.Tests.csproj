@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Source/Shared/LocalRuntimeDependency.cs" Link="LocalRuntimeDependency.cs" />
+    <Compile Include="../../Source/Screenshot/RuntimePayloadProvider.cs" Link="RuntimePayloadProvider.cs" />
+    <EmbeddedResource Include="../../Source/Screenshot/RuntimePayloadCatalog.json" LogicalName="Fusion.RuntimePayloadCatalog.json" />
+  </ItemGroup>
+</Project>

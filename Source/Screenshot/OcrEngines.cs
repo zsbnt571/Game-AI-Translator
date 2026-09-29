@@ -79,6 +79,7 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
     private readonly string _applicationRoot;
     private readonly OcrService _windowsService;
     private ExternalOcrEngine? _external;
+    private OcrRuntimeStatus? _lastRapidCheck;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public OcrRuntimeManager(string applicationRoot, OcrService windowsService)
@@ -97,10 +98,17 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
             return new(kind, true, "Windows.Media.Ocr", "系统组件");
         if (kind == OcrEngineKind.Rapid && ModelManagerOperations.RapidNativePathTooLong(_applicationRoot))
             return new(kind, false, "RapidOCR", ModelManagerOperations.LongPathMessage, "PATH_TOO_LONG");
+        if (kind == OcrEngineKind.Rapid)
+        {
+            var dependencies = OcrDependencyChecker.InspectFiles(_applicationRoot, RuntimeRoot);
+            if (dependencies.State != OcrDependencyState.NotChecked)
+                return _lastRapidCheck = new(kind, false, "RapidOCR", dependencies.Detail, dependencies.State.ToString());
+            return _lastRapidCheck ?? new(kind, false, "RapidOCR", dependencies.Detail, "NotChecked");
+        }
         var spec = ResolveWorker(kind);
         var ready = File.Exists(spec.PythonPath) && File.Exists(spec.ScriptPath);
-        return new(kind, ready, spec.ModelName,
-            ready ? spec.PythonPath : $"缺少运行环境：{spec.PythonPath}");
+        return new(kind, false, spec.ModelName,
+            ready ? "本地文件存在，尚未检查引擎。" : $"Missing：缺少本地运行环境 {spec.PythonPath}", ready ? "NotChecked" : "Missing");
     }
 
     public async Task<OcrEngineResult> RecognizeWithFallbackAsync(
@@ -120,10 +128,17 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
             {
                 if (_external is null || _external.Kind != requested || _external.Load != ocrLoad)
                 {
+                    if (requested == OcrEngineKind.Rapid)
+                    {
+                        var dependencies = await OcrDependencyChecker.CheckAsync(_applicationRoot, token, RuntimeRoot);
+                        if (!dependencies.Ready) throw new InvalidOperationException(dependencies.Detail);
+                    }
                     if (_external is not null) await _external.DisposeAsync();
                     _external = new ExternalOcrEngine(ResolveWorker(requested),ocrLoad);
                 }
                 var result = await _external.RecognizeAsync(image, language, token);
+                if (requested == OcrEngineKind.Rapid)
+                    _lastRapidCheck = new(requested, true, "RapidOCR", "Ready：本地依赖及实际识别通过。", "Ready");
                 OcrQualityPipeline.Apply(result);
                 await RetryOneSuspiciousBlockAsync(result, image, language, token);
                 return Stamp(result, requestId, imageHash, imageSessionId ?? "", requested, image.Size, false, "");
@@ -133,6 +148,8 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
+            if (requested == OcrEngineKind.Rapid)
+                _lastRapidCheck = new(requested, false, "RapidOCR", "本地 OCR 识别未通过，请重新检查运行依赖。", "CHECK_FAILED");
             if (!allowAutomaticWindowsFallback)
             {
                 AppLog.Write("ocr", $"request={requestId} image={imageHash} requested={requested} failed; automatic Windows fallback disabled size={image.Width}x{image.Height}", ex);
@@ -228,13 +245,27 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
     public async Task<OcrRuntimeStatus> CheckAsync(OcrEngineKind kind, CancellationToken token)
     {
         var status = GetStatus(kind);
-        if (kind == OcrEngineKind.Windows || !status.Ready) return status;
+        if (kind == OcrEngineKind.Windows) return status;
+        if (kind == OcrEngineKind.Rapid)
+        {
+            var dependencies = await OcrDependencyChecker.CheckAsync(_applicationRoot, token, RuntimeRoot);
+            if (!dependencies.Ready)
+                return _lastRapidCheck = new(kind, false, "RapidOCR", dependencies.Detail, dependencies.State.ToString());
+        }
+        else if (status.Code != "NotChecked") return status;
         try
         {
             await using var engine = new ExternalOcrEngine(ResolveWorker(kind));
-            return ParseCheck(status, await engine.CheckAsync(token));
+            var checkedStatus = ParseCheck(status, await engine.CheckAsync(token));
+            if (kind == OcrEngineKind.Rapid) _lastRapidCheck = checkedStatus;
+            return checkedStatus;
         }
-        catch (Exception ex) { return status with { Ready = false, Detail = "检查未通过：" + ex.Message, Code = "CHECK_FAILED" }; }
+        catch (Exception ex)
+        {
+            var failed = status with { Ready = false, Detail = "检查未通过：" + ex.Message, Code = "CHECK_FAILED" };
+            if (kind == OcrEngineKind.Rapid) _lastRapidCheck = failed;
+            return failed;
+        }
     }
 
     private static OcrRuntimeStatus ParseCheck(OcrRuntimeStatus status, string json)
@@ -250,6 +281,8 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
 
     public async Task<OcrRuntimeStatus> RepairModelsAsync(bool allowNetwork, CancellationToken token)
     {
+        if (allowNetwork)
+            return new(OcrEngineKind.Rapid, false, "RapidOCR", "本 Alpha 版本不下载 OCR 环境或模型；请自行合法提供固定版本的本地依赖。", "LOCAL_DEPENDENCY_REQUIRED");
         if (FusionRuntime.IsSharedPath(RuntimeRoot))
             return new(OcrEngineKind.Rapid, false, "RapidOCR", FusionRuntime.ReadOnlyMessage, "DEPENDENCY_READ_ONLY");
         var status=GetStatus(OcrEngineKind.Rapid);if(!status.Ready)return status;
@@ -278,14 +311,7 @@ public sealed class OcrRuntimeManager : IAsyncDisposable
         var model = kind == OcrEngineKind.Paddle
             ? "PP-OCRv6_medium (Paddle CPU, oneDNN disabled)"
             : "RapidOCR PP-OCRv6 + ONNX Runtime CPU";
-        var candidates = new[]
-        {
-            Path.Combine(effectiveRoot, "python", "python.exe"),
-            Path.Combine(effectiveRoot, kind == OcrEngineKind.Paddle ? "paddle" : "rapid", "Scripts", "python.exe"),
-            Path.Combine(effectiveRoot, "venv", "Scripts", "python.exe"),
-            Path.Combine(_applicationRoot, "tools", "python", "Scripts", "python.exe")
-        };
-        return new(kind, candidates.FirstOrDefault(File.Exists) ?? candidates[0],
+        return new(kind, OcrDependencyChecker.ResolvePython(effectiveRoot),
             Path.Combine(_applicationRoot, "workers", scriptName), model, effectiveRoot, LogsRoot);
     }
 
@@ -533,24 +559,32 @@ internal sealed class ExternalOcrEngine : IOcrEngine
         if (!File.Exists(_spec.PythonPath)) throw new FileNotFoundException("OCR Python运行环境不存在。", _spec.PythonPath);
         if (!File.Exists(_spec.ScriptPath)) throw new FileNotFoundException("OCR Worker不存在。", _spec.ScriptPath);
         Directory.CreateDirectory(_spec.LogsRoot);
-        var info = new ProcessStartInfo(_spec.PythonPath, $"-u \"{_spec.ScriptPath}\"")
+        var info = new ProcessStartInfo(_spec.PythonPath)
         {
             WorkingDirectory = _spec.RuntimeRoot, UseShellExecute = false, CreateNoWindow = true,
             RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
             StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
         };
+        // Ignore inherited Python paths and site hooks. Add only the explicit
+        // local package directory and this application's worker source directory.
+        info.ArgumentList.Add("-I"); info.ArgumentList.Add("-S"); info.ArgumentList.Add("-B"); info.ArgumentList.Add("-u");
+        info.ArgumentList.Add("-c");
+        info.ArgumentList.Add("import sys,runpy;sys.path[:0]=[sys.argv[1],sys.argv[2]];runpy.run_path(sys.argv[3],run_name='__main__')");
+        info.ArgumentList.Add(OcrDependencyChecker.ResolveSitePackages(_spec.RuntimeRoot));
+        info.ArgumentList.Add(Path.GetDirectoryName(_spec.ScriptPath)!);
+        info.ArgumentList.Add(_spec.ScriptPath);
+        foreach (var key in info.Environment.Keys.Where(key => key.StartsWith("PYTHON", StringComparison.OrdinalIgnoreCase)
+            || key.StartsWith("ST_", StringComparison.OrdinalIgnoreCase)).ToArray()) info.Environment.Remove(key);
+        info.Environment.Remove("VIRTUAL_ENV"); info.Environment.Remove("CONDA_PREFIX");
+        info.Environment["PATH"] = string.Join(Path.PathSeparator, Path.GetDirectoryName(_spec.PythonPath), Environment.SystemDirectory);
         AppDataPaths.ConfigureChildEnvironment(info);
         info.Environment["FLAGS_use_mkldnn"] = "0";
-        var portableSitePackages=Path.Combine(_spec.RuntimeRoot,"venv","Lib","site-packages");
-        info.Environment["PYTHONPATH"]=portableSitePackages;
-        info.Environment["PYTHONNOUSERSITE"]="1";
-        info.Environment["PYTHONUTF8"]="1";
+        info.Environment["ST_FUSION_RUNTIME_ROOT"] = _spec.RuntimeRoot;
         info.Environment["ST_OCR_LOAD"]=Kind==OcrEngineKind.Rapid && Load==OcrLoad.Low?"low":"standard";
-        var userPaddleHome = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".paddlex");
         var localPaddleHome = Path.Combine(_spec.RuntimeRoot, "models", "paddlex-home");
         info.Environment["PADDLEX_HOME"] = AppDataPaths.HasExplicitRoot && Kind==OcrEngineKind.Rapid
             ? Path.Combine(AppDataPaths.CacheRoot,"paddlex")
-            : !AppDataPaths.HasExplicitRoot && Directory.Exists(Path.Combine(userPaddleHome, "official_models")) ? userPaddleHome : localPaddleHome;
+            : localPaddleHome;
         info.Environment["HF_HOME"] = AppDataPaths.HasExplicitRoot ? Path.Combine(AppDataPaths.CacheRoot, "huggingface") : Path.Combine(_spec.RuntimeRoot, "models", "huggingface-home");
         _process = Process.Start(info) ?? throw new InvalidOperationException($"无法启动{DisplayName} Worker。");
         LogDiagnostic($"worker start pid={_process.Id} python={_spec.PythonPath} model={_spec.ModelName}");

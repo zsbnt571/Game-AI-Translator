@@ -1,13 +1,30 @@
 param(
     [Parameter(Mandatory=$true)][string]$SourceRoot,
-    [Parameter(Mandatory=$true)][string]$DestinationRoot
+    [Parameter(Mandatory=$true)][string]$DestinationRoot,
+    [string[]]$PackageId = @('unity-mono-x86','unity-mono-x64','unity-il2cpp-x64','unity-legacy','unity-specialized','unreal-runtime'),
+    [switch]$FlatSource,
+    [string]$CatalogPath
 )
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (-not [IO.Path]::IsPathFullyQualified($DestinationRoot)) { throw 'DestinationRoot must be an absolute local directory.' }
 $destination = [IO.Path]::GetFullPath($DestinationRoot)
 $source = (Resolve-Path -LiteralPath $SourceRoot).Path
-$catalog = Get-Content -LiteralPath (Join-Path $repo 'Source/Screenshot/RuntimePayloadCatalog.json') -Raw | ConvertFrom-Json
+if ([string]::IsNullOrWhiteSpace($CatalogPath)) {
+    $sourceCatalog = Join-Path $repo 'Source/Screenshot/RuntimePayloadCatalog.json'
+    $CatalogPath = if (Test-Path -LiteralPath $sourceCatalog -PathType Leaf) { $sourceCatalog } else { Join-Path $repo 'metadata/runtime-payload-catalog.json' }
+}
+$catalogFile = [IO.Path]::GetFullPath($CatalogPath)
+if (-not (Test-Path -LiteralPath $catalogFile -PathType Leaf)) { throw 'Missing runtime payload catalogue. Supply -CatalogPath with the reviewed catalogue file.' }
+if ((Get-Item -LiteralPath $catalogFile).Length -gt 16384) { throw 'Runtime payload catalogue exceeds the supported size.' }
+$catalog = Get-Content -LiteralPath $catalogFile -Raw | ConvertFrom-Json
+$catalog = @($catalog) + @(
+    [pscustomobject]@{ id='unity-classdata'; engine='Unity'; backend='Any'; architecture='Any'; version='classdata-129e1f80f930'; fileName='classdata.tpk'; bytes=289605; sha256='129e1f80f930415db6779fe6089afa75280cb51462bcee812beab6cd81a764c6' },
+    [pscustomobject]@{ id='unreal-oodle'; engine='Unreal'; backend='Native'; architecture='x64'; version='oodle9-6f5d41a7892e'; fileName='oo2core_9_win64.dll'; bytes=637952; sha256='6f5d41a7892ea6b2db420f2458dad2f84a63901c9a93ce9497337b16c195f457' }
+)
+if ($PackageId.Count -eq 0 -or @($PackageId | Select-Object -Unique).Count -ne $PackageId.Count) { throw 'Select one or more distinct pinned package IDs.' }
+foreach ($id in $PackageId) { if ($id -notin $catalog.id) { throw "Unknown pinned package ID: $id" } }
+$catalog = @($catalog | Where-Object { $_.id -in $PackageId })
 $locations = @{
     'unity-mono-x86'='Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono32.zip'
     'unity-mono-x64'='Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono64.zip'
@@ -15,16 +32,25 @@ $locations = @{
     'unity-legacy'='Source/Plugin/Payload/UnityMono.zip'
     'unity-specialized'='Source/Plugin/Payload/CloudMeadow.zip'
     'unreal-runtime'='Source/UnrealBridge/UnrealRuntime.zip'
+    'unity-classdata'='Source/Plugin/UnityEmbedded/Resources/classdata.tpk'
+    'unreal-oodle'='Source/UnrealCatalog/Native/oo2core_9_win64.dll'
 }
 function Assert-NoLink([string]$path) {
     for ($current=[IO.Path]::GetFullPath($path); $current; $current=[IO.Path]::GetDirectoryName($current)) {
         if ((Test-Path -LiteralPath $current) -and ((Get-Item -LiteralPath $current -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) { throw 'Dependency paths must not use links.' }
     }
 }
+Assert-NoLink $catalogFile
+foreach ($package in $catalog) {
+    if ($package.id -notin $locations.Keys -or $package.version -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$' -or $package.fileName -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$' -or $package.version -in @('.','..') -or $package.fileName -in @('.','..')) { throw 'Catalogue contains an unsupported identity or unsafe path segment.' }
+    if ($package.bytes -lt 0 -or $package.sha256 -notmatch '^[a-fA-F0-9]{64}$') { throw 'Catalogue integrity metadata is invalid.' }
+}
+if (@($catalog.id | Select-Object -Unique).Count -ne $catalog.Count) { throw 'Catalogue contains duplicate package IDs.' }
 # All inputs are validated before creating destination files. Import is local only;
 # neither this manifest nor a matching hash grants permission to distribute a ZIP.
 $plan = foreach ($package in $catalog) {
-    $from = Join-Path $source $locations[$package.id]
+    $sourceRelative = if ($FlatSource) { $package.fileName } else { $locations[$package.id] }
+    $from = Join-Path $source $sourceRelative
     $to = Join-Path $destination ($package.id + '/' + $package.version + '/' + $package.fileName)
     Assert-NoLink $from
     Assert-NoLink $to

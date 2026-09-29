@@ -8,6 +8,9 @@ namespace ScreenshotTranslationUiTester;
 internal sealed record CoverCaptureResult(Bitmap? Image,string Message,string Diagnostic,CoverTarget? Target=null);
 internal static class GameWindowCover
 {
+    internal static string HelperPath => Path.Combine(AppContext.BaseDirectory,"tools","cover-capture","FusionCoverCapture.exe");
+    internal static bool Available => File.Exists(HelperPath);
+    internal const string MissingMessage = "Not included in this alpha：本版未包含封面截图组件，可从本地文件选择图片。";
     private sealed record Reply(string Code,string Message,int Width,int Height,long ElapsedMs,string? Image,int Error,string Quality,int RejectedFrames);
     private static readonly SemaphoreSlim CaptureGate=new(1,1);
     private static bool backendBlocked;
@@ -21,6 +24,7 @@ internal static class GameWindowCover
     }
     internal static async Task<CoverCaptureResult> CaptureAsync(string path,bool automatic,CancellationToken token,Action<string>? report=null)
     {
+        if(!Available)return new(null,MissingMessage,"backend=WGC code=helper-missing");
         if(!OperatingSystem.IsWindowsVersionAtLeast(10,0,18362))return new(null,"需要 Windows 10 1903 或更新系统","backend=WGC code=unsupported-os");
         var exe=RecentGameStore.Normalize(path);var elapsed=Stopwatch.StartNew();
         using var deadline=CancellationTokenSource.CreateLinkedTokenSource(token);deadline.CancelAfter(automatic?25000:9000);
@@ -79,8 +83,8 @@ internal static class GameWindowCover
     }
     private static async Task<CoverCaptureResult> CaptureInProcessAsync(CoverTarget target,CancellationToken token)
     {
-        var helper=Path.Combine(AppContext.BaseDirectory,"tools","cover-capture","FusionCoverCapture.exe");
-        if(!File.Exists(helper))return new(null,"封面组件缺失，请使用完整候选目录","backend=WGC code=helper-missing");
+        var helper=HelperPath;
+        if(!File.Exists(helper))return new(null,MissingMessage,"backend=WGC code=helper-missing");
         if(!GameLibraryWindowIdentity.Matches(target))return new(null,"游戏窗口已改变","backend=WGC code=window-changed");
         var info=new ProcessStartInfo(helper){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,
             RedirectStandardOutput=true,RedirectStandardError=true,RedirectStandardInput=true,WorkingDirectory=Path.GetDirectoryName(helper)!};
