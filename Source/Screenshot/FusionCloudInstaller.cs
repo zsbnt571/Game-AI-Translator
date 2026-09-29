@@ -125,7 +125,7 @@ internal sealed partial class FusionAdapterInstaller
         if(GameDetector.Detect(g.ExePath).AdapterId!="cloud-meadow")throw new InvalidOperationException("游戏文件已变化或不符合当前适配条件，请重新选择。");
         var config=CloudConfiguration(settings,key);var j=HasRecord(g)?Read(g):new Journal{Exe=Path.GetFullPath(g.ExePath)};
         CheckJournal(g,j);
-        using var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.CloudMeadow.zip")??throw new InvalidDataException("缺少 Cloud Meadow 专用载荷。");
+        using var stream=RuntimePayloadProvider.Open("unity-specialized","Unity","Mono","x64",RuntimePayloadProvider.PackageVersion);
         using var zip=new ZipArchive(stream,ZipArchiveMode.Read);var files=new Dictionary<string,byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach(var expected in FusionCloudPayload.Files)
         {

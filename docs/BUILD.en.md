@@ -25,7 +25,7 @@ Relative paths resolve against the executable directory. Python environments, mo
 
 [`local-dependencies.json`](local-dependencies.json) lists 50 files excluded from the imported baseline and their SHA-256 hashes. They include runtime ZIPs, DLLs, generated font pages and reference assemblies. The manifest records integrity; it does not grant redistribution rights.
 
-If you already have an authorized Fusion 0.6.0.85 `FinalSource` directory, import these files with:
+The default desktop build does not require or copy the six runtime ZIPs, classdata or Oodle. Running the corresponding installation/extraction features and rebuilding plugins still requires authorized local dependencies. If you have an authorized Fusion 0.6.0.85 `FinalSource` directory, import development dependencies with:
 
 `X:\path\FinalSource` below is an example placeholder, not a required drive or a bundled dependency source.
 
@@ -53,7 +53,7 @@ Output defaults to `artifacts/Desktop`. Override it with `-p:FusionBuildRoot=...
 dotnet publish .\Source\UnrealCatalog\FusionUnrealCatalog.csproj -c Release -o .\artifacts\UnrealCatalog
 ```
 
-This worker requires the local Oodle binary matching its project hash check. See [`Native/PROVENANCE.md`](../Source/UnrealCatalog/Native/PROVENANCE.md) for restrictions. Build the worker before the desktop application so that the application can copy the neighbouring `UnrealCatalog` output.
+The worker builds without Oodle by default, but extraction still requires an authorized local binary matching the pinned hash. The default build does not copy it. The explicit internal option `-p:FusionIncludeLocalDependencies=true` retains build-time validation and copying; internal output must not be released. See [`Native/PROVENANCE.md`](../Source/UnrealCatalog/Native/PROVENANCE.md). The desktop no longer copies the neighbouring UnrealCatalog directory wholesale. Independently reviewed worker files must be staged separately under `tools/unreal-catalog/` beside the desktop.
 
 Rebuilding Unity IL2CPP plugins requires the corresponding BepInEx / Il2CppInterop references; use `-p:LoaderDirectory=<dependency-directory>`. Mono plugin scripts require local Unity/BepInEx/framework references. PowerShell plugin scripts resolve `dotnet` from PATH and accept `-DotNet` (and compiler scripts `-SdkVersion`, default 10.0.103). Specialized builds require an explicit `-GameRoot`; no personal installation directory is assumed. The font generator requires `--source-root` or `FUSION_FONT_BUILD_ROOT`, containing `FontSource/` and optionally `Tools/font-build-python/`.
 
@@ -65,7 +65,7 @@ Private image replay uses `FUSION_LAYOUT_EVIDENCE_ROOT`, or `test-fixtures/layou
 
 ## Offline tests
 
-After importing local dependencies and building the main application:
+After building the desktop, run these offline fixtures without real games or runtime ZIPs:
 
 ```powershell
 dotnet run --project .\Source\Plugin\UnityEmbedded\Tests\UnityEmbeddedTests.csproj -c Release
@@ -83,3 +83,9 @@ OCR runtimes/models are separate from compiling the desktop executable and are r
 ## Verification scope
 
 Successful source import, hash checks and compilation do not establish gameplay compatibility. Use game copies for runtime verification and preserve saves and existing mods. Do not commit personal configuration, game assets or diagnostic logs.
+
+## Runtime dependencies and release audit
+
+The six adapter packages use the [external runtime provider](RUNTIME-PAYLOADS.en.md). Missing packages disable the corresponding new installation; restoring an existing installation does not require them. See [local dependencies](LOCAL-RUNTIME-DEPENDENCIES.en.md) for classdata and Oodle.
+
+Verify default builds in a fresh output directory and never mix internal artifacts into public staging. Release directories must pass the exact-file allowlist and managed-resource inspection in tools/Test-ReleaseCandidate.ps1. The default allowlist does not preapprove newly built binaries; review actual artifacts and notices for each build. Do not archive an entire build output directory.

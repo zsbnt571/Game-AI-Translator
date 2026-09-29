@@ -26,24 +26,20 @@
     <Content Include="workers\*.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\LocalRuntimeDependency.cs" Link="LocalRuntimeDependency.cs" />
+    <EmbeddedResource Include="RuntimePayloadCatalog.json" LogicalName="Fusion.RuntimePayloadCatalog.json" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
     <PackageReference Include="AssetsTools.NET" Version="3.0.5" />
     <PackageReference Include="AssetsTools.NET.MonoCecil" Version="3.0.4" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="..\UnrealBridge\UnrealRuntime.zip" LogicalName="Fusion.UnrealRuntime.zip" />
     <Content Include="..\UnrealBridge\licenses\**\*" Link="licenses\Unreal\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <Content Include="$(FusionBuildRoot)\..\UnrealCatalog\**\*" Link="tools\unreal-catalog\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="GodotTranslationBridge.gd" LogicalName="Fusion.GodotTranslationBridge.gd" />
     <EmbeddedResource Include="Godot4TranslationBridge.gd" LogicalName="Fusion.Godot4TranslationBridge.gd" />
     <Content Include="GodotSmazNotice.txt" Link="licenses\GodotSmazNotice.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-    <EmbeddedResource Include="..\Plugin\UnityEmbedded\Resources\UnityEmbeddedMono64.zip" LogicalName="Fusion.UnityEmbeddedMono64.zip" />
-    <EmbeddedResource Include="..\Plugin\UnityEmbedded\Resources\UnityEmbeddedMono32.zip" LogicalName="Fusion.UnityEmbeddedMono32.zip" />
-    <EmbeddedResource Include="..\Plugin\UnityEmbedded\Resources\UnityEmbeddedIl2Cpp64.zip" LogicalName="Fusion.UnityEmbeddedIl2Cpp64.zip" />
-    <Content Include="..\Plugin\UnityEmbedded\Resources\classdata.tpk" Link="adapters\unity\classdata.tpk" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Condition="'$(FusionIncludeLocalDependencies)' == 'true'" Include="..\Plugin\UnityEmbedded\Resources\classdata.tpk" Link="adapters\unity\classdata.tpk" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <Content Include="..\Plugin\UnityEmbedded\Licenses\**\*" Link="licenses\UnityEmbedded\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
-  <ItemGroup><EmbeddedResource Include="..\Plugin\Payload\UnityMono.zip" LogicalName="Fusion.UnityMono.zip" /></ItemGroup>
   <ItemGroup><EmbeddedResource Include="RenpyGameDataBridge.rpy" LogicalName="Fusion.RenpyGameDataBridge.rpy" />
     <EmbeddedResource Include="RenpyTranslationBridge.rpy" LogicalName="Fusion.RenpyTranslationBridge.rpy" /><EmbeddedResource Include="RpgMakerTranslationBridge.js" LogicalName="Fusion.RpgMakerTranslationBridge.js" />
     <EmbeddedResource Include="RpgMakerAdvancedBridge.js" LogicalName="Fusion.RpgMakerAdvancedBridge.js" />
@@ -57,7 +53,6 @@
   <Target Name="CopyOcrHelperPublish" AfterTargets="Publish">
     <Copy SourceFiles="$(FusionBuildRoot)\ScreenshotOcrHelper\bin\$(Configuration)\net48\ScreenshotOcrHelper.exe" DestinationFolder="$(PublishDir)tools\ocr-helper" />
   </Target>
-  <ItemGroup><EmbeddedResource Include="..\Plugin\Payload\CloudMeadow.zip" LogicalName="Fusion.CloudMeadow.zip" /></ItemGroup>
   <Target Name="BuildGameCover" BeforeTargets="Build;Publish" Condition="'$(SkipGameCoverBuild)' != 'true'">
     <MSBuild Projects="$(MSBuildProjectDirectory)\..\CoverCapture\FusionCoverCapture.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishSingleFile" />
   </Target>
@@ -68,6 +63,13 @@
   <Target Name="CopyGameCoverPublish" AfterTargets="Publish" DependsOnTargets="BuildGameCover">
     <ItemGroup><GameCoverPublishFiles Include="$(FusionBuildRoot)\FusionCoverCapture\bin\$(Configuration)\net8.0-windows10.0.19041.0\**\*" /></ItemGroup>
     <Copy SourceFiles="@(GameCoverPublishFiles)" DestinationFiles="@(GameCoverPublishFiles->'$(PublishDir)tools\cover-capture\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  <Target Name="RejectLocalPayloadsInPublicOutput" AfterTargets="Build;Publish" Condition="'$(FusionIncludeLocalDependencies)' != 'true'">
+    <ItemGroup>
+      <ForbiddenLocalOutput Include="$(TargetDir)**\*.zip;$(TargetDir)**\classdata.tpk;$(TargetDir)**\oo2core_*.dll;$(TargetDir)**\*.onnx;$(TargetDir)**\*.ttf;$(TargetDir)**\*.otf" />
+      <ForbiddenLocalOutput Include="$(PublishDir)**\*.zip;$(PublishDir)**\classdata.tpk;$(PublishDir)**\oo2core_*.dll;$(PublishDir)**\*.onnx;$(PublishDir)**\*.ttf;$(PublishDir)**\*.otf" Condition="'$(PublishDir)' != ''" />
+    </ItemGroup>
+    <Error Condition="'@(ForbiddenLocalOutput)' != ''" Text="Public output contains local-only runtime inputs. Use a fresh output directory and the release allowlist gate; no existing files were deleted. Files: @(ForbiddenLocalOutput)" />
   </Target>
 </Project>
 

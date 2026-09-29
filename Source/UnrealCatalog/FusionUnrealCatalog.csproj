@@ -1,9 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><Version>0.6.0.81</Version><AssemblyVersion>0.6.0.81</AssemblyVersion><FileVersion>0.6.0.81</FileVersion><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
  <ItemGroup><PackageReference Include="CUE4Parse" Version="1.2.2.202609" /><PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.14" /></ItemGroup>
- <ItemGroup><Content Include="Native\oo2core_9_win64.dll"><Link>oo2core_9_win64.dll</Link><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory><CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory></Content></ItemGroup>
- <Target Name="VerifyPinnedOodle" BeforeTargets="BeforeBuild;Publish">
+ <ItemGroup><Compile Include="..\Shared\LocalRuntimeDependency.cs" Link="LocalRuntimeDependency.cs" /></ItemGroup>
+ <ItemGroup Condition="'$(FusionIncludeLocalDependencies)' == 'true'"><Content Include="Native\oo2core_9_win64.dll"><Link>oo2core_9_win64.dll</Link><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory><CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory></Content></ItemGroup>
+ <Target Name="VerifyPinnedOodle" BeforeTargets="BeforeBuild;Publish" Condition="'$(FusionIncludeLocalDependencies)' == 'true'">
+  <Error Condition="!Exists('$(MSBuildProjectDirectory)\Native\oo2core_9_win64.dll')" Text="The pinned local Oodle dependency is missing. Supply it legally for this explicit internal build, or omit FusionIncludeLocalDependencies for a public build without Oodle." />
   <GetFileHash Files="$(MSBuildProjectDirectory)\Native\oo2core_9_win64.dll" Algorithm="SHA256"><Output TaskParameter="Items" ItemName="PinnedOodleHash" /></GetFileHash>
   <Error Condition="'%(PinnedOodleHash.FileHash)' != '6F5D41A7892EA6B2DB420F2458DAD2F84A63901C9A93CE9497337B16C195F457'" Text="The reviewed Oodle dependency is missing or changed; native catalog build stopped." />
+ </Target>
+ <Target Name="RejectOodleInPublicOutput" BeforeTargets="CopyFilesToOutputDirectory;ComputeFilesToPublish;Publish" Condition="'$(FusionIncludeLocalDependencies)' != 'true'">
+  <Error Condition="Exists('$(TargetDir)oo2core_9_win64.dll') Or ('$(PublishDir)' != '' And Exists('$(PublishDir)oo2core_9_win64.dll'))" Text="Public output contains a local-only Oodle DLL from an earlier build or manual copy. Use a separate clean output directory; no local file was deleted." />
  </Target>
 </Project>

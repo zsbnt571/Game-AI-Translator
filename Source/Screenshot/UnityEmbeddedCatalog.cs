@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using GameAiTranslator.Runtime;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -15,7 +16,6 @@ internal static class UnityEmbeddedCatalog
     internal static RpgTextCatalogResult Read(string exe,CancellationToken cancellation,SourceLanguageMode sourceLanguage)
     {
         var game=UnityEmbeddedAdapter.Detect(exe);if(game is null)return new([],0,[]);
-        string types=Path.Combine(AppContext.BaseDirectory,"adapters","unity","classdata.tpk");
         var failures=new HashSet<string>(StringComparer.Ordinal);int fileCount=0,objectCount=0;
         var selected=new UnityTextResourceLanguageSelection(sourceLanguage);
         var localizedTables=new UnityLocalizedTableSelection(sourceLanguage);
@@ -45,13 +45,14 @@ internal static class UnityEmbeddedCatalog
         var manager=new AssetsManager();
         try
         {
-            if(File.Exists(types))manager.LoadClassPackage(types);else Fail("类型数据库","缺少 Unity 类型数据库，部分资源只能实时补译");
+            using var types=LocalRuntimeDependency.TryOpenClassData(AppContext.BaseDirectory,out string? typeWarning);
+            if(types is not null)manager.LoadClassPackage(types);else Fail("类型数据库",typeWarning!);
             string managed=Path.Combine(game.DataRoot,"Managed");
             if(game.Backend=="Mono"&&Directory.Exists(managed))manager.MonoTempGenerator=new MonoCecilTempGenerator(managed);
             void Assets(AssetsFileInstance instance,string identity)
             {
                 cancellation.ThrowIfCancellationRequested();
-                if(File.Exists(types))try{manager.LoadClassDatabaseFromPackage(instance.file.Metadata.UnityVersion);}catch{Fail(identity,"资源版本不在类型数据库中");}
+                if(types is not null)try{manager.LoadClassDatabaseFromPackage(instance.file.Metadata.UnityVersion);}catch{Fail(identity,"资源版本不在类型数据库中");}
                 foreach(var asset in instance.file.AssetInfos)
                 {
                     cancellation.ThrowIfCancellationRequested();if(++objectCount>1000000)throw new IOException("资源对象超过本次读取上限。");

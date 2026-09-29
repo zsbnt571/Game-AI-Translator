@@ -62,7 +62,7 @@ internal sealed class LegacyMgiAdapterInstaller
             manifest.Files.Add(new(relative,existed,backup));
             File.WriteAllText(manifestPath,JsonSerializer.Serialize(manifest,new JsonSerializerOptions{WriteIndented=true}));
         }
-        using var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.UnityMono.zip")??throw new InvalidOperationException("候选缺少插件载荷。");
+        using var stream=RuntimePayloadProvider.Open("unity-legacy","Unity","Mono","x64",RuntimePayloadProvider.PackageVersion);
         using var zip=new ZipArchive(stream,ZipArchiveMode.Read);
         foreach(var entry in zip.Entries)
         {

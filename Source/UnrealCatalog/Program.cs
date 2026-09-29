@@ -3,6 +3,7 @@ using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Versions;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using GameAiTranslator.Runtime;
 
 // Isolated, read-only worker. No package writes, key discovery, game loading or
 // network initialization. The desktop bounds its lifetime and validates output.
@@ -16,9 +17,8 @@ try {
  if((File.GetAttributes(root)&FileAttributes.ReparsePoint)!=0)throw new IOException("Linked package directory");
  foreach(var f in Directory.EnumerateFileSystemEntries(root))
   if((File.GetAttributes(f)&FileAttributes.ReparsePoint)!=0)throw new IOException("Linked package entry");
- string oodle=Path.Combine(AppContext.BaseDirectory,"oo2core_9_win64.dll");
- if(!File.Exists(oodle))throw new IOException("Bundled Oodle runtime missing");
- OodleHelper.Initialize(new OodleDotNet.Oodle(oodle));
+ using var oodle=LocalRuntimeDependency.OpenOodle(AppContext.BaseDirectory);
+ OodleHelper.Initialize(new OodleDotNet.Oodle(oodle.Name));
  using var provider=new DefaultFileProvider(root,SearchOption.TopDirectoryOnly,new VersionContainer(game),StringComparer.OrdinalIgnoreCase);
  provider.Initialize();provider.Mount();
  var files=provider.Files.Values.Where(f=>!f.Path.StartsWith("Engine/",StringComparison.OrdinalIgnoreCase)).OrderBy(f=>f.Path,StringComparer.Ordinal).ToArray();

@@ -25,7 +25,7 @@ SDK 注意：从仓库根目录执行以下命令。部分子目录的 `global.j
 
 `local-dependencies.json` 列出导入基线中排除的 50 个文件及 SHA-256。这些文件包括运行时 ZIP、第三方 DLL、生成字体页和程序集。清单是完整性记录，不授予分发许可。
 
-如果已有获授权的 Fusion 0.6.0.85 `FinalSource`，可以导入依赖：
+主程序默认构建不需要这六个运行 ZIP、classdata 或 Oodle，也不会将它们复制进产物。运行相关安装／提取功能和重新编译插件，仍需合法的本地依赖。若已有获授权的 Fusion 0.6.0.85 `FinalSource`，可以导入用于本地开发的依赖：
 
 以下 `X:\path\FinalSource` 是示例占位符，不要求使用该盘符，也不代表仓库提供了依赖来源。
 
@@ -51,7 +51,7 @@ dotnet build .\Source\Screenshot\ScreenshotTranslationUiTester.csproj -c Release
 dotnet publish .\Source\UnrealCatalog\FusionUnrealCatalog.csproj -c Release -o .\artifacts\UnrealCatalog
 ```
 
-该工具依赖本地 Oodle 原生库；必须符合项目的哈希检查，具体来源限制见其 `Native/PROVENANCE.md`。先生成此工具，再构建主程序，主项目才能复制相邻 `UnrealCatalog` 输出。
+该工具默认可在没有 Oodle 的情况下构建，但资源提取仍要求合法本地提供匹配固定哈希的 Oodle。默认不复制此 DLL；显式内部开关 `-p:FusionIncludeLocalDependencies=true` 保留本地构建期校验和复制，内部产物不得发布。具体限制见 `Native/PROVENANCE.md`。主程序不再整体复制相邻 UnrealCatalog 输出；经审查的工具文件需单独暂存到程序旁 `tools/unreal-catalog/`。
 
 Unity IL2CPP 插件重新编译需要对应 BepInEx / Il2CppInterop 引用，可通过 `-p:LoaderDirectory=<dependency-directory>` 指定。Mono 插件脚本需要本地 Unity/BepInEx/框架引用。PowerShell 插件脚本从 PATH 定位 dotnet，也可通过 `-DotNet` 指定；直接编译脚本接受 `-SdkVersion`（默认 10.0.103）。专用构建必须传入 `-GameRoot`。字体生成需指定 `--source-root` 或 `FUSION_FONT_BUILD_ROOT`，该目录含 `FontSource/` 及可选的 `Tools/font-build-python/`。
 
@@ -63,7 +63,7 @@ Unity IL2CPP 插件重新编译需要对应 BepInEx / Il2CppInterop 引用，可
 
 ## 离线测试
 
-导入本地依赖并构建主程序后：
+构建主程序后，可运行不需要真实游戏或运行 ZIP 的离线测试：
 
 ```powershell
 dotnet run --project .\Source\Plugin\UnityEmbedded\Tests\UnityEmbeddedTests.csproj -c Release
@@ -79,3 +79,9 @@ dotnet .\artifacts\Desktop\ScreenshotTranslationUiTester\bin\Release\net8.0-wind
 ## 验证范围
 
 源码导入和哈希检查不等于各游戏实机兼容性验证。运行验证应使用游戏副本，保留存档与已有 Mod。禁止把个人配置、游戏素材和诊断日志加入提交。
+
+## 运行依赖与发布审查
+
+六个适配运行包通过[外部运行依赖读取层](RUNTIME-PAYLOADS.md)提供；缺失时对应安装不可用，已有安装的恢复不要求运行 ZIP。类型数据库和 Oodle 见[本地依赖说明](LOCAL-RUNTIME-DEPENDENCIES.md)。
+
+使用全新的输出目录验证默认构建，不能将旧内部产物混入公开暂存目录。发布目录必须通过 tools/Test-ReleaseCandidate.ps1 的逐文件允许清单和程序集内嵌资源检查。默认允许清单不预先批准新构建二进制；每次需明确审查实际文件及许可证。不要直接压缩整个构建目录。

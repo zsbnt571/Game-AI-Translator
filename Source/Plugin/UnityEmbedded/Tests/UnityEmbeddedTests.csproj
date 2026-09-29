@@ -4,8 +4,9 @@
     <Compile Include="IsolatedGamePath.cs;IsolationTests.cs" />
     <Compile Include="..\..\..\Screenshot\UnityLocalizedTableSelection.cs;..\..\..\Screenshot\UnityTextResourceLanguageSelection.cs;..\..\..\Screenshot\EmbeddedSourceLanguagePolicy.cs" />
     <Content Include="..\..\..\Screenshot\Models.cs" Link="contracts\Models.cs.txt" CopyToOutputDirectory="PreserveNewest" />
-    <Compile Include="Program.cs;Stubs.cs;TransportTests.cs;..\BridgeJson.cs;..\TextLookup.cs;..\UnityPipeStream.cs;..\UnityBridgeRuntime.cs;..\..\..\Screenshot\UnityEmbeddedCatalog.cs;..\..\..\Screenshot\UnityEmbeddedAdapter.cs;..\..\..\Screenshot\UnityEmbeddedInstall.cs;..\..\..\Screenshot\UnityEmbeddedPayload.cs" />
+    <Compile Include="Program.cs;Stubs.cs;TransportTests.cs;..\BridgeJson.cs;..\TextLookup.cs;..\UnityPipeStream.cs;..\UnityBridgeRuntime.cs;..\..\..\Screenshot\UnityEmbeddedCatalog.cs;..\..\..\Screenshot\UnityEmbeddedAdapter.cs;..\..\..\Screenshot\UnityEmbeddedInstall.cs;..\..\..\Screenshot\UnityEmbeddedPayload.cs;..\..\..\Screenshot\RuntimePayloadProvider.cs;..\..\..\Shared\LocalRuntimeDependency.cs" />
     <PackageReference Include="AssetsTools.NET" Version="3.0.5" /><PackageReference Include="AssetsTools.NET.MonoCecil" Version="3.0.4" />
-    <Content Include="..\Resources\classdata.tpk" Link="adapters\unity\classdata.tpk" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="..\..\..\Screenshot\RuntimePayloadCatalog.json" LogicalName="Fusion.RuntimePayloadCatalog.json" />
+    <Content Condition="'$(FusionIncludeLocalDependencies)' == 'true'" Include="..\Resources\classdata.tpk" Link="adapters\unity\classdata.tpk" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

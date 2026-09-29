@@ -42,3 +42,4 @@ __pycache__/
 *.temp
 *.cache
 **/dependencies.json
+**/runtime-payloads/

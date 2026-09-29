@@ -1,0 +1,62 @@
+[
+  {
+    "id": "unity-mono-x86",
+    "engine": "Unity",
+    "backend": "Mono",
+    "architecture": "x86",
+    "version": "0.6.0.85",
+    "fileName": "UnityEmbeddedMono32.zip",
+    "bytes": 750148,
+    "sha256": "b830475cd0369def4690e42ff717ee76fa528b8f17a7e3ecf0e39b408fefc2c5"
+  },
+  {
+    "id": "unity-mono-x64",
+    "engine": "Unity",
+    "backend": "Mono",
+    "architecture": "x64",
+    "version": "0.6.0.85",
+    "fileName": "UnityEmbeddedMono64.zip",
+    "bytes": 750715,
+    "sha256": "069f640137e355d42a64184c9c55b635347a4e0dd3e0be8728591766bce760ef"
+  },
+  {
+    "id": "unity-il2cpp-x64",
+    "engine": "Unity",
+    "backend": "IL2CPP",
+    "architecture": "x64",
+    "version": "0.6.0.85",
+    "fileName": "UnityEmbeddedIl2Cpp64.zip",
+    "bytes": 34447829,
+    "sha256": "c2af07d3ef10892b36c528c29534bc6c8a89b212b34d5bc8b0cb3d1fed9239ae"
+  },
+  {
+    "id": "unity-legacy",
+    "engine": "Unity",
+    "backend": "Mono",
+    "architecture": "x64",
+    "version": "0.6.0.85",
+    "fileName": "UnityMono.zip",
+    "bytes": 650886,
+    "sha256": "a6215c913e3f39724df718b7c6c8bbbf0cc5443ba9914981d942568b9afcea88"
+  },
+  {
+    "id": "unity-specialized",
+    "engine": "Unity",
+    "backend": "Mono",
+    "architecture": "x64",
+    "version": "0.6.0.85",
+    "fileName": "CloudMeadow.zip",
+    "bytes": 12157711,
+    "sha256": "84210ece2bfd9877d60f78df20801511bb2271fbc63153e95018e9daa929cfab"
+  },
+  {
+    "id": "unreal-runtime",
+    "engine": "Unreal",
+    "backend": "Native",
+    "architecture": "x64",
+    "version": "0.6.0.85",
+    "fileName": "UnrealRuntime.zip",
+    "bytes": 8734752,
+    "sha256": "129af9baab6d22ff5f74988f3b00b9e2ccfaba21107c8d002dade9711723bde5"
+  }
+]

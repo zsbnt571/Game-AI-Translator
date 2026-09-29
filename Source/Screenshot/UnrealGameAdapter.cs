@@ -195,7 +195,7 @@ internal static class UnrealGameAdapter
     }
     private static Dictionary<string,byte[]> Payload(UnrealEngine engine)
     {
-        using var input=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.UnrealRuntime.zip")??throw new IOException("缺少虚幻翻译组件。");
+        using var input=RuntimePayloadProvider.Open("unreal-runtime","Unreal","Native","x64",RuntimePayloadProvider.PackageVersion);
         using var zip=new ZipArchive(input);var result=new Dictionary<string,byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach(var entry in zip.Entries)
         {
