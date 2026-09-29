@@ -1,0 +1,14 @@
+namespace ScreenshotTranslationUiTester;
+
+public static class UiStrings
+{
+    public const string Ok="确定"; public const string Cancel="取消"; public const string Apply="应用"; public const string Close="关闭"; public const string Save="保存"; public const string Retry="重试"; public const string ResetDefaults="恢复默认";
+    public const string RegionEditor="区域编辑器 V2"; public const string RegionLayers="区域与调试图层";
+    public const string SelectMoveResize="选择、移动或缩放"; public const string CreateRegion="新建区域"; public const string EditPolygon="编辑多边形顶点"; public const string DeleteRegion="删除区域"; public const string MergeRegions="合并区域"; public const string SplitHorizontal="横向拆分区域"; public const string SplitVertical="纵向拆分区域"; public const string Undo="撤销"; public const string Redo="重做"; public const string RerunRegionOcr="重新识别区域 OCR"; public const string RerunVisual="重新进行视觉分析"; public const string ResetSelected="重置选中区域"; public const string ResetAll="全部重置"; public const string SourceLines="显示源文字行"; public const string ZoomIn="放大"; public const string ZoomOut="缩小"; public const string ActualSize="原始大小"; public const string RegionType="区域类型"; public const string ReadingOrder="阅读顺序"; public const string IgnoreRegion="忽略区域"; public const string PreserveOriginal="保留原文";
+    public static string Layer(RegionOverlayLayer layer)=>layer switch{RegionOverlayLayer.OcrBlocks=>"OCR 文字行",RegionOverlayLayer.VisualRegions=>"视觉模型区域",RegionOverlayLayer.RecognitionRegions=>"区域边框",RegionOverlayLayer.SemanticGroups=>"语义区域",RegionOverlayLayer.RoleLabels=>"区域标签",RegionOverlayLayer.ReadingOrder=>"阅读顺序",RegionOverlayLayer.TranslationMapping=>"翻译映射",RegionOverlayLayer.Coverage=>"文字覆盖状态",_=>layer.ToString()};
+    public static string TranslationStyleName(TranslationStyle style)=>style switch{TranslationStyle.Natural=>"自然",TranslationStyle.Literal=>"直译",TranslationStyle.GameLocalization=>"游戏本地化",TranslationStyle.Custom=>"自定义",_=>style.ToString()};
+    public static string SourceLanguageName(SourceLanguageMode language)=>language switch{SourceLanguageMode.Auto=>"自动识别",SourceLanguageMode.English=>"英语",SourceLanguageMode.SimplifiedChinese=>"简体中文",SourceLanguageMode.Japanese=>"日语",SourceLanguageMode.Korean=>"韩语",SourceLanguageMode.Mixed=>"混合语言",_=>language.ToString()};
+    public static string PreviewSizeModeName(PreviewWindowSizingMode mode)=>mode switch{PreviewWindowSizingMode.CurrentAuto=>"自动适应",PreviewWindowSizingMode.FollowPrevious=>"沿用上次",PreviewWindowSizingMode.Fixed=>"固定大小",_=>mode.ToString()};
+    public static string BackgroundStyleName(TranslationOverlayBackgroundStyle style)=>style switch{TranslationOverlayBackgroundStyle.Automatic=>"自动背景",TranslationOverlayBackgroundStyle.LightOverlay=>"半透明底板",TranslationOverlayBackgroundStyle.Solid=>"实色底板",_=>style.ToString()};
+}
+public sealed record RegionLayerOption(RegionOverlayLayer Layer){public override string ToString()=>UiStrings.Layer(Layer);}

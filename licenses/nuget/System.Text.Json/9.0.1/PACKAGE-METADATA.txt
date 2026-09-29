@@ -1,0 +1,8 @@
+Package: System.Text.Json
+Version: 9.0.1
+Source: https://github.com/dotnet/runtime
+Authors: Microsoft
+Copyright: © Microsoft Corporation. All rights reserved.
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

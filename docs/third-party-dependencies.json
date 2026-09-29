@@ -1,0 +1,1375 @@
+{
+  "nuget_packages": [
+    {
+      "name": "AssetsTools.NET",
+      "version": "3.0.5",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "ScreenshotTranslationUiTester",
+        "UnityEmbeddedTests"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "projectUrl": "https://github.com/nesrak1/AssetsTools.NET",
+      "projectUrlType": "",
+      "repository": {
+        "type": "Git",
+        "url": "https://github.com/nesrak1/AssetsTools.NET"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/AssetsTools.NET/3.0.5/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "AssetsTools.NET.MonoCecil",
+      "version": "3.0.4",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "ScreenshotTranslationUiTester",
+        "UnityEmbeddedTests"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "projectUrl": "https://github.com/nesrak1/AssetsTools.NET",
+      "projectUrlType": "",
+      "repository": {
+        "type": "Git",
+        "url": "https://github.com/nesrak1/AssetsTools.NET"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/AssetsTools.NET.MonoCecil/3.0.4/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Blake3",
+      "version": "3.0.2",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "BSD-2-Clause",
+      "licenseType": "expression",
+      "copyright": "Alexandre Mutel",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/xoofx/Blake3.NET",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/xoofx/Blake3.NET",
+        "commit": "bc622edf7faa06d1a63c0f2f165c5f7c567a2e32"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "BSD-2-Clause",
+      "licenseFile": "licenses/nuget/Blake3/3.0.2/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/BSD-2-Clause",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "BouncyCastle.Cryptography",
+      "version": "2.6.2",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright © Legion of the Bouncy Castle Inc. 2000-2025",
+      "copyrightType": "",
+      "projectUrl": "https://www.bouncycastle.org/stable/nuget/csharp/website",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/bcgit/bc-csharp",
+        "branch": "refs/heads/release/v2.6",
+        "commit": "b4f2f6ad76bcd1f11f365ee50cc7447fbce79077"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/BouncyCastle.Cryptography/2.6.2/LICENSE.md",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "CUE4Parse",
+      "version": "1.2.2.202609",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "Apache-2.0",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) 2026 FabianFG",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/FabianFG/CUE4Parse",
+        "branch": "refs/heads/master",
+        "commit": "b4e95441bcf0c975eb3adb68c0fb44c740c2cf62"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "Apache-2.0",
+      "licenseFile": "licenses/nuget/CUE4Parse/1.2.2.202609/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/Apache-2.0",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "CommunityToolkit.HighPerformance",
+      "version": "8.4.2",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "(c) .NET Foundation and Contributors. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/CommunityToolkit/dotnet",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/CommunityToolkit/dotnet",
+        "branch": "refs/heads/rel/8.4.2",
+        "commit": "35dfe7b12da0e64384bfaec7ebc0883196a89f9f"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/CommunityToolkit.HighPerformance/8.4.2/License.md",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "FixedMathSharp",
+      "version": "4.0.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "LICENSE",
+      "licenseType": "file",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/mrdav30/FixedMathSharp",
+        "commit": "f15ca366f8fd1b9db96e54ef38aee7e6d35e1c0e"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/FixedMathSharp/4.0.1/LICENSE",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://aka.ms/deprecateLicenseUrl",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Fmod5Sharp",
+      "version": "3.1.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "projectUrl": "https://github.com/SamboyCoding/Fmod5Sharp",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/SamboyCoding/Fmod5Sharp.git",
+        "branch": "refs/heads/master",
+        "commit": "d9df2cbcc1aa478d7de9fcb64f83f7ba49f23258"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Fmod5Sharp/3.1.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "GenericReader",
+      "version": "2.3.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) 2025 NotOfficer",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/NotOfficer/GenericReader",
+        "branch": "refs/heads/master",
+        "commit": "225929b6e5455745fd4588c23dcfdad8e12035a4"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/GenericReader/2.3.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "IndexRange",
+      "version": "1.1.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright 2019–2025 Bradley Grainger",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/bgrainger/IndexRange",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/bgrainger/IndexRange.git",
+        "branch": "refs/heads/master",
+        "commit": "0ee6e541467a6d6519af8d8adfe1edad748fc8a2"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/IndexRange/1.1.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Infrablack.UE4Config",
+      "version": "0.7.2.97",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Patrick Michael Hopf (C) 2020",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/Wortex17/UE4Config",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Wortex17/UE4Config"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Infrablack.UE4Config/0.7.2.97/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "K4os.Compression.LZ4",
+      "version": "1.3.8",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "copyright": "Milosz Krajewski",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/MiloszKrajewski/K4os.Compression.LZ4",
+      "projectUrlType": "",
+      "repository": {
+        "url": "https://github.com/MiloszKrajewski/K4os.Compression.LZ4"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/K4os.Compression.LZ4/1.3.8/UPSTREAM-LICENSE.txt",
+      "licenseEvidence": "Package-declared upstream licence URL; URL may track a branch, not a version",
+      "licenseSourceUrl": "https://raw.githubusercontent.com/MiloszKrajewski/K4os.Compression.LZ4/master/LICENSE",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "K4os.Compression.LZ4.Streams",
+      "version": "1.3.8",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "copyright": "Milosz Krajewski",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/MiloszKrajewski/K4os.Compression.LZ4",
+      "projectUrlType": "",
+      "repository": {
+        "url": "https://github.com/MiloszKrajewski/K4os.Compression.LZ4"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/K4os.Compression.LZ4.Streams/1.3.8/UPSTREAM-LICENSE.txt",
+      "licenseEvidence": "Package-declared upstream licence URL; URL may track a branch, not a version",
+      "licenseSourceUrl": "https://raw.githubusercontent.com/MiloszKrajewski/K4os.Compression.LZ4/master/LICENSE",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "K4os.Hash.xxHash",
+      "version": "1.0.8",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "copyright": "Milosz Krajewski",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/MiloszKrajewski/K4os.Hash.xxHash",
+      "projectUrlType": "",
+      "repository": {
+        "url": "https://github.com/MiloszKrajewski/K4os.Hash.xxHash"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/K4os.Hash.xxHash/1.0.8/UPSTREAM-LICENSE.txt",
+      "licenseEvidence": "Package-declared upstream licence URL; URL may track a branch, not a version",
+      "licenseSourceUrl": "https://raw.githubusercontent.com/MiloszKrajewski/K4os.Hash.xxHash/master/LICENSE",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "LZMA-SDK",
+      "version": "22.1.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "(c) 2023 Mihir Mone",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/monemihir/LZMA-SDK",
+      "projectUrlType": "",
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/LZMA-SDK/22.1.1/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "MemoryPack",
+      "version": "1.21.4",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Cysharp, Inc.",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/Cysharp/MemoryPack",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Cysharp/MemoryPack",
+        "commit": "0f2fe0827907940768293b7bb81b9605a7d8cba8"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/MemoryPack/1.21.4/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "MemoryPack.Core",
+      "version": "1.21.4",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Cysharp, Inc.",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/Cysharp/MemoryPack",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Cysharp/MemoryPack",
+        "commit": "0f2fe0827907940768293b7bb81b9605a7d8cba8"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/MemoryPack.Core/1.21.4/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "MemoryPack.Generator",
+      "version": "1.21.4",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Cysharp, Inc.",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/Cysharp/MemoryPack",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Cysharp/MemoryPack",
+        "commit": "0f2fe0827907940768293b7bb81b9605a7d8cba8"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/MemoryPack.Generator/1.21.4/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Microsoft.Bcl.Memory",
+      "version": "9.0.14",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "19c07820cb72aafc554c3bc8fe3c54010f5123f0"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Microsoft.Bcl.Memory/9.0.14/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Microsoft.NETCore.Platforms",
+      "version": "1.1.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "copyright": "© Microsoft Corporation.  All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "UNVERIFIED",
+      "licenseFile": "licenses/nuget/Microsoft.NETCore.Platforms/1.1.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "http://go.microsoft.com/fwlink/?LinkId=329770",
+      "releaseDecision": "EXCLUDE"
+    },
+    {
+      "name": "Mono.Cecil",
+      "version": "0.11.3",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "ScreenshotTranslationUiTester",
+        "UnityEmbeddedTests"
+      ],
+      "projectUrl": "http://github.com/jbevain/cecil/",
+      "projectUrlType": "",
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Mono.Cecil/0.11.3/UPSTREAM-LICENSE.txt",
+      "licenseEvidence": "Package-declared upstream licence URL; URL may track a branch, not a version",
+      "licenseSourceUrl": "https://raw.githubusercontent.com/jbevain/cecil/0.11.3/LICENSE.txt",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "NAudio.Core",
+      "version": "2.2.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Mark Heath 2023",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/naudio/NAudio",
+      "projectUrlType": "",
+      "repository": {
+        "url": "https://github.com/naudio/NAudio"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/NAudio.Core/2.2.1/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "NETStandard.Library",
+      "version": "1.6.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "copyright": "© Microsoft Corporation.  All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "UNVERIFIED",
+      "licenseFile": "licenses/nuget/NETStandard.Library/1.6.1/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "http://go.microsoft.com/fwlink/?LinkId=329770",
+      "releaseDecision": "EXCLUDE"
+    },
+    {
+      "name": "Newtonsoft.Json",
+      "version": "13.0.4",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright © James Newton-King 2008",
+      "copyrightType": "",
+      "projectUrl": "https://www.newtonsoft.com/json",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/JamesNK/Newtonsoft.Json",
+        "commit": "4e13299d4b0ec96bd4df9954ef646bd2d1b5bf2a"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Newtonsoft.Json/13.0.4/LICENSE.md",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "OffiUtils",
+      "version": "3.2.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) 2026 NotOfficer",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/NotOfficer/Utils",
+        "branch": "refs/heads/master",
+        "commit": "3c6391fac38e2de58eb6bcfa399bba78645bce4f"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/OffiUtils/3.2.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "OggVorbisEncoder",
+      "version": "1.2.2",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "projectUrl": "https://github.com/SteveLillis/.NET-Ogg-Vorbis-Encoder",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/SteveLillis/.NET-Ogg-Vorbis-Encoder"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/OggVorbisEncoder/1.2.2/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Oodle.NET",
+      "version": "2.2.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) 2025 NotOfficer",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/NotOfficer/Oodle.NET",
+        "branch": "refs/heads/master",
+        "commit": "6a6b78bc3c145eddd6a3ae139fd95d6678049e12"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Oodle.NET/2.2.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "OodleSharp",
+      "version": "0.0.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) 2026 NotOfficer",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/NotOfficer/OodleSharp",
+        "branch": "refs/heads/master",
+        "commit": "716d8b9ce3bd74ece37097d2b5e5ef67ef0c48c5"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/OodleSharp/0.0.1/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Serilog",
+      "version": "4.3.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "Apache-2.0",
+      "licenseType": "expression",
+      "copyright": "Copyright © Serilog Contributors",
+      "copyrightType": "",
+      "projectUrl": "https://serilog.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/serilog/serilog",
+        "branch": "refs/heads/main",
+        "commit": "5625030e8f8fceca2e3180575aba174751ef7add"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "Apache-2.0",
+      "licenseFile": "licenses/nuget/Serilog/4.3.1/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/Apache-2.0",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Serilog.Sinks.Console",
+      "version": "6.1.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "Apache-2.0",
+      "licenseType": "expression",
+      "projectUrl": "https://github.com/serilog/serilog-sinks-console",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/serilog/serilog-sinks-console",
+        "branch": "refs/heads/main",
+        "commit": "b3cb1f042f5636161b831fa8816d70d865a5eec4"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "Apache-2.0",
+      "licenseFile": "licenses/nuget/Serilog.Sinks.Console/6.1.1/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/Apache-2.0",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "SharpGen.Runtime",
+      "version": "2.4.2-beta",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "(c) 2010-2017 Alexandre Mutel, 2017-2023 Jeremy Koritzinsky, 2023-2024 Amer Koleci",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/SharpGenTools/SharpGenTools",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/SharpGenTools/SharpGenTools",
+        "branch": "refs/heads/main",
+        "commit": "6990bcafe124a4c22515ad19cee5a081da8db67b"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/SharpGen.Runtime/2.4.2-beta/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "SharpGen.Runtime.COM",
+      "version": "2.4.2-beta",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "(c) 2010-2017 Alexandre Mutel, 2017-2023 Jeremy Koritzinsky, 2023-2024 Amer Koleci",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/SharpGenTools/SharpGenTools",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/SharpGenTools/SharpGenTools",
+        "branch": "refs/heads/main",
+        "commit": "6990bcafe124a4c22515ad19cee5a081da8db67b"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/SharpGen.Runtime.COM/2.4.2-beta/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "SubstreamSharp",
+      "version": "1.0.3",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Connor Haigh 2021",
+      "copyrightType": "",
+      "repository": {
+        "url": "https://github.com/connorhaigh/SubstreamSharp"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/SubstreamSharp/1.0.3/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.IO.Hashing",
+      "version": "10.0.8",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/dotnet",
+        "commit": "94ea82652cdd4e0f8046b5bd5becbd11461482ca"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.IO.Hashing/10.0.8/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.IO.Pipelines",
+      "version": "9.0.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "c8acea22626efab11c13778c028975acdc34678f"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.IO.Pipelines/9.0.1/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.IO.Pipelines",
+      "version": "9.0.6",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "RuntimeProbe"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "3875b54e7b10b10606b105340199946d0b877754"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.IO.Pipelines/9.0.6/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.Numerics.Tensors",
+      "version": "10.0.10",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/dotnet",
+        "commit": "f7d90799ce4ef09a0bb257852a57248d2a8fb8dd"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.Numerics.Tensors/10.0.10/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.Text.Encodings.Web",
+      "version": "9.0.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "c8acea22626efab11c13778c028975acdc34678f"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.Text.Encodings.Web/9.0.1/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.Text.Encodings.Web",
+      "version": "9.0.6",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "RuntimeProbe"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "3875b54e7b10b10606b105340199946d0b877754"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.Text.Encodings.Web/9.0.6/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.Text.Json",
+      "version": "9.0.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "c8acea22626efab11c13778c028975acdc34678f"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.Text.Json/9.0.1/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "System.Text.Json",
+      "version": "9.0.6",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "RuntimeProbe"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "© Microsoft Corporation. All rights reserved.",
+      "copyrightType": "",
+      "projectUrl": "https://dot.net/",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/dotnet/runtime",
+        "commit": "3875b54e7b10b10606b105340199946d0b877754"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/System.Text.Json/9.0.6/LICENSE.TXT",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "VGAudio",
+      "version": "2.2.1",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "copyright": "Copyright © 2016 Alex Barney",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/Thealexbarney/VGAudio",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/Thealexbarney/VGAudio"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/VGAudio/2.2.1/UPSTREAM-LICENSE.txt",
+      "licenseEvidence": "Package-declared upstream licence URL; URL may track a branch, not a version",
+      "licenseSourceUrl": "https://raw.githubusercontent.com/Thealexbarney/VGAudio/master/LICENSE",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Vortice.DXGI",
+      "version": "3.8.3",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) Amer Koleci and Contributors",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/amerkoleci/Vortice.Windows",
+        "commit": "9e609cb9439c9872aa1b339f177e40ec96f77239"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Vortice.DXGI/3.8.3/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Vortice.Direct3D11",
+      "version": "3.8.3",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) Amer Koleci and Contributors",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/amerkoleci/Vortice.Windows",
+        "commit": "9e609cb9439c9872aa1b339f177e40ec96f77239"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Vortice.Direct3D11/3.8.3/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Vortice.DirectX",
+      "version": "3.8.3",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) Amer Koleci and Contributors",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/amerkoleci/Vortice.Windows",
+        "commit": "9e609cb9439c9872aa1b339f177e40ec96f77239"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Vortice.DirectX/3.8.3/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Vortice.Mathematics",
+      "version": "2.1.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionCoverCapture",
+        "ScreenshotTranslationUiTester"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) Amer Koleci and Contributors",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/amerkoleci/Vortice.Mathematics",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/amerkoleci/Vortice.Mathematics",
+        "branch": "refs/heads/main",
+        "commit": "fa05ec6dcba48f3f7331791da6dc7f3d866b2ad6"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Vortice.Mathematics/2.1.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "Zlib-ng.NET",
+      "version": "1.2.0",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright (c) 2025 NotOfficer",
+      "copyrightType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/NotOfficer/Zlib-ng.NET",
+        "branch": "refs/heads/master",
+        "commit": "1e6ae3cb5ed91f1ec743103039d3ac345babd179"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/Zlib-ng.NET/1.2.0/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    },
+    {
+      "name": "ZstdSharp.Port",
+      "version": "0.8.8",
+      "scope": "NuGet restore; binary not committed",
+      "projects": [
+        "FusionUnrealCatalog"
+      ],
+      "license": "MIT",
+      "licenseType": "expression",
+      "copyright": "Copyright Oleg Stepanischev 2026",
+      "copyrightType": "",
+      "projectUrl": "https://github.com/oleg-st/ZstdSharp",
+      "projectUrlType": "",
+      "repository": {
+        "type": "git",
+        "url": "https://github.com/oleg-st/ZstdSharp.git",
+        "branch": "refs/heads/master",
+        "commit": "2cd0c019693bc786a5fe5c3be94e107b24e7267e"
+      },
+      "evidence": "Local restored package metadata (.nuspec); not an independent legal review",
+      "resolvedLicense": "MIT",
+      "licenseFile": "licenses/nuget/ZstdSharp.Port/0.8.8/PACKAGE-METADATA.txt",
+      "licenseEvidence": "Package-declared licence expression",
+      "licenseSourceUrl": "https://licenses.nuget.org/MIT",
+      "releaseDecision": "CONDITIONAL"
+    }
+  ],
+  "external_runtime_components": [
+    {
+      "component": "BepInEx-5",
+      "version": "5.4.23.5",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/BepInEx-5.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/BepInEx/v5.4.23.5/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "BepInEx-6",
+      "version": "6.0.0-be.788+5b766a3",
+      "license": "LGPL-2.1",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/BepInEx-6.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/BepInEx/5b766a3b7f6c164d4798924a93f3acf4db769d06/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "HarmonyX-5",
+      "version": "2.9.0",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/HarmonyX-5.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/HarmonyX/v2.9.0/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "HarmonyX-6",
+      "version": "2.10.2",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/HarmonyX-6.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/HarmonyX/v2.10.2/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Mono.Cecil-5",
+      "version": "0.10.4",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Mono.Cecil-5.txt",
+      "source": "https://raw.githubusercontent.com/jbevain/cecil/0.10.4/LICENSE.txt",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Mono.Cecil-6",
+      "version": "0.11.4",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Mono.Cecil-6.txt",
+      "source": "https://raw.githubusercontent.com/jbevain/cecil/0.11.4/LICENSE.txt",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "MonoMod-5",
+      "version": "22.1.29.1",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/MonoMod-5.txt",
+      "source": "https://raw.githubusercontent.com/MonoMod/MonoMod/v22.01.29.01/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "MonoMod-6",
+      "version": "22.07.31.01; Backports 1.1.2; ILHelpers 1.1.0",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/MonoMod-6.txt",
+      "source": "https://raw.githubusercontent.com/MonoMod/MonoMod/v22.07.31.01/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "UnityDoorstop-5",
+      "version": "4.5.0",
+      "license": "LGPL-2.1",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/UnityDoorstop-5.txt",
+      "source": "https://raw.githubusercontent.com/NeighTools/UnityDoorstop/v4.5.0/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "UnityDoorstop-6",
+      "version": "4.5.0",
+      "license": "LGPL-2.1",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/UnityDoorstop-6.txt",
+      "source": "https://raw.githubusercontent.com/NeighTools/UnityDoorstop/v4.5.0/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Il2CppInterop-LGPL",
+      "version": "1.5.3",
+      "license": "LGPL-3.0-only",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Il2CppInterop-LGPL.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/Il2CppInterop/v1.5.3/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Il2CppInterop-GPL",
+      "version": "1.4.5 historical GPL component",
+      "license": "GPL-3.0 license text component",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Il2CppInterop-GPL.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/Il2CppInterop/v1.4.5/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Cpp2IL",
+      "version": "2022.1.0-development.1452+558ddd9; includes StableNameDotNet and WasmDisassembler",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Cpp2IL.txt",
+      "source": "https://raw.githubusercontent.com/SamboyCoding/Cpp2IL/558ddd98642010897d54316b51fbaa7889fda093/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "AssetsTools.NET",
+      "version": "3.0.5; MonoCecil/Cpp2IL extensions 3.0.4",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/AssetsTools.NET.txt",
+      "source": "https://raw.githubusercontent.com/nesrak1/AssetsTools.NET/2d66992b60d583d6d82dd6e278d3946cf5827286/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "AsmResolver",
+      "version": "6.0.0-beta.5+124e161",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/AsmResolver.txt",
+      "source": "https://raw.githubusercontent.com/Washi1337/AsmResolver/124e161a9bc0ebb83b4d97276ae3da3c9cfe2fc5/LICENSE.md",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "AssetRipper.CIL",
+      "version": "1.2.2+06216e6",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/AssetRipper.CIL.txt",
+      "source": "https://raw.githubusercontent.com/AssetRipper/AssetRipper.CIL/06216e69825ccd6536dc17e9ca81c4d539ce9321/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "AssetRipper.Primitives",
+      "version": "3.2.0+d759b3d",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/AssetRipper.Primitives.txt",
+      "source": "https://raw.githubusercontent.com/AssetRipper/AssetRipper.Primitives/d759b3db98bf2a1cb8c2181faf5d405610aac585/License.md",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Iced",
+      "version": "1.21.0",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Iced.txt",
+      "source": "https://raw.githubusercontent.com/icedland/iced/601c40570d6c986c8e1a6a2e483dd2fdf5ade552/LICENSE.txt",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Capstone.NET",
+      "version": "2.3.1",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Capstone.NET.txt",
+      "source": "https://raw.githubusercontent.com/9ee1/Capstone.NET/de241200f81723ab7cc317d0e81433a3f9e80ca6/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "SemanticVersioning",
+      "version": "2.0.2",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/SemanticVersioning.txt",
+      "source": "https://raw.githubusercontent.com/adamreeve/semver.net/2.0.2/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Disarm",
+      "version": "2022.1.0-master.99+8574010",
+      "license": "MIT in later upstream",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Disarm.txt",
+      "source": "https://raw.githubusercontent.com/SamboyCoding/Disarm/8574010015c8c56bb7faad7e407c50b0abe9cc72/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Dobby",
+      "version": "bundled BepInEx 6; no binary version",
+      "license": "Apache-2.0",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Dobby.txt",
+      "source": "https://raw.githubusercontent.com/jmpews/Dobby/5dfc8546954ce3b3198132ab13fddb89ee92cdd7/LICENSE",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "dotnet-runtime",
+      "version": "6.0.7",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/dotnet-runtime.txt",
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/v6.0.7/LICENSE.TXT",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "dotnet-runtime-third-party",
+      "version": "6.0.7",
+      "license": "Multiple; see original notices",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/dotnet-runtime-third-party.txt",
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/v6.0.7/THIRD-PARTY-NOTICES.TXT",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    },
+    {
+      "component": "Mono.Cecil-desktop",
+      "version": "0.11.6",
+      "license": "MIT",
+      "notice": "Source/Plugin/UnityEmbedded/Licenses/Mono.Cecil-desktop.txt",
+      "source": "https://raw.githubusercontent.com/jbevain/cecil/0.11.6/LICENSE.txt",
+      "notice_hash_matches": true,
+      "scope": "External loader/plugin dependency; binary not committed"
+    }
+  ],
+  "scope_note": "Restored candidate desktop, OCR/cover, Unreal catalogue, Unity tests and diagnostic probe packages; separate OCR Python/model environments are excluded from Release pending exact-version inventory."
+}

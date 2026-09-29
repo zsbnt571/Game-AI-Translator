@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>GameTranslator</AssemblyName>
+    <RootNamespace>ScreenshotTranslationUiTester</RootNamespace>
+    <Version>0.6.0.85</Version><FileVersion>0.6.0.85</FileVersion><AssemblyVersion>0.6.0.85</AssemblyVersion><InformationalVersion>0.6.0.85-fusion-r1</InformationalVersion>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj-core-v2\**;bin-core-v2\**;obj-verify\**;bin-verify\**;obj-temporary-wda\**;bin-temporary-wda\**;obj-settings12\**;bin-settings12\**;obj-consolidation-task-a\**;bin-consolidation-task-a\**;obj-mega-r1\**;bin-mega-r1\**</DefaultItemExcludes>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo"><_Parameter1>Settings14Tests0501</_Parameter1></AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo"><_Parameter1>Regression0501</_Parameter1></AssemblyAttribute>
+    <Compile Remove="OcrHelper\**\*.cs" />
+    <Compile Remove="onnx-lab\**\*.cs" />
+    <Compile Remove="tests-050\**\*.cs" />
+    <Compile Remove="tests-0501\**\*.cs" />
+    <Compile Remove="tests-0502\**\*.cs" />
+    <Compile Remove="tests-0503\**\*.cs" />
+    <Compile Remove="tests-0504\**\*.cs" />
+    <Compile Remove="portable-smoke-050-ascii\**\*.cs" />
+    <Compile Remove="package-dotnet-layout-smoke-*\**\*.cs" />
+    <Content Include="workers\*.py" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="AssetsTools.NET" Version="3.0.5" />
+    <PackageReference Include="AssetsTools.NET.MonoCecil" Version="3.0.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\UnrealBridge\UnrealRuntime.zip" LogicalName="Fusion.UnrealRuntime.zip" />
+    <Content Include="..\UnrealBridge\licenses\**\*" Link="licenses\Unreal\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="$(FusionBuildRoot)\..\UnrealCatalog\**\*" Link="tools\unreal-catalog\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="GodotTranslationBridge.gd" LogicalName="Fusion.GodotTranslationBridge.gd" />
+    <EmbeddedResource Include="Godot4TranslationBridge.gd" LogicalName="Fusion.Godot4TranslationBridge.gd" />
+    <Content Include="GodotSmazNotice.txt" Link="licenses\GodotSmazNotice.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <EmbeddedResource Include="..\Plugin\UnityEmbedded\Resources\UnityEmbeddedMono64.zip" LogicalName="Fusion.UnityEmbeddedMono64.zip" />
+    <EmbeddedResource Include="..\Plugin\UnityEmbedded\Resources\UnityEmbeddedMono32.zip" LogicalName="Fusion.UnityEmbeddedMono32.zip" />
+    <EmbeddedResource Include="..\Plugin\UnityEmbedded\Resources\UnityEmbeddedIl2Cpp64.zip" LogicalName="Fusion.UnityEmbeddedIl2Cpp64.zip" />
+    <Content Include="..\Plugin\UnityEmbedded\Resources\classdata.tpk" Link="adapters\unity\classdata.tpk" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="..\Plugin\UnityEmbedded\Licenses\**\*" Link="licenses\UnityEmbedded\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup><EmbeddedResource Include="..\Plugin\Payload\UnityMono.zip" LogicalName="Fusion.UnityMono.zip" /></ItemGroup>
+  <ItemGroup><EmbeddedResource Include="RenpyGameDataBridge.rpy" LogicalName="Fusion.RenpyGameDataBridge.rpy" />
+    <EmbeddedResource Include="RenpyTranslationBridge.rpy" LogicalName="Fusion.RenpyTranslationBridge.rpy" /><EmbeddedResource Include="RpgMakerTranslationBridge.js" LogicalName="Fusion.RpgMakerTranslationBridge.js" />
+    <EmbeddedResource Include="RpgMakerAdvancedBridge.js" LogicalName="Fusion.RpgMakerAdvancedBridge.js" />
+    <EmbeddedResource Include="RpgMakerDataBridge.js" LogicalName="Fusion.RpgMakerDataBridge.js" /></ItemGroup>
+  <Target Name="BuildOcrHelper" BeforeTargets="Build;Publish" Condition="'$(SkipOcrHelperBuild)' != 'true'">
+    <MSBuild Projects="$(MSBuildProjectDirectory)\OcrHelper\ScreenshotOcrHelper.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishSingleFile" />
+  </Target>
+  <Target Name="CopyOcrHelperBuild" AfterTargets="Build">
+    <Copy SourceFiles="$(FusionBuildRoot)\ScreenshotOcrHelper\bin\$(Configuration)\net48\ScreenshotOcrHelper.exe" DestinationFolder="$(TargetDir)tools\ocr-helper" />
+  </Target>
+  <Target Name="CopyOcrHelperPublish" AfterTargets="Publish">
+    <Copy SourceFiles="$(FusionBuildRoot)\ScreenshotOcrHelper\bin\$(Configuration)\net48\ScreenshotOcrHelper.exe" DestinationFolder="$(PublishDir)tools\ocr-helper" />
+  </Target>
+  <ItemGroup><EmbeddedResource Include="..\Plugin\Payload\CloudMeadow.zip" LogicalName="Fusion.CloudMeadow.zip" /></ItemGroup>
+  <Target Name="BuildGameCover" BeforeTargets="Build;Publish" Condition="'$(SkipGameCoverBuild)' != 'true'">
+    <MSBuild Projects="$(MSBuildProjectDirectory)\..\CoverCapture\FusionCoverCapture.csproj" Targets="Build" Properties="Configuration=$(Configuration)" RemoveProperties="RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishSingleFile" />
+  </Target>
+  <Target Name="CopyGameCoverBuild" AfterTargets="Build" DependsOnTargets="BuildGameCover">
+    <ItemGroup><GameCoverFiles Include="$(FusionBuildRoot)\FusionCoverCapture\bin\$(Configuration)\net8.0-windows10.0.19041.0\**\*" /></ItemGroup>
+    <Copy SourceFiles="@(GameCoverFiles)" DestinationFiles="@(GameCoverFiles->'$(TargetDir)tools\cover-capture\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  <Target Name="CopyGameCoverPublish" AfterTargets="Publish" DependsOnTargets="BuildGameCover">
+    <ItemGroup><GameCoverPublishFiles Include="$(FusionBuildRoot)\FusionCoverCapture\bin\$(Configuration)\net8.0-windows10.0.19041.0\**\*" /></ItemGroup>
+    <Copy SourceFiles="@(GameCoverPublishFiles)" DestinationFiles="@(GameCoverPublishFiles->'$(PublishDir)tools\cover-capture\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>
+
+
+
+
+
+
+
+

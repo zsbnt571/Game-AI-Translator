@@ -1,0 +1,8 @@
+Package: BouncyCastle.Cryptography
+Version: 2.6.2
+Source: https://github.com/bcgit/bc-csharp
+Authors: Legion of the Bouncy Castle Inc.
+Copyright: Copyright © Legion of the Bouncy Castle Inc. 2000-2025
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

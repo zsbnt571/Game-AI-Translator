@@ -1,0 +1,8 @@
+Package: Blake3
+Version: 3.0.2
+Source: https://github.com/xoofx/Blake3.NET
+Authors: Alexandre Mutel
+Copyright: Alexandre Mutel
+Declared licence: BSD-2-Clause
+Licence URL: https://licenses.nuget.org/BSD-2-Clause
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

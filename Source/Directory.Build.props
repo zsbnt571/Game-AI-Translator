@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <FusionBuildRoot Condition="'$(FusionBuildRoot)' == ''">$(MSBuildThisFileDirectory)..\artifacts\Desktop</FusionBuildRoot>
+    <BaseOutputPath>$(FusionBuildRoot)\$(MSBuildProjectName)\bin\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(FusionBuildRoot)\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+</Project>
+
+
+
+

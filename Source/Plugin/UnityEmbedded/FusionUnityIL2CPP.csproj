@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>FusionUnityEmbedded</AssemblyName><Version>0.6.0.84</Version><Nullable>disable</Nullable>
+    <EnableNETAnalyzers>false</EnableNETAnalyzers><NoWarn>$(NoWarn);NETSDK1138</NoWarn>
+    <LoaderDirectory Condition="'$(LoaderDirectory)' == ''">$(MSBuildThisFileDirectory)..\..\..\Tools\UnityEmbedded\BepInEx6-IL2CPP\BepInEx\core</LoaderDirectory>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="BridgeJson.cs;TextLookup.cs;UnityPipeStream.cs;UnityBridgeRuntime.cs;Il2CppPlugin.cs" />
+    <Reference Include="BepInEx.Core"><HintPath>$(LoaderDirectory)\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP"><HintPath>$(LoaderDirectory)\BepInEx.Unity.IL2CPP.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="0Harmony"><HintPath>$(LoaderDirectory)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+</Project>

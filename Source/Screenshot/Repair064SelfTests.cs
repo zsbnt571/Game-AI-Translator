@@ -1,0 +1,31 @@
+using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
+
+namespace ScreenshotTranslationUiTester;
+
+internal static class Repair064SelfTests
+{
+    internal static int Run(string output)
+    {
+        Directory.CreateDirectory(output);var pass=0;var fail=0;var rows=new List<string>();
+        void T(string name,Action test){try{test();pass++;rows.Add("PASS | "+name);}catch(Exception ex){fail++;rows.Add("FAIL | "+name+" | "+ex.Message);}}
+        static void A(bool v,string m){if(!v)throw new InvalidOperationException(m);}
+        T("Title render admission",()=>{using var b=Canvas(500,180);var r=R("TITLE",RegionRoleType.Title,new(15,12,300,42),"安全标题译文");using var x=RegionRendererV2.Render(b,[r],new());A(x.Diagnostics!.Single().AtomicRegionCommitted,"title was not admitted");});
+        T("Shared body typography context",()=>{var rs=new[]{R("B1",RegionRoleType.BodyParagraph,new(10,10,240,180),"一段普通正文"),R("D1",RegionRoleType.Dialogue,new(10,260,240,180),"一段强调对话"),R("N1",RegionRoleType.Narration,new(10,510,240,180),"一段叙述正文")};var c=TypographyContextPlanner.Plan(rs,new());A(c.LongForm&&c.RegionFontSizes.Count==3&&c.RegionFontSizes.Values.Distinct().Count()==1,"body scale drift");});
+        T("Bold does not cause independent size drift",()=>{using var b=Canvas(300,720);var rs=new[]{R("B",RegionRoleType.BodyParagraph,new(10,10,250,180),"普通正文"),R("D",RegionRoleType.Dialogue,new(10,260,250,180),"强调对话"),R("N",RegionRoleType.Narration,new(10,510,250,180),"叙述正文")};using var x=RegionRendererV2.Render(b,rs,new());var d=x.Diagnostics!;A(d.All(v=>v.AtomicRegionCommitted)&&d.Select(v=>v.FontSize).Distinct().Count()==1,"bold changed tier");});
+        T("Source style role inheritance",()=>{var c=TypographyContextPlanner.Plan([R("N",RegionRoleType.Narration,new(1,1,80,30),"叙述"),R("D",RegionRoleType.Dialogue,new(1,40,80,30),"对话")],new());A(TypographyContextPlanner.ResolveStyle(R("N2",RegionRoleType.Narration,new(1,1,80,30),"x"),c)==FontStyle.Italic&&TypographyContextPlanner.ResolveStyle(R("D2",RegionRoleType.Dialogue,new(1,1,80,30),"x"),c)==FontStyle.Bold,"role style lost");});
+        T("Contrast-safe color preservation",()=>{using var b=Canvas(200,80,Color.FromArgb(30,15,70));var c=Color.FromArgb(205,180,245);var x=TranslationTextColorResolver.Resolve(b,new(0,0,200,80),RegionRoleType.Narration,c);A(x.ForegroundColor.ToArgb()==c.ToArgb()&&x.ContrastRatio>=3,"safe accent flattened");});
+        T("Faranna flat panel reconstruction",()=>{using var b=Canvas(320,150,Color.FromArgb(104,163,168));using(var g=Graphics.FromImage(b))g.DrawString("SOURCE",new Font("Segoe UI",18,GraphicsUnit.Pixel),Brushes.White,22,23);var r=R("F",RegionRoleType.BodyParagraph,new(20,20,250,70),"法兰妮正文");using var x=RegionRendererV2.Render(b,[r],new());A(x.Diagnostics!.Single().AtomicRegionCommitted,"flat panel aborted");});
+        T("No background panel patch stripes",()=>{using var b=Canvas(260,100,Color.FromArgb(100,160,165));using(var g=Graphics.FromImage(b))g.DrawString("SOURCE",new Font("Segoe UI",16,GraphicsUnit.Pixel),Brushes.White,22,22);var r=R("P",RegionRoleType.BodyParagraph,new(20,20,200,50),"连续面板");var p=BackgroundIntegrationPlanner.Plan(b,r,r.BoundingBox,[r]);using var x=BackgroundIntegrationExecutor.Execute(b,p);A(x.Committed,"reconstruction failed");var colors=new HashSet<int>();for(var y=p.CleanupBounds.Top;y<p.CleanupBounds.Bottom;y++)for(var xx=p.CleanupBounds.Left;xx<p.CleanupBounds.Right;xx++)if(p.CleanupMask[xx,y])colors.Add(x.Bitmap.GetPixel(xx,y).ToArgb());A(colors.Count<=8,"striped fill");});
+        T("Long text performance timing",()=>{using var b=Canvas(1000,1800,Color.FromArgb(48,49,54));var rs=Enumerable.Range(0,18).Select(i=>R("L"+i,i%3==0?RegionRoleType.Dialogue:RegionRoleType.BodyParagraph,new(80,50+i*90,760,70),new string('译',45))).ToArray();var sw=Stopwatch.StartNew();using var x=RegionRendererV2.Render(b,rs,new());sw.Stop();A(sw.ElapsedMilliseconds<8000,"long render too slow: "+sw.ElapsedMilliseconds);File.WriteAllText(Path.Combine(output,"RENDER-PERFORMANCE.json"),JsonSerializer.Serialize(new{elapsedMs=sw.ElapsedMilliseconds,regionCount=rs.Length,textLength=rs.Sum(r=>r.TranslationText.Length),pixelArea=(long)b.Width*b.Height},new JsonSerializerOptions{WriteIndented=true}));});
+        T("Cached translated image toggle",()=>{using var b=Canvas(100,80);using var f=new PreviewForm(b,PreviewMode.OcrOnly,new ApiSettings{VisualModel=VisualModelKind.Off},new OcrService(),new TranslationService());f.SetTranslatedDisplayForSmoke(b);using var before=f.CloneTranslatedImageForTest();for(var i=0;i<20;i++)f.SetPreviewSelectionForSmoke(OcrEngineKind.Rapid,i%2==0?ImageViewMode.Original:ImageViewMode.Translated,TextViewMode.Translation);using var after=f.CloneTranslatedImageForTest();A(before is not null&&after is not null&&before.Size==after.Size,"cache rebuilt/lost");});
+        T("Font dropdown full-name display",()=>{using var c=new ComboBox();var m=typeof(AppearanceSettingsDialog).GetMethod("FontCombo",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Static)!;m.Invoke(null,[c,new[]{"Segoe UI","Bahnschrift SemiLight","Microsoft YaHei UI"},"Bahnschrift SemiLight"]);A(c.DropDownWidth>=TextRenderer.MeasureText("Bahnschrift SemiLight",c.Font).Width,"name clipped");});
+        T("Quantity x1 behavior unchanged",()=>{var r=R("Q",RegionRoleType.UILabel,new(1,1,40,20),"x1");A(r.TranslationText=="x1"&&!TranslationAuthorizationPolicy.ShouldPreserve(r,"x1"),"quantity behavior changed");});
+        File.WriteAllLines(Path.Combine(output,"REPAIR-064-SELFTESTS.txt"),rows,Encoding.UTF8);
+        File.WriteAllText(Path.Combine(output,"SUMMARY.txt"),$"PASS={pass}\nFAIL={fail}\nRealApiCalls=0\nActiveOperations=0",Encoding.UTF8);
+        return fail==0?0:1;
+    }
+    private static Bitmap Canvas(int w,int h,Color? color=null){var b=new Bitmap(w,h);using var g=Graphics.FromImage(b);g.Clear(color??Color.FromArgb(35,20,80));return b;}
+    private static RecognitionRegion R(string id,RegionRoleType role,RectangleF box,string text)=>new(){RegionId=id,TranslationUnitId="TU-"+id,RoleType=role,Polygon=GeometryV2.RectanglePolygon(box),SourceLinePolygons=[GeometryV2.RectanglePolygon(box)],SourceBlockIds=[id],StructuredText="SOURCE",TranslationText=text,CoverageValid=true};
+}

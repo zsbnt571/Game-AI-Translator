@@ -1,0 +1,8 @@
+Package: K4os.Compression.LZ4
+Version: 1.3.8
+Source: https://github.com/MiloszKrajewski/K4os.Compression.LZ4
+Authors: Milosz Krajewski
+Copyright: Milosz Krajewski
+Declared licence: MIT
+Licence URL: https://raw.githubusercontent.com/MiloszKrajewski/K4os.Compression.LZ4/master/LICENSE
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

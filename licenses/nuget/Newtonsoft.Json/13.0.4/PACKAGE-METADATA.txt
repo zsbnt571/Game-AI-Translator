@@ -1,0 +1,8 @@
+Package: Newtonsoft.Json
+Version: 13.0.4
+Source: https://github.com/JamesNK/Newtonsoft.Json
+Authors: James Newton-King
+Copyright: Copyright © James Newton-King 2008
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

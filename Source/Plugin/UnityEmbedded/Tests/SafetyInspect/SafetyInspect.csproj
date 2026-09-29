@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><CoreDir Condition="'$(CoreDir)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\artifacts\LoaderReferences</CoreDir></PropertyGroup>
+  <ItemGroup>
+    <Reference Include="LibCpp2IL"><HintPath>$(CoreDir)\LibCpp2IL.dll</HintPath></Reference>
+    <Reference Include="AssetRipper.Primitives"><HintPath>$(CoreDir)\AssetRipper.Primitives.dll</HintPath></Reference>
+    <Reference Include="Iced"><HintPath>$(CoreDir)\Iced.dll</HintPath></Reference>
+    <Reference Include="WasmDisassembler"><HintPath>$(CoreDir)\WasmDisassembler.dll</HintPath></Reference>
+    <Reference Include="Cpp2IL.Core"><HintPath>$(CoreDir)\Cpp2IL.Core.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

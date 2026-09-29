@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0-windows</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><UseWindowsForms>true</UseWindowsForms></PropertyGroup>
+  <ItemGroup><Reference Include="GameTranslator"><HintPath>$(FusionBuildRoot)\ScreenshotTranslationUiTester\bin\$(Configuration)\net8.0-windows\GameTranslator.dll</HintPath></Reference><PackageReference Include="System.Text.Json" Version="9.0.6" /><Compile Include="..\IsolatedGamePath.cs" /></ItemGroup>
+</Project>

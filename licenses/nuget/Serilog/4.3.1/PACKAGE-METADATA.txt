@@ -1,0 +1,8 @@
+Package: Serilog
+Version: 4.3.1
+Source: https://github.com/serilog/serilog
+Authors: Serilog Contributors
+Copyright: Copyright © Serilog Contributors
+Declared licence: Apache-2.0
+Licence URL: https://licenses.nuget.org/Apache-2.0
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

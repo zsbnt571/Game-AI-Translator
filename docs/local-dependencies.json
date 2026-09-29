@@ -1,0 +1,506 @@
+{
+  "baseline": "0.6.0.85",
+  "files": [
+    {
+      "path": "Source/Embedded/Manager/payloads/UnityMono.zip",
+      "bytes": 650419,
+      "sha256": "31865728073e090ff17f7000a04d524e50b3dd9a01b5e12a26343d930f887c78",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/font-index.json",
+      "bytes": 1404244,
+      "sha256": "a4ddce9383fad4674afce4382752d505536e5ba0ecc2802338fd0e79bd7766fd",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-00.sdf.gz",
+      "bytes": 367017,
+      "sha256": "403edb965c37126e4bd02527f06d1c73c7b51631f4567c12727620ee6cd52b4c",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-01.sdf.gz",
+      "bytes": 450538,
+      "sha256": "b43cab69e36dee1b0c61663c8a58438b028d2b2d16dddd540f6c159853ce2c37",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-02.sdf.gz",
+      "bytes": 461767,
+      "sha256": "7d43a7f62cac3b9e97e2245aa026a6e6324d2dba0348824f40a8714e37a8aef8",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-03.sdf.gz",
+      "bytes": 437108,
+      "sha256": "9f0f58b9c5a13da96197a808ca169b31a491b00452a34d1f8e5ada9226a77be8",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-04.sdf.gz",
+      "bytes": 433019,
+      "sha256": "5a79e407a704d21b618393c4c271cf73bcf920d82fdc06f0e9a5fe3e1abba264",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-05.sdf.gz",
+      "bytes": 427046,
+      "sha256": "6cf7a578f02da0fbc8214797b27b2f70323201d05d8ef85e128c4c8ccf13a543",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-06.sdf.gz",
+      "bytes": 411036,
+      "sha256": "7921148985bbba716b77e6858bbbe0858ed515e1e5786f53ea6da556aed5e5d0",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-07.sdf.gz",
+      "bytes": 429119,
+      "sha256": "35d573e58ba644a933fe71abf3acd936aec54665f20a950049800fad442d160e",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-08.sdf.gz",
+      "bytes": 416989,
+      "sha256": "159fe60721849e692fb99d54ce51978d39246b2ce2df9131dd2d1cdfe20f7300",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-09.sdf.gz",
+      "bytes": 454368,
+      "sha256": "39ab6d00aea737fdfe93f72847949ae32e87a912b02b140d5e8bb028810b60da",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-10.sdf.gz",
+      "bytes": 448289,
+      "sha256": "92e7d47385fdea4f89cf6689f7378915d0e7f8fa6b58664874936dcf7e334943",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-11.sdf.gz",
+      "bytes": 464845,
+      "sha256": "4df60e06b93048c705225e318046b03e4759201fd7331c7d2db3121f990eda12",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-12.sdf.gz",
+      "bytes": 475388,
+      "sha256": "613ec5bdcee096b1b5a76d83cce5ebd45797e6a449779a6ed0e44d75b13e2901",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-13.sdf.gz",
+      "bytes": 427031,
+      "sha256": "4b8cdbc85a65e5708fff609bd98510779257b38cdc3e33462b9bd62942a9e929",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-14.sdf.gz",
+      "bytes": 438969,
+      "sha256": "bbb5d1a70bb51a76b62362ed61a884e574442d369950a6006233f3831fac76ef",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-15.sdf.gz",
+      "bytes": 434131,
+      "sha256": "5345563932349c36014f6a9a6fa29d1b99db45b33adc1b69f727c3b655eb4dd1",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-16.sdf.gz",
+      "bytes": 416457,
+      "sha256": "ff05121775ff79a19ed378e73bd2317ebc67d757cc3ec050a7158228f6043cba",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-17.sdf.gz",
+      "bytes": 440966,
+      "sha256": "7af35f30aac11e036308f59624485dc3b999b9047dea87740938005dc5361461",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-18.sdf.gz",
+      "bytes": 428411,
+      "sha256": "73508b5ecb5bb44370d6048b5143a6107bc8dd14df8cc082b8b08c74334b8174",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-19.sdf.gz",
+      "bytes": 415451,
+      "sha256": "4d31f82d50333b923ef7b459245b80341fcb7bea670f2f071926b89c9ba933a4",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-20.sdf.gz",
+      "bytes": 435053,
+      "sha256": "4160b06d1fe7149698982158cfff6f79d3bcb2501f7a408d0cb10e11c11a0bdb",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-21.sdf.gz",
+      "bytes": 366184,
+      "sha256": "9ca4b54eb1e56503b6d1cad8827a4541a67b0b61822bf5d886162724ad23beb9",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-22.sdf.gz",
+      "bytes": 230986,
+      "sha256": "0690270ca96717f2a4e82d822a1a628445de120a8d18c54e407ec8403dd349ba",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-23.sdf.gz",
+      "bytes": 223474,
+      "sha256": "7fb4ea2d700f4a708208bd53428d22538934ab55e2078cec00052168429459e3",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-24.sdf.gz",
+      "bytes": 214998,
+      "sha256": "d31f6318d7a4e33b65ec2cf3cf8c74af3c4bbbd5369904587f8e801ff76bfa1f",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-25.sdf.gz",
+      "bytes": 229791,
+      "sha256": "74585c85c9c1588c02d3ae7818a125e11b41085243ea5d8055bc310c48dc7185",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-26.sdf.gz",
+      "bytes": 248082,
+      "sha256": "d2f83cb840e3c36126f7b1ab28897e99bf4534093ff3656b135633b4933942c6",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-27.sdf.gz",
+      "bytes": 243489,
+      "sha256": "d0e03a037298dd77f78e04201331e5f7e98272860556d6fd3d831eb094995699",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-28.sdf.gz",
+      "bytes": 237704,
+      "sha256": "0fdb5b32a71a30d885c65060b32ddcb849066e7298443378459c9a64a34d0c9c",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-29.sdf.gz",
+      "bytes": 220051,
+      "sha256": "02192c90a2e26a547cbb93488bd4bfc7b18bbb173088bab823ea71474a06c7d8",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/page-30.sdf.gz",
+      "bytes": 106145,
+      "sha256": "658601bc8ff2f7dd4f3eec6c141bdea0f8f625e104833db02a72233012f6cd48",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "generated-font-resource-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/References/0Harmony.dll",
+      "bytes": 204800,
+      "sha256": "1a21cc03424fc82c3dd1346905d16494536b9595ae4162228d99fb7c285c1031",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/References/BepInEx.dll",
+      "bytes": 128512,
+      "sha256": "8255b28902886085c578b9e427d3073c97002db85176d2090cdeda90ef14ce70",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/Payload/CloudMeadow.zip",
+      "bytes": 12157711,
+      "sha256": "84210ece2bfd9877d60f78df20801511bb2271fbc63153e95018e9daa929cfab",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/Payload/UnityMono.zip",
+      "bytes": 650886,
+      "sha256": "a6215c913e3f39724df718b7c6c8bbbf0cc5443ba9914981d942568b9afcea88",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/References/BepInEx.dll",
+      "bytes": 128512,
+      "sha256": "8255b28902886085c578b9e427d3073c97002db85176d2090cdeda90ef14ce70",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/References/mscorlib.dll",
+      "bytes": 2590208,
+      "sha256": "57e3a820a75c409fa1965a550d8f0d74eb4e1364d98afd0424a7f617c7b4487f",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "game-or-framework-reference-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/References/System.Core.dll",
+      "bytes": 297472,
+      "sha256": "bee0286ae2fd663a44ace8c89380dd7d3d41c8a40a4f782eff3c4b4bd36ca398",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/References/System.dll",
+      "bytes": 1679360,
+      "sha256": "0c085a45cd9704019cfbd14f797eada2ba5027398b40e4b144b9b6660c36b7ec",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/References/UnityEngine.dll",
+      "bytes": 1393152,
+      "sha256": "de8eaeca43ec9aefc164db0749da1d7e2b77b8d0881e162d17721773d225fa78",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "game-or-framework-reference-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/References/UnityEngine.UI.dll",
+      "bytes": 245760,
+      "sha256": "7d8093c850bd6d034796770c01489e00ab610bf95ad73484df605d89c53a15df",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "game-or-framework-reference-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Resources/classdata.tpk",
+      "bytes": 289605,
+      "sha256": "129e1f80f930415db6779fe6089afa75280cb51462bcee812beab6cd81a764c6",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedIl2Cpp64.zip",
+      "bytes": 34447829,
+      "sha256": "c2af07d3ef10892b36c528c29534bc6c8a89b212b34d5bc8b0cb3d1fed9239ae",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono32.zip",
+      "bytes": 750148,
+      "sha256": "b830475cd0369def4690e42ff717ee76fa528b8f17a7e3ecf0e39b408fefc2c5",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono64.zip",
+      "bytes": 750715,
+      "sha256": "069f640137e355d42a64184c9c55b635347a4e0dd3e0be8728591766bce760ef",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/Plugin/VerifiedBinary/MGITranslator.dll",
+      "bytes": 19456,
+      "sha256": "d5c1547cec6374c0fa875563aac43ea2c6fe2d043f54d46621567cc14c795edc",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "binary-origin-and-redistribution-review-required",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/UnrealBridge/UnrealRuntime.zip",
+      "bytes": 8734752,
+      "sha256": "129af9baab6d22ff5f74988f3b00b9e2ccfaba21107c8d002dade9711723bde5",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "mixed-runtime-archive-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    },
+    {
+      "path": "Source/UnrealCatalog/Native/oo2core_9_win64.dll",
+      "bytes": 637952,
+      "sha256": "6f5d41a7892ea6b2db420f2458dad2f84a63901c9a93ce9497337b16c195f457",
+      "reason": "Local binary or generated resource, excluded from source-only repository",
+      "category": "proprietary-local-only",
+      "sourceRepository": false,
+      "releaseApproved": false,
+      "redistribution": "Excluded until permission for the exact file and distribution is confirmed"
+    }
+  ],
+  "policy": "Source and licence texts may be public; no listed binary or generated resource is approved for redistribution by this manifest. Game files and proprietary components remain local."
+}

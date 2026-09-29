@@ -1,0 +1,8 @@
+Package: K4os.Hash.xxHash
+Version: 1.0.8
+Source: https://github.com/MiloszKrajewski/K4os.Hash.xxHash
+Authors: Milosz Krajewski
+Copyright: Milosz Krajewski
+Declared licence: MIT
+Licence URL: https://raw.githubusercontent.com/MiloszKrajewski/K4os.Hash.xxHash/master/LICENSE
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

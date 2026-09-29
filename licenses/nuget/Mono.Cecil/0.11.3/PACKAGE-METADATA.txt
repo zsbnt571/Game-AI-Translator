@@ -1,0 +1,8 @@
+Package: Mono.Cecil
+Version: 0.11.3
+Source: http://github.com/jbevain/cecil/
+Authors: Jb Evain
+Copyright: not specified in package metadata
+Declared licence: MIT
+Licence URL: https://raw.githubusercontent.com/jbevain/cecil/0.11.3/LICENSE.txt
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

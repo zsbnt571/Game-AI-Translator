@@ -1,0 +1,8 @@
+Package: OffiUtils
+Version: 3.2.0
+Source: https://github.com/NotOfficer/Utils
+Authors: NotOfficer
+Copyright: Copyright (c) 2026 NotOfficer
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

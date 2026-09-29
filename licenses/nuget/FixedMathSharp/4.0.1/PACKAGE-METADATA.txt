@@ -1,0 +1,8 @@
+Package: FixedMathSharp
+Version: 4.0.1
+Source: https://github.com/mrdav30/FixedMathSharp
+Authors: mrdav30
+Copyright: not specified in package metadata
+Declared licence: MIT
+Licence URL: https://aka.ms/deprecateLicenseUrl
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

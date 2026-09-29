@@ -1,0 +1,8 @@
+Package: AssetsTools.NET
+Version: 3.0.5
+Source: https://github.com/nesrak1/AssetsTools.NET
+Authors: nesrak1
+Copyright: not specified in package metadata
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.
