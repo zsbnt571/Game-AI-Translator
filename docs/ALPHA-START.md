@@ -34,6 +34,6 @@ Unity / Unreal 安装需要对应校验通过的本地包。当前 RC 未包含 
 
 ## 已知限制
 
-RPG Maker MV/MZ、Ren'Py 当前兼容性相对较高；Unity Mono 可能漏翻、缺字、布局/换行或特殊 UI 异常；Unity IL2CPP 为低兼容性的实验支持，可能完全不翻译；Unreal 为中低兼容性的实验支持，可能漏翻、无法写回、UI 捕获失败或闪退；Godot 处于测试适配阶段。这些是开发阶段描述，不是统计兼容率。
+RPG Maker MV/MZ、Ren'Py 已支持，仍待当前 Alpha 的实机验证；Unity Mono 可能漏翻、缺字、布局/换行或特殊 UI 异常；Unity IL2CPP 为低兼容性的实验支持，可能完全不翻译；Unreal 为中低兼容性的实验支持，可能漏翻、无法写回、UI 捕获失败或闪退；Godot 处于测试适配阶段。这些是开发阶段描述，不是统计兼容率。
 
 修改游戏前备份原文件和存档。本候选的目录隔离及自动检查不等于全新 Windows 系统或所有真实游戏已经验证。许可证见根目录 LICENSE；具体第三方声明见 THIRD_PARTY_NOTICES.md 及随包 licenses/。

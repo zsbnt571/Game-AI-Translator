@@ -34,6 +34,6 @@ The additional cover capture helper is omitted. Related automatic cover capture 
 
 ## Known limitations
 
-RPG Maker MV/MZ and Ren'Py currently have relatively high compatibility. Unity Mono may have missing translations/characters, layout/wrapping and special UI issues. Unity IL2CPP remains experimental with low compatibility and may fail to translate entirely. Unreal remains experimental with medium-low compatibility, incomplete capture/replacement and possible crashes. Godot is in testing. These are development assessments, not measured compatibility rates.
+RPG Maker MV/MZ and Ren'Py are supported and remain under real-game validation for this Alpha. Unity Mono may have missing translations/characters, layout/wrapping and special UI issues. Unity IL2CPP remains experimental with low compatibility and may fail to translate entirely. Unreal remains experimental with medium-low compatibility, incomplete capture/replacement and possible crashes. Godot is in testing. These are development assessments, not measured compatibility rates.
 
 Back up game files and saves before modification. Isolated-directory and automated checks do not establish clean-Windows or universal game compatibility. See the root LICENSE, THIRD_PARTY_NOTICES.md and bundled licenses/ for applicable terms.
