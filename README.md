@@ -2,7 +2,15 @@
 
 **简体中文** | [English](README.en.md)
 
-Game AI Translator 是 Windows AI 游戏翻译工具，当前目标版本为 **v0.6.0-alpha**，基于 Fusion R1 **0.6.0.85**。项目包含桌面界面、截图翻译，以及针对不同游戏引擎的内嵌翻译组件。
+Game AI Translator 是 Windows AI 游戏翻译工具，当前已发布 **v0.6.0-alpha**（预发布 Alpha），基于 Fusion R1 **0.6.0.85**。项目包含桌面界面、截图翻译，以及针对不同游戏引擎的内嵌翻译组件。
+
+## 下载与启动
+
+- [v0.6.0-alpha Release：发布说明与附件](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0-alpha)（2026-09-30 发布）。
+- [直接下载 Windows x64 ZIP](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0-alpha/Game-AI-Translator-v0.6.0-alpha.zip)，可用随 Release 提供的 [SHA256SUMS.txt](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0-alpha/SHA256SUMS.txt) 核对文件。
+- 先安装 **.NET 8 Desktop Runtime x64**，将 ZIP 完整解压到可写的独立目录，保留包内目录结构，运行 `GameTranslator.exe`。依赖要求见 [Alpha 启动说明](docs/ALPHA-START.md)。
+
+本版仍在开发。私人测试仅覆盖实际执行的主程序启动、有限 Unity Mono 翻译与恢复及截图/OCR 等流程，详细范围见 Release 说明；不代表所有引擎或所有游戏均已完成实机验证。Unity／Unreal 运行包、OCR 运行环境和模型不随本版提供，需另行合法准备。
 
 ## 功能概览
 
@@ -29,7 +37,7 @@ Game AI Translator 是 Windows AI 游戏翻译工具，当前目标版本为 **v
 | Godot | 尚无完整评级 | 🧪 测试适配 | 已有文本提取和内嵌桥接；部分文本延迟、字号和布局仍需检查 |
 | 其他 / 未知引擎 | 未确定 | ❓ 未验证 | 自动识别或内嵌接入可能失败，不能仅凭游戏库中的引擎标签判断支持 |
 
-以上描述不是本 Alpha 的逐引擎实机验收结论。历史反馈较好也不能替代当前候选的安装、翻译和恢复验证。
+以上描述不是本 Alpha 的逐引擎实机验收结论。历史反馈较好也不能替代当前 Alpha 的安装、翻译和恢复验证。
 
 **Mono 和 IL2CPP 是 Unity 常见运行时后端，不是 Unreal Engine 的分类。**
 
@@ -126,6 +134,6 @@ API 密钥通过本地应用设置配置。仓库不包含个人设置、翻译�
 
 ## 版本与授权
 
-这是从已冻结源码导入的独立候选，公开整理另包含日志脱敏修复及构建/诊断路径参数化；以本页导入基线和当前源码为准。整理与离线测试通过不代表所有游戏已完成实机验证。
+本 Alpha 从已冻结源码导入，公开整理另包含日志脱敏修复及构建/诊断路径参数化；以本页导入基线和当前源码为准。整理与离线测试通过不代表所有游戏已完成实机验证。
 
 项目自有代码采用 **GNU GPL v3（GPL-3.0-only）**，完整标准正文见 [LICENSE](LICENSE)。第三方代码和依赖保留各自的版权与许可证，不因项目许可证而重新授权。组件用途、来源、许可文件和分发范围见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。未经确认许可的二进制、游戏文件和专有资源不随源码或 Release 分发。
