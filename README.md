@@ -4,6 +4,8 @@
 
 Game AI Translator 是 Windows AI 游戏翻译工具，当前已发布 **v0.6.0-alpha**（预发布 Alpha），基于 Fusion R1 **0.6.0.85**。项目包含桌面界面、截图翻译，以及针对不同游戏引擎的内嵌翻译组件。
 
+欢迎试用并多多提出建议！如果遇到 Bug 或有任何功能建议，欢迎通过 [GitHub Issues](https://github.com/zsbnt571/Game-AI-Translator/issues) 反馈，帮助这个项目不断改进。
+
 ## 下载与启动
 
 - [v0.6.0-alpha Release：发布说明与附件](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0-alpha)（2026-09-30 发布）。

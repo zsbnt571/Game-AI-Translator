@@ -4,6 +4,8 @@
 
 Game AI Translator is an AI game translation tool for Windows. The current target is **v0.6.0-alpha**, based on Fusion R1 **0.6.0.85**, with screenshot translation, engine-specific in-game translation, a game library and selected game-data editing features.
 
+Feedback is welcome! If you encounter a bug or have ideas for improvements, please open a [GitHub issue](https://github.com/zsbnt571/Game-AI-Translator/issues) to help make this project better.
+
 ## Feature overview
 
 | Feature | How it works | Scope |
