@@ -1,0 +1,1 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><AssemblyName>UnityEngine.UI</AssemblyName><DefineConstants>STRIPPED_LEGACY</DefineConstants></PropertyGroup></Project>

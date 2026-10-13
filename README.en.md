@@ -1,131 +1,86 @@
-# Game AI Translator
+# Game AI Translator · Fusion R1
 
 [简体中文](README.md) | **English**
 
-Game AI Translator is an AI game translation tool for Windows. The current target is **v0.6.0-alpha**, based on Fusion R1 **0.6.0.85**, with screenshot translation, engine-specific in-game translation, a game library and selected game-data editing features.
+A Windows game translation tool combining in-game translation, screenshot OCR translation and a game library. Bring your own API provider, share translation preferences across workflows, and control which languages are translated in actually encountered content.
 
-Feedback is welcome! If you encounter a bug or have ideas for improvements, please open a [GitHub issue](https://github.com/zsbnt571/Game-AI-Translator/issues) to help make this project better.
+**Current preview: 0.6.0.176 Preview 1.** This is a public Windows x64 portable preview. Engine detection, text extraction, translation generation and successful in-game display are separate stages.
 
-## Feature overview
+## Download and start
 
-| Feature | How it works | Scope |
-| --- | --- | --- |
-| In-game translation | Reads resource or runtime text and replaces it through an engine component | Requires support for the engine and text system |
-| Screenshot translation | Captures a region or imports an image, runs OCR, and displays translations and experimental translated images | Independent of in-game integration; capture and OCR limitations still apply |
-| Game-data editing | Reads and modifies game state through a data bridge | Selected RPG Maker MV/MZ and Ren’Py data |
-| Game library and diagnostics | Manages game entries, profiles and launch state; records exits for games launched through the tool | Diagnostic information does not automatically establish crash causes |
+Open the [0.6.0.176 Preview 1 release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.176-preview.1) and download its assets:
 
-“Component connected,” “translation available,” and “text successfully replaced in the game” are different states. Screenshot results and the fallback translation window do not establish successful in-game replacement.
-
-## Engine compatibility
-
-The project is under development. Support does not guarantee every game, UI or text component will work. Ratings are qualitative summaries of current user feedback, not measured coverage. Compatibility is evaluated by engine family, but individual games may behave differently.
-
-| Engine / runtime | Compatibility | Status | Known limitations |
-| --- | --- | --- | --- |
-| RPG Maker MV/MZ | Supported / under validation | ⚠️ Alpha validation | Standard-text adapters exist; current Alpha core workflows still need real-game validation. Custom plugins, text systems and packaging may require additional support. This does not cover every RPG Maker generation |
-| Ren’Py | Supported / under validation | ⚠️ Alpha validation | Standard dialogue and text adapters exist; current Alpha core workflows still need real-game validation. Custom scripts, interfaces and data structures may differ |
-| Unity Mono | Medium | ⚠️ Usable in some games | Missing translations or glyphs, text-box sizing, wrapping and special menu/tutorial/skill UI compatibility vary |
-| Unity IL2CPP | Low | 🧪 Experimental | Some games do not translate at all; loader integration, metadata compatibility and text capture need further work |
-| Unreal Engine | Medium-low | 🧪 Experimental | Some games translate, but UI capture failures, missing text, incomplete replacement and crash reports remain; crash causes need individual diagnosis |
-| Godot | Not fully rated | 🧪 Test integration | Extraction and runtime bridges exist; text latency, font-size and layout concerns remain |
-| Other / unknown engines | Unknown | ❓ Unverified | Detection or integration may fail; a library engine label alone does not establish support |
-
-These descriptions are not per-engine real-game acceptance results for this Alpha. Earlier positive feedback does not replace installation, translation and restoration verification of the current candidate.
-
-**Mono and IL2CPP are common Unity runtime backends, not Unreal Engine categories.**
-
-Results depend on:
-
-- Engine versions and internal changes introduced by game updates.
-- Custom UI/text controls and dynamically generated text.
-- Runtime differences such as Mono versus IL2CPP.
-- Protected assemblies, resources or other data, and unusual packaging.
-- Fonts, text-box layout and wrapping implementation.
-- Existing mods or third-party loaders.
-
-Two games using the same engine can behave differently. The goal is reusable engine-level support with fewer game-specific fixes; universal compatibility has not been achieved.
-
-## Alpha feature scope
-
-The desktop requires the user-installed .NET 8 Desktop Runtime (Windows x64). Settings, API configuration, the library and dependency status are available independently. Unity/Unreal payloads and the OCR environment are not bundled or automatically downloaded. Missing dependencies disable the corresponding feature while the application remains usable.
-
-- RPG Maker/Ren’Py bridges are project source; real-game compatibility remains under validation.
-- Unity Mono/IL2CPP installation requires lawfully supplied, pinned runtime packages with matching hashes.
-- The Unreal resource catalogue worker is not included, so new resource extraction is unavailable. Existing valid catalogues remain subject to the original adapter checks; runtime integration still needs the external payload.
-- Automatic cover capture is not included; importing local cover images remains available.
-- The Screenshot Translator page opens, but OCR requires separately and lawfully prepared Python, RapidOCR, ONNX Runtime and models at the pinned versions.
-
-See the [Alpha startup guide](docs/ALPHA-START.en.md), [engine dependencies](docs/RUNTIME-PAYLOADS.en.md) and [OCR dependencies](docs/OCR-LOCAL-DEPENDENCIES.en.md). Back up original files and saves before modifying a game.
-
-## In-game translation
-
-Select a game and translation profile, then apply translation or use “Translate and launch.” Exact steps depend on the adapter and connection state.
-
-- Resource catalogue extraction and runtime capture complement each other. Currently visible text should take priority over background catalogue translation; first-time translations still wait for the service response.
-- Source language, target language and translation service are configurable. Automatic selection includes an English-first, Japanese-second policy; it should not treat every language catalogue as one source language.
-- Extraction, translation and runtime counters may include menu text and resource strings: **entry count is not dialogue count**.
-- Some Unreal text can be read and translated without a verified replacement identity. It may only be available in the fallback translation window.
-- Existing loader files, such as `doorstop_config.ini`, can conflict with installation. Current protection refuses to overwrite mismatched existing files. General mod coexistence is not implemented, but refusal does not prove that the mod itself is inherently incompatible.
-
-## Game-data editing: which games can use it?
-
-Editing is based on **engine and recognized data structures**. A complete, individually verified editing-support list is not available. Translation support does not imply editing support.
-
-| Engine | Implemented features | Boundaries |
-| --- | --- | --- |
-| Standard RPG Maker MV/MZ desktop projects | Common values such as money; characters, items, weapons, armour, variables and switches; setting/locking eligible fields; map viewing and teleportation; map/common/running event operations; party recovery and battle actions; undo last edit and save backups | Requires a connection and a loaded game/save. Some actions depend on battle or map state; custom plugin data may not be recognized |
-| Ren’Py | Money, items, recognized CG unlock records and variables; numeric search, changed-value filters and batch actions; Chinese labels/notes and favourites; undo last edit and save-backup access | Categories are hints, not verified meanings. Only recognized writable values can be changed; custom galleries are not guaranteed to unlock |
-| Unity Mono / IL2CPP, Unreal, Godot and others | No general game-data editing page integration yet | Successful translation does not establish editing support |
-
-Typical workflow: save and exit → choose “Modify and launch” → enter the game or load a save → refresh data → check variable names and current values → apply edits. Translation and editing can be enabled separately.
-
-Backups, component restoration and undo each have limited scopes; they cannot reverse every game event. Keep an independent save backup before editing. Values recalculated by the game may override manual changes.
-
-## Screenshot translation
-
-This is a separate path for games without working in-game integration, text drawn into images, or individual untranslated screens. It reads the captured image; it does not add an in-game adapter.
-
-1. Choose a screenshot translation profile and check the OCR environment and translation-service configuration.
-2. Use “Start capture” or a configured hotkey to select a region, or import an image.
-3. Inspect OCR text, cleaned source text and translation in the preview; adjust recognition or translation settings as needed.
-4. View the original or experimental translated image, copy text/images and save images. Search saved records by date or source/translated text and reopen them.
-
-OCR recognizes text locally. OCR-only use does not require a translation API. AI translation requires a configured endpoint, model and key; relevant text is sent to that configured external service. The current product path uses RapidOCR. The source also contains Paddle/Windows experimental and diagnostic paths; historical documentation does not mean every option is available in the current interface. OCR runtimes and models must be prepared separately.
-
-**Limitations:** small or stylized fonts, low contrast, occlusion, motion and complex layouts can cause missed characters or incorrect reading order. Experimental translated images may have imperfect source-text removal, font sizing, placement or wrapping. This is not guaranteed zero-latency frame-by-frame translation, and some full-screen or protected windows may not be captured.
-
-## Current development priorities
-
-Priorities include visible-dialogue scheduling, reusable text capture/replacement, UI responsiveness, missing glyphs/layout, mod-loader coexistence and exit/crash diagnostics. Compatibility needs ongoing validation across engine versions, text systems and runtime environments. Successful tests do not establish support for an entire engine family.
-
-Games launched through the tool can produce exit diagnostics, but an exit code, including zero, does not establish a root cause or guarantee normal exit.
-
-Passing source checks and builds does not mean all gameplay issues are fixed. Additional [known issues](docs/KNOWN-ISSUES.md) are recorded in Chinese.
-
-## Source layout
-
-| Directory | Contents |
+| Asset | Purpose |
 | --- | --- |
-| `Source/Screenshot` | Desktop UI, capture/OCR, translation service, game library and bridge management |
-| `Source/Embedded` | Embedded translation management |
-| `Source/Plugin` | Unity components and related tools |
-| `Source/UnrealBridge` | Unreal runtime bridge |
-| `Source/UnrealCatalog` | Unreal resource text tools |
-| `Source/CoverCapture` | Game cover capture |
+| `Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip` | Complete application with the default CPU dependency set |
+| `Fusion-R1-0.6.0.176-preview.1-win-x64-gpu-addon.zip` | Optional NVIDIA background-processing dependencies; not standalone |
+| `Fusion-R1-0.6.0.176-preview.1-source.zip` | Version-specific developer source/build materials |
+| `SHA256SUMS.txt` | Download integrity checks |
 
-## Build
+Fully extract the main ZIP and run `Fusion-R1/GameTranslator.exe`. Keep its companion files. GitHub's automatic **Source code** downloads are not executable packages.
 
-This is a **source repository, not a complete runnable distribution**. Third-party binaries, generated font resources and runtime component packages are excluded. A fresh clone cannot immediately build everything. See the [build guide](docs/BUILD.en.md) and [local dependency manifest](docs/local-dependencies.json).
+1. **Settings > Translation profiles**: configure your endpoint, API key and model, test, then save.
+2. Scroll to **Translation preferences on the same page**: set target, source scope, style and instructions, then **Save preferences**.
+3. Import a game and use its translation launch controls, or open **Capture translation**.
 
-The desktop project uses .NET 8 / Windows Forms. Helpers may require .NET Framework 4.8, Windows SDK or .NET 10.
+API profiles and shared preferences save independently. Switching API profiles does not reset your target/style. New preferences apply to new captures and restarted games. The UI language is independent of the translation target.
 
-## Data and credentials
+See [Usage](docs/USAGE-176.en.md). Offline Chinese and English guides are also inside the application ZIP.
 
-API keys are configured locally in the application. Personal settings, caches, history images, diagnostic reports, games, saves and test recordings are excluded from the repository. Build outputs and local dependencies are ignored by Git.
+## Features
 
-## Version and licensing
+- In-game text collection/replacement through integrated adapters, translation caches and terminology.
+- Local screenshot OCR, translated text and preview; translated-image background processing is experimental.
+- Game import/launch, cover artwork, categories and per-game API profile selection.
+- Automatic, single-source and custom multi-source translation, preserving target-language portions, excluded sources, variables and code.
+- Natural, Game-oriented, Cultural localization, Literary and Custom styles. Meaning and context take priority; short menu labels may be identical across styles.
+- Engine-specific game/resource tools within their implemented scope, not universal game editing.
 
-This independent candidate starts from a frozen baseline, with additional log-redaction fixes and parameterized build/diagnostic paths. Use the baseline here and current source as the reference. Source preparation and passing offline tests do not establish gameplay validation for every title.
+## Choosing source languages
 
-Project-owned code is licensed under **GNU GPL v3 (GPL-3.0-only)**. See [LICENSE](LICENSE) for the full standard text. Third-party code and dependencies retain their own copyright and licence terms; the project licence does not relicense them. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for purpose, source, licence files and distribution scope. Binaries, game files and proprietary resources without verified permission are excluded from the source repository and Release distributions.
+**English + Japanese allows those languages in collected content; it does not request translation of every unused Japanese pack.**
+
+| Mode | Best for | Trade-off |
+| --- | --- | --- |
+| Automatic | Unknown or genuinely mixed sources | Less setup; short/ambiguous text and names can still be misclassified |
+| One language | Deliberately translating only one source | Other identified languages stay, including actual mixed dialogue |
+| Custom combination | Known mixtures such as English with occasional Japanese | Selected sources translate; others stay; no primary/secondary ordering |
+
+Existing English normally stays with an English target; existing Japanese stays with a Japanese target. Automatic can translate actually encountered Korean; an English + Japanese combination normally preserves it.
+
+The covered Ren'Py/Godot active-locale samples did not collect inactive-pack-exclusive strings in bulk. This is not a universal guarantee for every engine, mod, hidden control or resource pretranslation workflow.
+
+## Validation scope
+
+The frozen .176 program was exercised with Chinese, English and Japanese targets and Automatic/English+Japanese sources: 43 real-source samples, 258 result rows and 57 actual API requests, with no checked language-boundary violations. 24 source samples were runtime-observed; 19 were resource-only.
+
+MIST/Konoha used isolated actual executables for native menus, locale switching and limited opening scenes; Village covered its actual main menu. Brotato/Chillquarium used actual resources in an engine host, without launching their full commercial executables. Additional endings and some mixed dialogue were resource-only.
+
+Full collection matrices used earlier builds in this test round. Final quality changes were then checked through final .176 API/rule tests. **This is not final-binary visual acceptance of complete gameplay in every game.** Real API tests used Natural style, not an equivalent semantic review of every style.
+
+## Dependencies and limitations
+
+The main package bundles .NET runtimes, Python, RapidOCR/models, CPU background-processing dependencies, integrated adapters and licenses. Users do not need to install Python or the .NET 8 Desktop Runtime first.
+
+API service/credits, games, Windows platform components and optional GPU drivers remain user-provided. Windows OCR/legacy helpers use OS .NET Framework 4.8. Proprietary Oodle and some heavy optional models are excluded. See [Dependencies](docs/DEPENDENCIES-176.en.md).
+
+Unity IL2CPP, Unreal and engines not retested here retain compatibility limits. Mods can conflict, first translations depend on provider latency, and translated-image rendering may show artifacts. No clean-Windows VM acceptance has been completed. See [Known issues](docs/KNOWN-ISSUES.en.md).
+
+## Upgrade and privacy
+
+Back up the actual old data directory after closing Fusion and affected games, then copy data into the new `Fusion-R1/data`. Check the old Storage setting if customized. Keep the old application and pre-upgrade backup; do not share one writable directory between versions.
+
+Verify library, target/source choices and API connectivity after migration. Encrypted keys may require re-entry on a different Windows account/device. Style changes do not clear previous translations.
+
+The public package has no personal keys, game library/history, games or saves. Share only original release archives, not a populated data directory.
+
+## Development and licenses
+
+Use this release's `*-source.zip` and [Build instructions](docs/BUILD-176.md). A reviewable product source snapshot is under [releases/0.6.0.176-preview.1](releases/0.6.0.176-preview.1/README.md). Root `Source/` retains the historical public Alpha line and is not the .176 source or acceptance baseline. Use the complete versioned source attachment to build .176.
+
+Project-owned code remains **GPL-3.0-only**. Third parties retain their own licenses; the package includes notices, component inventories and corresponding third-party source materials.
+
+Report version, OS/game/engine, source/target settings, steps and a minimal example. Redact credentials and personal content from logs. Games and saves are not required.
+
+
+Bug reports and feature suggestions are welcome on [GitHub Issues](https://github.com/zsbnt571/Game-AI-Translator/issues).

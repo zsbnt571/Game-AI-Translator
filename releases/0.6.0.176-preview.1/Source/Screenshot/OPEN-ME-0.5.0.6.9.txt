@@ -1,0 +1,10 @@
+Screenshot Translator 0.5.0.6.9
+Status: Manual Acceptance Pending
+
+Run the EXE in this folder. Keep the entire folder together.
+
+This round repairs partial translation responses and first-byte timeouts. It keeps successful groups, retries only missing groups, shrinks repeated failures, and validates the complete group set before cache or render.
+
+Automated verification: 23/23 recovery, 21/21 input/performance, 12/12 visual freeze, 21/21 typography, 144/144 vision. Real API calls in tests: 0.
+
+Please manually verify one real-provider partial/timeout scenario before acceptance.

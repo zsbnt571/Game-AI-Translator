@@ -1,0 +1,3 @@
+LIBRARY FusionWolf
+EXPORTS
+ FusionWolfStart=_FusionWolfStart@4

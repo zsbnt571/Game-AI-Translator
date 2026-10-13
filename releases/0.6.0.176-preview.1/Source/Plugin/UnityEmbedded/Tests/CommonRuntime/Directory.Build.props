@@ -1,0 +1,1 @@
+<Project><Import Project="../../../../Directory.Build.props" /><PropertyGroup><TargetFramework>net48</TargetFramework><LangVersion>latest</LangVersion><Nullable>disable</Nullable><AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages><GenerateAssemblyInfo>false</GenerateAssemblyInfo></PropertyGroup></Project>

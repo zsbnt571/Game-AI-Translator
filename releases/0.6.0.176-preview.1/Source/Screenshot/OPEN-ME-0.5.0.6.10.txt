@@ -1,0 +1,19 @@
+Screenshot Translator 0.5.0.6.10
+Status: Manual Acceptance Pending
+
+Run ScreenshotTranslator.exe from this short ASCII folder and keep the complete folder together.
+
+This candidate changes paragraph-local geometry, scoped image/portrait avoidance, atomic final preview display, right-text single assignment, visible-frame stability checks, and real executable E2E tracing.
+
+Automated results:
+30/30 new specialty
+23/23 API reliability freeze
+21/21 input/performance freeze
+12/12 visual regression
+21/21 typography
+144/144 vision/region
+12/12 final holdout generalization
+Visible intermediate translated frames: 0
+Real API calls in automated tests: 0
+
+Manual acceptance is still required for physical hotkey responsiveness, visible stretch/reflow, unfamiliar long-page layout, API behavior, and game input.

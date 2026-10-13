@@ -1,0 +1,148 @@
+PASS Visual models are independent explicit choices
+PASS Polygon-first geometry
+PASS OCR retained when visual misses
+PASS Visual-only semantic region retained for crop OCR
+PASS Visual-only unknown image region excluded
+PASS Overlapping sources fuse
+PASS Far regions do not merge
+PASS Username role
+PASS Metadata role
+PASS Chinese relative-time metadata role
+PASS Chinese message-count metadata role
+PASS Game button role
+PASS Game choice role
+PASS Top large card heading role
+PASS Narrow card seven wrapped lines become one semantic region
+PASS Game name remains separate from wrapped dialogue
+PASS April paragraph gaps prevent page over-grouping
+PASS Magazine distant columns remain isolated
+PASS Magazine vertical decorative title merges
+PASS Local paragraph gap splits two complete prose blocks
+PASS Eight ordinary wrapped lines remain one paragraph
+PASS Narration and quote in one visual paragraph stay together
+PASS Large gap separates dialogue and narration paragraphs
+PASS Semantic region preserves source line polygons
+PASS Safe target never unions incompatible roles
+PASS Safe target rejects disconnected geometry union
+PASS Safe target rejects image exclusion intrusion
+PASS Safe target keeps adjacent multiline paragraph
+PASS Safe target leaves translation characters unchanged
+PASS Disconnected target never guesses segment mapping
+PASS Unsafe target preserves every original pixel
+PASS Safe planning preserves SourceRegionRect
+PASS Geometry islands retain Region and SourceBlock trace
+PASS Failed structure validation is atomic
+PASS Phase 1.1 original overlap preserved
+PASS Phase 1.1 added image intrusion is zero
+PASS Phase 1.1 dialogue image intrusion is zero
+PASS Phase 1.1 independent TranslationUnits share one batch
+PASS Phase 1.1 renderer guess split is false
+PASS Phase 1.1 unsafe mapping preserves original pixels
+PASS Preview region debug labels default hidden
+PASS Fresh Preview has every debug layer off
+PASS MainNavigation 20 loops has no blank page
+PASS MainNavigation random 100 has no blank page
+PASS Settings tabs 30 loops have content
+PASS Settings leave and return 20 loops remains alive
+PASS After Preview close all main pages remain alive
+PASS After Settings save current page remains alive
+PASS After appearance refresh every page remains alive
+PASS Minimize restore preserves page host
+PASS Default translated shows translated when render completes
+PASS Default original stays original after render
+PASS User original during translation remains original
+PASS User translated during translation displays when ready
+PASS Retranslate preserves translated preferred mode
+PASS OCR rerun returns to translated preferred mode
+PASS Appearance refresh keeps translated mode
+PASS Remember last selection overrides default
+PASS Combo and displayed image remain synchronized
+PASS After Screenshot all main pages remain alive
+PASS Default translated 10 consecutive previews finish translated
+PASS Default original 5 consecutive previews stay original
+PASS Preview minimize restore preserves selected mode
+PASS Settings dark theme has no contrast hazard
+PASS All visible buttons fit Chinese text
+PASS Dialog buttons fit at 100 125 150 percent
+PASS Detached main page safe recovery preserves host
+PASS Detached settings root safe recovery
+PASS Settings theme and host combined 20 loops
+PASS Theme does not change toolbar control size
+PASS Theme does not change preferred size
+PASS Theme does not change control font
+PASS Theme keeps combo native metrics
+PASS Tab owner draw keeps native page host
+PASS Overlay toggle does not trigger recognition
+PASS Text refresh preserves preview scroll
+PASS Stable translation mapping
+PASS Stale translation discarded
+PASS Missing ID fails
+PASS Extra ID fails
+PASS Preserve original
+PASS V2 TranslationUnit keeps GRP wire IDs
+PASS V2 missing=GRP001 targeted recovery
+PASS V2 recovery still missing fails
+PASS V2 recovery extra ID fails
+PASS V2 complete response avoids recovery
+PASS Editor create delete undo redo
+PASS Editor move preserves other IDs
+PASS Editor role override survives classification
+PASS Editor merge
+PASS Editor split
+PASS Editor resize polygon order flags
+PASS Region-only OCR preserves Region ID
+PASS Overflow is explicit and never silently accepted
+PASS Renderer V2 maps translation only to its Region
+PASS Renderer 2 uses one semantic paragraph for eight source lines
+PASS Renderer 2 keeps two semantic regions independent
+PASS Renderer 2 centers button and keeps metadata single line
+PASS Renderer 2 long translation is never ellipsized
+PASS Renderer 2 mixed text remains intact
+PASS Renderer 2 preserved original has explicit status
+PASS Renderer 2 safe expansion respects neighbor collision
+PASS Preview placement remains visible after monitor change
+PASS First and second preview preserve minimized main window
+PASS Coverage accounts for every OCR SourceLine
+PASS Coverage preserves eight merged paragraph polygons
+PASS Residual tail uses conservative compatible ownership
+PASS Residual does not cross into protected metadata
+PASS Preserved username has explicit disposition
+PASS Ignored noise has reason and remains accounted
+PASS Missing polygon fails required geometry validation
+PASS BoundingRect fallback stays line-local
+PASS Duplicate text at different positions keeps two identities
+PASS FollowPrevious strictly inherits last normal size
+PASS Fixed preview remains exact
+PASS Automatic preview is image and work-area aware
+PASS Capture restore policy does not steal foreground
+PASS Missing font falls back safely
+PASS Translation style display mapping is Chinese
+PASS Source language display mapping is Chinese
+PASS Target language UI mapping is Chinese and code stable
+PASS Preview and background display mappings are Chinese
+PASS Disabled setting label remains legible
+PASS Standard button resources are valid Chinese
+PASS Appearance settings persist in snapshot
+PASS FollowPrevious maximized state persists
+PASS FollowPrevious saves live bounds before close
+PASS Preview size mode runtime transition matrix
+PASS Fixed to FollowPrevious saves new user bounds
+PASS FollowPrevious maximized survives mode switch
+PASS Appearance change never starts OCR or translation
+PASS Legacy settings load with new safe defaults
+PASS Background strategies produce distinct runtime settings
+PASS Background alpha enters renderer diagnostics
+PASS Background alpha changes rendered pixels
+PASS Renderer background alpha has no blur coupling
+PASS Renderer draws at original pixel resolution
+PASS Background strategies change rendered output
+PASS Overlay font changes actual render metrics
+PASS Tight translation bounds do not fill semantic region
+PASS Original and translated display rect stay separate
+PASS Five-preview highlight mapping remains isolated
+PASS Empty translation has no translated rect
+PASS Renderer diagnostics include font and render bounds
+TOTAL=144 PASS=144 FAIL=0
+REAL_API_CALLS=0
+ActiveOperations=0
+Worker residue=NONE

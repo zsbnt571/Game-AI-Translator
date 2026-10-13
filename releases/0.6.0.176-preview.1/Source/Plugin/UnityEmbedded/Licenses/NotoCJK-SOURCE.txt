@@ -1,0 +1,3 @@
+Source: https://github.com/notofonts/noto-cjk/tree/Sans2.004
+NotoSansCJKsc-Regular.otf SHA256: 2C76254F6FC379FDDFCE0A7E84FB5385BB135D3E399294F6EEB6680D0365B74B
+Derived asset name: Fusion Cloud Fallback. Glyph atlas generated at build time; only missing glyph fallback pages are loaded at runtime.

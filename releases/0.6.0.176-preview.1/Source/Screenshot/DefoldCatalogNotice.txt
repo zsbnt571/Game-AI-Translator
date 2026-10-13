@@ -1,0 +1,18 @@
+Defold resource format references
+
+Fusion's bounded, read-only resource reader was implemented using the public
+Defold archive, protobuf schema, and XTEA-CTR format descriptions. Defold engine
+source code and executables are not included in this component.
+
+https://github.com/defold/defold/blob/1.2.170/engine/resource/src/resource_archive.cpp
+https://github.com/defold/defold/blob/1.2.170/engine/dlib/src/dlib/crypt.cpp
+https://github.com/defold/defold/blob/1.2.170/engine/dlib/src/test/test_crypt.cpp
+https://github.com/defold/defold/blob/1.2.170/engine/gameobject/proto/gameobject/lua_ddf.proto
+https://github.com/defold/defold/blob/1.2.170/engine/script/src/script/lua_source_ddf.proto
+https://github.com/defold/defold/blob/1.2.170/engine/gamesys/proto/gui_ddf.proto
+https://github.com/defold/defold/blob/1.2.170/engine/render/proto/render/font_ddf.proto
+https://defold.com/manuals/font/
+
+The reader does not execute scripts, change game resources, or grant native
+translation support. Custom archive formats and compiled script bytecode are
+reported separately. Font glyph inspection is not proof of complete rendering.

@@ -1,0 +1,255 @@
+{
+  "checkedOn": "2026-09-27",
+  "files": [
+    {
+      "component": "BepInEx-5",
+      "version": "5.4.23.5",
+      "license": "MIT",
+      "file": "BepInEx-5.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/BepInEx/v5.4.23.5/LICENSE",
+      "sha256": "E6E534EF6F4347B6449407EE046A3D09CB0174C6F688C996AD0BED94B74B3933",
+      "bytes": 1062,
+      "versionEvidence": "Mono x86/x64 loaders"
+    },
+    {
+      "component": "BepInEx-6",
+      "version": "6.0.0-be.788+5b766a3",
+      "license": "LGPL-2.1",
+      "file": "BepInEx-6.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/BepInEx/5b766a3b7f6c164d4798924a93f3acf4db769d06/LICENSE",
+      "sha256": "F2CECA48AF033D8ADF337A8F9453E633CFAD10A1F8C9FEC2E5AE55A2D8FFE952",
+      "bytes": 25338,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "HarmonyX-5",
+      "version": "2.9.0",
+      "license": "MIT",
+      "file": "HarmonyX-5.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/HarmonyX/v2.9.0/LICENSE",
+      "sha256": "7E54AB4766EF78637A05FB3454663A66DE6BB960DBD4C7088890ED76B0844F36",
+      "bytes": 1063,
+      "versionEvidence": "BepInEx 5 PackageReference"
+    },
+    {
+      "component": "HarmonyX-6",
+      "version": "2.10.2",
+      "license": "MIT",
+      "file": "HarmonyX-6.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/HarmonyX/v2.10.2/LICENSE",
+      "sha256": "7E54AB4766EF78637A05FB3454663A66DE6BB960DBD4C7088890ED76B0844F36",
+      "bytes": 1063,
+      "versionEvidence": "BepInEx 6 binary ProductVersion"
+    },
+    {
+      "component": "Mono.Cecil-5",
+      "version": "0.10.4",
+      "license": "MIT",
+      "file": "Mono.Cecil-5.txt",
+      "source": "https://raw.githubusercontent.com/jbevain/cecil/0.10.4/LICENSE.txt",
+      "sha256": "13D58ECBED676511C0C4C4009BFF107025E50007FF5E7901DC562700EC62509E",
+      "bytes": 1098,
+      "versionEvidence": "BepInEx 5 PackageReference"
+    },
+    {
+      "component": "Mono.Cecil-6",
+      "version": "0.11.4",
+      "license": "MIT",
+      "file": "Mono.Cecil-6.txt",
+      "source": "https://raw.githubusercontent.com/jbevain/cecil/0.11.4/LICENSE.txt",
+      "sha256": "13D58ECBED676511C0C4C4009BFF107025E50007FF5E7901DC562700EC62509E",
+      "bytes": 1098,
+      "versionEvidence": "BepInEx 6 binary ProductVersion"
+    },
+    {
+      "component": "MonoMod-5",
+      "version": "22.1.29.1",
+      "license": "MIT",
+      "file": "MonoMod-5.txt",
+      "source": "https://raw.githubusercontent.com/MonoMod/MonoMod/v22.01.29.01/LICENSE",
+      "sha256": "0B64833222E3C6A426AD29362D26334619FE02EAF2B89EA9C37805521896C920",
+      "bytes": 1080,
+      "versionEvidence": "RuntimeDetour and Utils"
+    },
+    {
+      "component": "MonoMod-6",
+      "version": "22.07.31.01; Backports 1.1.2; ILHelpers 1.1.0",
+      "license": "MIT",
+      "file": "MonoMod-6.txt",
+      "source": "https://raw.githubusercontent.com/MonoMod/MonoMod/v22.07.31.01/LICENSE",
+      "sha256": "0B64833222E3C6A426AD29362D26334619FE02EAF2B89EA9C37805521896C920",
+      "bytes": 1080,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "UnityDoorstop-5",
+      "version": "4.5.0",
+      "license": "LGPL-2.1",
+      "file": "UnityDoorstop-5.txt",
+      "source": "https://raw.githubusercontent.com/NeighTools/UnityDoorstop/v4.5.0/LICENSE",
+      "sha256": "20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331",
+      "bytes": 26526,
+      "versionEvidence": "BepInEx 5 .doorstop_version"
+    },
+    {
+      "component": "UnityDoorstop-6",
+      "version": "4.5.0",
+      "license": "LGPL-2.1",
+      "file": "UnityDoorstop-6.txt",
+      "source": "https://raw.githubusercontent.com/NeighTools/UnityDoorstop/v4.5.0/LICENSE",
+      "sha256": "20C17D8B8C48A600800DFD14F95D5CB9FF47066A9641DDEAB48DC54AEC96E331",
+      "bytes": 26526,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "Il2CppInterop-LGPL",
+      "version": "1.5.3",
+      "license": "LGPL-3.0-only",
+      "file": "Il2CppInterop-LGPL.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/Il2CppInterop/v1.5.3/LICENSE",
+      "sha256": "5EECCE16E59E24DDD9D3712012517A033F2CD0459ACE22B43D5659D4624ABFF0",
+      "bytes": 42802,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "Il2CppInterop-GPL",
+      "version": "1.4.5 historical GPL component",
+      "license": "GPL-3.0 license text component",
+      "file": "Il2CppInterop-GPL.txt",
+      "source": "https://raw.githubusercontent.com/BepInEx/Il2CppInterop/v1.4.5/LICENSE",
+      "sha256": "3972DC9744F6499F0F9B2DBF76696F2AE7AD8AF9B23DDE66D6AF86C9DFB36986",
+      "bytes": 35149,
+      "versionEvidence": "Included as GPL text incorporated by LGPL-3.0; not a claim that shipped library is GPL-only."
+    },
+    {
+      "component": "Cpp2IL",
+      "version": "2022.1.0-development.1452+558ddd9; includes StableNameDotNet and WasmDisassembler",
+      "license": "MIT",
+      "file": "Cpp2IL.txt",
+      "source": "https://raw.githubusercontent.com/SamboyCoding/Cpp2IL/558ddd98642010897d54316b51fbaa7889fda093/LICENSE",
+      "sha256": "1A80D1B99E958385045DA1E383A105895D1C997EF2B36448430DBFE3763FE670",
+      "bytes": 1066,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "AssetsTools.NET",
+      "version": "3.0.5; MonoCecil/Cpp2IL extensions 3.0.4",
+      "license": "MIT",
+      "file": "AssetsTools.NET.txt",
+      "source": "https://raw.githubusercontent.com/nesrak1/AssetsTools.NET/2d66992b60d583d6d82dd6e278d3946cf5827286/LICENSE",
+      "sha256": "AB26018F961D37D489BCD0F8277B602D1A41586CDA867E59173778C7214AE29F",
+      "bytes": 1083,
+      "versionEvidence": "Official pinned upstream license; exact release package nuspec declares MIT, no repository commit supplied."
+    },
+    {
+      "component": "AsmResolver",
+      "version": "6.0.0-beta.5+124e161",
+      "license": "MIT",
+      "file": "AsmResolver.txt",
+      "source": "https://raw.githubusercontent.com/Washi1337/AsmResolver/124e161a9bc0ebb83b4d97276ae3da3c9cfe2fc5/LICENSE.md",
+      "sha256": "1C967BB945D9E86F79E49DDA29E834D49FF3CB203C9A98878E7661B3DE7A5559",
+      "bytes": 1108,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "AssetRipper.CIL",
+      "version": "1.2.2+06216e6",
+      "license": "MIT",
+      "file": "AssetRipper.CIL.txt",
+      "source": "https://raw.githubusercontent.com/AssetRipper/AssetRipper.CIL/06216e69825ccd6536dc17e9ca81c4d539ce9321/LICENSE",
+      "sha256": "039CD624A13919C3AF1AEC3CE2217C3F50D6E3053F6E9EF64D9CF37E12812A76",
+      "bytes": 1062,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "AssetRipper.Primitives",
+      "version": "3.2.0+d759b3d",
+      "license": "MIT",
+      "file": "AssetRipper.Primitives.txt",
+      "source": "https://raw.githubusercontent.com/AssetRipper/AssetRipper.Primitives/d759b3db98bf2a1cb8c2181faf5d405610aac585/License.md",
+      "sha256": "DAE6148FF7AD3331A6380A2CE0CBB87F71B8F177891ABA1661B1D3A6FE52D5DE",
+      "bytes": 1062,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "Iced",
+      "version": "1.21.0",
+      "license": "MIT",
+      "file": "Iced.txt",
+      "source": "https://raw.githubusercontent.com/icedland/iced/601c40570d6c986c8e1a6a2e483dd2fdf5ade552/LICENSE.txt",
+      "sha256": "93A47598376FD3F276B631E75149340087153C6FF1635A53C5790249E9124E2D",
+      "bytes": 1114,
+      "versionEvidence": "Binary product commit"
+    },
+    {
+      "component": "Capstone.NET",
+      "version": "2.3.1",
+      "license": "MIT",
+      "file": "Capstone.NET.txt",
+      "source": "https://raw.githubusercontent.com/9ee1/Capstone.NET/de241200f81723ab7cc317d0e81433a3f9e80ca6/LICENSE",
+      "sha256": "79463FA3B9FACDA0F90E33EDA09FF57C6C4D5620BA8B01E5C48A68834E20DE4E",
+      "bytes": 1062,
+      "versionEvidence": "Gee.External.Capstone binary product commit"
+    },
+    {
+      "component": "SemanticVersioning",
+      "version": "2.0.2",
+      "license": "MIT",
+      "file": "SemanticVersioning.txt",
+      "source": "https://raw.githubusercontent.com/adamreeve/semver.net/2.0.2/LICENSE",
+      "sha256": "26A00BAD0D14CA2FC93C10398D477FA9609D6FD36068867DE53384218C1F64A3",
+      "bytes": 1054,
+      "versionEvidence": "Binary ProductVersion"
+    },
+    {
+      "component": "Disarm",
+      "version": "2022.1.0-master.99+8574010",
+      "license": "MIT in later upstream",
+      "file": "Disarm.txt",
+      "source": "https://raw.githubusercontent.com/SamboyCoding/Disarm/8574010015c8c56bb7faad7e407c50b0abe9cc72/LICENSE",
+      "sha256": "DFE5EF7511938E4D23B12C80F38E966A7993AEE60744AB72A947BED7B24963B8",
+      "bytes": 1066,
+      "versionEvidence": "BepInEx be.788 payload assembly metadata, pinned upstream source and dependency inventory"
+    },
+    {
+      "component": "Dobby",
+      "version": "bundled BepInEx 6; no binary version",
+      "license": "Apache-2.0",
+      "file": "Dobby.txt",
+      "source": "https://raw.githubusercontent.com/jmpews/Dobby/5dfc8546954ce3b3198132ab13fddb89ee92cdd7/LICENSE",
+      "sha256": "43070E2D4E532684DE521B885F385D0841030EFA2B1A20BAFB76133A5E1379C1",
+      "bytes": 11356,
+      "versionEvidence": "Pinned upstream notice; exact bundled Dobby commit unresolved."
+    },
+    {
+      "component": "dotnet-runtime",
+      "version": "6.0.7",
+      "license": "MIT",
+      "file": "dotnet-runtime.txt",
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/v6.0.7/LICENSE.TXT",
+      "sha256": "CFC21F5E8BD655AE997EEC916138B707B1D290B83272C02A95C9F821B8C87310",
+      "bytes": 1116,
+      "versionEvidence": "BepInEx 6 dotnet/.version"
+    },
+    {
+      "component": "dotnet-runtime-third-party",
+      "version": "6.0.7",
+      "license": "Multiple; see original notices",
+      "file": "dotnet-runtime-third-party.txt",
+      "source": "https://raw.githubusercontent.com/dotnet/runtime/v6.0.7/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "55FF71C32F96483C2F4E061EB78EE9BF3D8D562D00143C67B361BB4CE989FE44",
+      "bytes": 46771,
+      "versionEvidence": "Official runtime dependency notices"
+    },
+    {
+      "component": "Mono.Cecil-desktop",
+      "version": "0.11.6",
+      "license": "MIT",
+      "file": "Mono.Cecil-desktop.txt",
+      "source": "https://raw.githubusercontent.com/jbevain/cecil/0.11.6/LICENSE.txt",
+      "sha256": "13D58ECBED676511C0C4C4009BFF107025E50007FF5E7901DC562700EC62509E",
+      "bytes": 1098,
+      "versionEvidence": "Desktop AssetsTools.NET.MonoCecil dependency, root confirmed local NuGet package"
+    }
+  ]
+}

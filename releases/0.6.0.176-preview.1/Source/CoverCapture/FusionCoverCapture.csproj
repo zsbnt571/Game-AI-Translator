@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>FusionCoverCapture</AssemblyName>
+    <Version>0.6.0.26</Version><AssemblyVersion>0.6.0.26</AssemblyVersion>
+    <Platforms>AnyCPU</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3"/>
+    <Compile Include="..\Screenshot\FusionCoverWindowIdentity.cs" Link="CoverWindowIdentity.cs"/>
+    <Compile Include="..\Screenshot\FusionCoverQuality.cs" Link="CoverQuality.cs"/>
+  </ItemGroup>
+</Project>

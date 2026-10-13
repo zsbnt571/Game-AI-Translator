@@ -1,0 +1,4 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><Version>0.6.0.139</Version><AssemblyVersion>0.6.0.139</AssemblyVersion><FileVersion>0.6.0.139</FileVersion><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+ <ItemGroup><PackageReference Include="CUE4Parse" Version="1.2.2.202609" /><PackageReference Include="Microsoft.Bcl.Memory" Version="9.0.14" /></ItemGroup>
+</Project>

@@ -4,3 +4,6 @@
 *.md text eol=lf
 *.json text eol=lf
 *.py text eol=lf
+
+# Preserve the reviewed release snapshot bytes used by its SHA-256 manifest.
+releases/0.6.0.176-preview.1/** -text

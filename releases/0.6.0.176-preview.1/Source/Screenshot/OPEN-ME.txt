@@ -1,0 +1,7 @@
+Screenshot Translator 0.5.0.6.8
+Status: Manual Acceptance Pending
+
+Start: ScreenshotTranslator.exe
+Report: REPORT-0.5.0.6.8.md
+
+Primary manual checks: gameplay ESC/input pass-through, screenshot ESC cancel and restore, April Long system responsiveness, frozen visual coverage, and second-launch single-instance behavior.
