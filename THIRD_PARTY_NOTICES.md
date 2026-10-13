@@ -14,7 +14,7 @@ The .176 preview is published. Project-owned code is GPL-3.0-only; third-party c
 | Unreal adapter and catalog | [Components](licenses/Unreal/COMPONENTS.md), [UE4SS](licenses/Unreal/UE4SS-MIT.txt), [CUE4Parse](licenses/Unreal/CUE4Parse-Apache-2.0.txt) |
 | Native adapter dependencies | [Unity notices](licenses/UnityNative), [Wolf notices](licenses/WolfNative), [WolfTextCatalog](licenses/WolfTextCatalog.LICENSE.txt) |
 | Other extraction/font components | [Defold](licenses/DefoldCatalogNotice.txt), [Godot Smaz](licenses/GodotSmazNotice.txt), [GameMaker font](licenses/GameMakerFont-OFL.txt) |
-| Corresponding third-party sources | [Source archive index](third-party-source/README.md), [complete source asset](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-R1-0.6.0.176-preview.1-source.zip) |
+| Corresponding third-party sources | [Source archive index](third-party-source/README.md), [complete source asset](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-0.6.0.176-Source.zip) |
 
 UndertaleModTool CLI 0.9.2.0 is an unmodified upstream executable under GPL-3.0, invoked as a separate process. Its source and Underanalyzer submodule source are included in the full source asset. The Underanalyzer revision is `4ff50a866b4c1a7acee8cebe6a56d6a48709b453`. The distributed tool retains its own license and build materials; no game assets or extracted game code are distributed.
 

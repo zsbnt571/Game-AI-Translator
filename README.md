@@ -12,9 +12,9 @@
 
 | 文件 | 用途 |
 | --- | --- |
-| `Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip` | 普通用户使用的完整主包，含默认 CPU 路径的本地运行依赖 |
-| `Fusion-R1-0.6.0.176-preview.1-win-x64-gpu-addon.zip` | 可选 NVIDIA 背景处理加速依赖，不能独立运行 |
-| `Fusion-R1-0.6.0.176-preview.1-source.zip` | 本版本源码与构建材料，供开发者使用 |
+| `Fusion-0.6.0.176.zip` | 普通用户使用的完整主包，含默认 CPU 路径的本地运行依赖 |
+| `Fusion-0.6.0.176-GPU.zip` | 可选 NVIDIA 背景处理加速依赖，不能独立运行 |
+| `Fusion-0.6.0.176-Source.zip` | 本版本源码与构建材料，供开发者使用 |
 | `SHA256SUMS.txt` | 下载完整性校验 |
 
 完整解压主包，运行 `Fusion-R1/GameTranslator.exe`。不要在 ZIP 里运行，也不要只复制 exe。GitHub 自动生成的 **Source code** 附件不是可执行版本。
@@ -50,17 +50,6 @@ API 方案与翻译内容分别保存。切换 API 不会改变共享的目标�
 
 本轮覆盖的 Ren'Py/Godot 活跃语言采集样本没有发现未启用语言包独有内容被批量送译。该结论不扩大为所有引擎、隐藏控件、插件或资源预翻译流程的保证。
 
-## .176 验证了哪些内容
-
-最终主程序进行了中文、英文、日文目标的真实 API 复测：43 条真实来源文字，自动/英日组合两种模式，258 行结果、57 次实际请求；未发现所检查的语言边界违规。其中 24 条来源为真实运行观察，19 条仅为资源来源。
-
-- MIST、Konoha：隔离真实可执行程序的菜单、语言切换和有限开场。
-- Village：真实主菜单。
-- Brotato、Chillquarium：真实资源与引擎宿主验证，未运行其完整商业游戏程序。
-- 额外混合结局标题及部分对白：真实资源证据，未完成对应场景游玩。
-
-完整采集矩阵来自同轮较早构建；最终 .176 的质量修正又通过最终 API 与规则复查。**不宣称最终二进制已经完成全部游戏的可视化全流程验收。** 真实 API 复测使用自然风格，不等于全部文风都逐句审校。
-
 ## 依赖与兼容范围
 
 主包包含 .NET、Python、RapidOCR/模型、CPU 背景处理依赖、已集成适配组件及许可证，普通用户无需先安装 Python 或 .NET 8 桌面运行时。
@@ -89,7 +78,7 @@ Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod
 | [licenses/](licenses/README.md) | 第三方许可证与组件清单 |
 | [third-party-source/](third-party-source/README.md) | 随源码附件提供的第三方源码索引 |
 
-Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `*-source.zip`，按 [构建说明](docs/BUILD-176.md) 操作。普通用户直接下载上方 with-runtime 主包。
+Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `Fusion-0.6.0.176-Source.zip`，按 [构建说明](docs/BUILD-176.md) 操作。普通用户直接下载上方 Fusion-0.6.0.176.zip 主包。
 
 旧 Alpha 的源码和说明保存在原标签、历史提交与旧发布页中，入口见 [版本历史](docs/HISTORY.md)。
 

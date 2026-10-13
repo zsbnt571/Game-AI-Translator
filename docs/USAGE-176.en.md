@@ -2,7 +2,7 @@
 
 
 Download and start
-Choose the win-x64-with-runtime ZIP, fully extract it, and launch Fusion-R1/GameTranslator.exe. Source archives are for developers.
+Choose the Fusion-0.6.0.176.zip, fully extract it, and launch Fusion-R1/GameTranslator.exe. Source archives are for developers.
 Use a writable Windows 10/11 x64 folder and allow at least 5 GB free space for extraction; personal caches and history may require more. No native Linux, macOS or ARM package is provided.
 
 Configure API and translation preferences separately

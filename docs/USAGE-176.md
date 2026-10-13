@@ -2,7 +2,7 @@
 
 
 一、下载与启动
-普通用户选择 Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip。Source code 和 source ZIP 供开发者阅读与构建，不能当作可执行程序运行。
+普通用户选择 Fusion-0.6.0.176.zip。Source code 和 source ZIP 供开发者阅读与构建，不能当作可执行程序运行。
 完整解压后运行 Fusion-R1/GameTranslator.exe。程序、runtime、tools、adapters 等目录必须一起保留。选择有写入权限的目录，预留至少 5 GB 可用空间；游戏库封面、截图历史与翻译缓存会继续占用空间。
 面向 Windows 10/11 x64；本版未做全新 Windows 虚拟机验收。不提供 macOS、Linux 或 ARM 原生包。
 

@@ -1,10 +1,10 @@
 # .176 Preview 1 构建与源码范围 / Build and source scope
 
-本文件适用于当前主分支的 .176 源码与 [完整源码附件](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-R1-0.6.0.176-preview.1-source.zip)。用户启动程序应下载 with-runtime 主包，无需构建。
+本文件适用于当前主分支的 .176 源码与 [完整源码附件](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-0.6.0.176-Source.zip)。用户启动程序应下载 Fusion-0.6.0.176.zip 主包，无需构建。
 
 ## 获取构建材料
 
-1. 下载 `Fusion-R1-0.6.0.176-preview.1-source.zip`，使用同一发布页的 `SHA256SUMS.txt` 核对下载。
+1. 下载 `Fusion-0.6.0.176-Source.zip`，使用同一发布页的 `SHA256SUMS.txt` 核对下载。
 2. 完整解压到新的可写目录，进入 `Fusion-R1-Source`。其中同时包含 `Source`、`Dependencies`、`licenses`、`third-party-source` 和 `tools`。
 3. 准备下方开发环境，再从解压后的源码包根目录执行构建脚本。
 
@@ -56,7 +56,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\Build-Desktop.ps1
 
 The main branch now exposes the .176 product code directly under `Source/`. The [Git source index](../git-source-index.json) records its exact source-file hashes; `SOURCE-MANIFEST.json` describes the `Source/` and `Dependencies/` inputs inside the published source asset, not later repository documentation edits.
 
-Download the [complete source asset](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-R1-0.6.0.176-preview.1-source.zip), check its SHA-256 against the release checksum file, and fully extract it to a new writable directory. Run `tools/Build-Desktop.ps1` from the extracted `Fusion-R1-Source` root. Git clones and GitHub's automatically generated source archives omit required runtime ZIPs, DLLs and generated font resources.
+Download the [complete source asset](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-0.6.0.176-Source.zip), check its SHA-256 against the release checksum file, and fully extract it to a new writable directory. Run `tools/Build-Desktop.ps1` from the extracted `Fusion-R1-Source` root. Git clones and GitHub's automatically generated source archives omit required runtime ZIPs, DLLs and generated font resources.
 
 Development requires Windows x64, the .NET 8 SDK, the .NET 10 SDK for UnrealCatalog, .NET Framework 4.8 developer references and Windows SDK 10.0.26100.0 metadata for legacy helpers. Initial NuGet restore uses the network. Native adapter rebuilds require their separate C++/engine toolchains. The script creates `Build/` and refuses to overwrite an existing output directory.
 

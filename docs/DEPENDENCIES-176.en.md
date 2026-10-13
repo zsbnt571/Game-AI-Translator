@@ -1,9 +1,9 @@
 # FUSION R1 0.6.0.176 Preview 1 — Dependencies
 
 
-Required app asset: Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip
-Optional NVIDIA supplement: Fusion-R1-0.6.0.176-preview.1-win-x64-gpu-addon.zip
-Developer source: Fusion-R1-0.6.0.176-preview.1-source.zip
+Required app asset: Fusion-0.6.0.176.zip
+Optional NVIDIA supplement: Fusion-0.6.0.176-GPU.zip
+Developer source: Fusion-0.6.0.176-Source.zip
 Use SHA256SUMS.txt to verify downloads.
 
 The main package includes self-contained .NET 8/.NET 10 runtimes for the app/tools, Python, RapidOCR and detection/orientation/recognition models, CPU ONNX/background processing dependencies/models, integrated adapters, font resources, licenses and third-party source snapshots.

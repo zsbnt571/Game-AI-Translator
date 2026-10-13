@@ -12,9 +12,9 @@ Open the [0.6.0.176 Preview 1 release](https://github.com/zsbnt571/Game-AI-Trans
 
 | Asset | Purpose |
 | --- | --- |
-| `Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip` | Complete application with the default CPU dependency set |
-| `Fusion-R1-0.6.0.176-preview.1-win-x64-gpu-addon.zip` | Optional NVIDIA background-processing dependencies; not standalone |
-| `Fusion-R1-0.6.0.176-preview.1-source.zip` | Version-specific developer source/build materials |
+| `Fusion-0.6.0.176.zip` | Complete application with the default CPU dependency set |
+| `Fusion-0.6.0.176-GPU.zip` | Optional NVIDIA background-processing dependencies; not standalone |
+| `Fusion-0.6.0.176-Source.zip` | Version-specific developer source/build materials |
 | `SHA256SUMS.txt` | Download integrity checks |
 
 Fully extract the main ZIP and run `Fusion-R1/GameTranslator.exe`. Keep its companion files. GitHub's automatic **Source code** downloads are not executable packages.
@@ -50,14 +50,6 @@ Existing English normally stays with an English target; existing Japanese stays 
 
 The covered Ren'Py/Godot active-locale samples did not collect inactive-pack-exclusive strings in bulk. This is not a universal guarantee for every engine, mod, hidden control or resource pretranslation workflow.
 
-## Validation scope
-
-The frozen .176 program was exercised with Chinese, English and Japanese targets and Automatic/English+Japanese sources: 43 real-source samples, 258 result rows and 57 actual API requests, with no checked language-boundary violations. 24 source samples were runtime-observed; 19 were resource-only.
-
-MIST/Konoha used isolated actual executables for native menus, locale switching and limited opening scenes; Village covered its actual main menu. Brotato/Chillquarium used actual resources in an engine host, without launching their full commercial executables. Additional endings and some mixed dialogue were resource-only.
-
-Full collection matrices used earlier builds in this test round. Final quality changes were then checked through final .176 API/rule tests. **This is not final-binary visual acceptance of complete gameplay in every game.** Real API tests used Natural style, not an equivalent semantic review of every style.
-
 ## Dependencies and limitations
 
 The main package bundles .NET runtimes, Python, RapidOCR/models, CPU background-processing dependencies, integrated adapters and licenses. Users do not need to install Python or the .NET 8 Desktop Runtime first.
@@ -86,7 +78,7 @@ The main branch's [Source/](Source) contains the current **0.6.0.176 Preview 1**
 | [licenses/](licenses/README.md) | Third-party licenses and component inventories |
 | [third-party-source/](third-party-source/README.md) | Index of third-party sources shipped in the source asset |
 
-Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `*-source.zip` and follow [Build instructions](docs/BUILD-176.md). End users should download the with-runtime package above.
+Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `Fusion-0.6.0.176-Source.zip` and follow [Build instructions](docs/BUILD-176.md). End users should download Fusion-0.6.0.176.zip above.
 
 The historical Alpha source and documentation remain available through their original tag, commits and release. See [Version history](docs/HISTORY.md).
 

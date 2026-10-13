@@ -2,9 +2,9 @@
 
 
 普通用户需要哪个包
-必选：Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip
-可选：Fusion-R1-0.6.0.176-preview.1-win-x64-gpu-addon.zip
-开发者：Fusion-R1-0.6.0.176-preview.1-source.zip
+必选：Fusion-0.6.0.176.zip
+可选：Fusion-0.6.0.176-GPU.zip
+开发者：Fusion-0.6.0.176-Source.zip
 SHA256SUMS.txt 用于核对下载完整性。不要把 GitHub 自动生成的 Source code 当作运行包。
 
 完整主包已含
