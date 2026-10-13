@@ -78,7 +78,9 @@ def check(recognize):
             cv2.putText(image, "OCR TEST 123", (18, 66), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 0), 3, cv2.LINE_AA)
             with tempfile.TemporaryDirectory(prefix="st-ocr-check-") as temp:
                 path = str(Path(temp) / "probe.png")
-                if not cv2.imwrite(path, image): raise RuntimeError("无法写入检查图片")
+                encoded_ok, encoded = cv2.imencode(".png", image)
+                if not encoded_ok: raise RuntimeError("无法编码检查图片")
+                Path(path).write_bytes(encoded.tobytes())
                 observed = recognize(path)
             text = "".join(str(row.get("text", "")) for row in observed.get("blocks", []))
             normalized = "".join(char for char in text.upper() if char.isalnum())

@@ -1,4 +1,4 @@
-﻿{
+{
   "游戏库": "Library",
   "截图翻译": "Screenshot translation",
   "设置": "Settings",
@@ -1834,5 +1834,16 @@
   "需要翻译的原文语言": "Languages to translate",
   "请至少选择一种需要翻译的原文语言。": "Select at least one source language to translate.",
   "原文语言（至少选择一种）": "Source languages (select at least one)",
-  "自选组合只筛选实际原文；备用语言包不一起翻译。语言选项名称和已是目标语言的文字默认保留。": "Choose languages used in the actual source text. Other language packs are not translated together. Language option names and text already in the target language are preserved."
+  "自选组合只筛选实际原文；备用语言包不一起翻译。语言选项名称和已是目标语言的文字默认保留。": "Choose languages used in the actual source text. Other language packs are not translated together. Language option names and text already in the target language are preserved.",
+  "运行中已收到文字 {0} 条": "Text received from the running game: {0} entries",
+  "已发现文字的翻译进度　{0}%": "Translation progress for discovered text: {0}%",
+  "当前翻译 {0} 条 · 排队 {1} 条": "Translating now: {0} entries · Queued: {1}",
+  "已读取资源文字 {0} 条": "Resource text read: {0} entries",
+  "其中 {0} 条尚未确认启用": "Of these, {0} entries are not yet confirmed active",
+  "检查“翻译内容”中的原文语言；游戏混用多种语言时可选“自动识别”或“自选组合”。": "Check the source language under Translation content. For multilingual games, use Auto detect or Custom combination.",
+  "资源文字已读取：{0} 条；已进入预译：{1} 条；已有译文 {2} 条。": "Resource text read: {0}; admitted for pretranslation: {1}; translations available: {2}.",
+  "按原文语言筛选：目录 {0} 条，运行中 {1} 条；数值、变量或控制符 {2} 条。": "Filtered by source language: {0} resource entries and {1} runtime entries; quantities, variables or control codes: {2}.",
+  "另有 {0} 条资源文字已读取，但游戏尚未确认当前使用的语言；为避免翻译备用语言包，暂不整批预译。实际出现的文字会继续翻译。": "Another {0} resource entries have been read, but the active game language is unconfirmed. Bulk pretranslation is deferred to avoid unused language packs. Text that actually appears continues to be translated.",
+  "另有 {0} 条资源文字尚未确认属于当前启用内容，暂不整批预译；实际出现的文字会继续翻译。": "Another {0} resource entries are not yet confirmed active. Bulk pretranslation is deferred; text that actually appears continues to be translated.",
+  "按语言设置保留：目录 {0} 条，运行中 {1} 条；数值、变量或控制符 {2} 条。": "Preserved by language settings: {0} resource entries and {1} runtime entries; quantities, variables or control codes: {2}."
 }

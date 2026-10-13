@@ -12,11 +12,14 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
         int done=Math.Clamp(s.DirectoryCachedTexts,0,Math.Max(0,s.DirectoryTexts))+Math.Clamp(s.RuntimeOutsideDirectoryCached,0,Math.Max(0,s.RuntimeOutsideDirectory));
         int remaining=Math.Max(0,total-done),active=Math.Min(remaining,Math.Max(0,s.ActiveRequests));
         int retry=Math.Min(remaining-active,Math.Max(0,s.RetryScheduledTexts)+Math.Max(0,s.RetryStoppedTexts));
-        string result=total==0?"翻译进度　等待可译文字":$"翻译进度　{Math.Floor(100d*done/total):0}%";
+        string result=$"运行中已收到文字 {s.RuntimeCapturedTexts:N0} 条";
+        result+="\n"+(total==0?"翻译进度　等待可译文字":$"已发现文字的翻译进度　{Math.Floor(100d*done/total):0}%");
         if(total>0&&s.CatalogReading)result+="（已读部分）";
         result+=$"\n已有译文 {done:N0} / {total:N0} 条";
-        result+=$"\n正在翻译 {active:N0} 条 · 排队 {Math.Max(0,remaining-active-retry):N0} 条";
-        result+=s.CatalogReading?"\n正在读取更多文字，数量和进度会继续变化":"\n按已发现的可译文本统计";
+        result+=$"\n当前翻译 {active:N0} 条 · 排队 {Math.Max(0,remaining-active-retry):N0} 条";
+        if(s.CatalogDiscoveredTexts>0)result+=$"\n已读取资源文字 {s.CatalogDiscoveredTexts:N0} 条";
+        if(s.CatalogDeferredTexts>0)result+=$"\n其中 {s.CatalogDeferredTexts:N0} 条尚未确认启用";
+        if(s.CatalogReading)result+="\n正在读取更多文字，数量和进度会继续变化";
         var limits=new List<string>();
         if(s.RetryStoppedTexts>0)limits.Add($"暂未译成 {s.RetryStoppedTexts:N0} 条（可查看原因并重试）");
         if(s.RetryScheduledTexts>0)limits.Add($"等待重试 {s.RetryScheduledTexts:N0} 条");
@@ -49,7 +52,7 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
         else if(s.RuntimeEligibleTexts==0&&s.ReadOnlyTexts>0)
         {summary="已读到文字，当前通道只能提供单独的译文。";step="可查看运行时译文窗口；这些文字尚不能在游戏原位置替换。";}
         else if(s.RuntimeEligibleTexts==0&&s.RuntimeExcludedTexts>0)
-        {summary="收到的文字被当前原文语言设置筛选。";step="检查翻译方案中的原文语言；游戏混用多种语言时可选“自动”或“混合语言”。";}
+        {summary="收到的文字被当前原文语言设置筛选。";step="检查“翻译内容”中的原文语言；游戏混用多种语言时可选“自动识别”或“自选组合”。";}
         else if(s.CatalogReading)
         {summary="已接收游戏文字，正在继续读取文本目录。";step="当前文字继续翻译；目录读取完成不代表整个游戏都已覆盖。";}
         else if(s.RuntimeEligibleTexts>s.RuntimeCachedTexts||s.DirectoryTexts>s.DirectoryCachedTexts)
@@ -61,10 +64,10 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
         string Number(int? value)=>value?.ToString()??"游戏未提供此信息";
         var details=new List<string>
         {
-            $"提前提取：{s.DirectoryTexts} 条；已有译文 {s.DirectoryCachedTexts} 条。",
+            $"资源文字已读取：{s.CatalogDiscoveredTexts} 条；已进入预译：{s.DirectoryTexts} 条；已有译文 {s.DirectoryCachedTexts} 条。",
             $"运行中收到：{s.RuntimeCapturedTexts} 条；可译 {s.RuntimeEligibleTexts} 条；已有译文 {s.RuntimeCachedTexts} 条。",
             $"目录以外：{s.RuntimeOutsideDirectory} 条；已有译文 {s.RuntimeOutsideDirectoryCached} 条。",
-            $"按原文语言筛选：目录 {s.CatalogExcludedTexts} 条，运行中 {s.RuntimeExcludedTexts} 条；仅变量或控制符 {s.RuntimeNonTextTexts} 条。",
+            $"按语言设置保留：目录 {s.CatalogExcludedTexts} 条，运行中 {s.RuntimeExcludedTexts} 条；数值、变量或控制符 {s.RuntimeNonTextTexts} 条。",
             $"接口处理：{s.ActiveRequests} 条；等待重试 {s.RetryScheduledTexts} 条；停止重试 {s.RetryStoppedTexts} 条。",
             $"游戏缓存已接收：{s.BridgeStoredTexts} 条；等待缓存确认 {s.PendingBridgeEntries} 条。",
             $"当前控件取用译文：{Number(s.ActiveRenderedBindings)}；有缓存但待确认：{Number(s.ActiveCachedWaitingBindings)}。",
@@ -72,6 +75,10 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
             $"累计文字更新：{Number(s.WritebacksConfirmed)}；累计写回失败：{Number(s.WritebacksFailed)}。（含重复刷新，不是接口请求次数。）"
         };
         if(s.CatalogReading)details.Add("文本目录仍在读取，当前数量可能继续增加。");
+        if(s.CatalogDeferredTexts>0)
+            details.Add(s.CatalogLocaleUnconfirmed
+                ?$"另有 {s.CatalogDeferredTexts} 条资源文字已读取，但游戏尚未确认当前使用的语言；为避免翻译备用语言包，暂不整批预译。实际出现的文字会继续翻译。"
+                :$"另有 {s.CatalogDeferredTexts} 条资源文字尚未确认属于当前启用内容，暂不整批预译；实际出现的文字会继续翻译。");
         if(s.CatalogRetryPending)details.Add("游戏文本目录读取暂未完成，将自动重试；当前文字继续处理。");
         if(s.CatalogIncomplete)details.Add($"部分来源尚未完整读取（已记录 {s.CatalogIssueCount} 处限制或错误），运行时继续补译。");
         if(s.ReadOnlyTexts>0)details.Add($"另有 {s.ReadOnlyTexts} 条只能读取、不能内嵌替换的文字。");

@@ -8,6 +8,12 @@ namespace ScreenshotTranslationUiTester;
 
 internal static class RpgTranslationText
 {
+    // Compact counters such as 7.3K are quantities, not foreign words. Keep
+    // this whole-string rule narrow: names such as 2B, versions and sentences
+    // containing a quantity still need normal language handling.
+    private static readonly Regex CompactQuantity = new(
+        @"^[+\-−]?\s*\p{Sc}?\s*(?:\d+(?:[.,]\d+)?[kKmM]|\d+[.,]\d+[bBtT])\s*\p{Sc}?$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
     internal static bool ValidCachedPair(string source,string text,EmbeddedTextSyntax syntax)
     {
         if(string.IsNullOrWhiteSpace(text)||text.Length>12000||text.Contains('\0')||text.Contains("⟦RPG"))return false;
@@ -40,7 +46,8 @@ internal static class RpgTranslationText
             EmbeddedTextSyntax.Yukar=>EmbeddedTranslationText.Protect(value,yukar:true).Text,
             _=>Protect(value).Text
         };
-        return Regex.IsMatch(Regex.Replace(protectedText,@"⟦RPG\d+⟧",""),@"\p{L}");
+        string plain=Regex.Replace(protectedText,@"⟦RPG\d+⟧","").Trim();
+        return !CompactQuantity.IsMatch(plain)&&Regex.IsMatch(plain,@"\p{L}");
     }
     // Chinese words need no separating spaces. Unicode word boundaries treated
     // "BGM音量" as missing BGM, invalidating an otherwise reusable cached pair.

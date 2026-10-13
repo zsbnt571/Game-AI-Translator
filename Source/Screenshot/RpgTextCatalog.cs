@@ -8,6 +8,9 @@ internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Un
     // An empty result or a completed Task alone must never enable screen capture.
     internal bool ReadCompleted {get;init;}
     internal string SelectedLanguage {get;init;}="";
+    // Conservative opt-in for a flat script-literal catalogue. Unlike
+    // SelectedLanguage, this never claims an active locale from the game.
+    internal string ScriptSourceLanguage {get;init;}="";
     internal int SkippedByLanguage {get;init;}
     // Null retains older catalogue contracts; a supplied set limits the locale
     // trust to those exact sources, leaving untagged resources subject to detection.

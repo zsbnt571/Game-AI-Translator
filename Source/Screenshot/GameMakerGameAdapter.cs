@@ -127,7 +127,7 @@ internal static class GameMakerGameAdapter
         if(new FileInfo(path).Length>32*1024*1024)throw new IOException("文本目录过大。");
         using var doc=JsonDocument.Parse(File.ReadAllText(path));
         var texts=doc.RootElement.GetProperty("texts").EnumerateArray().Select(x=>x.GetString()??"").Where(RpgTextCatalog.IsText).Take(100000).Distinct(StringComparer.Ordinal).ToArray();
-        return new(texts,1,[]){ReadCompleted=false,Report=new(false,[new(CatalogIssueKind.Incomplete,"GameMaker","已读取脚本文字常量；动态拼接和自定义绘制仍需运行时补译。")])};
+        return new(texts,1,[]){ReadCompleted=false,ScriptSourceLanguage=SingleLanguageScriptCatalog.Infer(texts),Report=new(false,[new(CatalogIssueKind.Incomplete,"GameMaker","已读取脚本文字常量；动态拼接和自定义绘制仍需运行时补译。")])};
     }
 }
 

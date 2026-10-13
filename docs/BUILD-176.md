@@ -1,14 +1,14 @@
-# .176 Preview 1 构建与源码范围 / Build and source scope
+# .177 Preview 1 构建与源码范围 / Build and source scope
 
-本文件适用于当前主分支的 .176 源码与 [完整源码附件](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-0.6.0.176-Source.zip)。用户启动程序应下载 Fusion-0.6.0.176.zip 主包，无需构建。
+本文件适用于当前主分支的 .177 源码与 [完整源码附件](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.177-preview.1/Fusion-0.6.0.177-Source.zip)。用户启动程序应下载 Fusion-0.6.0.177.zip 主包，无需构建。
 
 ## 获取构建材料
 
-1. 下载 `Fusion-0.6.0.176-Source.zip`，使用同一发布页的 `SHA256SUMS.txt` 核对下载。
-2. 完整解压到新的可写目录，进入 `Fusion-R1-Source`。其中同时包含 `Source`、`Dependencies`、`licenses`、`third-party-source` 和 `tools`。
+1. 下载 `Fusion-0.6.0.177-Source.zip`，使用同一发布页的 `SHA256SUMS.txt` 核对下载。
+2. 完整解压到新的可写目录，进入 `Source-177`。其中同时包含 `Source`、`Dependencies`、`licenses`、`third-party-source` 和 `tools`。
 3. 准备下方开发环境，再从解压后的源码包根目录执行构建脚本。
 
-仓库根目录 `Source/` 已是 .176 产品源码；[git-source-index.json](../git-source-index.json) 校验 Git 中的产品源码，[SOURCE-MANIFEST.json](../SOURCE-MANIFEST.json) 描述完整源码附件中的 `Source/`、`Dependencies/` 文件与排除项。后者不用于校验后来更新的仓库说明文档。
+仓库根目录 `Source/` 已是 .177 产品源码；[git-source-index.json](../git-source-index.json) 校验 Git 中的产品源码，[SOURCE-MANIFEST.json](../SOURCE-MANIFEST.json) 描述完整源码附件中的 `Source/`、`Dependencies/` 文件与排除项。后者不用于校验后来更新的仓库说明文档。
 
 Git 克隆与 GitHub 自动生成的 Source code ZIP 不含构建所引用的运行时 ZIP、DLL、生成字体和全部开发依赖。直接构建它们会缺少输入；使用上面的完整源码附件。独立构建适配插件仍需其专用工具链。
 
@@ -49,14 +49,14 @@ powershell -ExecutionPolicy Bypass -File .\tools\Build-Desktop.ps1
 ## 分发边界
 
 构建输出不等于可发布目录。还需添加已核验的本地 OCR/图像运行时、模型、许可和组件清单，排除数据目录，并重新验证压缩包。
-不要沿用“整个 Build 文件夹直接打包”的方式。发布对应的是清单中的冻结 .176 产物；源码包只供开发，不覆盖它。
+不要沿用“整个 Build 文件夹直接打包”的方式。发布对应的是清单中的冻结 .177 产物；源码包只供开发，不覆盖它。
 
 
 ## English
 
-The main branch now exposes the .176 product code directly under `Source/`. The [Git source index](../git-source-index.json) records its exact source-file hashes; `SOURCE-MANIFEST.json` describes the `Source/` and `Dependencies/` inputs inside the published source asset, not later repository documentation edits.
+The main branch now exposes the .177 product code directly under `Source/`. The [Git source index](../git-source-index.json) records its exact source-file hashes; `SOURCE-MANIFEST.json` describes the `Source/` and `Dependencies/` inputs inside the published source asset, not later repository documentation edits.
 
-Download the [complete source asset](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-0.6.0.176-Source.zip), check its SHA-256 against the release checksum file, and fully extract it to a new writable directory. Run `tools/Build-Desktop.ps1` from the extracted `Fusion-R1-Source` root. Git clones and GitHub's automatically generated source archives omit required runtime ZIPs, DLLs and generated font resources.
+Download the [complete source asset](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.177-preview.1/Fusion-0.6.0.177-Source.zip), check its SHA-256 against the release checksum file, and fully extract it to a new writable directory. Run `tools/Build-Desktop.ps1` from the extracted `Source-177` root. Git clones and GitHub's automatically generated source archives omit required runtime ZIPs, DLLs and generated font resources.
 
 Development requires Windows x64, the .NET 8 SDK, the .NET 10 SDK for UnrealCatalog, .NET Framework 4.8 developer references and Windows SDK 10.0.26100.0 metadata for legacy helpers. Initial NuGet restore uses the network. Native adapter rebuilds require their separate C++/engine toolchains. The script creates `Build/` and refuses to overwrite an existing output directory.
 

@@ -16,7 +16,8 @@ internal sealed record EmbeddedTranslationQueueSnapshot(
     string NativeCaptureSemantics="unknown",string FontStatus="unknown",int? FontsOwned=null,TranslationLatencySnapshot? Latency=null,
     bool CatalogReading=true,bool CatalogIncomplete=false,int CatalogIssueCount=0,int CatalogExcludedTexts=0,
     int RetryScheduledTexts=0,int RetryStoppedTexts=0,bool BridgePaused=false,bool CatalogRetryPending=false,
-    int? ActiveRenderedBindings=null,int? ActiveCachedWaitingBindings=null,string[]? FailureCodes=null,string RuntimeNote="");
+    int? ActiveRenderedBindings=null,int? ActiveCachedWaitingBindings=null,string[]? FailureCodes=null,string RuntimeNote="",
+    int CatalogDiscoveredTexts=0,int CatalogDeferredTexts=0,bool CatalogLocaleUnconfirmed=false);
 
 internal static class EmbeddedWritebackReceipt
 {

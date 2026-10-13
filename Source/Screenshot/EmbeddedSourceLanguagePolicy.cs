@@ -137,6 +137,14 @@ internal sealed class EmbeddedSourceLanguagePolicy
             language=="han"&&current is "ja" or "zh"||
             language=="latin"&&current is "en" or "fr" or "de" or "es" or "pt");
     }
+    internal bool ScriptCatalogConfirmed(string inferredLanguage)
+        =>inferredLanguage.Length>0&&!Tracker.HasDeclaredLocale&&Tracker.Evidence=="stable-visible-text"
+            &&Tracker.Language==inferredLanguage;
+    internal bool AllowsScriptCatalog(string text,string inferredLanguage)
+        =>ScriptCatalogConfirmed(inferredLanguage)&&AllowsSelectedText(text)
+            // When the whole source catalogue already uses the target, unknown
+            // names alone must not cause a catalogue-wide translation pass.
+            &&(settings is null||TranslationLanguagePolicy.Canonical(settings.TargetLanguage)!=inferredLanguage);
     internal void ObserveCatalogSource(string text)
     {
         if(mode!=SourceLanguageMode.Auto)return;

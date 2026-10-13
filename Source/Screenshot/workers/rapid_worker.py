@@ -124,11 +124,21 @@ def refine_ocr_boundaries(image, blocks):
             "errorMessage":f"{type(exc).__name__}: {exc}","lineCount":len(blocks),
             "totalMs":(time.perf_counter()-started)*1000.0,"trace":[]}
 
+def read_color_image(path):
+    """Read through Python so Windows Unicode paths never pass through narrow file APIs."""
+    import cv2
+    import numpy as np
+    with open(path, "rb") as stream:
+        encoded = np.frombuffer(stream.read(), dtype=np.uint8)
+    if encoded.size == 0:
+        return None
+    return cv2.imdecode(encoded, cv2.IMREAD_COLOR)
+
 def recognize(path):
     global last_image_path, last_image
     total = time.perf_counter(); probe.mark("recognize request"); cold = engine is None; ensure_engine()
     import cv2
-    image = cv2.imread(path, cv2.IMREAD_COLOR)
+    image = read_color_image(path)
     if image is None: raise FileNotFoundError(path)
     last_image_path, last_image = path, image
     probe.mark("image decoded")
@@ -227,7 +237,7 @@ def recover_stylized_title(path, source_blocks):
     import cv2
     import numpy as np
 
-    image = last_image if path == last_image_path and last_image is not None else cv2.imread(path, cv2.IMREAD_COLOR)
+    image = last_image if path == last_image_path and last_image is not None else read_color_image(path)
     if image is None:
         raise FileNotFoundError(path)
     blocks = [{

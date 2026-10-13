@@ -1,10 +1,10 @@
 {
-  "version": "0.6.0.176-preview.1",
-  "releaseTag": "v0.6.0.176-preview.1",
+  "version": "0.6.0.177-preview.1",
+  "releaseTag": "v0.6.0.177-preview.1",
   "sourceRoot": "Source",
-  "fullSourceAsset": "Fusion-0.6.0.176-Source.zip",
-  "fullSourceAssetSha256": "5cbd5a1445e32bccb83b1fd5ee8a2249b6e16d8bc08bc7d016c8f16fa7068943",
-  "mainAssemblySha256": "aba0acf22717ea08a2d48752bc8dff72155d3b2d1f38f8031904c204f5891901",
+  "fullSourceAsset": "Fusion-0.6.0.177-Source.zip",
+  "fullSourceAssetSha256": "0e89d76f591a73e92a39841ceea3f5c6ad9bd72ccf832d39631945245c3ba85f",
+  "mainAssemblySha256": "540f128909344a060756192201b27ac7494d23b46b7df5eb5c92cee9979d80b6",
   "productSourceEdited": false,
   "files": [
     {
@@ -829,7 +829,7 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedSourceLanguagePolicy.cs",
-      "sha256": "7b2ad80bd5954e3004cd50a2675f622b9a28816d1afddb822dba02e5e87d130f"
+      "sha256": "b0ab74835d287dd7c2a6b5f1fffbed658bfd037e780b9678852226651a6e636e"
     },
     {
       "path": "Source/Screenshot/EmbeddedTextContinuity.cs",
@@ -841,7 +841,7 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationQueueSnapshot.cs",
-      "sha256": "ac74cd712df58857db848ae577ddf340da11933a67faebc4c4d769e7343beb72"
+      "sha256": "9fed81af3713e93f50c8d6876fa59046765bab2a967508a53139cc6ffcf7e56b"
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationText.cs",
@@ -1169,7 +1169,7 @@
     },
     {
       "path": "Source/Screenshot/GameCrashMonitor.cs",
-      "sha256": "12178507c48e94ff0c35a7b615b0a76b891665c2bb33c5be8231fa2e318751e2"
+      "sha256": "a402a46ae7b2c3922ed7695a7b3e18853d70b64181531cd1a00373d218fcef84"
     },
     {
       "path": "Source/Screenshot/GameDataEditors.cs",
@@ -1201,7 +1201,7 @@
     },
     {
       "path": "Source/Screenshot/GameMakerGameAdapter.cs",
-      "sha256": "96c688e606c88c52c128fa2d68e75e9279930b956e7034e2e48f9316c0f4be81"
+      "sha256": "1807fa54a93bc898d8a33946da93fb09c9e15498bb9ec2ffc6c8e43d0ddc5e0f"
     },
     {
       "path": "Source/Screenshot/GameMakerPatch.csx",
@@ -2061,7 +2061,7 @@
     },
     {
       "path": "Source/Screenshot/RpgTextCatalog.cs",
-      "sha256": "28336ae11c42e0f4ce7c641292424250862c7ff558ea32b9bd7824a5e3a586bf"
+      "sha256": "ca88111b65b6ea16c23324c41d2446b310670c33c5a564cc75aad417aa2c34df"
     },
     {
       "path": "Source/Screenshot/RpgTranslationBatch.cs",
@@ -2073,11 +2073,11 @@
     },
     {
       "path": "Source/Screenshot/RpgTranslationQueue.cs",
-      "sha256": "a836b2c77cd45d5a2874fddbba756e5fbf79c146edea35798647cfdabc009a60"
+      "sha256": "21ba08ab5993d795b47b9c0ffe218a9658a85ed2e3dd0c8333ed7c422c71401b"
     },
     {
       "path": "Source/Screenshot/RpgTranslationSession.cs",
-      "sha256": "18af3d3ea03af84bf59dea9c96f44e0a15860c4e8d64ba36ff48a4cc5347c18e"
+      "sha256": "132ede02b840263a61dca3084aeb337c0687ed127fc695e5188e21772d904f86"
     },
     {
       "path": "Source/Screenshot/RuntimePerformance0504.cs",
@@ -2173,7 +2173,7 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
-      "sha256": "fdc64438e857de12ce95e24c1c9735db94a7c836ce440c26a6f741e8ebfd4ac4"
+      "sha256": "a2e321f8297f0506a8f7f9a506b52106cf3cb9732d63b9eefcb5b8f0023360b0"
     },
     {
       "path": "Source/Screenshot/SecondaryMaterialRejectionRecovery.cs",
@@ -2465,7 +2465,7 @@
     },
     {
       "path": "Source/Screenshot/TranslationProgressPresentation.cs",
-      "sha256": "84e8fd47bc54e520b3750357f59110b9440efbc1eb367d58354fdc6b854ff84d"
+      "sha256": "a8c98ff297de8c9cc329c32d556957652abbab3311586f8e46dca383091f0a3f"
     },
     {
       "path": "Source/Screenshot/TranslationRecovery.cs",
@@ -2549,7 +2549,7 @@
     },
     {
       "path": "Source/Screenshot/UiEnglish.json",
-      "sha256": "f58ee1f06e194f91f2b4ea4e6ee367d4dca46df4d0be40b2aa85d5299ac0961c"
+      "sha256": "46df9cf22c5b43c47d0e4490f80113dd1ae9d56e57cd10e349821b3ad23861a6"
     },
     {
       "path": "Source/Screenshot/UiLabelAlignmentEvidence.cs",
@@ -2865,11 +2865,11 @@
     },
     {
       "path": "Source/Screenshot/workers/rapid_health.py",
-      "sha256": "9ee65f82b2e724fd5e4bcebe17984fd86e25b04b03550b6b080af371f8b75936"
+      "sha256": "a98522a7626a9793dbc0c567b72bda493c5426769be3ae12f88c5a07b54441ba"
     },
     {
       "path": "Source/Screenshot/workers/rapid_worker.py",
-      "sha256": "0084329fbe4f876e454705015fb196ed4c4b0fd9392a4dd954c75da5614fcdb6"
+      "sha256": "92938cca03f9bd7c7928c92259b7bb0707f4e69faf2b0586dc82651f2b0dfbae"
     },
     {
       "path": "Source/Screenshot/workers/short_field_orientation.py",
@@ -3134,6 +3134,14 @@
     {
       "path": "Source/YukarBridge/TextCodes.cs",
       "sha256": "7c79f44beedf9eed2719f47c8897554cf101e3827195220dabd57d2f5ecade8b"
+    },
+    {
+      "path": "Source/Screenshot/GameMakerErrorDialogCapture.cs",
+      "sha256": "74ba8e7b96bcb28ec3258c9e9a3ccdc8f375aad5ba7b7ebf8ff6041dd82e5481"
+    },
+    {
+      "path": "Source/Screenshot/SingleLanguageScriptCatalog.cs",
+      "sha256": "a949e25ed24a51e47369641bf38b258c41357e7154e270b84d01d048a83aeb2d"
     }
   ],
   "binaryPayloadsOnlyInReleaseAssets": [

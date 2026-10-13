@@ -429,6 +429,8 @@ internal sealed class RpgTranslationSession : IDisposable
             _=extractionTask.ContinueWith(t=>{_ = t.Exception;},TaskContinuationOptions.OnlyOnFaulted);
             bool extractionLoaded=false;
             var catalog=new HashSet<string>(StringComparer.Ordinal);
+            var discoveredCatalog=new HashSet<string>(StringComparer.Ordinal);
+            var deferredCatalog=new HashSet<string>(StringComparer.Ordinal);
             var backlog=new Queue<string>();
             var visible=new ForegroundQueue();var active=new HashSet<string>(StringComparer.Ordinal);
             var observed=new HashSet<string>(StringComparer.Ordinal);
@@ -460,9 +462,15 @@ internal sealed class RpgTranslationSession : IDisposable
             }
             void AddCatalog(string text,bool trusted=false)
             {
-                if(!language.AllowsSelectedText(text)){languageExcluded.Add(text);return;}
+                discoveredCatalog.Add(text);
+                if(!RpgTranslationText.HasTranslatableText(text,options.Syntax))return;
+                bool scriptAlreadyTarget=language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage)&&
+                    TranslationLanguagePolicy.Canonical(cacheSettings.TargetLanguage)==extraction.ScriptSourceLanguage;
+                if(!language.AllowsSelectedText(text)||scriptAlreadyTarget){languageExcluded.Add(text);return;}
                 // A deferred, unproven source is not a confirmed excluded language.
-                if(!language.AllowsActiveCatalog(text,trusted))return;
+                if(!language.AllowsActiveCatalog(text,trusted)&&!language.AllowsScriptCatalog(text,extraction.ScriptSourceLanguage))
+                {if(!observed.Contains(text)&&!aheadObserved.Contains(text))deferredCatalog.Add(text);return;}
+                deferredCatalog.Remove(text);
                 if(!catalog.Contains(text))ReuseDisplayTranslation(text);
                 if(!catalog.Add(text))return;
                 coverage.AddCatalog(text);
@@ -483,11 +491,12 @@ internal sealed class RpgTranslationSession : IDisposable
             var nextBridgeAttempt=DateTime.MinValue;var nextPollAt=DateTime.MinValue;var saved=DateTime.UtcNow;
             var nextWorkspaceRefresh=DateTime.MinValue;
             var handledRequests=new Dictionary<string,string>(StringComparer.Ordinal);
-            string catalogIdentity=language.CatalogHint+"|"+language.Tracker.HasDeclaredLocale;
+            string CatalogIdentity()=>language.CatalogHint+"|"+language.Tracker.HasDeclaredLocale+"|"+language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage);
+            string catalogIdentity=CatalogIdentity();
             string catalogLocale=language.CatalogHint;
             void RefreshActiveCatalog()
             {
-                string identity=language.CatalogHint+"|"+language.Tracker.HasDeclaredLocale;
+                string identity=CatalogIdentity();
                 if(identity==catalogIdentity)return;
                 catalogIdentity=identity;
                 if(catalogLocale!=language.CatalogHint)
@@ -501,6 +510,7 @@ internal sealed class RpgTranslationSession : IDisposable
                 // any old catalogue backlog can dispatch another provider call.
                 foreach(var job in jobs.Where(j=>!j.Foreground&&!j.Sources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
                 catalog.Clear();selectedCatalogueSources.Clear();backlog.Clear();cachedCatalogUpdates.Clear();waitingCatalog.Clear();
+                discoveredCatalog.Clear();deferredCatalog.Clear();
                 completed=0;declaredLanguageSkipped=0;languageExcluded.Clear();pendingWritebacks.Clear();
                 language.ResetCatalogEvidence();coverage.ResetCatalog();
                 if(hasDesktopCatalog)extractionLoaded=false;
@@ -579,6 +589,9 @@ internal sealed class RpgTranslationSession : IDisposable
                     catch(OperationCanceledException)when(lifetime.IsCancellationRequested){throw;}
                     catch(Exception ex){extraction=new([],0,[SafeDiagnosticOutput.ExceptionSummary(ex)]){Report=new(false,[new(CatalogIssueKind.Failed,"文本目录","读取发生错误，当前结果不代表目录为空")])};}
                     extractionLoaded=true;
+                    // Admission below uses this extraction's evidence already;
+                    // do not cancel/requeue its first batches on the next poll.
+                    catalogIdentity=CatalogIdentity();
                     if(hasDesktopCatalog)
                     {
                         if(extraction.Report is {} report)
@@ -626,6 +639,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     {
                         foreach(var job in jobs.Where(j=>!j.Foreground&&!j.Sources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
                         catalog.Clear();selectedCatalogueSources.Clear();backlog.Clear();waitingCatalog.Clear();cachedCatalogUpdates.Clear();completed=0;
+                        discoveredCatalog.Clear();deferredCatalog.Clear();
                         declaredLanguageSkipped=0;languageExcluded.Clear();language.ResetCatalogEvidence();coverage.ResetCatalog();
                     }
                     // Readback belongs to one bridge generation. An older
@@ -666,7 +680,7 @@ internal sealed class RpgTranslationSession : IDisposable
                         // their controls become visible. Send existing translations
                         // through the same epoch/receipt path as newly translated ones.
                         // Keep this separate from visible-text statistics.
-                        aheadObserved.Add(text);writableSources.Add(text);
+                        aheadObserved.Add(text);writableSources.Add(text);deferredCatalog.Remove(text);
                         ReuseDisplayTranslation(text);
                         if(TryNative(text,out var cachedAhead))updates[text]=cachedAhead;
                         if(NeedsTranslation(text)&&!active.Contains(text)&&!failures.ContainsKey(text)&&aheadQueued.Add(text))upcoming.Enqueue(text);
@@ -685,6 +699,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     if(!RpgTranslationText.HasTranslatableText(text,options.Syntax)){runtimeNonText.Add(text);continue;}
                     if(!language.AllowsSelectedText(text)||!catalog.Contains(text)&&!language.AllowsRuntime(text)){runtimeExcluded.Add(text);continue;}
                     writableSources.Add(text);
+                    deferredCatalog.Remove(text);
                     // The current bridge now recognizes this exact source. Reuse
                     // its display translation through the normal validated apply
                     // path; cache text itself never grants writeback authority.
@@ -911,7 +926,9 @@ internal sealed class RpgTranslationSession : IDisposable
                     CatalogExcludedTexts:languageExcluded.Count+declaredLanguageSkipped,
                     RetryScheduledTexts:failures.Count(p=>p.Value.Due!=DateTime.MaxValue),RetryStoppedTexts:failures.Count(p=>p.Value.Due==DateTime.MaxValue),
                     BridgePaused:bridgePaused,CatalogRetryPending:remoteFailed,ActiveRenderedBindings:activeRenderedBindings,ActiveCachedWaitingBindings:activeCachedWaitingBindings,
-                    FailureCodes:failures.Values.Select(f=>f.Code).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),RuntimeNote:runtimeWarning));
+                    FailureCodes:failures.Values.Select(f=>f.Code).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),RuntimeNote:runtimeWarning,
+                    CatalogDiscoveredTexts:discoveredCatalog.Count,CatalogDeferredTexts:deferredCatalog.Count,
+                    CatalogLocaleUnconfirmed:deferredCatalog.Count>0&&!language.Tracker.HasDeclaredLocale&&!language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage)));
                 Status=$"原文：{language.Label} · 目录文本 {catalog.Count} 条（已有译文 {completed} 条）";
                 if(languageExcluded.Count+declaredLanguageSkipped>0)Status+=$" · 目录排除其他语言 {languageExcluded.Count+declaredLanguageSkipped} 条";
                 if(rawObserved.Count>0)Status+=$" · 运行时收到 {rawObserved.Count} 条（可译 {observed.Count} 条，已有译文 {observedDone} 条）";

@@ -38,6 +38,7 @@ internal sealed record GameExitReport
     public string? ExitCodeHex {get;init;}
     public GameCrashProcessExit[] Processes {get;init;}=[];
     public GameCrashStateEvent[] Timeline {get;init;}=[];
+    public GameRuntimeError[] RuntimeErrors {get;init;}=[];
     public JsonElement? Logs {get;init;}
     public bool LogsPending {get;init;}
     public bool ReportSaveFailed {get;init;}
@@ -65,6 +66,7 @@ internal sealed class GameCrashMonitor : IDisposable
         internal GameCrashTranslationState State=new(false,false,"");
         internal readonly List<ProcessHandle> Processes=[];
         internal readonly List<GameCrashStateEvent> Timeline=[];
+        internal readonly List<GameRuntimeError> RuntimeErrors=[];
     }
     private readonly object gate=new(),reportGate=new();
     private readonly List<Session> sessions=[];
@@ -187,6 +189,7 @@ internal sealed class GameCrashMonitor : IDisposable
                 }
             }
         }
+        CaptureRuntimeErrors(session);
         GameExitReport? completed=null;
         lock(gate)
         {
@@ -221,6 +224,40 @@ internal sealed class GameCrashMonitor : IDisposable
         session.HadRuntime=session.Processes.Any(p=>p.Runtime);
         AddEvent(session,"下一次启动已登记","本次监测不再接纳下一次启动的进程。");
     }
+    private void CaptureRuntimeErrors(Session session)
+    {
+        if(!session.Game.Engine.Contains("GameMaker",StringComparison.OrdinalIgnoreCase))return;
+        HashSet<int> pids;
+        lock(gate)
+        {
+            if(session.Done||session.RuntimeErrors.Count>=3)return;
+            pids=session.Processes.Where(p=>p.Runtime&&!p.Exited&&WaitForSingleObject(p.Handle,0)==258).Select(p=>p.Pid).ToHashSet();
+        }
+        var errors=GameMakerErrorDialogCapture.Capture(pids);if(errors.Length==0)return;
+        GameRuntimeError[] captured;string id;
+        lock(gate)
+        {
+            if(session.Done)return;bool changed=false;
+            foreach(var error in errors)
+                if(session.RuntimeErrors.Count<3&&!session.RuntimeErrors.Any(e=>e.Pid==error.Pid&&e.Text==error.Text))
+                {session.RuntimeErrors.Add(error);changed=true;AddEvent(session,"捕获游戏错误弹窗","错误内容和调用位置已记录；尚未据此判断故障来源。");}
+            if(!changed)return;
+            captured=session.RuntimeErrors.ToArray();id=session.Id;
+        }
+        // Persist while the dialog still exists, independently of its dismissal
+        // and of the later process-exit report. Never read another process's UI.
+        try
+        {
+            lock(reportGate)
+            {
+                string directory=Path.Combine(ReportsRoot,session.Key);EnsureReportDirectory(directory);
+                Atomic(Path.Combine(directory,id+".runtime-error.json"),JsonSerializer.Serialize(new{Schema=1,GamePathHash=session.Key,RuntimeErrors=captured},JsonOptions));
+                TrimReports();
+            }
+        }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {lock(gate)AddEvent(session,"错误弹窗记录保存失败",ex.GetType().Name+"；内容暂存本次监测内存。");}
+    }
     private static bool IsRuntime(Session session,string path)
     {
         var paths=session.Paths??[];
@@ -249,6 +286,7 @@ internal sealed class GameCrashMonitor : IDisposable
         AddEvent(session,monitoringStopped?"监测停止":"生成退出记录",summary);
         string directory=Path.Combine(ReportsRoot,session.Key);
         var report=new GameExitReport{SessionId=session.Id,GamePathHash=session.Key,GameExecutable=Path.GetFileName(session.Game.ExePath),GameName=Safe(session.Game.Name,80),Engine=Safe(session.Game.Engine,40),FusionVersion=BuildIdentity.BuildVersion,LaunchMode=session.Mode,StartedUtc=session.StartedUtc,EndedUtc=ended,RecordedUtc=recorded,Expected=session.Expected,ExpectedReason=session.ExpectedReason,LastExitRequestUtc=session.LastExitRequestUtc,LastExitRequestReason=session.LastExitRequestReason,Outcome=outcome,Summary=summary,RuntimePid=principal?.Pid,ExitCode=code,ExitCodeHex=Hex(code),Processes=session.Processes.Select(p=>new GameCrashProcessExit(p.Pid,Path.GetFileName(p.Path),p.StartedUtc,p.EndedUtc,p.Initial,p.Runtime,p.Exited,p.Code,Hex(p.Code))).ToArray(),Timeline=session.Timeline.ToArray(),LogsPending=!monitoringStopped&&collectLogs is not null,JsonPath=Path.Combine(directory,session.Id+".json"),MarkdownPath=Path.Combine(directory,session.Id+".md")};
+        report=report with{RuntimeErrors=session.RuntimeErrors.ToArray()};
         foreach(var p in session.Processes)p.Dispose();
         return report;
     }
@@ -325,6 +363,9 @@ internal sealed class GameCrashMonitor : IDisposable
         var files=Directory.EnumerateDirectories(ReportsRoot).Where(d=>Regex.IsMatch(Path.GetFileName(d),"^[A-F0-9]{64}$")&&!IsLink(d))
             .SelectMany(d=>Directory.EnumerateFiles(d,"*.json")).Where(p=>OwnedFile(p)&&!IsLink(p)).OrderByDescending(Path.GetFileName).Skip(50).ToArray();
         foreach(string file in files){ValidateReportPath(file);File.Delete(file);string markdown=Path.ChangeExtension(file,".md");if(File.Exists(markdown)&&!IsLink(markdown)){ValidateReportPath(markdown);File.Delete(markdown);}}
+        var dialogs=Directory.EnumerateDirectories(ReportsRoot).Where(d=>Regex.IsMatch(Path.GetFileName(d),"^[A-F0-9]{64}$")&&!IsLink(d))
+            .SelectMany(d=>Directory.EnumerateFiles(d,"*.runtime-error.json")).Where(p=>Regex.IsMatch(Path.GetFileName(p),@"^\d{8}T\d{9}Z-[a-f0-9]{32}\.runtime-error\.json$")&&!IsLink(p)).OrderByDescending(Path.GetFileName).Skip(50).ToArray();
+        foreach(string file in dialogs){ValidateReportPath(file);File.Delete(file);}
     }
     private static bool OwnedFile(string path)=>Regex.IsMatch(Path.GetFileName(path),@"^\d{8}T\d{9}Z-[a-f0-9]{32}\.json$");
     private static bool IsLink(string path)=>(File.GetAttributes(path)&FileAttributes.ReparsePoint)!=0;
@@ -368,6 +409,16 @@ internal sealed class GameCrashMonitor : IDisposable
         foreach(var entry in report.Timeline)text.AppendLine("- "+entry.AtUtc.ToString("O")+" · "+entry.Event+" · 请求翻译="+entry.TranslationRequested+"，组件连接="+entry.Connected+" · "+entry.Status);
         text.AppendLine().AppendLine("## 进程记录").AppendLine();
         foreach(var p in report.Processes)text.AppendLine("- PID "+p.Pid+" · "+p.Executable+" · "+(p.Runtime?"实际运行进程":"启动/待确认进程")+" · "+(p.ExitObserved?"退出码 "+(p.ExitCodeHex??"未取得"):"结束监测时未确认退出"));
+        if(report.RuntimeErrors.Length>0)
+        {
+            text.AppendLine().AppendLine("## 游戏错误弹窗（关闭前已保存）").AppendLine();
+            foreach(var error in report.RuntimeErrors)
+            {
+                text.AppendLine("- 捕获时间（UTC）："+error.AtUtc.ToString("O")+"；PID "+error.Pid+"；"+error.Title).AppendLine();
+                int ticks=Regex.Matches(error.Text,"`+").Select(m=>m.Length).DefaultIfEmpty(0).Max();string fence=new('`',Math.Max(3,ticks+1));
+                text.AppendLine(fence).AppendLine(error.Text).AppendLine(fence).AppendLine();
+            }
+        }
         text.AppendLine().AppendLine("## 日志摘要").AppendLine();
         if(report.LogsPending)text.AppendLine("正在等待引擎完成退出日志写入。");
         else if(report.Logs is {} logs&&logs.ValueKind==JsonValueKind.Array)
