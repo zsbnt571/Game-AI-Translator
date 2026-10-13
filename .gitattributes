@@ -5,5 +5,9 @@
 *.json text eol=lf
 *.py text eol=lf
 
-# Preserve the reviewed release snapshot bytes used by its SHA-256 manifest.
-releases/0.6.0.176-preview.1/** -text
+# Preserve the published product source and retained upstream notice bytes.
+Source/** -text
+licenses/** -text
+tools/Build-Desktop.ps1 -text
+SOURCE-MANIFEST.json -text
+third-party-source/SOURCES.json -text

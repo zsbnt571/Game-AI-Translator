@@ -49,6 +49,7 @@ public sealed class OcrComparisonForm : Form
         OcrComparisonMode mode, bool autoRunPrimary, bool cloneInput)
     {
         _runtime = runtime;
+        AppBranding.Apply(this);
         _mode = mode;
         _autoRunPrimary = autoRunPrimary;
         _visibleEngines = mode == OcrComparisonMode.ExperimentalWindows
@@ -122,7 +123,7 @@ public sealed class OcrComparisonForm : Form
 
     private void SelectImage()
     {
-        using var dialog = new OpenFileDialog { Filter = "图片|*.png;*.jpg;*.jpeg;*.bmp" };
+        using var dialog = new OpenFileDialog { Filter = UiLanguage.Text("图片|*.png;*.jpg;*.jpeg;*.bmp") };
         if (dialog.ShowDialog(this) == DialogResult.OK) LoadImage(dialog.FileName);
     }
 

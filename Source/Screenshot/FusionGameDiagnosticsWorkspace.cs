@@ -39,11 +39,12 @@ public sealed partial class MainForm
             try
             {
                 var data=_scriptTranslationSessions.GetValueOrDefault(path)??_dataSessions.GetValueOrDefault(path)??_embeddedTranslationSessions.GetValueOrDefault(path);
+                bool screen=_manualScreenSessions.GetValueOrDefault(path)?.Data.Translation?.Enabled==true;
                 bool connected=data?.Connection.Connected==true,enabled=data?.Translation?.Enabled==true;
                 // Controlled facts only: no API configuration, arbitrary error
                 // bodies, game dialogue, cache contents or request arguments.
-                string status=$"接入={(connected?"已连接":"未连接或无此通道")}；翻译={(enabled?"开启":"关闭")}；失败待重试={data?.Translation?.FailedCount??0}；操作进行中={(session.Busy?"是":"否")}；存在接入限制={(session.TranslationBlockedReason.Length>0?"是":"否")}";
-                _gameCrashMonitor.Update(path,new(session.TranslationRequested||enabled||session.LaunchMode==GameLaunchMode.Translation,connected,status));
+                string status=$"接入={(connected?"已连接":"未连接或无此通道")}；翻译={(enabled?"开启":"关闭")}；屏幕兜底={(screen?"是":"否")}；失败待重试={data?.Translation?.FailedCount??0}；操作进行中={(session.Busy?"是":"否")}；存在接入限制={(session.TranslationBlockedReason.Length>0?"是":"否")}";
+                _gameCrashMonitor.Update(path,new(session.TranslationRequested||enabled||screen||session.LaunchMode==GameLaunchMode.Translation,connected,status));
             }
             catch(Exception ex){AppLog.Write("game-diagnostics",SafeDiagnosticOutput.ExceptionSummary(ex));}
         }
@@ -122,7 +123,7 @@ public sealed partial class MainForm
             };
             export.Click+=(_,_)=>
             {
-                using var save=new SaveFileDialog{Filter="诊断报告包 (*.zip)|*.zip",FileName="Fusion-游戏退出诊断-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip",OverwritePrompt=true};
+                using var save=new SaveFileDialog{Filter=UiLanguage.Text("诊断报告包 (*.zip)|*.zip"),FileName="Fusion-游戏退出诊断-"+DateTime.Now.ToString("yyyyMMdd-HHmmss")+".zip",OverwritePrompt=true};
                 if(save.ShowDialog(viewer)!=DialogResult.OK)return;
                 try
                 {

@@ -70,7 +70,7 @@ internal sealed class GameWorkspaceSessions
 
 internal sealed partial class FusionConfiguration
 {
-    internal static string GameProfileKey(string path) => RecentGameStore.Normalize(path).ToUpperInvariant();
+    internal static string GameProfileKey(string path) => RecentGameStore.Normalize(path).ToUpperInvariant()+(TranslationRoute.GenericTest(path)?"|GENERIC-TEST":"");
     internal string GameProfileId(string path) => State.GameProfiles.GetValueOrDefault(GameProfileKey(path)) ?? SelectedId(true);
     internal void PinGameProfile(string path)
     {
@@ -86,12 +86,13 @@ internal sealed partial class FusionConfiguration
     {
         if (!State.Profiles.TryGetValue(GameProfileId(path), out var profile)) throw new InvalidOperationException("此游戏的翻译方案已不存在，请重新选择。");
         var result = ApiSettingsSnapshot.Copy(basis);
-        ApplyTranslation(result, profile);
+        ApplyConnection(result, profile);
+        State.TranslationContent!.ApplyTo(result);
         return result;
     }
     internal void RequireGameReady(string path)
     {
-        var profile = State.Profiles[GameProfileId(path)];
+        var profile = GameSettings(new ApiSettings(),path);
         var missing = Missing(profile);
         if (missing.Count > 0) throw new InvalidOperationException("翻译方案尚缺：" + string.Join("、", missing) + "。请先编辑方案。");
         if (string.IsNullOrEmpty(profile.ApiKey)) throw new InvalidOperationException("当前游戏适配仍需要 API 密钥，请选择已配置密钥的方案。");

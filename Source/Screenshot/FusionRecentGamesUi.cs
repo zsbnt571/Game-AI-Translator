@@ -1,4 +1,4 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
@@ -308,12 +308,12 @@ internal sealed class RecentGamesDialog:Form
         var head=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Top,WrapContents=false};head.Controls.AddRange([icon,title]);layout.Controls.Add(head);
         if(selected)layout.Controls.Add(new Label{Text="当前选择",AutoSize=true});
         var path=new GamePathLabel{Text=record.ExePath,AutoSize=false,Dock=DockStyle.Top,Height=24};tips.SetToolTip(path,record.ExePath);layout.Controls.Add(path);
-        var menu=new ContextMenuStrip();menu.Items.Add("复制完整路径",null,(_,_)=>{try{Clipboard.SetText(record.ExePath);}catch(Exception ex){notice.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}});
+        var menu=new LocalizedContextMenuStrip();menu.Items.Add("复制完整路径",null,(_,_)=>{try{Clipboard.SetText(record.ExePath);}catch(Exception ex){notice.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}});
         menu.Items.Add("打开游戏文件夹",null,(_,_)=>{try{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(Path.GetDirectoryName(record.ExePath)!){UseShellExecute=true});}catch(Exception ex){notice.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}});
         path.ContextMenuStrip=menu;path.Disposed+=(_,_)=>menu.Dispose();path.Cursor=Cursors.Hand;
         path.Click+=(_,_)=>menu.Show(path,new Point(0,path.Height));
         var cover=new PictureBox{Dock=DockStyle.Top,Height=150,SizeMode=PictureBoxSizeMode.Zoom,BackColor=UiTheme.Current.Secondary,AccessibleName="游戏封面"};
-        cover.Paint+=(_,e)=>{if(cover.Image is null)TextRenderer.DrawText(e.Graphics,"暂无封面",cover.Font,cover.ClientRectangle,UiTheme.Current.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);};
+        cover.Paint+=(_,e)=>{if(cover.Image is null)TextRenderer.DrawText(e.Graphics,UiLanguage.Text("暂无封面"),cover.Font,cover.ClientRectangle,UiTheme.Current.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);};
         layout.Controls.Add(cover);
         var state=new Label{Text=record.Cover is null?"暂无封面":"封面按需加载",AutoSize=true,MaximumSize=new(280,0)};layout.Controls.Add(state);
         var choose=new GameActionButton("选择");var saved=new GameActionButton(record.Saved?"取消保存":"保存游戏");
@@ -322,7 +322,7 @@ internal sealed class RecentGamesDialog:Form
             if(!exists){state.Text="路径失效，请重新定位";return;}SelectedPath=record.ExePath;DialogResult=DialogResult.OK;};
         saved.Enabled=relink.Enabled=remove.Enabled=store.Writable;
         saved.Click+=async(_,_)=>{try{await Task.Run(()=>store.SetSaved(record.Id,!record.Saved));}catch(Exception ex){if(!IsDisposed)notice.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}};
-        relink.Click+=async(_,_)=>{using var d=new OpenFileDialog{Filter="游戏程序|*.exe",Title="重新定位 "+record.Name};if(d.ShowDialog(this)!=DialogResult.OK)return;
+        relink.Click+=async(_,_)=>{using var d=new OpenFileDialog{Filter=UiLanguage.Text("游戏程序|*.exe"),Title=UiLanguage.Text("重新定位 "+record.Name)};if(d.ShowDialog(this)!=DialogResult.OK)return;
             try{await Task.Run(()=>store.Select(record.Name,d.FileName,record.Id,usage:false));}catch(Exception ex){if(!IsDisposed)notice.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}};
         remove.Click+=async(_,_)=>{try{await Task.Run(()=>store.RemoveRecent(record.Id));}catch(Exception ex){if(!IsDisposed)notice.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}};
         var actions=new FlowLayoutPanel{AutoSize=true,Dock=DockStyle.Top};actions.Controls.AddRange(Saved?[choose,saved,relink]:[choose,saved,remove,relink]);layout.Controls.Add(actions);card.Controls.Add(layout);

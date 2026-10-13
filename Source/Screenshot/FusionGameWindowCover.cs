@@ -5,13 +5,10 @@ using Microsoft.Win32.SafeHandles;
 
 namespace ScreenshotTranslationUiTester;
 
-internal sealed record CoverCaptureResult(Bitmap? Image,string Message,string Diagnostic,CoverTarget? Target=null);
+internal sealed record CoverCaptureResult(Bitmap? Image,string Message,string Diagnostic,CoverTarget? Target=null,DateTime? CapturedUtc=null);
 internal static class GameWindowCover
 {
-    internal static string HelperPath => Path.Combine(AppContext.BaseDirectory,"tools","cover-capture","FusionCoverCapture.exe");
-    internal static bool Available => File.Exists(HelperPath);
-    internal const string MissingMessage = "Not included in this alpha：本版未包含封面截图组件，可从本地文件选择图片。";
-    private sealed record Reply(string Code,string Message,int Width,int Height,long ElapsedMs,string? Image,int Error,string Quality,int RejectedFrames);
+    private sealed record Reply(string Code,string Message,int Width,int Height,long ElapsedMs,string? Image,int Error,string Quality,int RejectedFrames,DateTime? CapturedUtc=null);
     private static readonly SemaphoreSlim CaptureGate=new(1,1);
     private static bool backendBlocked;
     internal static void NoteLaunch(string path,int pid)=>GameLibraryWindowIdentity.NoteLaunch(RecentGameStore.Normalize(path),pid);
@@ -24,7 +21,6 @@ internal static class GameWindowCover
     }
     internal static async Task<CoverCaptureResult> CaptureAsync(string path,bool automatic,CancellationToken token,Action<string>? report=null)
     {
-        if(!Available)return new(null,MissingMessage,"backend=WGC code=helper-missing");
         if(!OperatingSystem.IsWindowsVersionAtLeast(10,0,18362))return new(null,"需要 Windows 10 1903 或更新系统","backend=WGC code=unsupported-os");
         var exe=RecentGameStore.Normalize(path);var elapsed=Stopwatch.StartNew();
         using var deadline=CancellationTokenSource.CreateLinkedTokenSource(token);deadline.CancelAfter(automatic?25000:9000);
@@ -81,15 +77,23 @@ internal static class GameWindowCover
         catch(OperationCanceledException)when(!token.IsCancellationRequested){return new(null,"封面等待已到上限，请在游戏窗口可用时手动更新","backend=WGC code=total-timeout elapsedMs="+elapsed.ElapsedMilliseconds+" last="+last.Diagnostic);}
         finally{if(entered)CaptureGate.Release();}
     }
-    private static async Task<CoverCaptureResult> CaptureInProcessAsync(CoverTarget target,CancellationToken token)
+    internal static async Task<CoverCaptureResult> CaptureOcrFrameAsync(CoverTarget target,CancellationToken token)
     {
-        var helper=HelperPath;
-        if(!File.Exists(helper))return new(null,MissingMessage,"backend=WGC code=helper-missing");
+        await CaptureGate.WaitAsync(token);
+        try{return backendBlocked?new(null,"窗口捕获暂不可用","worker-still-running"):await CaptureInProcessAsync(target,token,true);}
+        finally{CaptureGate.Release();}
+    }
+    private static async Task<CoverCaptureResult> CaptureInProcessAsync(CoverTarget target,CancellationToken token,bool ocrFrame=false)
+    {
+        var requestedUtc=DateTime.UtcNow;
+        var helper=Path.Combine(AppContext.BaseDirectory,"tools","cover-capture","FusionCoverCapture.exe");
+        if(!File.Exists(helper))return new(null,"封面组件缺失，请使用完整候选目录","backend=WGC code=helper-missing");
         if(!GameLibraryWindowIdentity.Matches(target))return new(null,"游戏窗口已改变","backend=WGC code=window-changed");
         var info=new ProcessStartInfo(helper){UseShellExecute=false,CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden,
             RedirectStandardOutput=true,RedirectStandardError=true,RedirectStandardInput=true,WorkingDirectory=Path.GetDirectoryName(helper)!};
         info.ArgumentList.Add(target.Window.ToInt64().ToString());info.ArgumentList.Add(target.ProcessId.ToString());
         info.ArgumentList.Add(target.ExePath);info.ArgumentList.Add(target.StartedUtcTicks.ToString());
+        if(ocrFrame)info.ArgumentList.Add("--ocr-frame");
         using var job=new CaptureJob();
         using var process=new Process{StartInfo=info};var started=false;
         using var timeout=CancellationTokenSource.CreateLinkedTokenSource(token);timeout.CancelAfter(7000);
@@ -102,7 +106,7 @@ internal static class GameWindowCover
             await process.StandardInput.WriteLineAsync("GO");process.StandardInput.Close();
             await process.WaitForExitAsync(timeout.Token);
             var text=await output;await errors; // stderr is not propagated; no paths or dumps in ordinary status.
-            if(process.ExitCode!=0||text.Length>1_000_000)return new(null,"封面组件未完成取图","backend=WGC code=helper-exit exit="+process.ExitCode);
+            if(process.ExitCode!=0||text.Length>(ocrFrame?96_000_000:1_000_000))return new(null,"窗口组件未完成取图","backend=WGC code=helper-exit exit="+process.ExitCode);
             var reply=JsonSerializer.Deserialize<Reply>(text)??throw new InvalidDataException("封面组件返回值无法读取");
             var diagnostic=$"backend=WGC code={reply.Code} hwnd={target.Window.ToInt64()} pid={target.ProcessId} size={reply.Width}x{reply.Height} elapsedMs={reply.ElapsedMs} error=0x{reply.Error:X8} rejectedFrames={reply.RejectedFrames} {reply.Quality}";
             if(reply.Image is null)return new(null,reply.Message,diagnostic);
@@ -110,7 +114,9 @@ internal static class GameWindowCover
             if(!GameLibraryWindowIdentity.Matches(target))return new(null,"游戏窗口已退出或改变",diagnostic+" final=window-changed");
             try{
                 using var bytes=new MemoryStream(Convert.FromBase64String(reply.Image));using var image=Image.FromStream(bytes);
-                if(image.Width>640||image.Height>360||image.Width<1||image.Height<1)throw new InvalidDataException();
+                if(image.Width<1||image.Height<1||image.Width>(ocrFrame?8192:640)||image.Height>(ocrFrame?8192:360)
+                    ||(long)image.Width*image.Height>32_000_000)throw new InvalidDataException();
+                if(ocrFrame)return new(new Bitmap(image),"已取得游戏窗口画面",diagnostic,target,reply.CapturedUtc is {} sampled&&sampled<=DateTime.UtcNow?sampled:requestedUtc);
                 var quality=CoverQuality.Analyze(image);
                 if(!quality.Usable)return new(null,"尚未取得有效画面",diagnostic+" parent-rejected "+quality.Diagnostic);
                 return new(new Bitmap(image),"已取得有效窗口帧",diagnostic,target);

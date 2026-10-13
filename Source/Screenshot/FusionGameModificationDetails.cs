@@ -84,7 +84,7 @@ public sealed partial class MainForm
                 else
                 {
                     string scope=section==1?"skills":"states";var entries=detail.GetProperty(scope).EnumerateArray().Select(e=>e.Clone()).ToArray();
-                    var query=new TextBox{PlaceholderText="搜索名称或编号",Width=200};
+                    var query=new TextBox{PlaceholderText=UiLanguage.Text("搜索名称或编号"),Width=200};
                     var choice=new GamePlanBox{Width=245,DropDownStyle=ComboBoxStyle.DropDownList};
                     var value=new WorkspaceSwitch{Text=section==1?"已学会":"生效中",Height=36,Width=115,AccessibleName=section==1?"技能是否已学会":"状态是否生效"};
                     var visible=new List<JsonElement>();
@@ -265,7 +265,7 @@ public sealed partial class MainForm
     private async Task SaveRpgLocksAsync()
     {
         if(_selectedGame is not { } game||SelectedDataSession() is not { } state)return;
-        using var dialog=new SaveFileDialog{Title="保存此游戏的锁定配置",Filter="锁定配置 (*.json)|*.json",FileName=Path.GetFileNameWithoutExtension(game.ExePath)+"-locks.json"};
+        using var dialog=new SaveFileDialog{Title=UiLanguage.Text("保存此游戏的锁定配置"),Filter=UiLanguage.Text("锁定配置 (*.json)|*.json"),FileName=Path.GetFileNameWithoutExtension(game.ExePath)+"-locks.json"};
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try
         {
@@ -278,7 +278,7 @@ public sealed partial class MainForm
     private async Task LoadRpgLocksAsync()
     {
         if(_selectedGame is not { } game)return;
-        using var dialog=new OpenFileDialog{Title="读取此游戏的锁定配置",Filter="锁定配置 (*.json)|*.json"};
+        using var dialog=new OpenFileDialog{Title=UiLanguage.Text("读取此游戏的锁定配置"),Filter=UiLanguage.Text("锁定配置 (*.json)|*.json")};
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try
         {

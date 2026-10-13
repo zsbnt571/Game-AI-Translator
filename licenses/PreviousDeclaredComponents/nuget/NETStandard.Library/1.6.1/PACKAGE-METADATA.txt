@@ -1,0 +1,8 @@
+Package: NETStandard.Library
+Version: 1.6.1
+Source: https://dot.net/
+Authors: Microsoft
+Copyright: © Microsoft Corporation.  All rights reserved.
+Declared licence: UNVERIFIED
+Licence URL: http://go.microsoft.com/fwlink/?LinkId=329770
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

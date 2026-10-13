@@ -1,24 +1,24 @@
-using CUE4Parse.Compression;
+﻿using CUE4Parse.Compression;
 using CUE4Parse.FileProvider;
 using CUE4Parse.UE4.Versions;
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using GameAiTranslator.Runtime;
 
 // Isolated, read-only worker. No package writes, key discovery, game loading or
 // network initialization. The desktop bounds its lifetime and validates output.
-if(args.Length!=3)return 2;
+if(args.Length is not (3 or 4))return 2;
 var rows=new Dictionary<string,CatalogText>(StringComparer.Ordinal);
 var conflicts=new HashSet<string>(StringComparer.Ordinal);
-var errors=new List<string>();int skipped=0,scanned=0;long total=0;
+var displaySources=new HashSet<string>(StringComparer.Ordinal);
+var errors=new List<string>();int skipped=0,scanned=0,nativeCandidates=0;long total=0;
 try {
  string root=Path.GetFullPath(args[0]),output=Path.GetFullPath(args[2]);
  if(!Directory.Exists(root)||!Enum.TryParse<EGame>(args[1],out var game))return 2;
  if((File.GetAttributes(root)&FileAttributes.ReparsePoint)!=0)throw new IOException("Linked package directory");
  foreach(var f in Directory.EnumerateFileSystemEntries(root))
   if((File.GetAttributes(f)&FileAttributes.ReparsePoint)!=0)throw new IOException("Linked package entry");
- using var oodle=LocalRuntimeDependency.OpenOodle(AppContext.BaseDirectory);
- OodleHelper.Initialize(new OodleDotNet.Oodle(oodle.Name));
+ string oodle=Path.Combine(AppContext.BaseDirectory,"oo2core_9_win64.dll");
+ if(File.Exists(oodle)) OodleHelper.Initialize(new OodleDotNet.Oodle(oodle));
  using var provider=new DefaultFileProvider(root,SearchOption.TopDirectoryOnly,new VersionContainer(game),StringComparer.OrdinalIgnoreCase);
  provider.Initialize();provider.Mount();
  var files=provider.Files.Values.Where(f=>!f.Path.StartsWith("Engine/",StringComparison.OrdinalIgnoreCase)).OrderBy(f=>f.Path,StringComparer.Ordinal).ToArray();
@@ -40,6 +40,9 @@ try {
   if(total+file.Size>1024L*1024*1024||scanned>=20000||rows.Count>=100000){skipped++;break;}
   try {var data=file.Read();total+=data.Length;scanned++;
    foreach(var row in UnrealTextReader.Scan(data))Add(row);
+   if(displaySources.Count<100000)foreach(var text in DisplayTextReader.Scan(data)){
+    displaySources.Add(text);if(displaySources.Count>=100000)break;
+   }
   } catch(Exception ex){skipped++;if(errors.Count<20)errors.Add(Path.GetFileName(file.Path)+": "+ex.GetType().Name);}
  }
  foreach(var group in resources.GroupBy(r=>r.Path[..r.Path.LastIndexOf('/',r.Path.LastIndexOf('/')-1)],StringComparer.OrdinalIgnoreCase)) {
@@ -54,10 +57,14 @@ try {
    Add(row);
   }
  }
+ if(args.Length==4){
+  foreach(var row in NativeTextReader.Scan(args[3])){Add(row);nativeCandidates++;}
+ }
  var accepted=rows.Values.Where(r=>!conflicts.Contains(r.ns+"\0"+r.key)&&UnrealTextReader.Accept(r.source)).ToArray();
+ displaySources.ExceptWith(accepted.Select(e=>e.source));
  skipped+=conflicts.Count;
- string staticReason=accepted.Length>0?"":files.Length==0?"未读取到可枚举的游戏资源，预提取不可用":"未提取到带可替换身份的文本";
- var bytes=JsonSerializer.SerializeToUtf8Bytes(new {protocol=76,entries=accepted,scanned,skipped,errors,mountedFiles=files.Length,runtimeOnly=accepted.Length==0,staticReason});
+ string staticReason=accepted.Length>0?"":displaySources.Count>0?"已读取显示文本供准备译文；显示时仍需确认当前控件":files.Length==0?"未读取到可枚举的游戏资源，预提取不可用":"未提取到带可替换身份的文本";
+ var bytes=JsonSerializer.SerializeToUtf8Bytes(new {protocol=76,entries=accepted,displaySources=displaySources.Order(StringComparer.Ordinal).ToArray(),scanned,skipped,nativeCandidates,errors,mountedFiles=files.Length,runtimeOnly=accepted.Length==0&&displaySources.Count==0,staticReason});
  if(bytes.Length>32*1024*1024)throw new IOException("Catalog exceeds limit");
  File.WriteAllBytes(output,bytes);Console.WriteLine($"catalog={accepted.Length} scanned={scanned} skipped={skipped}");return 0;
 } catch(Exception ex){Console.Error.WriteLine(ex.GetType().Name+": "+ex.Message);return 1;}

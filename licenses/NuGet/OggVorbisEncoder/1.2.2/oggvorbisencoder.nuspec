@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OggVorbisEncoder</id>
+    <version>1.2.2</version>
+    <authors>Steve Lillis</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://github.com/SteveLillis/.NET-Ogg-Vorbis-Encoder</projectUrl>
+    <description>A .NET Ogg Vorbis audio encoding library written entirely in managed code.</description>
+    <releaseNotes>v1.2.2
+- Add net7.0 as a target framework
+- Remove net5.0 support
+v1.2.1
+- Add net6.0 as a target framework
+v1.2.0
+- Update target frameworks to netstandard2.0;net461;net5.0
+- Memory and performance improvements
+- Support for all Stereo and Decoupled configurations</releaseNotes>
+    <tags>vorbis ogg encoder</tags>
+    <repository type="git" url="https://github.com/SteveLillis/.NET-Ogg-Vorbis-Encoder" />
+    <dependencies>
+      <group targetFramework=".NETFramework4.6.1">
+        <dependency id="System.Memory" version="4.5.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net6.0">
+        <dependency id="System.Memory" version="4.5.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net7.0">
+        <dependency id="System.Memory" version="4.5.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="System.Memory" version="4.5.5" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

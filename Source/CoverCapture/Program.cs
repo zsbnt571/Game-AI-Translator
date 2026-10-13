@@ -14,9 +14,42 @@ using static Vortice.Direct3D11.D3D11;
 
 namespace FusionCoverCapture;
 
-internal sealed record Reply(string Code,string Message,int Width=0,int Height=0,long ElapsedMs=0,string? Image=null,int Error=0,string Quality="",int RejectedFrames=0);
+internal sealed record Reply(string Code,string Message,int Width=0,int Height=0,long ElapsedMs=0,string? Image=null,int Error=0,string Quality="",int RejectedFrames=0,
+    [property:System.Text.Json.Serialization.JsonIgnore(Condition=System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] DateTime? CapturedUtc=null);
 internal static class Program
 {
+    internal const int OcrMaxPixels=32_000_000;
+    internal const int OcrMaxPngBytes=48*1024*1024; // at most 64 MiB of base64
+    internal static bool IsCaptureSizeAllowed(int width,int height,bool ocrFrame)=>
+        width>0&&height>0&&width<=8192&&height<=8192&&(long)width*height<=(ocrFrame?OcrMaxPixels:16_777_216);
+    internal static bool IsOcrFrameRequest(string[] args)=>args.Length==5&&args[4]=="--ocr-frame";
+    // GDI+ writes through IStream. Refuse oversize encoding before allocating
+    // a second PNG buffer/base64 string, even for an incompressible frame.
+    internal sealed class LimitedPngStream(int maximumBytes):MemoryStream
+    {
+        internal bool LimitExceeded{get;private set;}
+        private void Check(long end)
+        {
+            if(end<=maximumBytes)return;
+            LimitExceeded=true;throw new IOException("Encoded image exceeds limit");
+        }
+        public override void Write(byte[] buffer,int offset,int count){Check(checked(Position+count));base.Write(buffer,offset,count);}
+        public override void Write(ReadOnlySpan<byte> buffer){Check(checked(Position+buffer.Length));base.Write(buffer);}
+        public override void WriteByte(byte value){Check(checked(Position+1));base.WriteByte(value);}
+        public override void SetLength(long value){Check(value);base.SetLength(value);}
+        public override long Position{get=>base.Position;set{Check(value);base.Position=value;}}
+    }
+    internal static Reply EncodeOcrFrame(Bitmap bitmap)
+    {
+        if(!IsCaptureSizeAllowed(bitmap.Width,bitmap.Height,true))
+            return new("invalid-size","游戏窗口尺寸不可用或超过上限",bitmap.Width,bitmap.Height);
+        using var bytes=new LimitedPngStream(OcrMaxPngBytes);
+        try{bitmap.Save(bytes,ImageFormat.Png);}
+        catch(Exception)when(bytes.LimitExceeded)
+        {return new("image-too-large","窗口图像超过输出上限",bitmap.Width,bitmap.Height);}
+        return new("frame-ready","已取得窗口原始帧",bitmap.Width,bitmap.Height,
+            Image:Convert.ToBase64String(bytes.GetBuffer(),0,checked((int)bytes.Length)),Quality:"ocr-frame;png;full-resolution");
+    }
     [ComImport,Guid("3628E81B-3CAC-4C60-B7F4-23CE0E0C3356"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     private interface IItemInterop
     {
@@ -39,10 +72,11 @@ internal static class Program
         Reply reply;
         try
         {
-            if(Console.ReadLine()!="GO"||args.Length!=4)return 2;
+            var ocrFrame=IsOcrFrameRequest(args);
+            if(Console.ReadLine()!="GO"||(args.Length!=4&&!ocrFrame))return 2;
             var target=new CoverTarget(new IntPtr(long.Parse(args[0])),int.Parse(args[1]),Path.GetFullPath(args[2]),long.Parse(args[3]));
             Marshal.ThrowExceptionForHR(RoInitialize(1));
-            try{reply=Capture(target);}finally{RoUninitialize();}
+            try{reply=Capture(target,ocrFrame);}finally{RoUninitialize();}
         }
         catch(Exception ex){reply=new("backend-error","窗口捕获调用失败",Error:ex.HResult);}
         Console.WriteLine(JsonSerializer.Serialize(reply with{ElapsedMs=elapsed.ElapsedMilliseconds}));
@@ -63,7 +97,7 @@ internal static class Program
         }
         finally{if(item!=IntPtr.Zero)Marshal.Release(item);if(interop is not null)Marshal.ReleaseComObject(interop);if(factory!=IntPtr.Zero)Marshal.Release(factory);WindowsDeleteString(hstring);}
     }
-    private static Reply Capture(CoverTarget target)
+    private static Reply Capture(CoverTarget target,bool ocrFrame=false)
     {
         if(!OperatingSystem.IsWindowsVersionAtLeast(10,0,18362)||!GraphicsCaptureSession.IsSupported())
             return new("unsupported","系统或图形设备不支持窗口捕获");
@@ -79,7 +113,7 @@ internal static class Program
             using(winrtDevice)
             {
                 var item=Item(target.Window);var size=item.Size;
-                if(size.Width<=0||size.Height<=0||size.Width>8192||size.Height>8192||(long)size.Width*size.Height>16_777_216)
+                if(!IsCaptureSizeAllowed(size.Width,size.Height,ocrFrame))
                     return new("invalid-size","游戏窗口尺寸不可用或超过上限",size.Width,size.Height);
                 using var pool=Direct3D11CaptureFramePool.CreateFreeThreaded(winrtDevice,DirectXPixelFormat.B8G8R8A8UIntNormalized,2,size);
                 using var session=pool.CreateCaptureSession(item);
@@ -92,6 +126,7 @@ internal static class Program
                     if(!CoverWindowIdentity.Matches(target))return new("window-changed","游戏窗口已退出或改变");
                     using var frame=pool.TryGetNextFrame();
                     if(frame is null){Thread.Sleep(40);continue;}
+                    var capturedUtc=DateTime.UtcNow;
                     var actual=frame.ContentSize;
                     if(actual.Width<=0||actual.Height<=0||actual.Width>size.Width||actual.Height>size.Height)return new("size-changed","窗口正在调整大小，请稍后更新");
                     var access=frame.Surface.As<ISurfaceAccess>();var textureId=new Guid("6F15AAF2-D208-4E89-9AB4-489535D34F9C");
@@ -100,6 +135,8 @@ internal static class Program
                     var desc=source.Description;
                     if(desc.Format!=Format.B8G8R8A8_UNorm||actual.Width>desc.Width||actual.Height>desc.Height)
                         return new("invalid-surface","窗口画面格式或尺寸不可用",actual.Width,actual.Height);
+                    if(ocrFrame&&!IsCaptureSizeAllowed(checked((int)desc.Width),checked((int)desc.Height),true))
+                        return new("invalid-surface","窗口画面尺寸超过上限",actual.Width,actual.Height);
                     using var staging=device.CreateTexture2D(new Texture2DDescription(desc.Format,desc.Width,desc.Height,1,1,BindFlags.None,ResourceUsage.Staging,CpuAccessFlags.Read));
                     context!.CopyResource(staging,source);
                     // Native Map is contained by the process deadline + Job, never orphaned in the desktop.
@@ -122,6 +159,14 @@ internal static class Program
                     }
                     finally{context.Unmap(staging,0);}
                     if(!CoverWindowIdentity.Matches(target))return new("window-changed","游戏窗口已退出或改变");
+                    if(ocrFrame)
+                    {
+                        // OCR needs real pixel dimensions, including sparse menus.
+                        // It must never enter cover thumbnail/quality filtering.
+                        var ocrReply=EncodeOcrFrame(bitmap);
+                        if(!CoverWindowIdentity.Matches(target))return new("window-changed","游戏窗口已退出或改变");
+                        return ocrReply with{CapturedUtc=capturedUtc};
+                    }
                     using var small=CoverQuality.VisibleThumbnail(bitmap);
                     using var bytes=new MemoryStream();small.Save(bytes,ImageFormat.Jpeg);
                     bytes.Position=0;

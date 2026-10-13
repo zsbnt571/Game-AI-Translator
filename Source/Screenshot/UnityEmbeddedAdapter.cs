@@ -72,7 +72,10 @@ internal static partial class UnityEmbeddedAdapter
         string file=Path.Combine(game.Root,LedgerName);if(!File.Exists(file))return null;
         if(new FileInfo(file).Length>1024*1024)throw new IOException("安装记录超过限制。");
         var ledger=JsonSerializer.Deserialize<InstallLedger>(File.ReadAllText(file));
-        if(ledger is null||ledger.Version!=1||!string.Equals(ledger.ExePath,game.ExePath,StringComparison.OrdinalIgnoreCase)||ledger.Backend!=game.Backend||ledger.Files is null||ledger.Files.Length>512)throw new IOException("安装记录与当前游戏不一致。");
+        if(ledger is null||ledger.Version!=1||!string.Equals(ledger.ExePath,game.ExePath,StringComparison.OrdinalIgnoreCase)||ledger.Backend!=game.Backend||ledger.Architecture!=game.Architecture||ledger.Files is null||ledger.Files.Length==0||ledger.Files.Length>512)throw new IOException("安装记录与当前游戏不一致。");
+        var paths=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach(var item in ledger.Files)
+            if(item is null||string.IsNullOrEmpty(item.Path)||!paths.Add(SafePath(game.Root,item.Path))||!Regex.IsMatch(item.Hash??"","^[A-Fa-f0-9]{64}$"))throw new IOException("组件安装记录包含无效或重复文件。");
         return ledger;
     }
     private static string SafePath(string root,string relative)

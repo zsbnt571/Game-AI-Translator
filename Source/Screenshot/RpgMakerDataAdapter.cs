@@ -94,8 +94,10 @@ internal static class RpgMakerDataAdapter
         if(File.Exists(journalPath)){if(Installed(exe))return;throw new InvalidOperationException("安装后的文件发生变化，请先检查或恢复组件，未覆盖。");}
         if(File.Exists(script))throw new InvalidOperationException("游戏中已有同名组件，未覆盖。");
         var original=File.ReadAllBytes(manifest);var doc=JsonNode.Parse(original) as JsonObject??throw new InvalidDataException("游戏启动配置无效。");
-        if(doc.ContainsKey("inject_js_end"))throw new InvalidOperationException("游戏已有启动脚本，当前适配不覆盖它。");
-        doc["inject_js_end"]=ScriptName;
+        if(doc.ContainsKey("inject_js_end")||doc.ContainsKey("inject-js-end"))throw new InvalidOperationException("游戏已有启动脚本，当前适配不覆盖它。");
+        // NW 0.12 uses hyphens; 0.13+ uses underscores. Each ignores the other's
+        // key. The script also guards duplicate initialization for hybrid builds.
+        doc["inject_js_end"]=ScriptName;doc["inject-js-end"]=ScriptName;
         var next=Encoding.UTF8.GetBytes(doc.ToJsonString(new JsonSerializerOptions{WriteIndented=true}));var payload=Encoding.UTF8.GetBytes(Payload());
         var backup=Path.Combine(storage,"package.original.json");
         if(File.Exists(backup)&&!File.ReadAllBytes(backup).SequenceEqual(original))throw new IOException("已有不同的原始备份，未覆盖。");
@@ -141,10 +143,31 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
     private readonly SemaphoreSlim requests=new(1,1);
     private readonly CancellationTokenSource lifetime=new();
     private StreamReader? reader;private StreamWriter? writer;private int id;private bool disposed;
+    private volatile bool authenticated;
+    private volatile EmbeddedConnectionStage connectionStage;
+    public EmbeddedConnectionStage ConnectionStage=>connectionStage;
     private readonly string? environmentPrefix;
     private string? startupFile;
+    private string? startupDirectory;
+    private bool launchPrepared,nativeAttached;
+    private int? reconnectPid;
+    internal void PrepareRenpyReconnect()
+    {
+        reconnectPid=RenpyReconnect.Peer(exe)??throw new IOException("未找到可重连的游戏组件；请保存后重新从新版启动一次游戏。");
+        using var peer=Process.GetProcessById(reconnectPid.Value);RenpyReconnect.Publish(exe,PipeName,secret,peer);
+    }
+    private UnityMonoLaunchPath? monoLaunchPath;
+    private UnityLoaderStartupFailure? loaderFailure;
+    internal string? StartupFailure()=>loaderFailure?.Read();
+    public void Launched(int pid)
+    {
+        if(environmentPrefix!="UNITY")return;
+        if(!launchPrepared||nativeAttached)throw new InvalidOperationException("本次启动连接状态无效。");
+        nativeAttached=true;monoLaunchPath?.Track(pid);UnityNativeRuntime.Attach(exe,pid);
+    }
+    private readonly TimeSpan unityPauseBudget=TimeSpan.FromSeconds(30);
     internal string PipeName {get;}="fusion-rpg-"+Guid.NewGuid().ToString("N");
-    public bool Connected=>!disposed&&reader is not null&&pipe.IsConnected;
+    public bool Connected=>!disposed&&authenticated&&reader is not null&&pipe.IsConnected;
     internal RpgGameDataConnection(string executable,string? environmentPrefix=null)
     {
         if(environmentPrefix is not (null or "UNITY"))throw new ArgumentException("未知连接类型。",nameof(environmentPrefix));
@@ -154,10 +177,16 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
     }
     public void PrimeStartup(IReadOnlyDictionary<string,string> entries)
     {
-        if(environmentPrefix!="UNITY")return;
-        string folder=Path.Combine(AppDataPaths.Root,"embedded-sessions",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(folder);
+        if(environmentPrefix!="UNITY"&&RenpyGameAdapter.Detect(exe) is null)return;
+        if(disposed)throw new ObjectDisposedException(nameof(RpgGameDataConnection));
+        if(startupFile is not null)throw new InvalidOperationException("启动译文缓存已经准备。");
+        // Match the bridge's startup entry limit before writing or launching;
+        // otherwise it would reject the entire valid file after launch.
+        if(entries.Count>150000)throw new IOException("启动译文缓存超过 150000 条限制，未启动游戏。请先整理缓存后重试。");
+        string folder=Path.GetFullPath(Path.Combine(AppDataPaths.Root,"embedded-sessions",Guid.NewGuid().ToString("N")));Directory.CreateDirectory(folder);
+        startupDirectory=folder;
         startupFile=Path.Combine(folder,"startup.json");
-        PortableDataStorage.WriteJson(startupFile,new{enabled=true,entries=entries.Select(p=>new{source=p.Key,text=p.Value}).ToArray()});
+        PortableDataStorage.WriteJson(startupFile,new{secret,enabled=true,exactOnly=true,allowDisplayTemplates=environmentPrefix=="UNITY",entries=entries.Select(p=>new{source=p.Key,text=p.Value}).ToArray()});
         if(new FileInfo(startupFile).Length>32*1024*1024)throw new IOException("启动译文缓存超过限制，未启动游戏。");
     }
     public ProcessStartInfo StartInfo(bool translationAtStartup=true)
@@ -165,13 +194,19 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
         var info=new ProcessStartInfo(exe){WorkingDirectory=Path.GetDirectoryName(exe),UseShellExecute=false};
         if(environmentPrefix=="UNITY")
         {
+            if(launchPrepared)throw new InvalidOperationException("此连接已经准备过启动。");
+            launchPrepared=true;
             info.Environment["FUSION_UNITY_PIPE"]=PipeName;info.Environment["FUSION_UNITY_SECRET"]=secret;
             info.Environment["FUSION_UNITY_TRANSLATION_START"]=translationAtStartup?"1":"0";
             if(startupFile is not null)info.Environment["FUSION_UNITY_STARTUP_FILE"]=startupFile;
-            GameTestCopyEnvironment.Apply(info);return info;
+            GameTestCopyEnvironment.Apply(info);
+            monoLaunchPath=UnityMonoLaunchPath.Prepare(exe);
+            if(monoLaunchPath is not null){info.FileName=monoLaunchPath.ExecutablePath;info.WorkingDirectory=monoLaunchPath.DirectoryPath;}
+            loaderFailure=new(exe);
+            return info;
         }
         if(RenpyGameAdapter.Detect(exe) is not null)
-        {info.Environment["FUSION_RENPY_PIPE"]=PipeName;info.Environment["FUSION_RENPY_SECRET"]=secret;info.Environment["FUSION_RENPY_TRANSLATION_START"]=translationAtStartup?"1":"0";info.Environment["FUSION_RENPY_DATA_LOG"]=Path.Combine(RenpyGameAdapter.Storage(exe),"modifications");GameTestCopyEnvironment.Apply(info,true);return info;}
+        {info.Environment["FUSION_RENPY_RECONNECT"]=RenpyReconnect.PathFor(exe);info.Environment["FUSION_RENPY_CURSOR_LOG"]=Path.Combine(RenpyGameAdapter.Storage(exe),"cursor-state.json");info.Environment["FUSION_RENPY_PIPE"]=PipeName;info.Environment["FUSION_RENPY_SECRET"]=secret;info.Environment["FUSION_RENPY_TRANSLATION_START"]=translationAtStartup?"1":"0";if(startupFile is not null)info.Environment["FUSION_RENPY_STARTUP_FILE"]=startupFile;info.Environment["FUSION_RENPY_DATA_LOG"]=Path.Combine(RenpyGameAdapter.Storage(exe),"modifications");GameTestCopyEnvironment.Apply(info,true);return info;}
         info.Environment["FUSION_RPG_DATA_ROOT"]=(RpgMakerDataAdapter.Detect(exe)??throw new IOException("未识别 RPG 游戏数据目录。")).DataRoot;
         info.Environment["FUSION_RPG_PIPE"]=PipeName;info.Environment["FUSION_RPG_SECRET"]=secret;
         Directory.CreateDirectory(RpgMakerDataAdapter.Storage(exe));info.Environment["FUSION_RPG_LOG"]=Path.Combine(RpgMakerDataAdapter.Storage(exe),"bridge.log");return info;
@@ -183,12 +218,17 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
         try
         {
             await pipe.WaitForConnectionAsync(timeout.Token).ConfigureAwait(false);
+            connectionStage=EmbeddedConnectionStage.Authenticating;
             if(!GetNamedPipeClientProcessId(pipe.SafePipeHandle,out var pid))throw new IOException("无法核对游戏连接。");
             using var process=Process.GetProcessById(checked((int)pid));
-            if(!string.Equals(process.MainModule?.FileName,exe,StringComparison.OrdinalIgnoreCase)&&RenpyGameAdapter.Detect(exe)?.RuntimeExecutables.Contains(process.MainModule?.FileName??"",StringComparer.OrdinalIgnoreCase)!=true)throw new IOException("连接来自另一程序，已拒绝。");
+            if(reconnectPid is {} expected&&pid!=expected)throw new IOException("重新连接的游戏进程已改变。");
+            if(!string.Equals(GameLaunchPathIdentity.Canonical(process.MainModule?.FileName??""),exe,StringComparison.OrdinalIgnoreCase)&&RenpyGameAdapter.Detect(exe)?.RuntimeExecutables.Contains(process.MainModule?.FileName??"",StringComparer.OrdinalIgnoreCase)!=true)throw new IOException("连接来自另一程序，已拒绝。");
             reader=new StreamReader(pipe,new UTF8Encoding(false,true),false,4096,true);writer=new StreamWriter(pipe,new UTF8Encoding(false),4096,true){AutoFlush=true};
+            connectionStage=EmbeddedConnectionStage.WaitingForHello;
             using var hello=JsonDocument.Parse(await ReadLineAsync(timeout.Token).ConfigureAwait(false));
             if(hello.RootElement.GetProperty("hello").GetInt32()!=1||hello.RootElement.GetProperty("secret").GetString()!=secret||hello.RootElement.GetProperty("pid").GetUInt32()!=pid)throw new IOException("游戏连接验证失败。");
+            if(hello.RootElement.TryGetProperty("reconnect",out var reconnect)&&reconnect.TryGetInt32(out var protocol)&&protocol==156&&RenpyGameAdapter.Detect(exe) is not null)RenpyReconnect.Publish(exe,PipeName,secret,process);
+            authenticated=true;connectionStage=EmbeddedConnectionStage.Ready;
         }
         catch{Dispose();throw;}
     }
@@ -208,6 +248,14 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
     }
     public async Task<JsonElement> RequestAsync(JsonObject request,CancellationToken cancellation=default)
     {
+        using var retry=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);
+        if(environmentPrefix!="UNITY")return await RequestOnceAsync(request,retry.Token).ConfigureAwait(false);
+        return await UnityRequestRecovery.ExecuteAsync(token=>RequestOnceAsync(request,token),
+            request["op"]?.GetValue<string>()=="translationDisable",request["deferIfPaused"]?.GetValue<bool>()==true,
+            retry.Token,unityPauseBudget).ConfigureAwait(false);
+    }
+    private async Task<JsonElement> RequestOnceAsync(JsonObject request,CancellationToken cancellation)
+    {
         using var timeout=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);timeout.CancelAfter(TimeSpan.FromSeconds(8));
         await requests.WaitAsync(timeout.Token).ConfigureAwait(false);
         bool requestSent=false;
@@ -218,14 +266,22 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
             // request (including Disable) must not consume a previous response.
             using var transport=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);transport.CancelAfter(TimeSpan.FromSeconds(8));
             if(!Connected)throw new IOException("此游戏尚未连接。");
-            request=request.DeepClone().AsObject();request["id"]=++id;
+            request=request.DeepClone().AsObject();request.Remove("deferIfPaused");request["id"]=++id;
             requestSent=true;
             await writer!.WriteLineAsync(request.ToJsonString().AsMemory(),transport.Token).ConfigureAwait(false);
             using var response=JsonDocument.Parse(await ReadLineAsync(transport.Token).ConfigureAwait(false));var obj=response.RootElement;
             if(obj.GetProperty("id").GetInt32()!=id)throw new IOException("游戏响应顺序不一致，已断开连接。");
-            if(!obj.GetProperty("ok").GetBoolean())throw new GameDataOperationException(obj.GetProperty("error").GetString()??"游戏没有接受此操作。");
+            if(!obj.GetProperty("ok").GetBoolean())
+            {
+                if(environmentPrefix=="UNITY"&&obj.TryGetProperty("errorCode",out var code)
+                    &&code.ValueKind==JsonValueKind.String&&code.GetString()=="unity-main-thread-paused"
+                    &&obj.TryGetProperty("recoverable",out var recoverable)&&recoverable.ValueKind==JsonValueKind.True)
+                    throw new UnityMainThreadPausedException();
+                throw new GameDataOperationException(obj.GetProperty("error").GetString()??"游戏没有接受此操作。");
+            }
             return obj.GetProperty("result").Clone();
         }
+        catch(UnityMainThreadPausedException){throw;}
         catch(GameDataOperationException){throw;}
         catch(OperationCanceledException)when(!requestSent&&cancellation.IsCancellationRequested&&!lifetime.IsCancellationRequested){throw;}
         catch{Dispose();throw;}
@@ -234,7 +290,41 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
     public void Dispose()
     {
         if(disposed)return;disposed=true;lifetime.Cancel();pipe.Dispose();
-        try{reader?.Dispose();writer?.Dispose();}catch(Exception ex) when(ex is IOException or ObjectDisposedException){}
+        try
+        {
+            try{reader?.Dispose();}catch(Exception ex)when(ex is IOException or ObjectDisposedException||AsyncStreamDisposalBusy(ex)){}
+        }
+        finally
+        {
+            try{writer?.Dispose();}catch(Exception ex)when(ex is IOException or ObjectDisposedException||AsyncStreamDisposalBusy(ex)){}
+            finally{CleanupStartup();monoLaunchPath?.Dispose();}
+        }
+    }
+    private static bool AsyncStreamDisposalBusy(Exception error)
+        =>error is InvalidOperationException&&error.TargetSite?.Name=="ThrowAsyncIOInProgress"
+            &&(error.TargetSite.DeclaringType==typeof(StreamReader)||error.TargetSite.DeclaringType==typeof(StreamWriter));
+    private void CleanupStartup()
+    {
+        try
+        {
+            if(startupFile is null||startupDirectory is null)return;
+            string sessions=Path.GetFullPath(Path.Combine(AppDataPaths.Root,"embedded-sessions"));
+            string folder=Path.GetFullPath(startupDirectory),file=Path.GetFullPath(startupFile);
+            if(!string.Equals(Path.GetDirectoryName(folder),sessions,StringComparison.OrdinalIgnoreCase)
+                ||!Guid.TryParseExact(Path.GetFileName(folder),"N",out _)
+                ||!string.Equals(file,Path.Combine(folder,"startup.json"),StringComparison.OrdinalIgnoreCase))return;
+            for(string? current=folder;current is not null;current=Path.GetDirectoryName(current))
+                if(Directory.Exists(current)&&(File.GetAttributes(current)&FileAttributes.ReparsePoint)!=0)return;
+            if(File.Exists(file))
+            {
+                if((File.GetAttributes(file)&FileAttributes.ReparsePoint)!=0)return;
+                File.Delete(file);
+            }
+            // Never recursively remove a directory; another file makes it stay.
+            if(Directory.Exists(folder)&&!Directory.EnumerateFileSystemEntries(folder).Any())Directory.Delete(folder);
+        }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
+        {System.Diagnostics.Trace.WriteLine("Fusion startup cache cleanup was deferred: "+ex.GetType().Name);}
     }
 }
 internal sealed class GameDataOperationException(string message):Exception(message);

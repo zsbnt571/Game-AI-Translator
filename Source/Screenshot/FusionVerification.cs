@@ -18,11 +18,15 @@ internal static class FusionVerification
             var json=FusionSecrets.Serialize(original);var roundtrip=FusionSecrets.Deserialize<ApiSettings>(json);
             Assert(!string.IsNullOrEmpty(original.ApiKey),"No imported credential");Assert(!json.Contains(original.ApiKey),"Credential is not encrypted");Assert(roundtrip.ApiKey==original.ApiKey,"DPAPI roundtrip mismatch");
             return Task.FromResult<object>(new{Profiles=config.State.Profiles.Count,Encrypted=true});});
-        await Check("Mode isolation, language mapping and immutable request settings",()=>{
+        await Check("API routing, shared content and immutable request settings",()=>{
+            var priorContent=config.State.TranslationContent!;
+            config.State.TranslationContent=TranslationContentSettings.From(original);
+            config.State.TranslationContent.TargetLanguage="Japanese";
             config.State.Profiles["verification-private"]=ApiSettingsSnapshot.Copy(original);config.State.Profiles["verification-private"].TargetLanguage="Japanese";
             config.State.EmbeddedProfile="verification-private";var shot=config.Effective(original,false);var embed=config.Effective(original,true);
-            Assert(embed.TargetLanguage=="ja","Japanese mapping failed");Assert(shot.TargetLanguage==FusionConfiguration.NormalizeLanguage(original.TargetLanguage),"Private profile affected common");
+            Assert(embed.TargetLanguage=="ja"&&shot.TargetLanguage=="ja","Shared content mapping failed");
             config.State.Profiles["verification-private"].TargetLanguage="English";Assert(embed.TargetLanguage=="ja","Settings snapshot changed after profile edit");
+            config.State.TranslationContent=priorContent;
             return Task.FromResult<object>(new{ScreenshotTarget=shot.TargetLanguage,EmbeddedSnapshot=embed.TargetLanguage});});
         await Check("Plugin configuration receives effective translation preferences",()=>{
             var p=ApiSettingsSnapshot.Copy(original);p.TargetLanguage="ja";p.CustomTranslationPrompt="Translate village as 村落.";
@@ -36,7 +40,7 @@ internal static class FusionVerification
             var root=Path.Combine(output,"installer-fixture");Directory.CreateDirectory(root);File.WriteAllText(Path.Combine(root,"MGI.exe"),"fixture");
             File.WriteAllText(Path.Combine(root,"winhttp.dll"),"preexisting loader");File.WriteAllText(Path.Combine(root,"unrelated.txt"),"preserve");
             var game=new GameInfo(Path.Combine(root,"MGI.exe"),"MGI","Unity Mono","64 位","fixture",SupportLevel.Supported,null);var installer=new FusionAdapterInstaller();
-            var p=ApiSettingsSnapshot.Copy(original);p.ApiKey="invalid-test";
+            var p=ApiSettingsSnapshot.Copy(original);p.ApiKey="verification-placeholder";
             for(int cycle=0;cycle<2;cycle++){
                 installer.Install(game,p,"F7");installer.Verify(game);File.AppendAllText(Path.Combine(root,FusionAdapterInstaller.PluginRelative),"tampered");
                 bool rejected=false;try{installer.Verify(game);}catch(InvalidDataException){rejected=true;}Assert(rejected,"Corrupt plugin passed integrity check");

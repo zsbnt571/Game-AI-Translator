@@ -4,8 +4,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 string exe=args[0],identity=args[1],evidence=args[2];bool startOff=args.Contains("--start-off");
-exe=IsolatedGamePath.Require(exe);
-if(!identity.StartsWith("FusionTest75_",StringComparison.Ordinal))throw new Exception("Isolated copy required.");
+string allowed=@"E:\Codex\GameTranslator\Work\Fusion-R1-0.6.0.75\GameCopies\";
+if(!Path.GetFullPath(exe).StartsWith(allowed,StringComparison.OrdinalIgnoreCase)||!identity.StartsWith("FusionTest75_",StringComparison.Ordinal))throw new Exception("Isolated copy required.");
 var asm=typeof(ScreenshotTranslationUiTester.GameInfo).Assembly;
 var connectionType=asm.GetType("ScreenshotTranslationUiTester.RpgGameDataConnection")!;
 var connection=Activator.CreateInstance(connectionType,BindingFlags.Instance|BindingFlags.NonPublic,null,new object?[]{exe,"UNITY"},null)!;

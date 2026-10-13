@@ -194,11 +194,11 @@ internal static class TaskATitleRecoveryProductGateHarness
 
     // The corpus was reorganized into AA/QQ subfolders after this gate was authored.
     // Resolve by immutable content hash (or by the frozen pairing manifest for the
-    // three supplemental cards) without writing to the source corpus.
+    // three supplemental cards) so the test does not require writes to D:\ces.
     private static string ResolveRelocatedCorpusPath(string recordedPath,string expectedSha256)
     {
         if(File.Exists(recordedPath))return recordedPath;
-        foreach(var candidate in Directory.EnumerateFiles(ValidationPaths.RequiredRoot("ST_FIX_READONLY_INPUT_ROOT"),"*",SearchOption.AllDirectories))
+        foreach(var candidate in Directory.EnumerateFiles(@"D:\ces","*",SearchOption.AllDirectories))
         {
             try
             {

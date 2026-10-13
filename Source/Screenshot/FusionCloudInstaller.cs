@@ -54,7 +54,7 @@ internal sealed partial class FusionAdapterInstaller
             var handle=OpenProcess(0x1000,false,process.Id);
             if(handle==IntPtr.Zero){try{if(!process.HasExited)unknown=true;}catch{unknown=true;}continue;}
             try{var name=new StringBuilder(32768);uint size=32768;if(!QueryFullProcessImageName(handle,0,name,ref size)){unknown=true;continue;}
-                if(paths.Contains(Path.GetFullPath(name.ToString()),StringComparer.OrdinalIgnoreCase))return FusionGameProcessState.Running;
+                if(paths.Contains(GameLaunchPathIdentity.Canonical(name.ToString()),StringComparer.OrdinalIgnoreCase))return FusionGameProcessState.Running;
             }finally{CloseHandle(handle);}
         }
         return unknown?FusionGameProcessState.Unknown:FusionGameProcessState.Stopped;
@@ -125,7 +125,7 @@ internal sealed partial class FusionAdapterInstaller
         if(GameDetector.Detect(g.ExePath).AdapterId!="cloud-meadow")throw new InvalidOperationException("游戏文件已变化或不符合当前适配条件，请重新选择。");
         var config=CloudConfiguration(settings,key);var j=HasRecord(g)?Read(g):new Journal{Exe=Path.GetFullPath(g.ExePath)};
         CheckJournal(g,j);
-        using var stream=RuntimePayloadProvider.Open("unity-specialized","Unity","Mono","x64",RuntimePayloadProvider.PackageVersion);
+        using var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.CloudMeadow.zip")??throw new InvalidDataException("缺少 Cloud Meadow 专用载荷。");
         using var zip=new ZipArchive(stream,ZipArchiveMode.Read);var files=new Dictionary<string,byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach(var expected in FusionCloudPayload.Files)
         {
@@ -158,6 +158,7 @@ internal sealed partial class FusionAdapterInstaller
             AtomicWrite(dest,file.Value);
         }
         Verify(g);if(ConfigurationHash(File.ReadAllText(InRoot(g,FusionCloudPayload.Config)))!=ConfigurationHash(config))throw new IOException("配置写入校验失败。");
+        LegacyTranslationMemory.Seed(g.ExePath,settings,LegacyTranslationMemory.Format.Cloud);
         j.Complete=true;Save(g,j);
     }
     internal void Verify(GameInfo g)
@@ -196,9 +197,9 @@ internal sealed partial class FusionAdapterInstaller
     static string BuildLegacyConfiguration(ApiSettings s,string key)
     {
         if(!Uri.TryCreate(s.ApiUrl,UriKind.Absolute,out var u)||u.Scheme is not("https" or "http"))throw new ArgumentException("API 地址必须是 HTTP/HTTPS。");
-        if(!Enumerable.Range(1,12).Select(i=>"F"+i).Contains(key))throw new ArgumentException("按键必须是 F1 至 F12。");
+        key=GameShortcut.Normalize(key);
         foreach(var value in new[]{s.ApiUrl,s.ApiKey,s.Model})if(value.Contains('\r')||value.Contains('\n'))throw new ArgumentException("API 字段不能包含换行。");
-        return $"[General]\nEnabled = true\nToggleKey = {key}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(s.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {s.ApiUrl.Trim()}\nApiKey = {s.ApiKey.Trim()}\nModel = {s.Model.Trim()}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(s.TargetLanguage)}\nPromptBase64 = {Convert.ToBase64String(Encoding.UTF8.GetBytes(FusionConfiguration.PluginPrompt(s)))}\n";
+        return $"[General]\nEnabled = true\nToggleKey = {GameShortcut.Normalize(key)}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(s.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {s.ApiUrl.Trim()}\nApiKey = {s.ApiKey.Trim()}\nModel = {s.Model.Trim()}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(s.TargetLanguage)}\nPromptBase64 = {Convert.ToBase64String(Encoding.UTF8.GetBytes(FusionConfiguration.PluginPrompt(s)))}\n";
     }
     internal static void WriteConfiguration(string path,ApiSettings settings,string key)=>LegacyMgiAdapterInstaller.WriteConfiguration(path,settings,key);
 }

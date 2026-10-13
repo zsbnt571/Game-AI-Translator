@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -26,22 +26,24 @@ public sealed partial class MainForm
     private readonly Label _defaultUiFont=new(){AutoSize=true};
     private readonly Label _actualUiFont=new(){AutoSize=true};
     private bool _preparingSettings;
+    private static bool _buildingSettingsLayout;
     private void EnsureSettingsCategory(int index)
     {
         if(index<0||index>=_settingsBuilders.Count||_settingsBuilders[index] is not { } build||_preparingSettings)return;
         _preparingSettings=true;var dirty=_settingsDirty;var applying=_applyingSettings;_applyingSettings=true;
         using var timing=DesktopStages.MeasureOnce("settings-category-"+index);
-        try{build();_settingsBuilders[index]=null;UpdateAppearanceEnabled();}
+        using var performance=UiPerformanceTrace.Measure("settings-build-"+index);
+        try{_buildingSettingsLayout=true;build();_settingsBuilders[index]=null;UpdateAppearanceEnabled();}
         catch(Exception ex){_settingsBuilders[index]=null;
             _statusLabel.Text="设置页面准备失败："+SafeDiagnosticOutput.ExceptionSummary(ex);AppLog.Write("desktop-preparation",SafeDiagnosticOutput.ExceptionSummary(ex));
             if(_settingsTabs?.TabPages[index].Tag is Control root)root.Controls.Add(new Label{AutoSize=true,Text="本页准备失败，请保留日志并重新打开软件。"});}
-        finally{_applyingSettings=applying;_settingsDirty=dirty;_preparingSettings=false;}
+        finally{_buildingSettingsLayout=false;_applyingSettings=applying;_settingsDirty=dirty;_preparingSettings=false;}
     }
     private void PrepareFontChoices()
     {
         foreach(var box in new[]{_uiFontBox,_previewFontBox,_overlayFontBox})
         {
-            box.DropDownStyle=ComboBoxStyle.DropDown;box.AutoCompleteMode=AutoCompleteMode.None;
+            box.DropDownStyle=ComboBoxStyle.DropDownList;box.AutoCompleteMode=AutoCompleteMode.None;
             var loading=false;var ready=false;
             box.DropDown+=async(_,_)=>{
                 if(loading||ready)return;loading=true;
@@ -50,8 +52,7 @@ public sealed partial class MainForm
                     var names=await Task.Run(FontSettingsPolicy.Families);
                     if(IsDisposed||box.IsDisposed)return;
                     var text=box.Text;var applying=_applyingSettings;_applyingSettings=true;
-                    try{box.BeginUpdate();box.Items.AddRange(names);box.Text=text;box.SelectionLength=0;
-                        box.AutoCompleteMode=AutoCompleteMode.SuggestAppend;box.AutoCompleteSource=AutoCompleteSource.ListItems;
+                    try{box.BeginUpdate();box.Items.Clear();box.Items.AddRange(names);box.Text=text;
                         // Bounded popup width; no startup measurement of every installed family.
                         box.DropDownWidth=Math.Max(box.Width,Math.Min(Screen.FromControl(box).WorkingArea.Width/2,420*DeviceDpi/96));ready=true;}
                     finally{box.EndUpdate();_applyingSettings=applying;}

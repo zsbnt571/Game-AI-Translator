@@ -417,7 +417,7 @@ internal sealed class GameCrashMonitor : IDisposable
             var path=new StringBuilder(32768);uint length=32768;
             if(!QueryFullProcessImageName(handle,0,path,ref length)){handle.Dispose();return null;}
             DateTime? started=GetProcessTimes(handle,out long creation,out _,out _,out _)?DateTime.FromFileTimeUtc(creation):null;
-            return new(){Handle=handle,Pid=pid,Path=Path.GetFullPath(path.ToString()),StartedUtc=started,Initial=initial};
+            return new(){Handle=handle,Pid=pid,Path=GameLaunchPathIdentity.Canonical(path.ToString()),StartedUtc=started,Initial=initial};
         }
         catch{handle.Dispose();return null;}
     }

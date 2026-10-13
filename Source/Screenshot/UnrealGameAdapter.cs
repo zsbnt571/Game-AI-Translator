@@ -12,6 +12,7 @@ namespace ScreenshotTranslationUiTester;
 
 internal sealed record UnrealEngine(string Runtime,string Project,int Major,int Minor)
 {
+    internal string[] LaunchArguments {get;init;}=[];
     internal string Version=>$"{Major}.{Minor}";
     internal string Paks=>Path.Combine(Project,"Content","Paks");
 }
@@ -22,24 +23,24 @@ internal sealed record UnrealEngine(string Runtime,string Project,int Major,int 
 internal static class UnrealStructuralPreflight
 {
     internal sealed record Result(bool Eligible,string Reason);
-    private static readonly ConcurrentDictionary<string,(long Size,long Stamp,int Minor,Result Result)> Cache=new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string,(long Size,long Stamp,int Major,int Minor,Result Result)> Cache=new(StringComparer.OrdinalIgnoreCase);
     private static readonly string[] Required={"KismetTextLibrary","KismetInternationalizationLibrary","PolyglotDataToText","FindTextInLocalizationTable","GetCurrentLanguage","PolyglotTextData","TextBlock","GetText","DataTable","SpawnObject"};
     internal static Result Check(UnrealEngine engine,bool fresh=false)
     {
-        if(engine.Major!=4||engine.Minor is <22 or >27)return new(false,"loader-version-unreviewed");
+        if(!(engine.Major==4&&engine.Minor is >=22 and <=27||engine.Major==5&&engine.Minor==8))return new(false,"loader-version-unreviewed");
         try
         {
             var info=new FileInfo(engine.Runtime);
             if(!info.Exists||info.Length is <4096 or >536870912)return new(false,"runtime-size-unreviewed");
-            if(!fresh&&Cache.TryGetValue(info.FullName,out var cached)&&cached.Size==info.Length&&cached.Stamp==info.LastWriteTimeUtc.Ticks&&cached.Minor==engine.Minor)return cached.Result;
+            if(!fresh&&Cache.TryGetValue(info.FullName,out var cached)&&cached.Size==info.Length&&cached.Stamp==info.LastWriteTimeUtc.Ticks&&cached.Major==engine.Major&&cached.Minor==engine.Minor)return cached.Result;
             using var input=new FileStream(info.FullName,FileMode.Open,FileAccess.Read,FileShare.Read);
-            var result=Inspect(input,engine.Minor);Cache[info.FullName]=(info.Length,info.LastWriteTimeUtc.Ticks,engine.Minor,result);return result;
+            var result=Inspect(input,engine.Minor,engine.Major);Cache[info.FullName]=(info.Length,info.LastWriteTimeUtc.Ticks,engine.Major,engine.Minor,result);return result;
         }
         catch(Exception e)when(e is IOException or UnauthorizedAccessException or ArgumentException or OverflowException){return new(false,"runtime-structure-unreadable");}
     }
-    internal static Result Inspect(Stream input,int minor)
+    internal static Result Inspect(Stream input,int minor,int major=4)
     {
-        if(minor is <22 or >27||!input.CanSeek||input.Length is <4096 or >536870912)return new(false,"runtime-size-or-version-unreviewed");
+        if(!(major==4&&minor is >=22 and <=27||major==5&&minor==8)||!input.CanSeek||input.Length is <4096 or >536870912)return new(false,"runtime-size-or-version-unreviewed");
         byte[] dos=new byte[64];input.Position=0;input.ReadExactly(dos);
         if(BinaryPrimitives.ReadUInt16LittleEndian(dos)!=0x5a4d)return new(false,"not-pe");
         int pe=BinaryPrimitives.ReadInt32LittleEndian(dos.AsSpan(60));
@@ -75,7 +76,7 @@ internal static class UnrealStructuralPreflight
             {
                 int length=(int)Math.Min(1048576,remaining);input.ReadExactly(buffer.AsSpan(carry,length));int total=carry+length;var span=buffer.AsSpan(0,total);
                 for(int n=0;n<names.Length;n++)if(!found[n])found[n]=span.IndexOf(names[n].Ansi)>=0||span.IndexOf(names[n].Wide)>=0;
-                if(!version)version=Regex.IsMatch(Encoding.Latin1.GetString(span).Replace("\0",""),@"\+\+UE4\+Release-4\."+minor+@"\D");
+                if(!version)version=Regex.IsMatch(Encoding.Latin1.GetString(span).Replace("\0",""),@"\+\+UE"+major+@"\+Release-"+major+@"\."+minor+@"\D");
                 remaining-=length;carry=Math.Min(256,total);buffer.AsSpan(total-carry,carry).CopyTo(buffer);
             }
         }
@@ -103,7 +104,7 @@ internal static class UnrealBuildProfiles
     }
     internal static void Add(UnrealEngine engine,Dictionary<string,byte[]> payload)
     {
-        if(engine.Major!=4)return;
+        if(engine.Major!=4&&!(engine.Major==5&&engine.Minor==8))return;
         // Re-hash at installation, even if UI recognition was already cached.
         if(!UnrealStructuralPreflight.Check(engine,fresh:true).Eligible)throw new EmbeddedCompatibilityException("此虚幻游戏未通过运行结构与所需文本接口的检查，未安装翻译组件。");
         // Known profile remains an exact-build fallback. Generic candidates
@@ -133,8 +134,9 @@ internal static class UnrealGameAdapter
     {
         var matches=EngineStructureDetection.UnrealRuntimeExecutables(exe);
         if(matches.Length!=1)return null;
-        string runtime=matches[0];var f=new FileInfo(runtime);
-        if(Versions.TryGetValue(runtime,out var cached)&&cached.Size==f.Length&&cached.Stamp==f.LastWriteTimeUtc.Ticks)return cached.Engine;
+        string runtime=matches[0];var f=new FileInfo(runtime);var bootstrap=UnrealBootstrap.Read(exe);
+        UnrealEngine? LaunchContext(UnrealEngine? found)=>found is null?null:found with{Project=bootstrap?.Project??found.Project,LaunchArguments=bootstrap?.Arguments??[]};
+        if(Versions.TryGetValue(runtime,out var cached)&&cached.Size==f.Length&&cached.Stamp==f.LastWriteTimeUtc.Ticks)return LaunchContext(cached.Engine);
         UnrealEngine? result=null;
         using var input=File.OpenRead(runtime);byte[] buffer=new byte[1024*1024];string carry="";
         while(input.Position<input.Length)
@@ -145,9 +147,9 @@ internal static class UnrealGameAdapter
             {result=new(runtime,Directory.GetParent(Path.GetDirectoryName(runtime)!)!.Parent!.FullName,int.Parse(match.Groups[2].Value),int.Parse(match.Groups[3].Value));break;}
             carry=text[^Math.Min(100,text.Length)..];
         }
-        Versions[runtime]=(f.Length,f.LastWriteTimeUtc.Ticks,result);return result;
+        Versions[runtime]=(f.Length,f.LastWriteTimeUtc.Ticks,result);return LaunchContext(result);
     }
-    // Version alone is insufficient: generic UE4 candidates require valid PE
+    // Version alone is insufficient: new candidates require valid PE
     // structure and the bridge's reflected surface before native self-checks.
     internal static bool Candidate(UnrealEngine engine)=>engine.Major==5&&engine.Minor is >=0 and <=7
         ||UnrealStructuralPreflight.Check(engine).Eligible;
@@ -195,7 +197,7 @@ internal static class UnrealGameAdapter
     }
     private static Dictionary<string,byte[]> Payload(UnrealEngine engine)
     {
-        using var input=RuntimePayloadProvider.Open("unreal-runtime","Unreal","Native","x64",RuntimePayloadProvider.PackageVersion);
+        using var input=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.UnrealRuntime.zip")??throw new IOException("缺少虚幻翻译组件。");
         using var zip=new ZipArchive(input);var result=new Dictionary<string,byte[]>(StringComparer.OrdinalIgnoreCase);
         foreach(var entry in zip.Entries)
         {
@@ -264,15 +266,16 @@ internal static class UnrealGameAdapter
     {
         SafePath(engine.Project,"Content\\Paks");
         var paks=Directory.GetFiles(engine.Paks).Where(p=>new[]{".pak",".utoc",".ucas"}.Contains(Path.GetExtension(p),StringComparer.OrdinalIgnoreCase)).OrderBy(p=>p,StringComparer.OrdinalIgnoreCase);
-        string fingerprint="78.2|"+engine.Version+"|"+string.Join("|",paks.Select(p=>{var f=new FileInfo(p);return f.Name+":"+f.Length+":"+f.LastWriteTimeUtc.Ticks;}));
+        var runtimeInfo=new FileInfo(engine.Runtime);
+        string fingerprint="139.1|"+engine.Version+"|"+runtimeInfo.Length+":"+runtimeInfo.LastWriteTimeUtc.Ticks+"|"+string.Join("|",paks.Select(p=>{var f=new FileInfo(p);return f.Name+":"+f.Length+":"+f.LastWriteTimeUtc.Ticks;}));
         string catalog=Path.Combine(Storage(exe),"catalog.json"),stamp=catalog+".stamp";
         if(File.Exists(catalog)&&File.Exists(stamp)&&File.ReadAllText(stamp)==fingerprint)return;
         Directory.CreateDirectory(Storage(exe));string temporary=catalog+"."+Guid.NewGuid().ToString("N")+".tmp";
         string worker=Path.Combine(AppContext.BaseDirectory,"tools","unreal-catalog","FusionUnrealCatalog.exe");
         if(!File.Exists(worker))throw new IOException("缺少虚幻文本提取工具。");
         var info=new ProcessStartInfo(worker){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
-        info.Environment[RuntimePayloadProvider.RootEnvironmentVariable]=RuntimePayloadProvider.ResolveRoot();
         info.ArgumentList.Add(engine.Paks);info.ArgumentList.Add($"GAME_UE{engine.Major}_{engine.Minor}");info.ArgumentList.Add(temporary);
+        info.ArgumentList.Add(engine.Runtime);
         using var process=Process.Start(info)??throw new IOException("无法启动文本提取工具。");var stdout=process.StandardOutput.ReadToEndAsync();var stderr=process.StandardError.ReadToEndAsync();
         try
         {

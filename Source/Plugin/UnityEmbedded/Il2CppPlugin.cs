@@ -6,7 +6,7 @@ using BepInEx.Unity.IL2CPP;
 
 namespace Fusion.UnityEmbedded
 {
-    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "0.6.0.84")]
+    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "0.6.0.134")]
     public sealed class Il2CppPlugin : BasePlugin
     {
         static UnityBridgeRuntime bridge;
@@ -25,6 +25,7 @@ namespace Fusion.UnityEmbedded
             var il=ctor.GetILGenerator();il.Emit(OpCodes.Ldarg_0);il.Emit(OpCodes.Ldarg_1);il.Emit(OpCodes.Call,constructor);il.Emit(OpCodes.Ret);
             var update=type.DefineMethod("Update",MethodAttributes.Public,typeof(void),Type.EmptyTypes);var body=update.GetILGenerator();body.Emit(OpCodes.Call,typeof(Il2CppPlugin).GetMethod("Frame"));body.Emit(OpCodes.Ret);
             var late=type.DefineMethod("LateUpdate",MethodAttributes.Public,typeof(void),Type.EmptyTypes);var lateBody=late.GetILGenerator();lateBody.Emit(OpCodes.Call,typeof(Il2CppPlugin).GetMethod("LateFrame"));lateBody.Emit(OpCodes.Ret);
+            var quit=type.DefineMethod("OnApplicationQuit",MethodAttributes.Public,typeof(void),Type.EmptyTypes);var quitBody=quit.GetILGenerator();quitBody.Emit(OpCodes.Call,typeof(Il2CppPlugin).GetMethod("Quit"));quitBody.Emit(OpCodes.Ret);
             var host=type.CreateType();
             var add=typeof(IL2CPPChainloader).GetMethod("AddUnityComponent",BindingFlags.Public|BindingFlags.Static,null,new[]{typeof(Type)},null);
             if(add==null)throw new MissingMethodException("BepInEx Unity component registration unavailable.");
@@ -33,6 +34,7 @@ namespace Fusion.UnityEmbedded
         }
         public static void Frame(){if(bridge!=null)bridge.Tick();}
         public static void LateFrame(){if(bridge!=null)bridge.LateTick();}
+        public static void Quit(){var closing=bridge;bridge=null;if(closing!=null)closing.Shutdown();}
         public override bool Unload(){if(bridge!=null)bridge.RestoreAndDispose();bridge=null;return true;}
     }
 }

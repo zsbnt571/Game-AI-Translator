@@ -2,11 +2,13 @@ namespace ScreenshotTranslationUiTester;
 
 internal static class Program
 {
+    private static bool mainWindowShown;
     [STAThread]
     private static void Main(string[] args)
     {
         try
         {
+            ScreenshotRebuildSelfTests.ValidateLaunch(args);
             DesktopStages.Start();
             args = FusionRuntime.Prepare(args);
             AppDataPaths.Initialize(args);
@@ -15,17 +17,39 @@ internal static class Program
         }
         catch(Exception ex)
         {
-            // Fail closed on startup/verification errors instead of falling back to user data or generating a crash dump.
-            if(AppDataPaths.IsInitialized)AppLog.Write("startup","Application startup failed",ex);
+            // Preserve the real failure phase; message-loop errors are not data-root failures.
+            if(AppDataPaths.IsInitialized)AppLog.Write(mainWindowShown?"ui":"startup",mainWindowShown?"Application runtime failed":"Application startup failed",ex);
             try{Console.Error.WriteLine(SafeDiagnosticOutput.ExceptionSummary(ex));}catch{}
-            if(!args.Any(x=>x.StartsWith("--verify",StringComparison.OrdinalIgnoreCase)||x.Contains("tests",StringComparison.OrdinalIgnoreCase)))
-                MessageBox.Show("软件未能启动："+SafeDiagnosticOutput.ExceptionSummary(ex)+"\n请检查软件目录及 data-location.json 的读写权限。未改用 C 盘的数据目录。","FUSION R1",MessageBoxButtons.OK,MessageBoxIcon.Error);
+            if(!args.Any(x=>x.StartsWith("--verify",StringComparison.OrdinalIgnoreCase)||x.Contains("tests",StringComparison.OrdinalIgnoreCase)||x.StartsWith("--screenshot-rebuild-smoke",StringComparison.OrdinalIgnoreCase)))
+                MessageBox.Show(FailureMessage(ex,mainWindowShown),"FUSION R1",MessageBoxButtons.OK,MessageBoxIcon.Error);
             Environment.ExitCode=1;
         }
     }
 
+    internal static string FailureMessage(Exception ex,bool afterMainWindowShown)
+    {
+        string prefix=afterMainWindowShown?"软件运行时发生错误，无法继续本次操作。":"软件未能启动。";
+        string hint=afterMainWindowShown?"请重新打开软件；若再次出现，请提供本次操作步骤和 logs/ui.log。"
+            :ex is UnauthorizedAccessException?"请检查提示所涉及文件或目录的读写权限。"
+            :"请保留错误内容；若再次出现，请提供 logs/startup.log（若已生成）。";
+        return prefix+"\n"+SafeDiagnosticOutput.ExceptionSummary(ex)+"\n"+hint;
+    }
+
     private static void Run(string[] args)
     {
+        var textContinuity=ArgumentValue(args,"--text-continuity-tests=");
+        if(textContinuity is not null){Environment.ExitCode=TextContinuitySelfTests.Run(textContinuity,ArgumentValue(args,"--text-continuity-cache="),ArgumentValue(args,"--text-continuity-legacy-list="));return;}
+        var screenshotRebuildSmoke=ArgumentValue(args,"--screenshot-rebuild-smoke=");
+        if(screenshotRebuildSmoke is not null)
+        {
+            ApplicationConfiguration.Initialize();
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.ThrowException);
+            Environment.ExitCode=ScreenshotRebuildSelfTests.Run(screenshotRebuildSmoke,
+                ArgumentValue(args,"--screenshot-rebuild-fixtures=")??throw new ArgumentException("Explicit prototype fixtures are required."),
+                args.Contains("--screenshot-rebuild-benchmark-only",StringComparer.OrdinalIgnoreCase),
+                args.Contains("--screenshot-resize-benchmark",StringComparer.OrdinalIgnoreCase));
+            return;
+        }
         var profileVerification=ArgumentValue(args,"--fusion-profile-verification=");
         if(profileVerification is not null){ApplicationConfiguration.Initialize();Environment.ExitCode=FusionProfileVerification.RunAsync(profileVerification).GetAwaiter().GetResult();return;}
         if(args.Contains("--fusion-test-surface"))
@@ -376,6 +400,7 @@ internal static class Program
         using var instance=new SingleInstanceCoordinator();
         if(!instance.IsPrimary){instance.NotifyPrimary();return;}
         using var main=new MainForm(null,diagnostics);
+        main.Shown+=(_,_)=>mainWindowShown=true;
         var uiChecks=ArgumentValue(args,"--ui-repair-checks=");if(uiChecks is not null)main.Shown+=async(_,_)=>await main.RunUiRepairChecksAsync(uiChecks);
         instance.Start(()=>{if(!main.IsDisposed)main.BeginInvoke(new Action(()=>{main.RestoreFromExternalLaunch();if(!string.IsNullOrWhiteSpace(singleHarness)){File.WriteAllText(singleHarness,"ACTIVATED");main.ExitForSmoke();}}));});
         if(!string.IsNullOrWhiteSpace(singleHarness))main.Shown+=(_,_)=>{main.TrayHideForSmoke();File.WriteAllText(singleHarness+".ready","READY");};

@@ -15,11 +15,19 @@ internal static class ModelManagerOperations
             .Any(path=>Path.GetFullPath(path).Length>=260);
     }
 
-    internal const string LongPathMessage="安装路径过长，包内 OCR 原生组件不支持此路径。请将整个程序解压到短目录（如 C:\\GameAITranslator）；在原长路径重新修复不能解决。未修改系统设置。";
+    internal const string LongPathMessage="安装路径过长，包内 OCR 原生组件不支持此路径。请将整个程序解压到短目录（如 E:\\ST-Personal-PR3）；在原长路径重新修复不能解决。未修改系统设置。";
 
     internal static string ResolveRapidPython(string applicationRoot)
     {
-        return OcrDependencyChecker.ResolvePython(FusionRuntime.Root);
+        var runtimeRoot = FusionRuntime.Root;
+        var candidates = new[]
+        {
+            Path.Combine(runtimeRoot, "python", "python.exe"),
+            Path.Combine(runtimeRoot, "rapid", "Scripts", "python.exe"),
+            Path.Combine(runtimeRoot, "venv", "Scripts", "python.exe"),
+            Path.Combine(applicationRoot, "tools", "python", "Scripts", "python.exe")
+        };
+        return candidates.FirstOrDefault(File.Exists) ?? candidates[0];
     }
 
     internal static string QuarantinePath(string path) => path + ".quarantine";
@@ -46,6 +54,12 @@ internal static class ModelManagerOperations
 
     internal static string ResolveVisionRoot(string applicationRoot)
     {
+        var pointer=Path.Combine(applicationRoot,"vision-runtime","location.txt");
+        if(File.Exists(pointer))
+        {
+            var configured=File.ReadAllText(pointer).Trim().Trim('"');
+            if(Directory.Exists(configured))return configured;
+        }
         return Path.Combine(applicationRoot,"vision-runtime");
     }
 }

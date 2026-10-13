@@ -10,7 +10,8 @@ internal static class GameRuntimeExecutables
         var paths=new List<string>{exe};
         try
         {
-            if(RenpyGameAdapter.Detect(exe) is {} renpy)paths.AddRange(renpy.RuntimeExecutables);
+            if(YukarGameAdapter.Detect(exe) is {} yukar){paths.Add(yukar.Player);paths.Add(Path.Combine(yukar.Directory,"FusionYukarBridge.exe"));}
+            else if(RenpyGameAdapter.Detect(exe) is {} renpy)paths.AddRange(renpy.RuntimeExecutables);
             else paths.AddRange(EngineStructureDetection.UnrealRuntimeExecutables(exe));
         }
         catch(Exception e)when(e is IOException or UnauthorizedAccessException){ }

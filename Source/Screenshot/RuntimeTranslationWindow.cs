@@ -14,15 +14,15 @@ internal sealed class RuntimeTranslationWindow : Form
     {
         Session=session;Text=game+" · 备用译文窗";Size=new(620,480);MinimumSize=new(360,240);
         StartPosition=FormStartPosition.CenterScreen;Padding=new(16);ShowInTaskbar=true;
-        var note=new Label{Dock=DockStyle.Top,AutoSize=true,Text="显示暂不能替换到游戏里的文字；关闭此窗后停止补译新文字。",Padding=new(0,0,0,8)};
+        var note=new Label{Dock=DockStyle.Top,AutoSize=true,Text="显示暂不能替换到游戏里的文字；关闭此窗后仍会翻译和保存，关闭游戏翻译才会停止。",Padding=new(0,0,0,8)};
         var top=new CheckBox{Dock=DockStyle.Top,AutoSize=true,Text="保持窗口在最前面",Padding=new(0,0,0,8)};
         top.CheckedChanged+=(_,_)=>TopMost=top.Checked;
         Controls.Add(text);Controls.Add(state);Controls.Add(top);Controls.Add(note);
         FontManager.ApplyUi(this,appearance);UiTheme.Apply(this,appearance);
         Resize+=(_,_)=>note.MaximumSize=new(Math.Max(200,ClientSize.Width-Padding.Horizontal),0);
-        Shown+=(_,_)=>{session.EnableReadOnlyTranslation(true);RefreshText();refresh.Start();};
+        Shown+=(_,_)=>{session.SetReadOnlyWindowVisible(true);RefreshText();refresh.Start();};
         refresh.Tick+=(_,_)=>RefreshText();
-        FormClosed+=(_,_)=>{session.EnableReadOnlyTranslation(false);refresh.Stop();refresh.Dispose();};
+        FormClosed+=(_,_)=>{session.SetReadOnlyWindowVisible(false);refresh.Stop();refresh.Dispose();};
     }
     private void RefreshText()
     {

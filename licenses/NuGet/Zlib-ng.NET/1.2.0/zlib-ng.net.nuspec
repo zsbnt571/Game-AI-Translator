@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Zlib-ng.NET</id>
+    <version>1.2.0</version>
+    <authors>NotOfficer</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <description>A zlib-ng wrapper for .NET</description>
+    <copyright>Copyright (c) 2025 NotOfficer</copyright>
+    <tags>zlib-ng, zlib, zlibng</tags>
+    <repository type="git" url="https://github.com/NotOfficer/Zlib-ng.NET" branch="refs/heads/master" commit="1e6ae3cb5ed91f1ec743103039d3ac345babd179" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+      <group targetFramework="net9.0" />
+      <group targetFramework="net10.0" />
+    </dependencies>
+  </metadata>
+</package>

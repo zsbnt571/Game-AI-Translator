@@ -16,6 +16,13 @@ internal sealed class WorkspaceScrollView : BufferedPage
         child.Dock=DockStyle.None;child.SizeChanged+=(_,_)=>Reflow();Reflow();
     }
     protected override void OnLayout(LayoutEventArgs e){base.OnLayout(e);Reflow();}
+    protected override void OnVisibleChanged(EventArgs e)
+    {
+        base.OnVisibleChanged(e);
+        // A retained page may have been measured while hidden during a font or
+        // language change. Reapply the viewport constraint before showing it.
+        if(Visible)Reflow();
+    }
     private void Reflow()
     {
         if(laying||Controls.Count==0)return;laying=true;

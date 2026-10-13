@@ -43,7 +43,7 @@ namespace Fusion.CloudMeadow
         readonly bool numbers,variables,identifiers,allowEmpty;
         readonly int timeout,firstByte,concurrency;
         internal bool Capturing;
-        internal readonly KeyCode ToggleKey;
+        internal readonly Fusion.InputSupport.GameScanShortcut ToggleKey;
         internal bool ChineseDisplay {get{return target.StartsWith("zh",StringComparison.OrdinalIgnoreCase)||target.IndexOf("中文",StringComparison.Ordinal)>=0;}}
         internal int Active {get;private set;}
         internal int Queued {get{return pending.Count;}}
@@ -54,7 +54,7 @@ namespace Fusion.CloudMeadow
         internal CloudTranslation(ConfigFile config,ManualLogSource logger)
         {
             log=logger;Diagnostics=new CloudDiagnostics(log);Capturing=config.Bind<bool>("General","Enabled",true,"Initial capture state. The game hotkey changes only this session; queued/in-flight work can finish.").Value;
-            ToggleKey=config.Bind<KeyCode>("General","ToggleKey",KeyCode.F8,"Game-local key; modifiers and focused input fields suppress it.").Value;
+            ToggleKey=new Fusion.InputSupport.GameScanShortcut(config.Bind<string>("General","ToggleKey","F8","Game-local key or Ctrl/Alt/Shift chord; focused input fields suppress it.").Value);
             endpoint=Endpoint(Bind(config,"API","Endpoint",""));key=Bind(config,"API","ApiKey","");model=Bind(config,"API","Model","");
             allowEmpty=config.Bind<bool>("API","AllowEmptyApiKey",false,"Only enable for providers that require no key.").Value;
             target=Bind(config,"Translation","TargetLanguage","zh-CN");

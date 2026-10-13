@@ -25,12 +25,15 @@ function M.new(options)
  local tablelib=options.tablelib
  local accept=assert(options.accept)
  local find=options.find or FindAllOf
+ local resolve=options.resolve or StaticFindObject
  local name=options.name or FName
  local clock=options.clock or os.clock
  local identityReady=false
  local diagnostic={identity='not-tested',stringTables='not-tested',visibleSeen=0,identified=0,unidentified=0,tableIdentities=0,eligible=0,protected=0,conflicts=0,errors=0,visibility='parent-flags-only',visibilityUnknown=0,hiddenAncestors=0,
   scanCalls=0,enumerations=0,lastEnumerationMs=0,maxEnumerationMs=0,lastScanMs=0,maxScanMs=0,widgetHintErrors=0,
-  tableCalls=0,lastTableMs=0,maxTableMs=0}
+   tableCalls=0,lastTableMs=0,maxTableMs=0,tableRetries=0,
+  currentObserved=0,snapshotChecks=0,snapshotInvalidated=0,snapshotPartial=false,
+  lastSnapshotMs=0,maxSnapshotMs=0,unverifiablePaths=0}
  local cursors={TextBlock=1,RichTextBlock=1}
  local classes={'TextBlock','RichTextBlock'}
  local nextClass=1
@@ -41,6 +44,7 @@ function M.new(options)
  -- Capture is independent of replacement eligibility. Only copied strings are
  -- retained; a display string must never be promoted to a localization ID.
  local observed,observedOrder={},{}
+ local observationCursors={snapshot=1,maintenance=1}
  local snapshotClock=options.snapshotClock or os.time or clock
  local function forget(key)
   if not key or not observed[key] then return end
@@ -50,7 +54,11 @@ function M.new(options)
  local function observe(display,class,key)
   -- Production UObject paths identify an observation slot, never a future
   -- write target. A reused path simply replaces the old copied display value.
-  key=key or (class..'\0'..display)
+  -- Publishing requires a path that can be re-resolved in the publication
+  -- callback. Anonymous copied text cannot prove the widget still exists.
+  if not key or not key:match('%s(.+)$') then
+   diagnostic.unverifiablePaths=diagnostic.unverifiablePaths+1;return
+  end
   if not observed[key] then
    if #observedOrder>=128 then forget(observedOrder[1]) end
    observedOrder[#observedOrder+1]=key
@@ -100,7 +108,10 @@ function M.new(options)
   if previous then
    -- A table entry may be discovered before its widget becomes visible. Recheck
    -- changed display values so prior discovery cannot bypass later protection.
-   if origin=='visible-ftext' and (not previous.visible or previous.display~=display) then
+   if origin=='visible-ftext' then
+    -- Cache delivery and game resets can happen between scans while the source
+    -- string remains equal to the previous observation. Revisit the already
+    -- proven identity so a transient/late update cannot strand its cached text.
     local decision=accept(e,display,origin)
     if decision=='protected' then diagnostic.protected=diagnostic.protected+1 end
     if decision=='conflict' then diagnostic.conflicts=diagnostic.conflicts+1 end
@@ -164,6 +175,15 @@ function M.new(options)
       if not b or not b:IsValid() then return end
       local named,key=pcall(function() return b:GetFullName() end)
       if not named or not bounded(key,4096,false) then key=nil end
+      -- Typed serialized text is safe to prepare even in a hidden/template
+      -- control. Read only its property, never invoke an off-screen binding.
+      -- Preparation creates no identity or permission to write an asset.
+      if options.prepare then
+       pcall(function()
+        local source=stringValue(b.Text)
+        if bounded(source,6000,false) then options.prepare(source) end
+       end)
+      end
       -- Native enumeration may already exceed the scan budget. Give this
       -- widget its own bounded parent check; otherwise every non-root label
       -- after a slow FindAllOf is permanently classified as unknown.
@@ -210,76 +230,149 @@ function M.new(options)
   diagnostic.lastScanMs=math.max(0,(clock()-started)*1000)
   diagnostic.maxScanMs=math.max(diagnostic.maxScanMs,diagnostic.lastScanMs)
  end
- function self.observed()
+ function self.observed(maintenance)
   local result,unique={},{}
+  local started=clock()
   local now=snapshotClock()
   for index=#observedOrder,1,-1 do
    local key=observedOrder[index];local item=observed[key]
    if now-item.seen>=5 then forget(key) end
   end
-  for _,key in ipairs(observedOrder) do
-   local item=observed[key]
-   if not unique[item.text] then
-    result[#result+1]={text=item.text,class=item.class};unique[item.text]=true
+  -- The cache above is a bounded discovery index, not a visible snapshot.
+  -- A destroyed/hidden/reused widget can keep its copied string for five
+  -- seconds between rotating scans. Re-resolve only known paths, in bounded
+  -- turns, and publish exclusively text checked in this callback. Neither a
+  -- prior observation nor a matching catalog source is visibility evidence.
+  local keys={};for _,key in ipairs(observedOrder) do keys[#keys+1]=key end
+  -- Background cache maintenance must not advance the host's cursor: a fixed
+  -- frame/poll cadence could otherwise publish the same subset indefinitely.
+  local consumer=maintenance and 'maintenance' or 'snapshot'
+  local count=#keys;local first=math.min(observationCursors[consumer],math.max(1,count))
+  local checked,walked,bytes=0,0,0
+  for offset=0,math.min(count,32)-1 do
+   if checked>0 and clock()-started>=0.003 then break end
+   local key=keys[(first+offset-1)%count+1];local item=observed[key]
+   checked=checked+1;diagnostic.snapshotChecks=diagnostic.snapshotChecks+1
+   walked=offset+1
+   local ok,display=pcall(function()
+    local objectPath=key:match('%s(.+)$')
+    local widget=resolve and resolve(objectPath)
+    if not widget or not widget:IsValid() or widget:GetFullName()~=key then return end
+    if visibleParents(widget,clock())~=true then return end
+    local value=stringValue(widget:GetText())
+    if bounded(value,6000,false) then return value end
+   end)
+   if not ok or not display then
+    forget(key);diagnostic.snapshotInvalidated=diagnostic.snapshotInvalidated+1
+   else
+    -- A path may now contain another line or another object. Read its current
+    -- display afresh, without inheriting any FText replacement identity.
+    observe(display,item.class,key)
+    if not unique[display] then
+     -- Match the IPC poll's source-byte bound here, before advancing past
+     -- entries it cannot publish. Advancing all 32 and truncating afterwards
+     -- would permanently skip the last long labels in each rotating page.
+     if bytes+#display>65536 then walked=offset;break end
+     bytes=bytes+#display
+     result[#result+1]={text=display,class=item.class};unique[display]=true
+    end
    end
   end
+  observationCursors[consumer]=1
+  if count>0 then
+   local nextKey=keys[(first+walked-1)%count+1]
+   for index,key in ipairs(observedOrder) do
+    if key==nextKey then observationCursors[consumer]=index;break end
+   end
+  end
+  diagnostic.currentObserved=#result
+  diagnostic.snapshotPartial=walked<count
+  diagnostic.lastSnapshotMs=math.max(0,(clock()-started)*1000)
+  diagnostic.maxSnapshotMs=math.max(diagnostic.maxSnapshotMs,diagnostic.lastSnapshotMs)
   return result
  end
  function self.tables()
   if not tablelib then diagnostic.stringTables='library-unavailable';return end
   local tableStarted=clock();diagnostic.tableCalls=diagnostic.tableCalls+1
-  local processingItem=false
+   local processingItem
   local ok=pcall(function()
    if clock()>=nextTables then
     nextTables=clock()+5
     local tables=tablelib:GetRegisteredStringTables();local count=arrayCount(tables)
     diagnostic.registeredTables=count
-    for index=1,math.min(count,1024) do
+     local refreshed,registered={},{}
+     local previous=tableQueue[tableCursor]
+     local firstNew
+     for index=1,math.min(count,1024) do
      local tableName=stringValue(arrayAt(tables,index))
-     if bounded(tableName,4096,false) and not tableSeen[tableName] then
-      tableSeen[tableName]=true;tableQueue[#tableQueue+1]={name=tableName,cursor=1}
+      if bounded(tableName,4096,false) and not registered[tableName] then
+       local item=tableSeen[tableName] or {name=tableName,cursor=1,nextAt=0,failures=0}
+       registered[tableName]=item;refreshed[#refreshed+1]=item
+       if not tableSeen[tableName] and not firstNew then firstNew=#refreshed end
      end
     end
+     tableQueue,tableSeen=refreshed,registered;tableCursor=1
+     for index,item in ipairs(tableQueue) do if item==previous then tableCursor=index;break end end
+     if firstNew then tableCursor=firstNew end
     if count>1024 then diagnostic.limit=true end
    end
    if #tableQueue==0 then diagnostic.stringTables='ready-empty';return end
-   local item=tableQueue[tableCursor]
-   if not item then diagnostic.stringTables='ready';return end
-   processingItem=true
+    local item
+    for _=1,math.min(16,#tableQueue) do
+     local candidate=tableQueue[tableCursor]
+     if clock()>=(candidate.nextAt or 0) then item=candidate;break end
+     tableCursor=tableCursor%#tableQueue+1
+    end
+    if not item then diagnostic.stringTables='ready';diagnostic.lastTableAttempts=0;return end
+    processingItem=item
    -- The loader synchronously materializes an entire returned TArray. Take a
-   -- single key snapshot per registered table, copy its values immediately and
-   -- never retain RemoteParam wrappers or refetch that array each frame.
+    -- single key snapshot per bounded pass, copy its values immediately and
+    -- retain only strings. Completed tables become eligible again after five
+    -- seconds so late keys and same-name registrations do not disappear.
    local id=name(item.name)
    if not item.keys then
-    item.namespace=stringValue(tablelib:GetTableNamespace(id))
+     local namespace=stringValue(tablelib:GetTableNamespace(id))
     local keys=tablelib:GetKeysFromStringTable(id);local size=arrayCount(keys)
-    item.keys={}
+     local copied={}
     for index=1,math.min(size,100000) do
      local key=stringValue(arrayAt(keys,index))
-     if bounded(key,4096,false) then item.keys[#item.keys+1]=key end
+      if bounded(key,4096,false) then copied[#copied+1]=key end
     end
+     -- Commit the snapshot only after all wrappers were copied successfully.
+     item.namespace=namespace;item.keys=copied;item.cursor=1
     if size>100000 then diagnostic.limit=true end
    end
    local started=clock();local processed=0
    while item.cursor<=#item.keys and processed<32 do
-    local key=item.keys[item.cursor];item.cursor=item.cursor+1;processed=processed+1
+     local key=item.keys[item.cursor];processed=processed+1
     local source=stringValue(tablelib:GetTableEntrySourceString(id,key))
     publish({ns=item.namespace,key=key,source=source},nil,'string-table')
+     item.cursor=item.cursor+1
     if clock()-started>=0.003 then break end
    end
-   if item.cursor>#item.keys then item.keys={};tableCursor=tableCursor+1 end
+    item.failures=0
+    if item.cursor>#item.keys then item.keys=nil;item.cursor=1;item.nextAt=clock()+5 end
+    tableCursor=tableCursor%#tableQueue+1
    diagnostic.stringTables='ready';diagnostic.lastTableAttempts=processed
   end)
   if not ok then
    diagnostic.stringTables='api-call-failed';diagnostic.errors=diagnostic.errors+1
-   if processingItem then tableCursor=tableCursor+1 end
+    if processingItem then
+     -- Retry the same snapshot/key with backoff, while other tables get a turn.
+     processingItem.failures=math.min(5,(processingItem.failures or 0)+1)
+     processingItem.nextAt=clock()+math.min(5,.25*2^(processingItem.failures-1))
+     diagnostic.tableRetries=diagnostic.tableRetries+1
+     tableCursor=tableCursor%#tableQueue+1
+    end
   end
   diagnostic.lastTableMs=math.max(0,(clock()-tableStarted)*1000)
   diagnostic.maxTableMs=math.max(diagnostic.maxTableMs,diagnostic.lastTableMs)
  end
  function self.status()
   local result={};for k,v in pairs(diagnostic) do result[k]=v end
-  result.visibleRead=true
+  result.visibleRead=diagnostic.currentObserved>0
+  result.visibleReadEver=diagnostic.visibleSeen>0
+  result.snapshotValidation='same-callback-path-and-parent-flags'
   result.identityReplacement=identityReady
   if not identityReady then
    result.warning='运行时补译尚未完全接入，部分屏幕文字仍会保留原文。'
@@ -290,7 +383,7 @@ function M.new(options)
  end
  function self.reset()
   seen={};seenCount=0;cursors={TextBlock=1,RichTextBlock=1};nextClass=1;tableCursor=1;tableQueue={};tableSeen={};nextTables=0
-  observed,observedOrder={},{}
+  observed,observedOrder={},{};observationCursors={snapshot=1,maintenance=1};diagnostic.currentObserved=0;diagnostic.snapshotPartial=false
  end
  return self
 end

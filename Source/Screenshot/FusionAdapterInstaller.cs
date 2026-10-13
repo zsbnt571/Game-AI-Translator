@@ -62,7 +62,7 @@ internal sealed class LegacyMgiAdapterInstaller
             manifest.Files.Add(new(relative,existed,backup));
             File.WriteAllText(manifestPath,JsonSerializer.Serialize(manifest,new JsonSerializerOptions{WriteIndented=true}));
         }
-        using var stream=RuntimePayloadProvider.Open("unity-legacy","Unity","Mono","x64",RuntimePayloadProvider.PackageVersion);
+        using var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.UnityMono.zip")??throw new InvalidOperationException("候选缺少插件载荷。");
         using var zip=new ZipArchive(stream,ZipArchiveMode.Read);
         foreach(var entry in zip.Entries)
         {
@@ -74,6 +74,7 @@ internal sealed class LegacyMgiAdapterInstaller
         Verify(game);
         Track(ConfigRelative);
         WriteConfiguration(InRoot(root,ConfigRelative),settings,toggleKey);
+        LegacyTranslationMemory.Seed(game.ExePath,settings,LegacyTranslationMemory.Format.Mgi);
     }
     internal void Verify(GameInfo game)
     {
@@ -113,7 +114,7 @@ internal sealed class LegacyMgiAdapterInstaller
     internal static void WriteConfiguration(string path,ApiSettings settings,string toggleKey)
     {
         if(!Uri.TryCreate(settings.ApiUrl,UriKind.Absolute,out var uri)||uri.Scheme is not ("https" or "http"))throw new ArgumentException("请输入有效的 HTTP/HTTPS 接口地址。");
-        if(!Enumerable.Range(1,12).Select(x=>"F"+x).Contains(toggleKey))throw new ArgumentException("请选择 F1 至 F12 的游戏内按键。");
+        toggleKey=GameShortcut.Normalize(toggleKey);
         var prompt=Convert.ToBase64String(Encoding.UTF8.GetBytes(FusionConfiguration.PluginPrompt(settings)));
         var text=$"[General]\nEnabled = true\nToggleKey = {toggleKey}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(settings.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {SingleLine(settings.ApiUrl)}\nApiKey = {SingleLine(settings.ApiKey)}\nModel = {SingleLine(settings.Model)}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(settings.TargetLanguage)}\nPromptBase64 = {prompt}\n";
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);File.WriteAllText(path,text,new UTF8Encoding(false));

@@ -1,0 +1,12 @@
+# 版本历史 / Version history
+
+当前主分支直接展示 .176 的 [产品源码](../Source) 与 [构建工具](../tools)。旧版源码和说明通过 Git 历史与原有标签保留。
+
+| 版本 / Version | 发布 / Release | 当时的源码与说明 / Frozen source and docs |
+| --- | --- | --- |
+| 0.6.0.176 Preview 1 | [下载与发布说明](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.176-preview.1) | [原始发布快照](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.176-preview.1/releases/0.6.0.176-preview.1) |
+| 0.6.0-alpha | [历史 Alpha](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0-alpha) | [Alpha 标签](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0-alpha) |
+
+首次发布 .176 时，其源码放在版本子目录中，根目录仍是 Alpha。后来主分支整理为直接展示 .176；原始 .176 标签仍保持发布时的目录结构。完整构建材料以对应发布页的 `*-source.zip` 为准。
+
+The main branch now presents .176 directly. Its original release tag retains the original versioned directory layout; the Alpha tag retains its historical code and documentation. Release assets and their checksums are unchanged by this repository reorganization. Use each release's own complete source asset for development.

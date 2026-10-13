@@ -1,10 +1,14 @@
-﻿/* Runtime-only RPG editing. No evaluation of expressions; map files are read, never written. */
+/* Runtime-only RPG editing. No evaluation of expressions; map files are read, never written. */
 function createFusionRpgAdvanced(g,io) {
     "use strict";
+    function fusionFinite(v){return typeof v==="number"&&isFinite(v);}
+    function fusionInteger(v){return fusionFinite(v)&&Math.floor(v)===v;}
+    function fusionSafeInteger(v){return fusionInteger(v)&&Math.abs(v)<=9007199254740991;}
+
     var maps=Object.create(null),options={speed:1,experience:1,move:0,hpMax:false,mpMax:false,tpMax:false,clickTeleport:false,alwaysSpeed:true},hooks=[],restores=[],changedMaps=Object.create(null),loadingMap=0,interpreterRecords=[],nextInterpreter=1;
     var mapRevision=0,mapSequence=0,mapSyncCache=null;
     function fail(t){throw new Error(t);}
-    function integer(v,min,max){if(!Number.isSafeInteger(v)||v<min||v>max)fail("数值不在允许范围内。");return v;}
+    function integer(v,min,max){if(!fusionSafeInteger(v)||v<min||v>max)fail("数值不在允许范围内。");return v;}
     function num(key,name,read,write,min,max,lock){return {key:key,name:name,type:"number",read:read,write:write,min:min,max:max,canLock:lock!==false};}
     function bool(key,name,read,write,lock){return {key:key,name:name,type:"boolean",read:read,write:write,canLock:lock!==false};}
     function label(key,name,type,read){return {key:key,name:name,type:type,read:read,write:function(){fail("请使用右侧详情操作。");},canLock:false};}
@@ -155,7 +159,7 @@ function createFusionRpgAdvanced(g,io) {
         if(scope==="commonEvents")return (g.$dataCommonEvents||[]).filter(Boolean).map(function(e){return "commonEvent:"+e.id;});
         if(scope==="fields"){
             var out=[],seen=[],limit=30000;var roots={system:g.$gameSystem,party:g.$gameParty,actors:g.$gameActors,variables:g.$gameVariables,switches:g.$gameSwitches,selfSwitches:g.$gameSelfSwitches,player:g.$gamePlayer};
-            function walk(obj,path){if(!obj||typeof obj!=="object"||path.length>9||seen.indexOf(obj)>=0)return;seen.push(obj);Object.keys(obj).forEach(function(k){if(--limit<0||["__proto__","prototype","constructor"].indexOf(k)>=0)return;var v=obj[k],next=path.concat(k);if(["number","boolean","string"].indexOf(typeof v)>=0&&String(v).length<=2000&&(typeof v!=="number"||Number.isFinite(v)))out.push("field:"+encodeURIComponent(JSON.stringify(next)));else walk(v,next);});}
+            function walk(obj,path){if(!obj||typeof obj!=="object"||path.length>9||seen.indexOf(obj)>=0)return;seen.push(obj);Object.keys(obj).forEach(function(k){if(--limit<0||["__proto__","prototype","constructor"].indexOf(k)>=0)return;var v=obj[k],next=path.concat(k);if(["number","boolean","string"].indexOf(typeof v)>=0&&String(v).length<=2000&&(typeof v!=="number"||fusionFinite(v)))out.push("field:"+encodeURIComponent(JSON.stringify(next)));else walk(v,next);});}
             Object.keys(roots).forEach(function(k){walk(roots[k],[k]);});return out;
         }
         return null;
@@ -231,7 +235,7 @@ function createFusionRpgAdvanced(g,io) {
         if(q.op==="eventCommandSet"){
             if(q.runtimeToken)fail("运行中的指令仅供定位；请在地图事件或公共事件中编辑。");
             install();var detail=eventDetails(q),page=detail.pages[integer(q.page,0,detail.pages.length-1)],index=integer(q.index,0,page.list.length-1),value=q.command;
-            if(!value||!Number.isSafeInteger(value.code)||!Number.isSafeInteger(value.indent)||value.indent<0||!Array.isArray(value.parameters)||JSON.stringify(value).length>16000)fail("事件指令格式无效。");
+            if(!value||!fusionSafeInteger(value.code)||!fusionSafeInteger(value.indent)||value.indent<0||!Array.isArray(value.parameters)||JSON.stringify(value).length>16000)fail("事件指令格式无效。");
             var previous=JSON.parse(JSON.stringify(page.list[index]));page.list[index]=JSON.parse(JSON.stringify(value));if(!q.common){changedMaps[detail.mapId]=mapData(detail.mapId);if(detail.mapId===current()&&g.$gameMap.requestRefresh)g.$gameMap.requestRefresh();}return {updated:true,undo:{op:"eventCommandSet",common:!!q.common,mapId:detail.mapId,eventId:detail.id,page:q.page,index:index,command:previous}};
         }
         if(q.op==="teleport"){

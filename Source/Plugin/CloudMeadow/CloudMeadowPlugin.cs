@@ -116,7 +116,7 @@ namespace Fusion.CloudMeadow
         {
             if(!ready)return;
             translation.Diagnostics.FlushSummary();
-            if(!Typing()&&!Input.GetKey(KeyCode.LeftControl)&&!Input.GetKey(KeyCode.RightControl)&&!Input.GetKey(KeyCode.LeftAlt)&&!Input.GetKey(KeyCode.RightAlt)&&!Input.GetKey(KeyCode.LeftShift)&&!Input.GetKey(KeyCode.RightShift)&&Input.GetKeyDown(translation.ToggleKey))
+            if(!Typing()&&translation.ToggleKey.Pressed())
             {translation.Capturing=!translation.Capturing;translation.Diagnostics.Global(translation.Capturing?"capture-resumed":"capture-paused","queued="+translation.Queued+" active="+translation.Active);}
             if(Time.unscaledTime>=nextScan)
             {

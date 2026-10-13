@@ -27,7 +27,7 @@ internal sealed class ArtworkCropPreview:Control
     protected override void OnPaint(PaintEventArgs e)
     {
         var p=UiTheme.Current;e.Graphics.Clear(p.Control);var bounds=Rectangle.Inflate(ClientRectangle,-12,-12);
-        if(image is null){WorkspaceDrawing.Text(e.Graphics,"选择图片后在这里预览",Font,bounds,p.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
+        if(image is null){WorkspaceDrawing.Text(e.Graphics,UiLanguage.Text("选择图片后在这里预览"),Font,bounds,p.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
         var crop=CropRectangle();var dest=WorkspaceDrawing.Fit(new(Math.Max(1,(int)crop.Width),Math.Max(1,(int)crop.Height)),bounds);
         e.Graphics.InterpolationMode=InterpolationMode.HighQualityBicubic;e.Graphics.DrawImage(image,dest,crop,GraphicsUnit.Pixel);using var pen=new Pen(p.Accent,2);e.Graphics.DrawRectangle(pen,dest);
     }
@@ -46,12 +46,10 @@ internal sealed class GameArtworkDialog:Form
     private readonly ComboBox kind=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList,Width=110};
     private readonly ComboBox source=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList,Width=220};
     private readonly ComboBox ratio=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList,Width=160};
-    private readonly TextBox query=new(){Width=198,PlaceholderText="游戏名称"};
+    private readonly TextBox query=new(){Width=198,PlaceholderText=UiLanguage.Text("游戏名称")};
     private readonly ListBox matches=new(){Height=108,Width=300,DisplayMember="Name"};
     private readonly ArtworkCropPreview preview=new(){Dock=DockStyle.Fill};
     private readonly Label status=new(){AutoSize=true,MaximumSize=new(520,0)};
-    private readonly Label captureAvailability=new(){AutoSize=true,MaximumSize=new(290,0),Name="CoverCaptureAvailability"};
-    private Button captureButton=null!;
     private readonly Button save=new GameActionButton("保存图片"){Primary=true};
     private readonly List<Control> busyControls=[];
     private bool loading,busy,dirty;
@@ -76,8 +74,7 @@ internal sealed class GameArtworkDialog:Form
         kind.Items.AddRange(["封面","图标"]);source.Items.AddRange(["跟随全局默认","本地自动","网上匹配"]);ratio.Items.AddRange(["原始比例","横版 16:9","竖版 2:3","正方形"]);
         Label("编辑图片");Row(kind);Label("默认来源");Row(source);
         var apply=Action("应用来源",ApplySourceAsync);Row(apply);Label("手动选择");
-        captureButton=Action("截取游戏画面",CaptureAsync);captureButton.Name="CoverCaptureAction";
-        Row(Action("从文件选择",ChooseFileAsync),captureButton);controls.Controls.Add(captureAvailability);RefreshCaptureAvailability();
+        Row(Action("从文件选择",ChooseFileAsync),Action("截取游戏画面",CaptureAsync));
         Label("网上查找 · Steam 图片");query.Text=game.Name;Row(query,Action("查找",SearchAsync));controls.Controls.Add(matches);
         Row(Action("预览所选图片",LoadMatchAsync));
         var picture=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Margin=Padding.Empty};picture.ColumnStyles.Add(new(SizeType.Percent,100));picture.RowStyles.Add(new(SizeType.Percent,100));picture.RowStyles.Add(new(SizeType.AutoSize));picture.RowStyles.Add(new(SizeType.AutoSize));
@@ -92,7 +89,7 @@ internal sealed class GameArtworkDialog:Form
         busyControls.AddRange([kind,source,ratio,query,matches,save]);kind.SelectedIndexChanged+=(_,_)=>LoadCurrent();ratio.SelectedIndexChanged+=(_,_)=>{preview.Aspect=ratio.SelectedIndex switch{1=>16d/9,2=>2d/3,3=>1,_=>0};preview.Invalidate();};
         matches.SelectedIndexChanged+=async(_,_)=>{if(!busy)await Run(LoadMatchAsync);};
         Shown+=(_,_)=>{loading=true;kind.SelectedIndex=0;loading=false;LoadCurrent();};
-        FormClosing+=(_,e)=>{if(dirty&&!busy&&MessageBox.Show(this,"未保存的裁剪将放弃，继续关闭？","图标与封面",MessageBoxButtons.OKCancel,MessageBoxIcon.Question)!=DialogResult.OK)e.Cancel=true;};
+        FormClosing+=(_,e)=>{if(dirty&&!busy&&MessageBox.Show(this,UiLanguage.Text("未保存的裁剪将放弃，继续关闭？"),UiLanguage.Text("图标与封面"),MessageBoxButtons.OKCancel,MessageBoxIcon.Question)!=DialogResult.OK)e.Cancel=true;};
         FormClosed+=(_,_)=>lifetime.Cancel();UiTheme.Apply(this,appearance);MainForm.ConfigureFusionInputs(this);
         float scale=DeviceDpi/96f;layout.Scale(new SizeF(scale,scale));ClientSize=new((int)(940*scale),(int)(670*scale));MinimumSize=new((int)(840*scale),(int)(650*scale));AutoScaleDimensions=CurrentAutoScaleDimensions;ResumeLayout(true);
     }
@@ -110,17 +107,11 @@ internal sealed class GameArtworkDialog:Form
         catch(ArtworkUnavailableException ex){if(!IsDisposed)status.Text=ex.Message;}
         catch(HttpRequestException ex){if(!IsDisposed)status.Text="网上图片暂时无法读取"+(ex.StatusCode is { } code?"（HTTP "+(int)code+"）":"")+"，原图已保留，请稍后重试。";}
         catch(Exception ex){if(!IsDisposed)status.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
-        finally{busy=false;if(!IsDisposed){foreach(var c in busyControls)c.Enabled=true;RefreshCaptureAvailability();}}
-    }
-    private void RefreshCaptureAvailability()
-    {
-        bool available=GameWindowCover.Available;
-        captureButton.Enabled=!busy&&available;captureAvailability.Visible=!available;
-        captureAvailability.Text=available?"":GameWindowCover.MissingMessage;
+        finally{busy=false;if(!IsDisposed)foreach(var c in busyControls)c.Enabled=true;}
     }
     private Task ChooseFileAsync()
     {
-        using var dialog=new OpenFileDialog{Filter="图片|*.png;*.jpg;*.jpeg;*.bmp;*.ico",Title=Cover?"选择封面":"选择图标"};
+        using var dialog=new OpenFileDialog{Filter=UiLanguage.Text("图片|*.png;*.jpg;*.jpeg;*.bmp;*.ico"),Title=UiLanguage.Text(Cover?"选择封面":"选择图标")};
         if(dialog.ShowDialog(this)!=DialogResult.OK){status.Text="已取消，原图片保留。";return Task.CompletedTask;}
         if(new FileInfo(dialog.FileName).Length>24_000_000)throw new IOException("请选择小于 24 MB 的图片。");
         using var image=Image.FromFile(dialog.FileName);

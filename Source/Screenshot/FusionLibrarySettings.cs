@@ -10,7 +10,7 @@ internal sealed class ThemeChoiceButton:Button
         bool selected=ReferenceEquals(p,Mode==ApplicationThemeMode.Night?ThemePalette.Night:ThemePalette.Day);
         using(var b=new SolidBrush(selected?WorkspaceSkin.SoftAccent:p.Secondary))g.FillRectangle(b,r);
         using(var border=new Pen(selected?p.Accent:p.Border,selected?2:1))g.DrawRectangle(border,r);
-        TextRenderer.DrawText(g,Text,Font,r,selected?p.Accent:p.Text,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine);
+        TextRenderer.DrawText(g,Text,Font,r,selected?SettingsColors.AccentText:p.Text,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.SingleLine);
         if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,Rectangle.Inflate(r,-4,-4));
     }
 }
@@ -28,20 +28,21 @@ public sealed partial class MainForm
         };
         AddSettingRow(form,"主题",Stack(day,night));
         AddSettingRow(form,"字体模式",_uiFontModeBox);_uiFontSizeBox.Width=90;
-        AddSettingRow(form,"字体 / 字号",new WorkspaceAlignedRow(_uiFontBox,_defaultUiFont,_uiFontSizeBox){Name="AppearanceFontRow"});AddSettingRow(form,"",_actualUiFont);
+        AddSettingRow(form,"字体 / 字号",new WorkspaceAlignedRow(_uiFontBox,_defaultUiFont,new SettingsInputFrame(_uiFontSizeBox)){Name="AppearanceFontRow"});AddSettingRow(form,"",_actualUiFont);
         var mode=new GamePlanBox{DropDownStyle=ComboBoxStyle.DropDownList,Width=190};mode.Items.AddRange(["海报封面","横向封面"]);mode.SelectedIndex=_libraryPreferences.Portrait?0:1;
         mode.SelectedIndexChanged+=(_,_)=>SaveLibraryPreferences(_libraryPreferences with{Portrait=mode.SelectedIndex==0});
         AddSettingRow(form,"封面样式",mode);
-        var width=new NumericUpDown{Minimum=120,Maximum=240,Increment=10,Width=90,MinimumSize=new(90,0),Value=_libraryPreferences.CoverWidth};width.ValueChanged+=(_,_)=>SaveLibraryPreferences(_libraryPreferences with{CoverWidth=(int)width.Value});
-        AddSettingRow(form,"封面宽度",width);
+        var size=new GamePlanBox{Name="LibraryCoverSize",Width=190};size.Items.AddRange(LibraryCoverSizes.Labels);size.SelectedIndex=LibraryCoverSizes.IndexFor(_libraryPreferences.CoverWidth);
+        size.SelectedIndexChanged+=(_,_)=>{if(size.SelectedIndex>=0)SaveLibraryPreferences(_libraryPreferences with{CoverWidth=LibraryCoverSizes.Widths[size.SelectedIndex]});};
+        AddSettingRow(form,"封面大小",size);AddSettingRow(form,"",Info("按窗口宽度自动排满每行，选择后立即保存。列表和首页最近使用保持原大小。"));
         var advanced=new TableLayoutPanel{AutoSize=true,Dock=DockStyle.Top,ColumnCount=1,Visible=false};advanced.Controls.Add(_themeModeBox);advanced.Controls.Add(BuildCustomThemeEditor());
         Label? advancedLabel=null;var custom=WorkspaceButton("自定义主题",(_,_)=>{advanced.Visible=!advanced.Visible;if(advancedLabel is not null)advancedLabel.Visible=advanced.Visible;});AddSettingRow(form,"",Stack(custom));AddSettingRow(form,"",advanced);advancedLabel=form.GetControlFromPosition(0,form.RowCount-1) as Label;if(advancedLabel is not null)advancedLabel.Visible=false;
-        var reset=WorkspaceButton("恢复默认外观",(_,_)=>{_themeModeBox.SelectedIndex=(int)ApplicationThemeMode.Day;_uiFontModeBox.SelectedIndex=0;_uiFontSizeBox.Value=10;_settingsDirty=true;SaveSettings(false);SaveLibraryPreferences(_libraryPreferences with{Portrait=true,CoverWidth=158});mode.SelectedIndex=0;width.Value=158;});
+        var reset=WorkspaceButton("恢复默认外观",(_,_)=>{_themeModeBox.SelectedIndex=(int)ApplicationThemeMode.Day;_uiFontModeBox.SelectedIndex=0;_uiFontSizeBox.Value=10;_settingsDirty=true;SaveSettings(false);SaveLibraryPreferences(_libraryPreferences with{Portrait=true,CoverWidth=158});mode.SelectedIndex=0;size.SelectedIndex=1;});
         AddSettingRow(form,"",Stack(reset));return form;
     }
     private void SaveLibraryPreferences(LibraryPreferences value)
     {
-        try{LibraryPreferencesStore.Save(value);if(value.IconSource!=_libraryPreferences.IconSource||value.CoverSource!=_libraryPreferences.CoverSource)_artworkAttempted.Clear();_libraryPreferences=value;_libraryGrid.Portrait=value.Portrait;_libraryGrid.CoverWidth=value.CoverWidth;_libraryGrid.SetListMode(_libraryGrid.ListMode);ScheduleLibraryRefresh();_statusLabel.Text="游戏库设置已保存。";}
+        try{LibraryPreferencesStore.Save(value);if(value.IconSource!=_libraryPreferences.IconSource||value.CoverSource!=_libraryPreferences.CoverSource)_artworkAttempted.Clear();_libraryPreferences=value;_libraryGrid.Portrait=value.Portrait;_libraryGrid.CoverWidth=value.CoverWidth;_libraryGrid.SetListMode(_libraryGrid.ListMode);ScheduleLibraryRefresh();_statusLabel.Text="游戏库设置已保存。";UpdateSettingsSaveState("游戏库设置已保存。");}
         catch(Exception ex){ShowFusionError(ex);}
     }
     private TableLayoutPanel BuildArtworkSettings()
@@ -67,7 +68,7 @@ public sealed partial class MainForm
         var path=new TextBox{ReadOnly=true,Text=AppDataPaths.Root,Width=560};AddSettingRow(table,"当前数据目录",path);
         var notice=Info("设置、游戏库、图片、截图历史、缓存及日志统一存放在这里。");
         var change=WorkspaceButton("选择数据位置",(_,_)=>{
-            using var dialog=new FolderBrowserDialog{Description="选择独立的空文件夹。下次启动复制数据，原目录保留。"};
+            using var dialog=new FolderBrowserDialog{Description=UiLanguage.Text("选择独立的空文件夹。下次启动复制数据，原目录保留。")};
             if(dialog.ShowDialog(this)!=DialogResult.OK)return;
             try{PortableDataStorage.RequestLocation(dialog.SelectedPath);notice.Text="已设置："+dialog.SelectedPath+"\n下次启动时复制并校验数据；当前仍使用原目录，原文件不会删除。";}
             catch(Exception ex){ShowFusionError(ex);}

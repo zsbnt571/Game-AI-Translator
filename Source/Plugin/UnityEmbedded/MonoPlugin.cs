@@ -1,11 +1,11 @@
 using BepInEx;
 using UnityEngine;
-[assembly:System.Reflection.AssemblyVersion("0.6.0.84")]
-[assembly:System.Reflection.AssemblyFileVersion("0.6.0.84")]
+[assembly:System.Reflection.AssemblyVersion("0.6.0.134")]
+[assembly:System.Reflection.AssemblyFileVersion("0.6.0.134")]
 
 namespace Fusion.UnityEmbedded
 {
-    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "0.6.0.84")]
+    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "0.6.0.134")]
     public sealed class MonoPlugin : BaseUnityPlugin
     {
         void Awake()
@@ -39,6 +39,6 @@ namespace Fusion.UnityEmbedded
         void LateUpdate(){if(bridge!=null)bridge.LateTick();}
         void Close(){var closing=bridge;bridge=null;if(closing!=null)closing.RestoreAndDispose();}
         void OnDestroy(){Close();}
-        void OnApplicationQuit(){Close();Object.Destroy(gameObject);}
+        void OnApplicationQuit(){var closing=bridge;bridge=null;if(closing!=null)closing.Shutdown();}
     }
 }

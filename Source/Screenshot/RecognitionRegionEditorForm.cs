@@ -34,6 +34,7 @@ public sealed class RecognitionRegionEditorForm : Form
         _image = new Bitmap(image); _automatic = regions.Select(x => x.Clone()).ToList(); _session = new(regions);
         _ocrRegion = ocrRegion; _visualRegion = visualRegion;
         Text = UiStrings.RegionEditor; StartPosition = FormStartPosition.CenterParent;
+        AppBranding.Apply(this);
         Size = new(1380, 860); MinimumSize = new(980, 640); KeyPreview = true;
         BuildUi(); UiDarkTheme.Apply(this); RefreshAll();
         _canvas.Paint += PaintCanvas; _canvas.MouseDown += CanvasMouseDown; _canvas.MouseMove += CanvasMouseMove; _canvas.MouseUp += CanvasMouseUp;

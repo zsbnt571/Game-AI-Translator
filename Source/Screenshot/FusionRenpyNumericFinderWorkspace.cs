@@ -1,9 +1,9 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
     private readonly RenpyNumericFinder _renpyNumericFinder=new();
-    private readonly TextBox _renpyFinderValue=new(){Width=140,PlaceholderText="当前数值，可留空",AccessibleName="查找的当前数值"};
+    private readonly TextBox _renpyFinderValue=new(){Width=140,PlaceholderText=UiLanguage.Text("当前数值，可留空"),AccessibleName="查找的当前数值"};
     private readonly ComboBox _renpyFinderComparison=new GamePlanBox(){Width=156,DropDownStyle=ComboBoxStyle.DropDownList,AccessibleName="数值变化条件"};
     private readonly Label _renpyFinderStatus=WorkspaceLabel("先开始查找，再回到游戏让数值变化，然后继续筛选。留空初值可记录全部数值。");
     private Button? _renpyFinderBegin,_renpyFinderNarrow,_renpyFinderReset;

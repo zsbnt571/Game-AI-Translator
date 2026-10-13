@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>SubstreamSharp</id>
+    <version>1.0.3</version>
+    <authors>Connor Haigh</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>Icon.png</icon>
+    <readme>ReadMe.md</readme>
+    <description>SubstreamSharp is a C# library that provides the ability to create substreams of fixed regions from any given stream.</description>
+    <copyright>Connor Haigh 2021</copyright>
+    <tags>stream, substream, io</tags>
+    <repository url="https://github.com/connorhaigh/SubstreamSharp" />
+    <dependencies>
+      <group targetFramework="net6.0" />
+    </dependencies>
+  </metadata>
+</package>

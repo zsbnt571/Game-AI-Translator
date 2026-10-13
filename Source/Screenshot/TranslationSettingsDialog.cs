@@ -1,17 +1,19 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 public sealed record ProviderConnectionTestResult(bool Success, string Category, string Message, int? StatusCode = null);
 
 public sealed class TranslationSettingsDialog : Form
 {
-    private readonly ComboBox _provider = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _provider = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly TextBox _displayName = new();
     private readonly TextBox _baseUrl = new();
     private readonly TextBox _apiKey = new() { UseSystemPasswordChar = true };
     private readonly TextBox _model = new();
-    private readonly ComboBox _target = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _source = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _style = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _target = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly LanguageCombinationPicker _sourceChoices = new();
+    private readonly ComboBox _source = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _style = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly Label _styleDescription = new() { AutoSize = true, MaximumSize = new Size(490, 0), Name = "TranslationStyleDescription" };
     private readonly TextBox _custom = new() { Multiline = true, ScrollBars = ScrollBars.Vertical };
     private readonly CheckBox _ids = new() { Text = "保留 ID / 代码", AutoSize = true };
     private readonly CheckBox _numbers = new() { Text = "保留数字", AutoSize = true };
@@ -29,13 +31,16 @@ public sealed class TranslationSettingsDialog : Form
         _working = ApiSettingsSnapshot.Copy(settings);
         _tester = tester ?? TestWithServiceAsync;
         Text = "翻译设置";
+        AppBranding.Apply(this);
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(760, 600);
         MinimumSize = new Size(680, 520);
         BuildUi();
         LoadValues();
         FontManager.ApplyUi(this,_working);
-        UiDarkTheme.Apply(this);
+        MainForm.ConfigureFusionInputs(this);
+        UiTheme.Apply(this,_working);
+        Shown+=(_,_)=>SettingsNativeTheme.Caption(this);
         DialogLayout.Attach(this);ResumeLayout(true);
     }
 
@@ -49,6 +54,7 @@ public sealed class TranslationSettingsDialog : Form
         var ok = new Button { Text = UiStrings.Ok, AutoSize=true, MinimumSize=new Size(100,36), DialogResult = DialogResult.OK };
         var cancel = new Button { Text = UiStrings.Cancel, AutoSize=true, MinimumSize=new Size(100,36), DialogResult = DialogResult.Cancel };
         buttons.Controls.AddRange([ok, cancel]);
+        ok.Click+=(_,_)=>{if(_source.SelectedIndex==(int)SourceLanguageMode.Mixed&&_sourceChoices.SelectedLanguages.Length==0){DialogResult=DialogResult.None;AppDialog.Show(this,"原文语言","请至少选择一种需要翻译的原文语言。",AppDialogKind.Warning);}};
         AcceptButton = ok; CancelButton = cancel;
         Controls.Add(tabs);Controls.Add(buttons);
     }
@@ -58,8 +64,11 @@ public sealed class TranslationSettingsDialog : Form
         var tab = new TabPage("常规");
         var table = MakeTable();
         AddRow(table, "目标语言", _target);
-        AddRow(table, "源语言", _source);
+        AddRow(table, "原文语言", LanguageCombinationPicker.WithMode(_source,_sourceChoices));
         AddRow(table, "翻译风格", _style);
+        AddRow(table, "", _styleDescription);
+        AddRow(table, "", new Label { AutoSize=true, MaximumSize=new Size(490,0), Text=TranslationStylePolicy.FidelityHint });
+        _style.SelectedIndexChanged+=(_,_)=>_styleDescription.Text=TranslationStylePolicy.Description(TranslationStyleSelection.Read(_style));
         tab.Controls.Add(table); return tab;
     }
 
@@ -122,8 +131,8 @@ public sealed class TranslationSettingsDialog : Form
         _target.SelectedItem = UiTargetLanguageDisplay.DisplayFromCode(_working.TargetLanguage);
         _source.Items.AddRange(Enum.GetValues<SourceLanguageMode>().Select(UiStrings.SourceLanguageName).ToArray());
         _source.SelectedIndex = (int)_working.SourceLanguage;
-        _style.Items.AddRange(Enum.GetValues<TranslationStyle>().Select(UiStrings.TranslationStyleName).ToArray());
-        _style.SelectedIndex=(int)_working.TranslationStyle;
+        _sourceChoices.SelectLanguages(_working.SourceLanguages);
+        TranslationStyleSelection.Select(_style,_working.TranslationStyle);
         _custom.Text = _working.CustomTranslationPrompt;
         _ids.Checked = _working.PreserveIdentifiers;
         _numbers.Checked = _working.PreserveNumbers;
@@ -139,7 +148,8 @@ public sealed class TranslationSettingsDialog : Form
         result.ApiUrl = _baseUrl.Text.Trim(); result.ApiKey = _apiKey.Text; result.Model = _model.Text.Trim();
         result.TargetLanguage = UiTargetLanguageDisplay.CodeFromDisplay(_target.SelectedItem?.ToString());
         if (_source.SelectedIndex>=0) result.SourceLanguage = (SourceLanguageMode)_source.SelectedIndex;
-        if(_style.SelectedIndex>=0)result.TranslationStyle=(TranslationStyle)_style.SelectedIndex;
+        result.SourceLanguages = _sourceChoices.SelectedLanguages;
+        result.TranslationStyle=TranslationStyleSelection.Read(_style,_working.TranslationStyle);
         result.CustomTranslationPrompt = _custom.Text.Trim();
         result.PreserveIdentifiers = _ids.Checked; result.PreserveNumbers = _numbers.Checked; result.PreserveVariables = _variables.Checked;
         result.TranslationPromptVersion = TranslationPromptBuilder.Version;
@@ -184,7 +194,7 @@ public sealed class TranslationSettingsDialog : Form
         string model, string customPrompt)
     {
         _target.SelectedItem = UiTargetLanguageDisplay.DisplayFromCode(targetLanguage);
-        _style.SelectedIndex=(int)style;
+        TranslationStyleSelection.Select(_style,style);
         _model.Text = model;
         _custom.Text = customPrompt;
     }

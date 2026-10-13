@@ -93,7 +93,7 @@ internal static class Task4LayoutProductE2EHarness
         string applicationRoot,string badCardPath)
     {
         var files=Directory.GetFiles(corpusRoot,"*.png",SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal).ToArray();
-        if(files.Length!=15)throw new InvalidDataException($"Input corpus PNG count is {files.Length}, expected 15.");
+        if(files.Length!=15)throw new InvalidDataException($"D:\\ces PNG count is {files.Length}, expected 15.");
         var identities=LoadIdentities(Path.Combine(evidenceRoot,"fixture-identity-map.csv"));
         var inputs=files.Select(path=>new ScanInput(path,identities.GetValueOrDefault(Path.GetFileName(path),
             $"UNKNOWN-{Path.GetFileNameWithoutExtension(path)}"),false)).Append(new ScanInput(badCardPath,"BAD-APRIL-CARD-POSITIVE-SENTINEL",true)).ToArray();

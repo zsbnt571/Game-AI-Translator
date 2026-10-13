@@ -9,7 +9,7 @@ internal sealed class WorkspaceMenu : ContextMenuStrip
 {
     internal WorkspaceMenu()
     {
-        Renderer=new WorkspaceMenuRenderer();
+        UiLanguage.BindMenu(this);Renderer=new WorkspaceMenuRenderer();
         ShowImageMargin=false;ShowCheckMargin=false;
         DropShadowEnabled=true;AutoSize=false;
     }

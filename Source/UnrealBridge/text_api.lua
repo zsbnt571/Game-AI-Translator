@@ -5,18 +5,24 @@ local names={'FindTextInLocalizationTable','GetTextId','GetTextSourceString'}
 local wanted={};for _,n in ipairs(names) do wanted[n]=true end
 local function value(x) if type(x)=='string' then return x end;if x~=nil then return x:ToString() end end
 local function copy(t) local r={};for k,v in pairs(t) do r[k]=type(v)=='table' and copy(v) or v end;return r end
-local function matches(fields,expected)
+local function matches(fields,expected,namespaceAlias)
  if #fields~=#expected then return false end
- for i,p in ipairs(expected) do if fields[i].name~=p[1] or fields[i].type~=p[2] then return false end end
+ for i,p in ipairs(expected) do
+  local name=fields[i].name
+  -- Reflected builds expose both NameSpace and Namespace. Canonicalize only
+  -- this first FindText field; keep types/order and raw diagnostic metadata.
+  if namespaceAlias and i==1 and name=='NameSpace' then name='Namespace' end
+  if name~=p[1] or fields[i].type~=p[2] then return false end
+ end
  return true
 end
 local function layout(n,fields)
  -- Pinned Lua reflection does not expose CPF_Parm/OutParm. These exact known
  -- name/type/order shapes describe arguments, not proof of native ABI safety.
  if n=='FindTextInLocalizationTable' then
-  if matches(fields,{{'Namespace','StrProperty'},{'Key','StrProperty'},{'OutText','TextProperty'},{'ReturnValue','BoolProperty'}}) then return 'out-last-3' end
-  if matches(fields,{{'Namespace','StrProperty'},{'Key','StrProperty'},{'OutText','TextProperty'},{'SourceString','StrProperty'},{'ReturnValue','BoolProperty'}}) then return 'out-middle-4' end
-  if matches(fields,{{'Namespace','StrProperty'},{'Key','StrProperty'},{'SourceString','StrProperty'},{'OutText','TextProperty'},{'ReturnValue','BoolProperty'}}) then return 'out-last-4' end
+  if matches(fields,{{'Namespace','StrProperty'},{'Key','StrProperty'},{'OutText','TextProperty'},{'ReturnValue','BoolProperty'}},true) then return 'out-last-3' end
+  if matches(fields,{{'Namespace','StrProperty'},{'Key','StrProperty'},{'OutText','TextProperty'},{'SourceString','StrProperty'},{'ReturnValue','BoolProperty'}},true) then return 'out-middle-4' end
+  if matches(fields,{{'Namespace','StrProperty'},{'Key','StrProperty'},{'SourceString','StrProperty'},{'OutText','TextProperty'},{'ReturnValue','BoolProperty'}},true) then return 'out-last-4' end
  elseif n=='GetTextId' and matches(fields,{{'Text','TextProperty'},{'OutNamespace','StrProperty'},{'OutKey','StrProperty'},{'ReturnValue','BoolProperty'}}) then return 'identity-3'
  elseif n=='GetTextSourceString' and matches(fields,{{'Text','TextProperty'},{'ReturnValue','StrProperty'}}) then return 'source-1' end
  return 'unsupported-signature'

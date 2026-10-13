@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 namespace ScreenshotTranslationUiTester;
@@ -7,8 +7,8 @@ public sealed partial class MainForm
 {
     private Control? _renpyModificationPanel, _unsupportedModificationPanel;
     private readonly ComboBox _renpyDataScope=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList,Width=140};
-    private readonly TextBox _renpyDataSearch=new(){Width=240,PlaceholderText="搜索中文、原文或当前数值"};
-    private readonly TextBox _renpyDataNote=new(){Width=230,MaxLength=120,PlaceholderText="可填写自己看得懂的中文名"};
+    private readonly TextBox _renpyDataSearch=new(){Width=240,PlaceholderText=UiLanguage.Text("搜索中文、原文或当前数值")};
+    private readonly TextBox _renpyDataNote=new(){Width=230,MaxLength=120,PlaceholderText=UiLanguage.Text("可填写自己看得懂的中文名")};
     private readonly CheckBox _renpyDataChangedOnly=new WorkspaceSwitch(){AccessibleName="只看变化",Width=88};
     private readonly Label _renpyDataNamesStatus=WorkspaceLabel("");
     private Button? _renpyDataFavorite,_renpyDataSaveNote;
@@ -68,7 +68,7 @@ public sealed partial class MainForm
         WorkspaceAdd(_renpyDataNotesPanel,WorkspaceLabel("找不到数值？使用“数值查找”逐次缩小范围。读档或重新连接后重新查找，中文备注和常用仍会保留。"));
         WorkspaceAdd(panel,_renpyDataNotesPanel);
         _renpyDataScope.SelectedIndexChanged+=(_,_)=>FilterRenpyData();_renpyDataSearch.TextChanged+=(_,_)=>FilterRenpyData();
-        _renpyDataChangedOnly.CheckedChanged+=(_,_)=>{FilterRenpyData();if(!_renpyDataChangedOnly.Checked&&_renpyDataHint.Text.StartsWith("只列出与上次刷新"))_renpyDataHint.Text="";};
+        _renpyDataChangedOnly.CheckedChanged+=(_,_)=>{FilterRenpyData();if(!_renpyDataChangedOnly.Checked&&UiLanguage.Source(_renpyDataHint).StartsWith("只列出与上次刷新"))_renpyDataHint.Text="";};
         ConfigureRenpyEditing();
         _renpyDataGrid.SelectionChanged+=(_,_)=>{if(!_renpyLoading)SelectRenpyData();};
         // Only blank container surfaces clear the selection. Editor controls,

@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -35,7 +35,7 @@ public sealed partial class MainForm
             FilterRenpyData();
         };
         UpdateRenpySortPresentation();
-        var menu=new ContextMenuStrip();
+        var menu=new LocalizedContextMenuStrip();
         menu.Items.Add("全选当前结果",null,(_,_)=>_renpyDataGrid.SelectAll());
         menu.Items.Add("取消选择",null,(_,_)=>_renpyDataGrid.ClearSelection());
         var enable=menu.Items.Add("开启所选项",null,async(_,_)=>await WriteRenpyBatchAsync(true));

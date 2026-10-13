@@ -29,22 +29,26 @@ internal static class ScopedProductionChainHarness
 
     internal static int Run(string output,string manifestPath,string sharedApplicationRoot,string workerWrapper,string roundPurpose)
     {
-        var fixRoot=ValidationPaths.RequiredRoot("ST_FIX_ROOT")+Path.DirectorySeparatorChar;
+        var fixRoot=Path.GetFullPath(Environment.GetEnvironmentVariable("ST_FIX_ROOT")??throw new InvalidOperationException("Explicit E process environment required")).TrimEnd('\\')+"\\";
         void Inside(string path)
-        {if(!Path.GetFullPath(path).StartsWith(fixRoot,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Evidence/input must be within the registered fix root");}
+        {if(!fixRoot.StartsWith("E:\\",StringComparison.OrdinalIgnoreCase)||!Path.GetFullPath(path).StartsWith(fixRoot,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Evidence/input must be within E fix root");}
         foreach(var path in new[]{output,manifestPath,workerWrapper,AppContext.BaseDirectory,AppDataPaths.Root})Inside(path);
         if(!AppDataPaths.HasExplicitRoot||!AppDataPaths.DisableGlobalInput)
             throw new InvalidOperationException("Production diagnostics require formal --data-root and --disable-global-input.");
-        var readOnlyInputRoot=ValidationPaths.RequiredRoot("ST_FIX_READONLY_INPUT_ROOT")+Path.DirectorySeparatorChar;
+        var readOnlyInputRoot=Path.GetFullPath(Environment.GetEnvironmentVariable("ST_FIX_READONLY_INPUT_ROOT")??
+            throw new InvalidOperationException("Registered read-only input root required")).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;
+        if(!readOnlyInputRoot.StartsWith(@"E:\",StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Read-only input root must be the registered E copy.");
         void InputInside(string path)
         {
             var full=Path.GetFullPath(path);
             if(!full.StartsWith(fixRoot,StringComparison.OrdinalIgnoreCase)&&!full.StartsWith(readOnlyInputRoot,StringComparison.OrdinalIgnoreCase))
-                throw new InvalidOperationException("Input is outside registered evidence roots.");
+                throw new InvalidOperationException("Input is outside registered E evidence roots.");
         }
         var runtimeRoot=Path.GetFullPath(sharedApplicationRoot).TrimEnd(Path.DirectorySeparatorChar);
-        var registeredRuntime=ValidationPaths.RequiredRoot("ST_FIX_SHARED_OCR_ROOT");
-        if(!runtimeRoot.Equals(registeredRuntime,StringComparison.OrdinalIgnoreCase)||
+        var registeredRuntime=Path.GetFullPath(Environment.GetEnvironmentVariable("ST_FIX_SHARED_OCR_ROOT")??
+            throw new InvalidOperationException("Registered shared runtime required")).TrimEnd(Path.DirectorySeparatorChar);
+        if(!runtimeRoot.StartsWith(@"E:\",StringComparison.OrdinalIgnoreCase)||!runtimeRoot.Equals(registeredRuntime,StringComparison.OrdinalIgnoreCase)||
             !File.Exists(Path.Combine(runtimeRoot,"runtime","python","python.exe")))
             throw new InvalidOperationException("Shared runtime identity/path mismatch.");
         var sourceManifest=Environment.GetEnvironmentVariable("ST_FIX_SOURCE_MANIFEST_PATH")??

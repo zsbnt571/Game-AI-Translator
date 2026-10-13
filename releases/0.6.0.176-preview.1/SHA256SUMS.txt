@@ -1,3 +1,0 @@
-﻿4f2c39be7761633abb3bb264985a4d9fa9fd79ac4570a51c92226dd5f2d29319  Fusion-R1-0.6.0.176-preview.1-win-x64-with-runtime.zip
-d531f30ae4fa41b5ea261f59f1bbe57d40b025760f8f1c1e9a085f1d82a995f0  Fusion-R1-0.6.0.176-preview.1-win-x64-gpu-addon.zip
-5cbd5a1445e32bccb83b1fd5ee8a2249b6e16d8bc08bc7d016c8f16fa7068943  Fusion-R1-0.6.0.176-preview.1-source.zip

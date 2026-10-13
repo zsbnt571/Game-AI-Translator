@@ -1,4 +1,4 @@
-using ScreenshotTranslationUiTester.CorePipelineV2;
+﻿using ScreenshotTranslationUiTester.CorePipelineV2;
 namespace ScreenshotTranslationUiTester;
 public sealed record CoreProcessingProvenance
 {
@@ -16,14 +16,14 @@ internal sealed record HistoryRegenerationDecision(bool Blocked, bool ReOcr, str
 internal static class HistoryRegenerationPolicy
 {
     internal const string OcrCoverageContract = "ocr-c9-source-field-upright6";
-    internal const string CoreContract = "core-text-v2-independent-inline-heading22";
+    internal const string CoreContract = "core-text-v2-independent-inline-heading22-languages1";
     internal static string TranslationContext(ApiSettings settings) => TranslationPromptBuilder.Sha256(
         string.Join("|", TranslationProviderRegistry.Get(settings.TranslationProviderKind).Id,
             TranslationCacheKeyBuilder.NormalizeBaseUrl(settings.ApiUrl), settings.Model.Trim(),
             TranslationPromptBuilder.NormalizeTarget(settings.TargetLanguage), settings.TranslationStyle,
             TranslationPromptBuilder.Sha256(settings.CustomTranslationPrompt?.Trim() ?? ""),
             TranslationPromptBuilder.Version, settings.PreserveIdentifiers, settings.PreserveNumbers,
-            settings.PreserveVariables));
+            settings.PreserveVariables, TranslationLanguagePolicy.Identity(settings)));
     internal static CoreProcessingProvenance FromOcr(string pixelHash, bool manual = false) => new()
     {
         SourcePixelHash=pixelHash, OcrCoverageContract=manual ? "MANUAL" : OcrCoverageContract,
@@ -71,6 +71,7 @@ internal static class HistoryRegenerationPolicy
         Size canvas, ApiSettings settings, string requestId,Bitmap? sourceImage=null)
     {
         var core=snapshot.Rebuild(canvas,sourceImage);
+        CorePipelineEngine.ApplyLanguagePolicy(core,settings);
         var contextMatches=snapshot.Provenance?.TranslationContext==TranslationContext(settings);
         foreach(var block in core.VisualBlocks)
         {

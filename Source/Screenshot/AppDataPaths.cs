@@ -69,7 +69,7 @@ internal static class AppDataPaths
         return root;
     }
 
-    private static void RejectReparsePoints(string path)
+    internal static void RejectReparsePoints(string path)
     {
         for(var current=path;!string.IsNullOrEmpty(current);current=Path.GetDirectoryName(current))
             if((File.Exists(current)||Directory.Exists(current)) && (File.GetAttributes(current)&FileAttributes.ReparsePoint)!=0)

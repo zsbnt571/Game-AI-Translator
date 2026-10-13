@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -11,7 +11,7 @@ public sealed partial class MainForm
     private readonly ComboBox _commonProfile = new(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly ComboBox _shotProfile = new GamePlanBox();
     private readonly GamePlanBox _embeddedProfile = new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly ComboBox _embeddedKey = new(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly GameShortcutButton _embeddedKey = new();
     private readonly Label _fusionOcrInfo = new(){AutoSize=true,MaximumSize=new(560,0)};
     private readonly Label _shotEffective = new(){AutoSize=true,MaximumSize=new(680,0)};
     private readonly Label _embeddedEffective = new(){AutoSize=true,MaximumSize=new(680,0)};
@@ -33,6 +33,7 @@ public sealed partial class MainForm
 
     private void BuildFusionShell()
     {
+        UiLanguage.Preserve(_gameTitle);UiLanguage.Preserve(_libraryChineseName);UiLanguage.Preserve(_libraryNote);UiLanguage.Preserve(_sessionCompactTitle);
         // The one-pixel frame is the only outer inset. Navigation and its
         // background reach the client edges; resizing still uses frame hit tests.
         Padding=new Padding(1);
@@ -61,7 +62,7 @@ public sealed partial class MainForm
         foreach(var button in _navigationButtons.Values)tabs.Controls.Add(button);
         _workspaceCaption.Controls.Add(tabs);_workspaceCaption.Controls.Add(_themeIcon);
         _themeIcon.FlatAppearance.BorderSize=0;_themeIcon.Click+=(_,_)=>ToggleTheme();
-        _workspaceCaption.Layout+=(_,_)=>{int d=DeviceDpi;tabs.SetBounds(238*d/96,0,Math.Min(300*d/96,Math.Max(0,_workspaceCaption.Width-416*d/96)),_workspaceCaption.Height);_themeIcon.SetBounds(_workspaceCaption.Width-178*d/96,2*d/96,36*d/96,_workspaceCaption.Height-4*d/96);};
+        _workspaceCaption.Layout+=(_,_)=>{int d=DeviceDpi;foreach(var tabButton in _navigationButtons.Values)tabButton.Width=Math.Max(88*d/96,TextRenderer.MeasureText(tabButton.Text,tabButton.Font).Width+32*d/96);tabs.SetBounds(238*d/96,0,Math.Min(_navigationButtons.Values.Sum(b=>b.Width),Math.Max(0,_workspaceCaption.Width-416*d/96)),_workspaceCaption.Height);_themeIcon.SetBounds(_workspaceCaption.Width-178*d/96,2*d/96,36*d/96,_workspaceCaption.Height-4*d/96);};
         // The sidebar belongs to the library page. Its width stays reserved even
         // while the page is hidden, so publishing the page never first displays
         // its cards at the full-window width and then pushes them to the right.
@@ -74,7 +75,7 @@ public sealed partial class MainForm
         libraryLayout.Panel1.Controls.Add(sidebar);libraryLayout.Panel2.Controls.Add(libraryRightFrame);libraryPage.Controls.Add(libraryLayout);
         libraryLayout.WidthCommitted+=width=>{try{var next=LibraryPreferencesStore.Load() with{SidebarWidth=width};LibraryPreferencesStore.Save(next);_libraryPreferences=next;UpdateWorkspaceNavigation();}catch(Exception ex){ShowFusionError(ex);}};
         BuildScreenshotWorkspace(_pages["主页"]);BuildGameLibraryWorkspace(libraryContent);
-        _pages["设置"].Padding=new(20,18,20,12);BuildSettingsPage(_pages["设置"]);ReorganizeFusionSettings(_pages["设置"]);
+        _pages["设置"].Padding=new(20,18,12,0);BuildSettingsPage(_pages["设置"]);ReorganizeFusionSettings(_pages["设置"]);
         _statusLabel.Dock=DockStyle.Fill;_statusLabel.Margin=Padding.Empty;_statusLabel.TextAlign=ContentAlignment.MiddleLeft;_statusLabel.Padding=new(20,0,0,0);_statusLabel.Font=new Font("Microsoft YaHei UI",8);_statusLabel.Text="就绪";
         root.Controls.Add(content,0,0);root.Controls.Add(_statusLabel,0,1);
         void PlaceStatus()
@@ -99,17 +100,18 @@ public sealed partial class MainForm
 
     internal static void ConfigureFusionInputs(Control root)
     {
-        if(root is ComboBox box&&box.DropDownStyle==ComboBoxStyle.DropDownList)
+        if(root is ComboBox box)
         {
             WorkspaceWheelGuard.Attach(box);
             box.DrawMode=DrawMode.OwnerDrawFixed;
-            void Metrics(){box.MinimumSize=new(box.MinimumSize.Width,0);if(box is GamePlanBox plan)plan.RefreshMetrics();else box.ItemHeight=Math.Max(box.Font.Height+6*box.DeviceDpi/96,24*box.DeviceDpi/96);}
-            Metrics();box.FontChanged+=(_,_)=>Metrics();box.DpiChangedAfterParent+=(_,_)=>Metrics();
+            void Metrics(){box.MinimumSize=new(box.MinimumSize.Width,0);if(box is GamePlanBox plan)plan.RefreshMetrics();else {int allowance=Math.Clamp(box.Height-box.ItemHeight,4,12*box.DeviceDpi/96);box.ItemHeight=Math.Max(box.Font.Height+6*box.DeviceDpi/96,36*box.DeviceDpi/96-allowance);}}
+            Metrics();box.HandleCreated+=(_,_)=>Metrics();box.FontChanged+=(_,_)=>Metrics();box.DpiChangedAfterParent+=(_,_)=>Metrics();
             box.DrawItem+=(_,e)=>{
                 var p=UiTheme.Current;var selected=(e.State&DrawItemState.Selected)!=0;
                 using var background=new SolidBrush(selected?p.Control:p.Secondary);e.Graphics.FillRectangle(background,e.Bounds);
-                var value=e.Index>=0&&e.Index<box.Items.Count?box.Items[e.Index]?.ToString():box.Text;
-                TextRenderer.DrawText(e.Graphics,value,box.Font,new Rectangle(e.Bounds.X+5,e.Bounds.Y,e.Bounds.Width-8,e.Bounds.Height),box.Enabled?p.Text:p.SecondaryText,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
+                var value=e.Index>=0&&e.Index<box.Items.Count?InterfaceItemText(box.Items[e.Index]):UiLanguage.Text(box.Text);
+                if(value.Length==0&&box.Name.EndsWith("FontFamily",StringComparison.Ordinal))value=UiLanguage.Choose("自动","Automatic");
+                TextRenderer.DrawText(e.Graphics,value,box.Font,new Rectangle(e.Bounds.X+5,e.Bounds.Y,e.Bounds.Width-8,e.Bounds.Height),box.Enabled?p.Text:p.SecondaryText,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
             };
         }
         foreach(Control child in root.Controls)ConfigureFusionInputs(child);
@@ -121,7 +123,7 @@ public sealed partial class MainForm
         AddSettingRow(table,"",Info("截取屏幕上的文字，在预览中查看原图、译文与翻译图片。"));
         var capture=MakeButton("开始截图",Point.Empty,new(148,42));capture.Click+=(_,_)=>BeginCapture();
         var open=MakeButton("打开图片",Point.Empty,new(132,42));open.Click+=(_,_)=>{
-            using var dialog=new OpenFileDialog{Filter="图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp",Title="打开需要翻译的图片"};
+            using var dialog=new OpenFileDialog{Filter=UiLanguage.Text("图片|*.png;*.jpg;*.jpeg;*.bmp;*.webp"),Title=UiLanguage.Text("打开需要翻译的图片")};
             if(dialog.ShowDialog(this)!=DialogResult.OK)return;
             try{using var source=new Bitmap(dialog.FileName);CreateAndShowPreview(new CaptureResult(new Bitmap(source),PreviewMode.OcrAndTranslate));}
             catch(Exception ex){ShowFusionError(ex);}
@@ -152,7 +154,7 @@ public sealed partial class MainForm
         _gamePath.AccessibleName="游戏主程序完整路径，可选择复制";_gamePath.Dock=DockStyle.Fill;_gamePath.BorderStyle=BorderStyle.None;
         gameText.Controls.Add(_gamePath);gameHeader.Controls.Add(gameText,1,0);Row(gameHeader);
         _chooseGameButton=Small("选择游戏");_chooseGameButton.Click+=(_,_)=>{
-            using var dialog=new OpenFileDialog{Filter="游戏程序|*.exe",Title="选择游戏主程序"};
+            using var dialog=new OpenFileDialog{Filter=UiLanguage.Text("游戏程序|*.exe"),Title=UiLanguage.Text("选择游戏主程序")};
             if(dialog.ShowDialog(this)==DialogResult.OK)SelectFusionGame(dialog.FileName);
         };
         Row(Stack(_chooseGameButton,_folderButton,_saveGameButton,_coverButton));Row(_mediaStatus);Row(_gameSelectionHint);
@@ -198,20 +200,31 @@ public sealed partial class MainForm
         var tabs=new SettingsPageHost{Dock=DockStyle.Fill};
         _settingsTabs=tabs;
         void Add(string name,Func<TableLayoutPanel> build){
+            int category=_settingsBuilders.Count;
             var placeholder=SettingsTable();var tab=new SettingsPage(name){AutoScroll=true,Tag=placeholder};tab.Controls.Add(placeholder);tabs.TabPages.Add(tab);_settingsNavigation.Items.Add(name);
-            _settingsBuilders.Add(()=>{var content=build();content.Font=new Font("Microsoft YaHei UI",10);UiTheme.Apply(content,_appliedDesktopSettings);FontManager.ApplyUi(content,_appliedDesktopSettings);
-                content.Scale(new SizeF(DeviceDpi/96f,DeviceDpi/96f));tab.Controls.Remove(placeholder);placeholder.Dispose();tab.Tag=content;tab.Controls.Add(content);AttachHostDiagnostics(content,"SettingsRoot:"+name);ConfigureFusionInputs(content);});
+            _settingsBuilders.Add(()=>{
+                var watch=System.Diagnostics.Stopwatch.StartNew();
+                void Stage(string stage){UiPerformanceTrace.Write("settings-build-stage",new{category,stage,ms=watch.Elapsed.TotalMilliseconds});watch.Restart();}
+                tab.SuspendLayout();var original=build();Stage("fields");
+                var content=ComposeSettingsPage(original,name,category);Stage("compose");
+                using(var constructing=new UiLayoutBatch(content))
+                {
+                    content.Font=new Font("Microsoft YaHei UI",10);UiTheme.Apply(content,_appliedDesktopSettings);FontManager.ApplyUi(content,_appliedDesktopSettings);Stage("appearance");
+                    content.Scale(new SizeF(DeviceDpi/96f,DeviceDpi/96f));Stage("scale");
+                    tab.Controls.Remove(placeholder);placeholder.Dispose();tab.Tag=content;tab.Controls.Add(content);AttachHostDiagnostics(content,"SettingsRoot:"+name);ConfigureFusionInputs(content);Stage("attach");
+                    foreach(var section in content.Controls.OfType<SettingsSection>())section.ResumeLayout(false);
+                    content.ResumeLayout(false);tab.ResumeLayout(false);content.FitTo(tab);
+                    tab.ClientSizeChanged+=(_,_)=>content.FitTo(tab);content.SizeChanged+=(_,_)=>{if(tab.AutoScrollMinSize.Height!=content.Height)tab.AutoScrollMinSize=new(0,content.Height);};
+                }
+                Stage("layout");
+            });
         }
         Add("外观",BuildLibraryAppearance);
-        Add("软件通用",()=>{var general=SettingsTable();
-        var defaultLaunch=new CheckBox{Text="默认翻译并启动游戏",AutoSize=true,Checked=_fusion?.State.DefaultGameLaunchWithTranslation==true};
-        defaultLaunch.CheckedChanged+=(_,_)=>{if(_fusion is not null){_fusion.Change(next=>next.DefaultGameLaunchWithTranslation=defaultLaunch.Checked);RenderGameState();}};
-        AddSettingRow(general,"游戏启动方式",defaultLaunch);AddSettingRow(general,"关闭主窗口时",_closeBehaviorBox);
-        AddSettingRow(general,"",Info("普通启动默认关闭翻译。切换到其他游戏不会终止已有游戏。"));return general;});
+        Add("软件通用",BuildGeneralSettings);
         Add("按键",()=>{var keys=SettingsTable();
         foreach(var pair in new[]{("开始截图",InputActionId.StartCapture),("取消当前截图",InputActionId.CancelCapture),("显示 / 隐藏截图结果",InputActionId.ToggleResults),("预览放大",InputActionId.PreviewZoomIn),("预览缩小",InputActionId.PreviewZoomOut),("预览恢复适应",InputActionId.PreviewResetFit)})
             AddSettingRow(keys,pair.Item1,BuildBindingEditor(pair.Item2));
-        AddSettingRow(keys,"游戏内扫描开关",_embeddedKey);AddSettingRow(keys,"",Info("在游戏内生效，默认 F8。停止新扫描后，排队/在途请求可能完成。\n修改在下次启动游戏时生效；这不是取消所有翻译。"));return keys;});
+        var resetKey=new Button{Text="恢复默认",AutoSize=true};resetKey.Click+=(_,_)=>_embeddedKey.SetShortcut("F8");AddSettingRow(keys,"游戏内扫描开关",Stack(_embeddedKey,resetKey));AddSettingRow(keys,"",Info("点击录入字母、数字、功能键或 Ctrl / Alt / Shift 组合键；Esc 取消。默认 F8。\n支持此快捷键的游戏在下次启动时生效；关闭扫描后，已排队的翻译仍会继续。"));return keys;});
         Add("翻译方案",()=>{var table=BuildProfileSettings();if(_draftOriginal is null)LoadEditedProfile();return table;});
         Add("截图处理",()=>{var shot=SettingsTable();AddSettingRow(shot,"截图时隐藏",Stack(_hideMainDuringCaptureBox,_hidePreviewsDuringCaptureBox));AddSettingRow(shot,"OCR 引擎",_ocrEngineBox);AddSettingRow(shot,"识别负载",_ocrLoadBox);AddSettingRow(shot,"识别语言",_ocrLanguageBox);AddSettingRow(shot,"已安装语言",_fusionOcrInfo);AddSettingRow(shot,"文字整理",_cleanupStrengthBox);AddSettingRow(shot,"翻译输入",_translationSourceBox);
         AddSettingRow(shot,"翻译图片",_imageTranslationBox);AddSettingRow(shot,"背景处理",_backgroundTreatmentBox);AddSettingRow(shot,"精细背景计算",_backgroundComputeBox);AddSettingRow(shot,"",Info("均衡不加载重型背景模型；识别负载与背景计算分别控制。"));AddSettingRow(shot,"译图字体模式",_overlayFontModeBox);AddSettingRow(shot,"译图字体",_overlayFontBox);AddSettingRow(shot,"译图字号",Stack(_overlayFontSizeBox,Info("0 表示自动适配")));AddSettingRow(shot,"译图背景策略",_overlayBackgroundBox);AddSettingRow(shot,"底板透明度",_overlayOpacityBox);return shot;});
@@ -219,15 +232,14 @@ public sealed partial class MainForm
         Add("历史与缓存",()=>{var history=SettingsTable();AddSettingRow(history,"截图历史缩略图",_historyThumbnailBox);AddSettingRow(history,"历史文字大小",_historyTextSizeBox);AddSettingRow(history,"数量清理",Stack(_historyByCountBox,_historyLimitBox));AddSettingRow(history,"保存天数",Stack(_historyByAgeBox,_historyDaysBox));AddSettingRow(history,"空间上限（MB）",Stack(_historyBySpaceBox,_historySpaceBox));AddSettingRow(history,"截图会话缓存",Stack(_ocrCacheBox,_translationCacheBox));AddSettingRow(history,"",Info("这里的历史清理只处理本候选的截图记录，不清理游戏内翻译缓存。"));return history;});
         Add("游戏库与图片",BuildArtworkSettings);
         Add("存储位置",BuildStorageSettings);
-        Add("运行依赖",BuildRuntimeDependencySettings);
-        Add("帮助与诊断",()=>{var help=SettingsTable();AddSettingRow(help,"候选版本",Info(BuildIdentity.ProductVersion));AddSettingRow(help,"游戏退出诊断",BuildGameDiagnosticHelp());AddSettingRow(help,"数据配置",_configPathLabel);AddSettingRow(help,"密钥状态",_keyStatusLabel);AddSettingRow(help,"运行依赖",Info("可选依赖由用户在本机合法提供，状态见“运行依赖”。缺少依赖不会阻止打开软件和保存设置。"));AddSettingRow(help,"内嵌边界",Info("不同引擎和文本系统的兼容性不同；请先备份游戏文件与存档。\n游戏内配置需要密钥字段；桌面配置使用当前 Windows 用户加密。"));return help;});
+        Add("帮助与诊断",BuildFusionHelp);
         page.Controls.Clear();
-        var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=2};layout.ColumnStyles.Add(new(SizeType.Absolute,174));layout.ColumnStyles.Add(new(SizeType.Percent,100));layout.RowStyles.Add(new(SizeType.Percent,100));layout.RowStyles.Add(new(SizeType.Absolute,48));
+        var layout=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=2,RowCount=2};layout.ColumnStyles.Add(new(SizeType.Absolute,192));layout.ColumnStyles.Add(new(SizeType.Percent,100));layout.RowStyles.Add(new(SizeType.Percent,100));layout.RowStyles.Add(new(SizeType.Absolute,68));
         _settingsNavigation.SelectedIndexChanged+=(_,_)=>SettingsCategoryChanged();
-        layout.Controls.Add(_settingsNavigation,0,0);layout.Controls.Add(tabs,1,0);var footer=new FlowLayoutPanel{Dock=DockStyle.Fill,Padding=new(8,4,0,0)};var save=MakeButton("保存设置",Point.Empty,new(125,36));save.Click+=(_,_)=>SaveSettings(true);footer.Controls.Add(save);_settingsSaveFooter=footer;layout.Controls.Add(footer,1,1);page.Controls.Add(layout);_loadingFusion=true;_settingsNavigation.SelectedIndex=0;_loadingFusion=false;_settingsNavigation.Commit(0);
+        layout.Controls.Add(_settingsNavigation,0,0);layout.Controls.Add(tabs,1,0);var footer=BuildSettingsFooter();_settingsSaveFooter=footer;layout.Controls.Add(footer,1,1);page.Controls.Add(layout);_loadingFusion=true;_settingsNavigation.SelectedIndex=0;_loadingFusion=false;_settingsNavigation.Commit(0);
         _profileEditor.SelectedIndexChanged+=(_,_)=>SwitchEditingProfile();
         foreach(var box in new[]{_commonProfile,_shotProfile,_embeddedProfile})box.SelectedIndexChanged+=(_,_)=>PersistChoice(box);
-        _embeddedKey.SelectedIndexChanged+=(_,_)=>{if(!_loadingFusion)_settingsDirty=true;};
+        _embeddedKey.ShortcutChanged+=(_,_)=>{if(!_loadingFusion){_settingsDirty=true;UpdateSettingsSaveState();}};
     }
     private void RefreshFusionChrome()
     {
@@ -241,10 +253,10 @@ public sealed partial class MainForm
         if(_launchGameButton is not null){_launchGameButton.BackColor=p.Control;_launchGameButton.ForeColor=p.Text;}
         foreach(var pair in _navigationButtons){if(pair.Value is WorkspaceTab nav){nav.Selected=pair.Key==_currentMainPage;nav.Invalidate();}}
         UpdateWorkspaceNavigation();
-        string Summary(bool embedded){var id=_fusion.SelectedId(embedded);var s=_fusion.State.Profiles[id];var missing=FusionConfiguration.Missing(s);return _fusion.Name(id)+"  ·  "+s.Model+"  ·  "+UiTargetLanguageDisplay.DisplayFromCode(s.TargetLanguage)+(missing.Count>0?"\n未配置完成："+string.Join("、",missing):"\n已保存配置；连接需单独测试。")+(embedded?" 游戏下次启动时应用。":" 新截图任务使用。");}
+        string Summary(bool embedded){var id=_fusion.SelectedId(embedded);var s=_fusion.Effective(UiSettings,embedded);var missing=FusionConfiguration.Missing(s);return _fusion.Name(id)+"  ·  "+s.Model+"  ·  "+UiTargetLanguageDisplay.DisplayFromCode(s.TargetLanguage)+(missing.Count>0?"\n未配置完成："+string.Join("、",missing):"\n已保存配置；连接需单独测试。")+(embedded?" 游戏下次启动时应用。":" 新截图任务使用。");}
         SetLabelText(_shotEffective,Summary(false));
         var embedded=EmbeddedSettings;
-        SetLabelText(_embeddedEffective,string.IsNullOrWhiteSpace(embedded.Model)?"尚未配置翻译方案":embedded.Model+" · "+UiTargetLanguageDisplay.DisplayFromCode(embedded.TargetLanguage)+(_selectedGame is null&&_fusion.State.EmbeddedProfile is null?" · 跟随默认":""));
+        SetLabelText(_embeddedEffective,string.IsNullOrWhiteSpace(embedded.Model)?"尚未配置翻译方案":embedded.Model+" · "+UiLanguage.Text(UiTargetLanguageDisplay.DisplayFromCode(embedded.TargetLanguage))+(_selectedGame is null&&_fusion.State.EmbeddedProfile is null?" · 跟随默认":""));
         var plan=FusionConfiguration.EditIdentity(embedded)+"|"+_fusion.State.EmbeddedToggleKey;
         if(_gamePlanIdentity!=plan){_gamePlanIdentity=plan;InvalidateGameState();if(_desktopReady)ScheduleLibraryRefresh();}
         if(_homeApiStatus is not null)_homeApiStatus.Text=FusionConfiguration.Missing(CurrentSettings).Count>0?"方案未配置完成，仍可仅识别文字。":"已配置 · "+CurrentSettings.Model;

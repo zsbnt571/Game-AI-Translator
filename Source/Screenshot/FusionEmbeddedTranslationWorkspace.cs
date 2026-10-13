@@ -9,7 +9,7 @@ public sealed partial class MainForm
 
     private async Task LaunchEmbeddedTranslationSessionAsyncFor(GameInfo game,string action)
     {
-        if(action is not ("plain" or "plain-bare" or "launch" or "install" or "restore"))throw new ArgumentOutOfRangeException(nameof(action));
+        if(action is not ("plain" or "plain-bare" or "launch" or "install" or "restore" or "modify")||action=="modify"&&!NovelModification(game))throw new ArgumentOutOfRangeException(nameof(action));
         var session=_gameSessions.Get(game);string root=RecentGameStore.Normalize(Path.GetDirectoryName(game.ExePath)!);
         if(session.Busy||session.LaunchPending||_gameRootOperations.ContainsKey(root))return;
         session.Busy=true;_gameRootOperations[root]=session;RenderGameSessionState();IEmbeddedTranslationConnection? connection=null;
@@ -36,6 +36,7 @@ public sealed partial class MainForm
             try
             {
                 if(game.AdapterId=="unreal"&&action!="restore"){session.Feedback="正在准备游戏文本，完成后继续启动…";RenderGameSessionState();}
+                if(game.AdapterId is "defold" or "wolf"&&action!="restore"){session.Feedback="正在准备游戏内翻译，完成后继续启动…";RenderGameSessionState();}
                 await Task.Run(()=>{if(action=="restore")EmbeddedGameAdapters.Restore(game);else EmbeddedGameAdapters.Install(game);});
             }
             catch(Exception ex)when(action=="plain"&&ex is IOException or UnauthorizedAccessException)
@@ -63,29 +64,51 @@ public sealed partial class MainForm
             if(action=="restore"){session.Feedback="翻译组件已恢复，译文缓存保留。";return;}
             if(action=="install"){session.Feedback="翻译组件已准备，可选择启动游戏或翻译并启动。";return;}
             connection=EmbeddedGameAdapters.Connect(game);
-            // Older caches can contain every bundled locale. Apply entries only
-            // after the session has selected a source or observed matching text.
-            // An unfiltered startup prime would bypass that decision entirely.
+            if(action=="launch"&&EmbeddedGameAdapters.Options(game).StartupCache)
+            {
+                // Prime before Process.Start, so early UI hooks already have the
+                // saved translations. Auto entries are exact-only in the bridge;
+                // an explicit source selection filters the old cache here too.
+                session.Feedback="正在准备已有译文…";RenderGameSessionState();
+                await Task.Run(()=>
+                {
+                    var saved=EmbeddedStartupCache.Select(RpgTranslationCache.Effective(game.ExePath,settings!,unreal:game.AdapterId=="unreal",boundaryWhitespace:EmbeddedGameAdapters.Options(game).DisplayBoundaryWhitespace),settings!.SourceLanguage);
+                    if(connection is UnrealTranslationConnection unreal)
+                        unreal.PrimeStartup(saved,EmbeddedStartupCache.Select(RpgTranslationCache.Effective(game.ExePath,settings!,display:true,unreal:true),settings!.SourceLanguage));
+                    else connection.PrimeStartup(saved);
+                },_desktopLifetime.Token);
+            }
             if(await Task.Run(()=>_gameLaunchOperations.ProcessState(game))!=FusionGameProcessState.Stopped)throw new IOException("游戏状态已改变，未重复启动。");
             var data=new GameDataSession(connection){TranslationOptions=EmbeddedGameAdapters.Options(game)};
             _embeddedTranslationSessions[game.ExePath]=data;
-            using var process=Process.Start(connection.StartInfo(action=="launch"))??throw new IOException("未能启动游戏。");
+            using var process=await connection.LaunchAsync(action=="launch",_desktopLifetime.Token);
             connection.Launched(process.Id);
-            session.Launched(action=="launch"?GameLaunchMode.Translation:GameLaunchMode.Ordinary,settings is null?null:profileId,settings is null?null:profileName,settings is null?null:FusionConfiguration.EditIdentity(settings));
+            session.Launched(action=="launch"?GameLaunchMode.Translation:action=="modify"?GameLaunchMode.Modification:GameLaunchMode.Ordinary,settings is null?null:profileId,settings is null?null:profileName,settings is null?null:FusionConfiguration.EditIdentity(settings));
             session.Feedback="正在等待游戏翻译连接…";RenderGameSessionState();await RecordGameStartedAsync(game,process.Id);
-            await EmbeddedLaunchWait.AcceptAsync(connection,process,_desktopLifetime.Token);
+            await EmbeddedLaunchWait.AcceptAsync(connection,process,_desktopLifetime.Token,progress=>
+            {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}});
+            if(action=="modify"){await connection.RequestAsync(new(){["op"]="dataEnable"});data.Enabled=true;session.Feedback="修改已开启，翻译保持独立。";return;}
             if(action=="plain"){await connection.RequestAsync(new(){["op"]="translationDisable"});session.Feedback="";return;}
             data.Translation=new(connection,game.ExePath,settings!,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text,data.TranslationOptions);
-            await data.Translation.StartAsync();session.Feedback="";
+            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback="";
         }
         catch(Exception ex)
         {
             if(ex is EmbeddedLaunchExitedException)session.LaunchExited();
-            connection?.Dispose();
-            if(_embeddedTranslationSessions.Remove(game.ExePath,out var failed))failed.Dispose();
+            // A launched Unity bridge may already own startup text/font changes.
+            // Keep its failed session so the same UI Close action can retry its
+            // unconfirmed restoration rather than enabling a new profile.
+            bool restorePending=_embeddedTranslationSessions.TryGetValue(game.ExePath,out var pending)
+                &&pending.Translation?.RestorePending==true&&ReferenceEquals(pending.Connection,connection);
+            if(!restorePending)
+            {
+                connection?.Dispose();
+                if(_embeddedTranslationSessions.Remove(game.ExePath,out var failed))failed.Dispose();
+            }
             session.TranslationBlockedReason=ex is OperationCanceledException?"翻译连接已取消。":SafeDiagnosticOutput.ExceptionSummary(ex);
             session.Feedback=session.TranslationBlockedReason;
         }
         finally{session.Busy=false;_gameRootOperations.Remove(root);if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
     }
+
 }

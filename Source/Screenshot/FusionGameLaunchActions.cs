@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -37,6 +37,7 @@ public sealed partial class MainForm
     private Task RunGameActionAsync(string action)=>!_gameDetecting&&_selectedGame is {} game?RunGameActionForAsync(game,action):Task.CompletedTask;
     private async Task RunGameActionForAsync(GameInfo game,string action)
     {
+        if(action=="screen"){await ToggleScreenTranslationForAsync(game);return;}
         if(RpgMakerDataAdapter.Detect(game.ExePath) is not null)
         {await LaunchRpgSessionAsyncFor(game,action);return;}
         if(game.AdapterId=="renpy"){await LaunchScriptTranslationSessionAsyncFor(game,action);return;}

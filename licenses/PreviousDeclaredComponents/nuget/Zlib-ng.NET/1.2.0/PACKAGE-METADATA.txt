@@ -1,0 +1,8 @@
+Package: Zlib-ng.NET
+Version: 1.2.0
+Source: https://github.com/NotOfficer/Zlib-ng.NET
+Authors: NotOfficer
+Copyright: Copyright (c) 2025 NotOfficer
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

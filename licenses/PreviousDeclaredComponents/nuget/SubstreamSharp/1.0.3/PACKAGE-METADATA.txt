@@ -1,0 +1,8 @@
+Package: SubstreamSharp
+Version: 1.0.3
+Source: https://github.com/connorhaigh/SubstreamSharp
+Authors: Connor Haigh
+Copyright: Connor Haigh 2021
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

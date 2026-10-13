@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>IndexRange</id>
+    <version>1.1.0</version>
+    <title>System.Index and System.Range</title>
+    <authors>Bradley Grainger</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>Package.md</readme>
+    <projectUrl>https://github.com/bgrainger/IndexRange</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/bgrainger/IndexRange/master/icon.png</iconUrl>
+    <description>Implementations of System.Index and System.Range for netstandard2.0 and .NET Framework.</description>
+    <releaseNotes>* Type-forward implementations to Microsoft.Bcl.Memory for netstandard2.0, net462, and higher.</releaseNotes>
+    <copyright>Copyright 2019–2025 Bradley Grainger</copyright>
+    <tags>Index System.Index Range System.Range C#8</tags>
+    <repository type="git" url="https://github.com/bgrainger/IndexRange.git" branch="refs/heads/master" commit="0ee6e541467a6d6519af8d8adfe1edad748fc8a2" />
+    <dependencies>
+      <group targetFramework=".NETFramework3.5">
+        <dependency id="ValueTupleBridge" version="0.1.5" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework4.5">
+        <dependency id="System.ValueTuple" version="4.5.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework4.6.2">
+        <dependency id="Microsoft.Bcl.Memory" version="9.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETFramework4.7">
+        <dependency id="Microsoft.Bcl.Memory" version="9.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="UAP10.0.10240">
+        <dependency id="System.ValueTuple" version="4.5.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="Microsoft.Bcl.Memory" version="9.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Microsoft.Bcl.Memory" version="9.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+    <frameworkAssemblies>
+      <frameworkAssembly assemblyName="Microsoft.CSharp" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="Microsoft.Win32.Primitives" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.AppContext" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Collections.Concurrent" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Collections" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Collections.Immutable" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Collections.NonGeneric" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Collections.Specialized" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.ComponentModel.Annotations" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.ComponentModel" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.ComponentModel.EventBasedAsync" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Data.Common" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Diagnostics.Contracts" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Diagnostics.Debug" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Diagnostics.StackTrace" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Diagnostics.Tools" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Diagnostics.Tracing" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Dynamic.Runtime" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Globalization.Calendars" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Globalization" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Globalization.Extensions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO.Compression" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO.Compression.ZipFile" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO.FileSystem" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO.FileSystem.Primitives" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO.IsolatedStorage" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.IO.UnmanagedMemoryStream" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Linq" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Linq.Expressions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Linq.Parallel" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Linq.Queryable" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.Http" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.NameResolution" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.NetworkInformation" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.Primitives" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.Requests" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.Sockets" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.WebHeaderCollection" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.WebSockets.Client" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Net.WebSockets" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Numerics.Vectors" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.ObjectModel" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Reflection.DispatchProxy" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Reflection" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Reflection.Extensions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Reflection.Metadata" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Reflection.Primitives" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Reflection.TypeExtensions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Resources.ResourceManager" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.Extensions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.Handles" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.InteropServices" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.Numerics" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.Serialization.Json" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.Serialization.Primitives" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Runtime.Serialization.Xml" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Security.Claims" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.Algorithms" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.Encoding" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.Primitives" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Security.Cryptography.X509Certificates" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Security.Principal" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Text.Encoding.CodePages" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Text.Encoding" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Text.Encoding.Extensions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Text.RegularExpressions" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Threading" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Threading.Overlapped" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Threading.Tasks.Dataflow" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Threading.Tasks" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Threading.Tasks.Parallel" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Threading.Timer" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Xml.ReaderWriter" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Xml.XDocument" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Xml.XmlDocument" targetFramework="UAP10.0" />
+      <frameworkAssembly assemblyName="System.Xml.XmlSerializer" targetFramework="UAP10.0" />
+    </frameworkAssemblies>
+  </metadata>
+</package>

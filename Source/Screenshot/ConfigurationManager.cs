@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -140,6 +140,7 @@ public static class ConfigurationManager
 
     public static ApiSettings NormalizeAll(ApiSettings settings)
     {
+        settings.SourceLanguages = TranslationLanguagePolicy.Normalize(settings.SourceLanguages);
         SafeDiagnosticOutput.RegisterCredential(settings.ApiKey);
         NormalizeTimeouts(settings);
         settings.SettingsSchemaVersion = CurrentSettingsSchemaVersion;
@@ -163,6 +164,7 @@ public static class ConfigurationManager
         settings.LastUserPreviewWidth=Math.Clamp(settings.LastUserPreviewWidth<=0?settings.LastPreviewWidth:settings.LastUserPreviewWidth,820,10000);
         settings.LastUserPreviewHeight=Math.Clamp(settings.LastUserPreviewHeight<=0?settings.LastPreviewHeight:settings.LastUserPreviewHeight,560,10000);
         if(!Enum.IsDefined(settings.PreviewChromeMode))settings.PreviewChromeMode=PreviewChromeMode.GameCompact;
+        if(!Enum.IsDefined(settings.InterfaceLanguage))settings.InterfaceLanguage=ApplicationLanguage.SimplifiedChinese;
         if(!Enum.IsDefined(settings.ThemeMode))settings.ThemeMode=ApplicationThemeMode.Night;
         if(!Enum.IsDefined(settings.CloseMainWindowBehavior))settings.CloseMainWindowBehavior=CloseMainWindowBehavior.Exit;
         if(!Enum.IsDefined(settings.HistoryThumbnailSize))settings.HistoryThumbnailSize=HistoryThumbnailSize.Medium;

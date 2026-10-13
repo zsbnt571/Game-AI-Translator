@@ -1,14 +1,23 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.RegularExpressions;
 
 namespace ScreenshotTranslationUiTester;
 
 /// <summary>Selects one source-language view of a structured resource, without rewriting it.</summary>
-internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sourceLanguage)
+internal sealed class UnityTextResourceLanguageSelection
 {
+    private readonly SourceLanguageMode sourceLanguage;
+    private readonly string preferredLanguage;
+    internal UnityTextResourceLanguageSelection(SourceLanguageMode mode,string preferredLanguage="")
+    {sourceLanguage=mode==SourceLanguageMode.Mixed?SourceLanguageMode.Auto:mode;this.preferredLanguage=preferredLanguage;}
+    private string? Requested=>preferredLanguage.Length>0?preferredLanguage:RequestedLanguage(sourceLanguage);
     private sealed class Family
     {
         internal readonly HashSet<string> Original=new(StringComparer.Ordinal);
+        // Shared fields can coexist with parallel locale columns in one resource.
+        // Keep their provenance so an inferred language does not turn them into
+        // an unselected language pack.
+        internal readonly HashSet<string> SharedOriginal=new(StringComparer.Ordinal);
         internal readonly Dictionary<string,HashSet<string>> Localized=new(StringComparer.OrdinalIgnoreCase);
         internal readonly HashSet<string> OriginalLanguages=new(StringComparer.OrdinalIgnoreCase);
         internal readonly HashSet<UInt128> OmittedOriginal=new();
@@ -28,12 +37,16 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
     internal HashSet<string> TrustedSourceTexts {get;}=new(StringComparer.Ordinal);
     internal HashSet<UInt128> ExcludedSourceIdentities {get;}=new();
     private static readonly Regex DisplayField=new(@"(?:^m_?text$|dialog|speech|subtitle|caption|description|display.?name|localized|localised|(?:^|_)message$|^(?:m_?)?(?:desc|helpText|body|prompt|title|label|text|content|sentence|originalText|sourceText)$)",RegexOptions.IgnoreCase|RegexOptions.Compiled);
-    private static readonly Regex IdentifierField=new(@"^(?:m_)?(?:id|key|guid|path|file|fileName|asset|speakerId|lineId|choiceId|identifier|type|command|locale|language|culture|languageCode|sourceLanguage|originalLanguage|baseLanguage)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
+    private static readonly Regex IdentifierField=new(@"^(?:m_)?(?:id|key|guid|path|file|fileName|asset|speakerId|lineId|choiceId|identifier|type|command|locale|language|culture|languageCode|sourceLanguage|originalLanguage|baseLanguage|condition|conditions|script|onClick|callback|eventName|targetId|nextId|expression|variable|variables)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex ResourceContext=new(@"dialog|locali[sz]|language|translation|subtitle|story|scenario|conversation|\.(?:ink|yarn)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex LocaleToken=new(@"(?<![\p{L}\p{N}])(?:en(?:[-_]us|[-_]gb)?|english|ja(?:[-_]jp)?|jp|japanese|zh(?:[-_]cn|[-_]hans|[-_]tw|[-_]hant)?|chinese|ko(?:[-_]kr)?|korean|es(?:[-_]es)?|spanish|ru(?:[-_]ru)?|russian|fr(?:[-_]fr)?|french|de(?:[-_]de)?|german|pt(?:[-_]br|[-_]pt)?|portuguese)(?![\p{L}\p{N}])",RegexOptions.IgnoreCase|RegexOptions.Compiled);
 
-    internal static bool IsTextField(string name)=>DisplayField.IsMatch(name);
-    internal static bool IsIdentifier(string name)=>IdentifierField.IsMatch(name);
+    internal static bool IsTextField(string name)
+    {
+        name=name.TrimStart('_');
+        return DisplayField.IsMatch(name)||Regex.IsMatch(name,@"^(?:storyText|narrativeText|randomLines|dialogueLines|textLines|barks|choiceSummary|choiceText|optionText|buttonText|choices|options|responses|replies|lines|paragraphs|textLines|barks)$",RegexOptions.IgnoreCase);
+    }
+    internal static bool IsIdentifier(string name)=>IdentifierField.IsMatch(name.TrimStart('_'))||Regex.IsMatch(name,@"^_?(?:Tool|Editor)_",RegexOptions.IgnoreCase);
     internal static string? Locale(string name)
     {
         string value=name.Trim().Replace('_','-').ToLowerInvariant();
@@ -86,28 +99,15 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
     internal static string? RequestedLanguage(SourceLanguageMode mode)=>mode switch
     {SourceLanguageMode.English=>"en",SourceLanguageMode.Japanese=>"ja",SourceLanguageMode.SimplifiedChinese=>"zh",SourceLanguageMode.Korean=>"ko",_=>null};
 
-    // Sample strong language evidence as well as script. Unknown Latin labels
-    // retain the previous English fallback, but cannot override a named English pack.
+    // Untagged resources use aggregate evidence. A single kana-bearing language
+    // selector or bundled font example must not select Japanese for all UI text.
+    // Declared resource/table locales are handled separately and remain authoritative.
     private static string OriginalLocale(IEnumerable<string> values,bool allowLatinFallback=true)
     {
-        int kana=0,hangul=0,han=0,cyrillic=0,latin=0,seen=0;
-        var evidence=new Dictionary<string,(int Rows,int Weight,int Words)>(StringComparer.Ordinal);
-        var otherScripts=new Dictionary<string,int>(StringComparer.Ordinal);
-        foreach(string value in values)
-        {
-            foreach(char c in value)
-            {if(c is >= '\u3040' and <= '\u30ff' or >= '\uff66' and <= '\uff9d')kana++;else if(c is >= '\uac00' and <= '\ud7af' or >= '\u1100' and <= '\u11ff')hangul++;else if(c is >= '\u3400' and <= '\u9fff')han++;else if(c is >= '\u0400' and <= '\u052f')cyrillic++;else if(c is >= 'A' and <= 'Z' or >= 'a' and <= 'z')latin++;}
-            string detected=EmbeddedSourceLanguagePolicy.Identify(value);
-            if(detected is "en" or "es" or "fr" or "de" or "pt")
-            {var old=evidence.GetValueOrDefault(detected);evidence[detected]=(old.Rows+1,old.Weight+Math.Min(value.Length,512),old.Words+Regex.Matches(value,@"[\p{L}]+").Count);}
-            else if(detected is "ar" or "he" or "th" or "el" or "hi")otherScripts[detected]=otherScripts.GetValueOrDefault(detected)+Math.Min(value.Length,512);
-            if(++seen>=512)break;
-        }
-        if(kana>0)return "ja";if(hangul>0)return "ko";if(han>0)return "han";if(cyrillic>0)return "ru";
-        if(otherScripts.Count>0)return otherScripts.OrderByDescending(p=>p.Value).First().Key;
-        var strong=evidence.Where(p=>p.Value.Rows>=2||p.Value.Weight>=40||seen==1&&p.Value.Words>=2).OrderByDescending(p=>p.Value.Rows).ThenByDescending(p=>p.Value.Weight).ToArray();
-        if(strong.Length>0&&(strong.Length==1||strong[0].Value.Rows>strong[1].Value.Rows||strong[0].Value.Weight>strong[1].Value.Weight))return strong[0].Key;
-        return latin>0&&allowLatinFallback?"en":"und";
+        // The retained pools already impose a character/count bound. Do not stop
+        // after the first 512 rows: asset order is not a source-language signal.
+        string language=EmbeddedSourceLanguagePolicy.Choose(values,allowLatinFallback);
+        return language switch {"zh"=>"han",""=>"und",_=>language};
     }
     internal void AddValue(string familyKey,string? locale,string value,bool original=false)
     {
@@ -117,12 +117,13 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
         else if(!candidateIdentities.Contains(identity)){countLimit=true;return;}
         if(!families.TryGetValue(familyKey,out var family))families[familyKey]=family=new();
         string? declared=original||locale is null?family.OriginalLanguages.Count==1?family.OriginalLanguages.Single():null:locale;
-        string? requested=RequestedLanguage(sourceLanguage);
+        string? requested=Requested;
         if(requested is not null&&declared is not null&&declared!=requested)return;
         HashSet<string> destination;
         if(original||locale is null)destination=family.Original;
         else if(!family.Localized.TryGetValue(locale,out destination!))family.Localized[locale]=destination=new(StringComparer.Ordinal);
-        if(destination.Contains(value))return;
+        if(destination.Contains(value))
+        {if(!original&&locale is null)family.SharedOriginal.Add(value);return;}
         string pool=Pool(declared);long used=retainedCharacters.GetValueOrDefault(pool);
         if(used+value.Length>32L*1024*1024)
         {
@@ -132,8 +133,9 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
             return;
         }
         destination.Add(value);retainedCharacters[pool]=used+value.Length;
+        if(!original&&locale is null)family.SharedOriginal.Add(value);
     }
-    private string Pool(string? locale)=>locale is null?"original":locale is "en" or "ja"?locale:locale==RequestedLanguage(sourceLanguage)?"requested":"other";
+    private string Pool(string? locale)=>locale is null?"original":locale is "en" or "ja"?locale:locale==Requested?"requested":"other";
     internal void SetOriginalLanguage(string familyKey,string language)
     {
         if(countLimit)return;
@@ -147,7 +149,7 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
         var emitted=new HashSet<string>(StringComparer.Ordinal);
         var omittedSource=new HashSet<UInt128>();
         var chosenLanguages=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        string? requested=RequestedLanguage(sourceLanguage)??(string.IsNullOrEmpty(preferredLanguage)?null:preferredLanguage);
+        string? requested=(string.IsNullOrEmpty(preferredLanguage)?null:preferredLanguage)??Requested;
         if(sourceLanguage==SourceLanguageMode.Auto&&requested is null)
         {
             // Related files can have different family names. Select a single
@@ -170,6 +172,15 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
                 LimitReached=limitedPools.Count>0;
                 continue;
             }
+            if(sourceLanguage==SourceLanguageMode.Auto&&family.OriginalLanguages.Count==0)
+            {
+                // Text without locale/parallel-column provenance is source text,
+                // even when several languages appear in the same menu/dialogue.
+                // Explicit source/translation columns still select one view below.
+                emitted.UnionWith(family.Localized.Count==0?family.Original:family.SharedOriginal);
+                omittedSource.UnionWith(family.OmittedOriginal);
+                LimitReached|=limitedPools.Contains("original");
+            }
             string originalLocale=family.OriginalLanguages.Count==1?family.OriginalLanguages.Single():OriginalLocale(family.Original);
             var locales=family.Localized.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
             if(family.Original.Count>0)locales.Add(originalLocale);
@@ -178,7 +189,7 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
             if(chosen=="und-declared")continue;
             // Prefer the original column when it already supplies the chosen source.
             bool ambiguousHan=originalLocale=="han"&&requested is "ja" or "zh"&&!family.Localized.ContainsKey(chosen??"");
-            bool explicitEnglishPack=chosen=="en"&&family.OriginalLanguages.Count==0&&family.Localized.ContainsKey("en");
+            bool explicitLanguagePack=family.OriginalLanguages.Count==0&&family.Localized.ContainsKey(chosen??"");
             if(!string.IsNullOrEmpty(preferredLanguage)&&family.OriginalLanguages.Count==0&&family.Original.Count>0&&!family.Localized.ContainsKey(chosen??""))
             {
                 // An unrelated untagged resource may mix UI language names and
@@ -188,7 +199,7 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
                 omittedSource.UnionWith(family.OmittedOriginal);
                 LimitReached|=limitedPools.Contains("original");
             }
-            else if(family.Original.Count>0&&!explicitEnglishPack&&(chosen==originalLocale||ambiguousHan))
+            else if(family.Original.Count>0&&!explicitLanguagePack&&(chosen==originalLocale||ambiguousHan))
             {emitted.UnionWith(family.Original);omittedSource.UnionWith(family.OmittedOriginal);chosenLanguages.Add(originalLocale);LimitReached|=limitedPools.Contains(Pool(family.OriginalLanguages.Count==1?originalLocale:null));if(family.OriginalLanguages.Count==1&&originalLocale!="und-declared")TrustedSourceTexts.UnionWith(family.Original);}
             else if(chosen is not null&&family.Localized.TryGetValue(chosen,out var selected))
             {emitted.UnionWith(selected);if(family.OmittedLocalized.TryGetValue(chosen,out var omitted))omittedSource.UnionWith(omitted);chosenLanguages.Add(chosen);LimitReached|=limitedPools.Contains(Pool(chosen));if(chosen!="und-declared")TrustedSourceTexts.UnionWith(selected);}
@@ -223,21 +234,39 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
         return result;
     }
 
-    internal void Read(string name,string body,CancellationToken cancellation)
+    internal void Read(string name,string body,CancellationToken cancellation,Action<CatalogIssueKind,string>? reportIssue=null)
+        =>ReadCore(name,body,cancellation,reportIssue,0,null);
+    private void ReadCore(string name,string body,CancellationToken cancellation,Action<CatalogIssueKind,string>? reportIssue,int embeddedDepth,string? inheritedLocale)
     {
         cancellation.ThrowIfCancellationRequested();
-        if(body.Length>16*1024*1024||body.IndexOf('\0')>=0)return;
-        string family=ResourceFamily(name);string? resourceLocale=ResourceLocale(name);
+        if(body.Length>16*1024*1024){reportIssue?.Invoke(CatalogIssueKind.Limited,"文本资源超过本次大小上限");return;}
+        if(body.IndexOf('\0')>=0){reportIssue?.Invoke(CatalogIssueKind.Unsupported,"资源包含二进制内容，未作为普通文字读取");return;}
+        string family=ResourceFamily(name);string? resourceLocale=ResourceLocale(name)??inheritedLocale;
+        if(XmlDisplayText.Read(name,body,(text,locale)=>AddValue(family,locale??resourceLocale,text),cancellation,reportIssue))return;
+        if(StructuredStoryText.ReadSource(name,body,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
+        if(LabelDialogueResource.TryRead(body,cancellation,out var dialogue,out bool complete))
+        {
+            foreach(string line in dialogue)AddValue(family,resourceLocale,line);
+            if(!complete)reportIssue?.Invoke(CatalogIssueKind.Unsupported,"已读取对白和选项，部分脚本指令尚未识别");
+            return;
+        }
         bool resourceContext=ResourceContext.IsMatch(name)||resourceLocale is not null;string trimmed=body.TrimStart('\ufeff',' ','\t','\r','\n');
         if(trimmed.StartsWith('{')||trimmed.StartsWith('['))
         {
             try
             {
-                using var document=JsonDocument.Parse(trimmed,new JsonDocumentOptions{MaxDepth=64});
+                using var document=JsonDocument.Parse(trimmed,new JsonDocumentOptions{MaxDepth=64,CommentHandling=JsonCommentHandling.Skip,AllowTrailingCommas=true});
+                if(StructuredStoryText.ReadCompiledInk(document.RootElement,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
                 void Visit(JsonElement element,bool context,string parent,string? locale,int depth)
                 {
                     cancellation.ThrowIfCancellationRequested();if(depth>64)return;
-                    if(element.ValueKind==JsonValueKind.String){if(context)AddValue(family,locale,element.GetString()!);return;}
+                    if(element.ValueKind==JsonValueKind.String)
+                    {
+                        string value=element.GetString()!;string embedded=value.TrimStart();
+                        if(embeddedDepth<2&&parent is "payload" or "json" or "serializedData"&&(embedded.StartsWith('{')||embedded.StartsWith('[')))
+                        {ReadCore(name+".embedded.json",value,cancellation,reportIssue,embeddedDepth+1,locale);return;}
+                        if(context)foreach(var part in SerializedDialogueText.VisibleParts(value))AddValue(family,locale,part);return;
+                    }
                     if(element.ValueKind==JsonValueKind.Array){foreach(var child in element.EnumerateArray())Visit(child,context,parent,locale,depth+1);return;}
                     if(element.ValueKind!=JsonValueKind.Object)return;
                     var properties=element.EnumerateObject().ToArray();
@@ -260,14 +289,29 @@ internal sealed class UnityTextResourceLanguageSelection(SourceLanguageMode sour
                         }
                         if(field.Equals("m_Name",StringComparison.OrdinalIgnoreCase)||field.Equals("name",StringComparison.OrdinalIgnoreCase)&&!UserFacingNameContext(parent))continue;
                         string? fieldLocale=Locale(field);
-                        Visit(property.Value,!IsIdentifier(field)&&(context||IsTextField(field)||UserFacingNameContext(parent)&&field.Equals("name",StringComparison.OrdinalIgnoreCase)||fieldLocale is not null),field,fieldLocale??locale,depth+1);
+                        bool listField=Regex.IsMatch(field,@"^(?:choices|options|responses|replies|lines|paragraphs)$",RegexOptions.IgnoreCase);
+                        Visit(property.Value,!IsIdentifier(field)&&(context||IsTextField(field)&&(!listField||property.Value.ValueKind==JsonValueKind.Array)||UserFacingNameContext(parent)&&field.Equals("name",StringComparison.OrdinalIgnoreCase)||fieldLocale is not null),field,fieldLocale??locale,depth+1);
                     }
                 }
                 Visit(document.RootElement,resourceContext,"",resourceLocale,0);return;
             }
-            catch(JsonException){return;}
+            catch(JsonException){reportIssue?.Invoke(CatalogIssueKind.Failed,"JSON 文本资源解析失败");return;}
         }
         string extension=Path.GetExtension(name);
+        // Unity TextAssets often lose their original .csv/.tsv suffix. Require
+        // a structured header and at least one complete row before recognizing
+        // such a table; never split arbitrary prose on commas.
+        if(!extension.Equals(".csv",StringComparison.OrdinalIgnoreCase)&&!extension.Equals(".tsv",StringComparison.OrdinalIgnoreCase))
+        {
+            foreach(char delimiter in new[]{'\t',','})
+            {
+                var probe=UnityEmbeddedCatalog.Delimited(body,delimiter).Take(3).ToArray();
+                if(probe.Length<2||probe[0].Length<2||probe[0].Length>128||probe[1].Length!=probe[0].Length)continue;
+                bool content=probe[0].Any(h=>IsTextField(h)||OriginalField(h)||Locale(h) is not null);
+                bool structure=probe[0].Any(IsIdentifier)||probe[0].Count(h=>Locale(h) is not null)>=2;
+                if(content&&structure){extension=delimiter=='\t'?".tsv":".csv";break;}
+            }
+        }
         if(extension.Equals(".csv",StringComparison.OrdinalIgnoreCase)||extension.Equals(".tsv",StringComparison.OrdinalIgnoreCase))
         {
             var rows=UnityEmbeddedCatalog.Delimited(body,extension.Equals(".tsv",StringComparison.OrdinalIgnoreCase)?'\t':',').ToArray();if(rows.Length==0)return;

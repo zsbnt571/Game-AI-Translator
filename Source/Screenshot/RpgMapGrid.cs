@@ -11,8 +11,8 @@ internal sealed class RpgMapGrid:Control
     private long lastResize;
     internal int TerrainBuilds {get;private set;}
     private int width,height;
-    private Point player=new(-1,-1);
-    internal Point PlayerPosition=>player;
+    private PointF player=new(-1,-1);
+    internal PointF PlayerPosition=>player;
     private int[] cells=[],kinds=[],terrain=[],regions=[];
     private JsonElement[] events=[];
     private float cell=18,panX,panY;
@@ -22,7 +22,7 @@ internal sealed class RpgMapGrid:Control
     internal int MapId=>map?.GetProperty("id").GetInt32()??0;
     internal Point? SelectedTile {get;private set;}
     internal event EventHandler? TileSelected;
-    internal JsonElement[] SelectedEvents=>SelectedTile is { } p?events.Where(e=>e.GetProperty("x").GetInt32()==p.X&&e.GetProperty("y").GetInt32()==p.Y).ToArray():[];
+    internal JsonElement[] SelectedEvents=>SelectedTile is { } p?events.Where(e=>TryPosition(e,out var position)&&position.X>=p.X&&position.X<p.X+1&&position.Y>=p.Y&&position.Y<p.Y+1).ToArray():[];
     internal string SelectionText=>SelectedTile is { } p?$"格子 ({p.X}, {p.Y}) · {(cells[p.Y*width+p.X]>0?"可通行":"阻挡")} · 事件 {SelectedEvents.Length}":"点击格子查看地形与事件";
     internal string TileDetails=>SelectedTile is { } p?$"地形标记 {terrain.ElementAtOrDefault(p.Y*width+p.X)} · 区域编号 {regions.ElementAtOrDefault(p.Y*width+p.X)}":"";
     internal RpgMapGrid(){DoubleBuffered=true;ResizeRedraw=true;TabStop=true;SetStyle(ControlStyles.Selectable|ControlStyles.Opaque|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer,true);}
@@ -33,7 +33,7 @@ internal sealed class RpgMapGrid:Control
         terrainRevision++;map=value.Clone();width=value.GetProperty("width").GetInt32();height=value.GetProperty("height").GetInt32();
         int[] Read(string key)=>value.TryGetProperty(key,out var a)?a.EnumerateArray().Select(x=>x.GetInt32()).ToArray():[];
         cells=Read("cells");kinds=Read("kinds");terrain=Read("terrain");regions=Read("regions");events=value.GetProperty("events").EnumerateArray().Select(e=>e.Clone()).ToArray();
-        player=new(value.GetProperty("x").GetInt32(),value.GetProperty("y").GetInt32());
+        player=TryPosition(value,out var position)?position:new(-1,-1);
         if(width<=0||height<=0||cells.Length!=width*height){ClearMap();return;}
         if(views.TryGetValue(MapId,out var view)){cell=view.Cell;panX=view.X;panY=view.Y;SelectedTile=view.Selected;autoFit=view.Auto;if(autoFit)Fit();}else{SelectedTile=null;Fit();}
         if(SelectedTile is { } p&&(p.X>=width||p.Y>=height))SelectedTile=null;
@@ -42,7 +42,7 @@ internal sealed class RpgMapGrid:Control
     internal bool UpdateLive(JsonElement value)
     {
         if(value.GetProperty("id").GetInt32()!=MapId)return false;
-        var next=new Point(value.GetProperty("x").GetInt32(),value.GetProperty("y").GetInt32());
+        var next=TryPosition(value,out var position)?position:new PointF(-1,-1);
         var incoming=value.GetProperty("events").EnumerateArray().Select(e=>e.Clone()).ToArray();
         bool changed=next!=player||!events.Select(e=>e.GetRawText()).SequenceEqual(incoming.Select(e=>e.GetRawText()));
         if(changed){player=next;events=incoming;Invalidate();}return changed;
@@ -52,6 +52,16 @@ internal sealed class RpgMapGrid:Control
         autoFit=true;if(width<1||height<1)return;
         cell=Math.Clamp(Math.Min((ClientSize.Width-16f)/width,(ClientSize.Height-16f)/height),4*DeviceDpi/96f,36*DeviceDpi/96f);
         panX=(ClientSize.Width-width*cell)/2;panY=(ClientSize.Height-height*cell)/2;Invalidate();
+    }
+    private static bool TryPosition(JsonElement value,out PointF position)
+    {
+        position=default;
+        if(value.ValueKind!=JsonValueKind.Object||!value.TryGetProperty("x",out var x)||!value.TryGetProperty("y",out var y)||
+            x.ValueKind!=JsonValueKind.Number||y.ValueKind!=JsonValueKind.Number||!x.TryGetSingle(out var px)||!y.TryGetSingle(out var py)||
+            !float.IsFinite(px)||!float.IsFinite(py))return false;
+        // Half-step/pixel movement plugins legitimately use fractional tile
+        // coordinates. Keep them for display; never round the game's data.
+        position=new(px,py);return true;
     }
     internal void Zoom(float factor)=>ZoomAt(factor,new(Width/2,Height/2));
     private void ZoomAt(float factor,Point anchor)
@@ -75,7 +85,7 @@ internal sealed class RpgMapGrid:Control
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);var palette=UiTheme.Current;var g=e.Graphics;g.Clear(palette.Secondary);
-        if(map is not { } m){TextRenderer.DrawText(g,"开启修改后选择地图",Font,ClientRectangle,palette.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
+        if(map is not { } m){TextRenderer.DrawText(g,UiLanguage.Text("开启修改后选择地图"),Font,ClientRectangle,palette.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter);return;}
         int x0=Math.Max(0,(int)Math.Floor(-panX/cell)),y0=Math.Max(0,(int)Math.Floor(-panY/cell));
         int x1=Math.Min(width,(int)Math.Ceiling((Width-panX)/cell)),y1=Math.Min(height,(int)Math.Ceiling((Height-panY)/cell));
         string signature=$"{terrainRevision}|{Width}|{Height}|{cell}|{panX}|{panY}|{palette}";
@@ -95,12 +105,13 @@ internal sealed class RpgMapGrid:Control
         using var playerBrush=new SolidBrush(Color.FromArgb(0,120,255));
         foreach(var ev in events)
         {
-            int x=ev.GetProperty("x").GetInt32(),y=ev.GetProperty("y").GetInt32();if(x<x0||x>=x1||y<y0||y>=y1)continue;
+            if(!TryPosition(ev,out var position))continue;
+            float x=position.X,y=position.Y;if(x<x0||x>=x1||y<y0||y>=y1)continue;
             var r=new RectangleF(panX+x*cell+2,panY+y*cell+2,Math.Max(3,cell-4),Math.Max(3,cell-4));g.FillEllipse(eventBrush,r);
-            if(cell>=24*DeviceDpi/96f)TextRenderer.DrawText(g,ev.GetProperty("id").ToString(),Font,Rectangle.Round(r),Color.FromArgb(44,28,8),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.NoPadding);
+            if(cell>=24*DeviceDpi/96f&&ev.TryGetProperty("id",out var eventId))TextRenderer.DrawText(g,eventId.ToString(),Font,Rectangle.Round(r),Color.FromArgb(44,28,8),TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.NoPadding);
         }
-        int px=player.X,py=player.Y;
-        if(px>=0&&py>=0)g.FillPolygon(playerBrush,new PointF[]{new(panX+(px+.5f)*cell,panY+py*cell+1),new(panX+(px+1)*cell-1,panY+(py+1)*cell-1),new(panX+px*cell+1,panY+(py+1)*cell-1)});
+        float px=player.X,py=player.Y;
+        if(px>=0&&py>=0&&px<width&&py<height)g.FillPolygon(playerBrush,new PointF[]{new(panX+(px+.5f)*cell,panY+py*cell+1),new(panX+(px+1)*cell-1,panY+(py+1)*cell-1),new(panX+px*cell+1,panY+(py+1)*cell-1)});
         if(SelectedTile is { } tile){using var pen=new Pen(palette.Accent,Math.Max(2,DeviceDpi/48f));g.DrawRectangle(pen,panX+tile.X*cell,panY+tile.Y*cell,cell,cell);}
     }
     protected override void OnPaintBackground(PaintEventArgs e){}

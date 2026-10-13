@@ -27,6 +27,11 @@ public static class GameDetector
 		if(ToolStructureDetection.IsKnownHelper(exePath))return ToolStructureDetection.Detect(exePath,architecture)!;
 		if (text != null)
 		{
+			if(TranslationRoute.GenericTest(exePath)&&UnityEmbeddedAdapter.Detect(exePath) is {} generic)
+			{
+				bool usable=generic.Backend=="Mono"||generic.Architecture=="x64";
+				return new(exePath,stem,"Unity "+generic.Backend,architecture,"Unity "+generic.UnityVersion+" · 通用测试接入 · 独立译文缓存",usable?SupportLevel.Candidate:SupportLevel.Planned,text,usable?"unity-"+generic.Backend.ToLowerInvariant():null);
+			}
 			string path = Path.Combine(Path.Combine(text, "Managed"), "Assembly-CSharp.dll");
 			string path2 = Path.Combine(directoryName, "GameAssembly.dll");
 			string text2 = ReadUnityVersion(Path.Combine(text, "globalgamemanagers"));
@@ -73,6 +78,13 @@ public static class GameDetector
 		{
 			return new GameInfo(exePath, stem, "RPG Maker "+rpg.Engine, architecture, "RPG 文字翻译与数据修改适配候选", SupportLevel.Candidate, rpg.DataRoot,"rpg-maker-"+rpg.Engine.ToLowerInvariant());
 		}
+		if(YukarGameAdapter.Detect(exePath) is {} yukar)return new(exePath,stem,"RPG Developer Bakin","64 位","文字绘制与变量修改测试接入；需要实机验证",SupportLevel.Candidate,yukar.Directory,"yukar-bakin");
+		if(WebGameAdapter.Game(exePath,architecture) is {} web)return web;
+        if(DefoldTextCatalog.Detect(exePath) is not null){bool candidate=DefoldGameAdapter.Candidate(exePath);return new(exePath,stem,"Defold",architecture,candidate?"游戏内文字翻译与中文字库接入（测试）":"已识别引擎，当前资源包或脚本环境尚未接入",candidate?SupportLevel.Candidate:SupportLevel.Planned,directoryName,candidate?"defold":null);}
+        if(ExperimentalRpgCatalog.Detect(exePath) is {} experimental&&experimental=="WOLF RPG Editor"&&WolfGameAdapter.Candidate(exePath))return new(exePath,stem,experimental,architecture,"游戏内文字翻译接入（测试）",SupportLevel.Candidate,Path.Combine(directoryName,"Data"),"wolf");
+        if(RgssGameAdapter.Detect(exePath) is {} rgss)return new(exePath,stem,"RPG Maker "+rgss.Name,architecture,(rgss.Mkxp?"mkxp-z":"RGSS "+rgss.Version)+" · 通用文字内嵌翻译测试接入",SupportLevel.Candidate,Path.Combine(directoryName,"Data"),"rgss");
+        if(ExperimentalRpgCatalog.Detect(exePath) is {} readOnlyEngine)return new(exePath,stem,readOnlyEngine,architecture,"实验性只读文本提取；内嵌翻译与写回尚未接入",SupportLevel.Planned,Path.Combine(directoryName,"Data"));
+		if(GameMakerGameAdapter.Detect(exePath) is {} gm)return new(exePath,stem,"GameMaker",architecture,"GameMaker "+gm.Version+(gm.Candidate?" · 通用脚本文字内嵌翻译测试接入":" · 已识别引擎，当前编译格式尚未接入"),gm.Candidate?SupportLevel.Candidate:SupportLevel.Planned,directoryName,gm.Candidate?"gamemaker":null);
 		if(GodotGameAdapter.Detect(exePath) is {} godot)return new(exePath,stem,"Godot",architecture,"Godot "+godot.Version+" · 文本提取与内嵌翻译测试适配",SupportLevel.Candidate,directoryName,godot.AdapterId);
 		if(ToolStructureDetection.Detect(exePath,architecture) is {} tool)return tool;
         if (EngineStructureDetection.Detect(exePath, stem, architecture) is { } packed)
@@ -127,3 +139,4 @@ public static class GameDetector
 	internal const string CloudTmpSha256="E137863D8A2F5EC4D5239763E9D87F6BE0512256E2CDBAF53DADE13C1939FC7D";
 	private static bool Matches(string path,string hash){if(!File.Exists(path))return false;using var stream=File.OpenRead(path);return Convert.ToHexString(SHA256.HashData(stream))==hash;}
 }
+

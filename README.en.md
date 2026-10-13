@@ -76,9 +76,21 @@ The public package has no personal keys, game library/history, games or saves. S
 
 ## Development and licenses
 
-Use this release's `*-source.zip` and [Build instructions](docs/BUILD-176.md). A reviewable product source snapshot is under [releases/0.6.0.176-preview.1](releases/0.6.0.176-preview.1/README.md). Root `Source/` retains the historical public Alpha line and is not the .176 source or acceptance baseline. Use the complete versioned source attachment to build .176.
+The main branch's [Source/](Source) contains the current **0.6.0.176 Preview 1** product code. [tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) is its build entry point. Each tracked product source file matches the published source asset; see the [source checksum index](git-source-index.json).
 
-Project-owned code remains **GPL-3.0-only**. Third parties retain their own licenses; the package includes notices, component inventories and corresponding third-party source materials.
+| Directory | Contents |
+| --- | --- |
+| [Source/](Source) | Current desktop, screenshot translation and engine adapter source |
+| [tools/](tools) | Build tools for the current version |
+| [docs/](docs/README.md) | Current usage, build, dependency and known-issue guides |
+| [licenses/](licenses/README.md) | Third-party licenses and component inventories |
+| [third-party-source/](third-party-source/README.md) | Index of third-party sources shipped in the source asset |
+
+Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `*-source.zip` and follow [Build instructions](docs/BUILD-176.md). End users should download the with-runtime package above.
+
+The historical Alpha source and documentation remain available through their original tag, commits and release. See [Version history](docs/HISTORY.md).
+
+Project-owned code remains **GPL-3.0-only**. Third parties retain their own licenses; the package includes notices, component inventories and corresponding third-party source materials. See [Third-party notices](THIRD_PARTY_NOTICES.md).
 
 Report version, OS/game/engine, source/target settings, steps and a minimal example. Redact credentials and personal content from logs. Games and saves are not required.
 

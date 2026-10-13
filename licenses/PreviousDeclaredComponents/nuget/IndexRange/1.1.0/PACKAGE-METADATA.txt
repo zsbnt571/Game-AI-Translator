@@ -1,0 +1,8 @@
+Package: IndexRange
+Version: 1.1.0
+Source: https://github.com/bgrainger/IndexRange.git
+Authors: Bradley Grainger
+Copyright: Copyright 2019–2025 Bradley Grainger
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

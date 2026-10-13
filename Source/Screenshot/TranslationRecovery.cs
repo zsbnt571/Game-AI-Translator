@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -67,8 +67,7 @@ internal static class TranslationRecoveryCoordinator
         if(existing is not null)foreach(var pair in existing)
             if(expected.TryGetValue(pair.Key,out var cachedItem)&&!string.IsNullOrWhiteSpace(pair.Value))
             {
-                var checkedCache=coreV2?CoreTranslationContentValidator.Validate(cachedItem,pair.Value,"recovery-cache",targetLanguage):
-                    new CoreContentValidation(true,pair.Value,false,"NON_CORE_CACHE");
+                var checkedCache=CoreTranslationContentValidator.Validate(cachedItem,pair.Value,"recovery-cache",targetLanguage);
                 if(!checkedCache.Accepted)continue;
                 completed[pair.Key]=checkedCache.Text;recoveredBuffer[pair.Key]=Entry(cachedItem,checkedCache.Text,0,"validated-cache",checkedCache.Reason);
                 if(existingAllocations?.TryGetValue(pair.Key,out var cachedAllocation)==true)
@@ -111,8 +110,7 @@ internal static class TranslationRecoveryCoordinator
                 foreach(var pair in outcome.Translations)
                 {
                     if(completed.ContainsKey(pair.Key))continue;
-                    var content=coreV2?CoreTranslationContentValidator.Validate(expected[pair.Key],pair.Value,$"recovery-{total}",targetLanguage):
-                        new CoreContentValidation(true,pair.Value,false,"LEGACY_UNCHANGED");
+                    var content=CoreTranslationContentValidator.Validate(expected[pair.Key],pair.Value,$"recovery-{total}",targetLanguage);
                     if(!content.Accepted)
                     {
                         contentRejected=true;

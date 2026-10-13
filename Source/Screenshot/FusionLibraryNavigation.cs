@@ -125,7 +125,7 @@ internal sealed class LibraryNavigationTree:Control
             if(target.Kind=="engine")key=expanded.Contains(node.Name)?"down":"next";
             if(target.Kind=="game"&&icons.TryGetValue(target.Value,out var image))g.DrawImage(image,WorkspaceDrawing.Fit(image.Size,iconBox));else WorkspaceSkin.Icon(g,key,iconBox,selected?p.Accent:p.SecondaryText);
             bool active=target.Kind=="game"&&running.Contains(target.Value);var box=new Rectangle(iconBox.Right+S(8),row.Y,Math.Max(0,row.Right-iconBox.Right-S(active?28:12)),ItemHeight);
-            WorkspaceDrawing.Text(g,node.Text,Font,box,selected?p.Accent:p.Text);
+            WorkspaceDrawing.Text(g,target.Kind is "game" or "tag" or "folder" or "collection"?node.Text:UiLanguage.Text(node.Text),Font,box,selected?p.Accent:p.Text);
             if(active){using var dot=new SolidBrush(Color.FromArgb(55,197,104));g.FillEllipse(dot,row.Right-S(15),row.Y+(row.Height-S(7))/2,S(7),S(7));}
         }
         if(ScrollMaximum>0){var thumb=Thumb;int w=S(dragging||overScroll?6:4);thumb=new(Width-S(2)-w,thumb.Y,w,thumb.Height);using var path=WorkspaceDrawing.Round(thumb,Math.Max(1,w/2));using var brush=new SolidBrush(Color.FromArgb(dragging?220:overScroll?180:100,p.SecondaryText));g.FillPath(brush,path);}
@@ -199,12 +199,12 @@ public sealed partial class MainForm
         try{_libraryCollection=target.Kind=="collection"?target.Value:"";_libraryScope=target.Kind=="scope"?target.Value:"home";_libraryTag=target.Kind=="tag"?target.Value:"";
             _libraryFilter.SelectedIndex=0;_libraryEngine.SelectedItem=target.Kind=="engine"?target.Value:"全部引擎";_libraryFolder.SelectedItem=target.Kind=="folder"?target.Value:"全部文件夹";}
         finally{_libraryFiltersLoading=false;}
-        _libraryPage=0;ScheduleLibraryRefresh();
+        ScheduleLibraryRefresh();RecordPageLocation();
     }
     private void AddLibraryCategory()
     {
         using var dialog=new Form{Text="新建分类",StartPosition=FormStartPosition.CenterParent,ClientSize=new(350,150),Font=Font,FormBorderStyle=FormBorderStyle.FixedDialog,MinimizeBox=false,MaximizeBox=false};
-        var name=new TextBox{MaxLength=40,Width=280,PlaceholderText="分类名称"};var content=WorkspaceColumn();content.Padding=new(18);
+        var name=new TextBox{MaxLength=40,Width=280,PlaceholderText=UiLanguage.Text("分类名称")};var content=WorkspaceColumn();content.Padding=new(18);
         WorkspaceAdd(content,WorkspaceRow(name));var save=WorkspaceButton("创建",(_,_)=>{if(!string.IsNullOrWhiteSpace(name.Text))dialog.DialogResult=DialogResult.OK;});
         WorkspaceAdd(content,WorkspaceRow(save));dialog.AcceptButton=save;dialog.Controls.Add(content);UiTheme.Apply(dialog,_appliedDesktopSettings);
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;

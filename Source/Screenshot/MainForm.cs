@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
@@ -7,24 +7,24 @@ public sealed partial class MainForm : Form, IMessageFilter
 {
     private enum BindingCaptureState { Idle, Arming, Capturing }
     private const int HotKeyId = 0x4741;
-    private readonly ComboBox _modifierBox = new();
-    private readonly ComboBox _keyBox = new();
+    private readonly ComboBox _modifierBox = new GamePlanBox();
+    private readonly ComboBox _keyBox = new GamePlanBox();
     private InputBindingCaptureButton? _startBindingEditor,_cancelBindingEditor,_toggleBindingEditor,_zoomInBindingEditor,_zoomOutBindingEditor,_resetFitBindingEditor;
     private InputBindingCaptureButton? _activeBindingCapture;private InputActionId? _activeBindingAction;private BindingCaptureState _bindingCaptureState;private readonly List<string> _bindingCaptureDiagnostics=[];
-    private readonly ComboBox _ocrLanguageBox = new();
+    private readonly ComboBox _ocrLanguageBox = new GamePlanBox();
     private readonly TextBox _apiUrlBox = new();
     private readonly TextBox _apiKeyBox = new();
     private readonly TextBox _modelBox = new();
-    private readonly ComboBox _targetLanguageBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _targetLanguageBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly NumericUpDown _firstByteTimeoutBox = new() { Minimum = 10, Maximum = 90, Value = 30 };
     private readonly NumericUpDown _requestTimeoutBox = new() { Minimum = 30, Maximum = 180, Value = 90 };
-    private readonly ComboBox _cleanupStrengthBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _ocrEngineBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _visualModelBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _previewDefaultImageBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _previewDefaultTextBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _cleanupStrengthBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _ocrEngineBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _visualModelBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _previewDefaultImageBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _previewDefaultTextBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly CheckBox _previewTextPanelVisibleBox=new(){Text="显示右侧文本栏",AutoSize=true,Checked=true};
-    private readonly ComboBox _translationSourceBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _translationSourceBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly CheckBox _rememberLastPreviewBox = new() { Text = "记住上次 Preview 选择", AutoSize = true };
     private readonly CheckBox _ocrCacheBox = new() { Text = "启用OCR缓存", AutoSize = true };
     private readonly CheckBox _translationCacheBox = new() { Text = "启用翻译缓存", AutoSize = true };
@@ -32,18 +32,19 @@ public sealed partial class MainForm : Form, IMessageFilter
     private readonly NumericUpDown _historyLimitBox = new() { Minimum = 10, Maximum = 200, Value = 20 };
     private readonly CheckBox _hideMainDuringCaptureBox = new() { Text = "截图时隐藏主界面", AutoSize = true, Checked = true };
     private readonly CheckBox _hidePreviewsDuringCaptureBox = new() { Text = "截图时隐藏翻译预览窗口", AutoSize = true, Checked = true };
-    private readonly ComboBox _sourceLanguageBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-    private readonly ComboBox _translationStyleBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly LanguageCombinationPicker _sourceLanguageChoices = new();
+    private readonly ComboBox _sourceLanguageBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
+    private readonly ComboBox _translationStyleBox = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly TextBox _providerDisplayNameBox = new();
     private readonly TextBox _customPromptBox = new() { Multiline = true, Height = 90, ScrollBars = ScrollBars.Vertical };
     private readonly CheckBox _preserveIdentifiersBox = new() { Text = "保留 ID / Code", AutoSize = true };
     private readonly CheckBox _preserveNumbersBox = new() { Text = "保留数字", AutoSize = true };
     private readonly CheckBox _preserveVariablesBox = new() { Text = "保留变量 / 占位符", AutoSize = true };
-    private readonly ComboBox _previewSizingBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _fixedPreviewWidthBox=new(){Minimum=820,Maximum=10000};private readonly NumericUpDown _fixedPreviewHeightBox=new(){Minimum=560,Maximum=10000};
-    private readonly ComboBox _uiFontModeBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _uiFontBox=new(){DropDownStyle=ComboBoxStyle.DropDown};private readonly NumericUpDown _uiFontSizeBox=new(){Minimum=7,Maximum=24};
+    private readonly ComboBox _previewSizingBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _fixedPreviewWidthBox=new(){Minimum=820,Maximum=10000};private readonly NumericUpDown _fixedPreviewHeightBox=new(){Minimum=560,Maximum=10000};
+    private readonly ComboBox _uiFontModeBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _uiFontBox=new FontChoiceBox(){Name="uiFontFamily"};private readonly NumericUpDown _uiFontSizeBox=new(){Minimum=7,Maximum=24};
     private readonly Label _typographyStatus=new(){AutoSize=true,MaximumSize=new Size(620,0)};
-    private readonly ComboBox _previewFontModeBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _previewFontBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _previewFontSizeBox=new(){Minimum=7,Maximum=48};
-    private readonly ComboBox _overlayFontModeBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _overlayFontBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _overlayFontSizeBox=new(){Minimum=0,Maximum=48};private readonly ComboBox _overlayBackgroundBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _overlayOpacityBox=new(){Minimum=0,Maximum=255};
+    private readonly ComboBox _previewFontModeBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _previewFontBox=new FontChoiceBox(){Name="previewFontFamily"};private readonly NumericUpDown _previewFontSizeBox=new(){Minimum=7,Maximum=48};
+    private readonly ComboBox _overlayFontModeBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _overlayFontBox=new FontChoiceBox(){Name="overlayFontFamily"};private readonly NumericUpDown _overlayFontSizeBox=new(){Minimum=0,Maximum=48};private readonly ComboBox _overlayBackgroundBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _overlayOpacityBox=new(){Minimum=0,Maximum=255};
     private readonly Label _statusLabel = new();
     private readonly Label _configPathLabel = new();
     private readonly Label _keyStatusLabel = new();
@@ -82,14 +83,14 @@ public sealed partial class MainForm : Form, IMessageFilter
     private int _historyThumbnailSide;
     private int _historyThumbnailDecodeCount;
     private readonly Label _historyUsage=new(){AutoSize=true};
-    private readonly ComboBox _historyThumbnailBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly ComboBox _historyThumbnailBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};
     private readonly NumericUpDown _historyTextSizeBox=new(){Minimum=8,Maximum=24,DecimalPlaces=1,Increment=.5M};
     private readonly CheckBox _historyByCountBox=new(){Text="按数量清理",AutoSize=true};private readonly CheckBox _historyByAgeBox=new(){Text="按保存天数清理",AutoSize=true};private readonly CheckBox _historyBySpaceBox=new(){Text="按磁盘空间清理",AutoSize=true};
     private readonly NumericUpDown _historyDaysBox=new(){Minimum=1,Maximum=3650};private readonly NumericUpDown _historySpaceBox=new(){Minimum=32,Maximum=102400};
     private readonly Label _diagnosticsSummary = new() { AutoSize = true, MaximumSize = new Size(820, 0) };
-    private readonly ComboBox _themeModeBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly ComboBox _closeBehaviorBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly NotifyIcon _trayIcon=new(){Icon=SystemIcons.Application,Text="截图翻译器",Visible=!AppDataPaths.IsDataRootVerification};
+    private readonly ComboBox _themeModeBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly ComboBox _closeBehaviorBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly NotifyIcon _trayIcon=new(){Icon=AppBranding.CreateIcon(SystemInformation.SmallIconSize),Text="截图翻译器",Visible=!AppDataPaths.IsDataRootVerification};
     private bool _trueExit;
 
     public MainForm(string? settingsPath = null) :
@@ -116,7 +117,8 @@ public sealed partial class MainForm : Form, IMessageFilter
 
         AutoScaleMode = AutoScaleMode.Dpi;
         AutoScaleDimensions = new SizeF(96F, 96F);
-        Text = BuildIdentity.DisplayVersion;
+        Text = $"FUSION R1 · {BuildIdentity.BuildVersion}";
+        AppBranding.Apply(this);
         FormBorderStyle = FormBorderStyle.None;
         Padding = new Padding(5);
         ClientSize = new Size(1440, 880);
@@ -173,11 +175,11 @@ public sealed partial class MainForm : Form, IMessageFilter
             {
                 await Task.Yield();
                 if(IsDisposed||Disposing)return;
-                await LoadOcrLanguagesAsync();
+                if(!ScreenshotRebuildSelfTests.IsActive)await LoadOcrLanguagesAsync();
                 // Fusion: OCR health is checked on demand; navigation does not run inference.
             }
             DesktopStages.Mark("necessary-initialization-completed");
-            if (!IsDisposed&&_captureDiagnostics.Enabled) BeginInvoke(BeginCapture);
+            if (!IsDisposed&&!ScreenshotRebuildSelfTests.IsActive&&_captureDiagnostics.Enabled) BeginInvoke(BeginCapture);
         };
         ResumeLayout(true);DesktopStages.Mark("main-form-layout-prepared");
         AttachDesktopStages();
@@ -187,7 +189,7 @@ public sealed partial class MainForm : Form, IMessageFilter
 
     private void BuildTrayMenu()
     {
-        var menu=new ContextMenuStrip();
+        var menu=new LocalizedContextMenuStrip();
         menu.Items.Add("打开主界面",null,(_,_)=>RestoreFromTray());
         menu.Items.Add("开始截图",null,(_,_)=>BeginCapture());
         menu.Items.Add("暂停 / 启用快捷键",null,(_,_)=>{if(_inputRuntime.HasConfiguredBindings){RemoveHotKey();_statusLabel.Text="快捷键已暂停。";}else ApplyHotKey(true);});
@@ -199,12 +201,13 @@ public sealed partial class MainForm : Form, IMessageFilter
     private void RestoreFromTray(){_hotKeyHost.Log("Tray Restore");ShowInTaskbar=true;Show();WindowState=FormWindowState.Normal;Activate();BringToFront();_trayIcon.Visible=true;}
     private void ExitApplication(){_trueExit=true;_trayIcon.Visible=false;Close();}
 
-    private readonly ComboBox _backgroundTreatmentBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly ComboBox _ocrLoadBox = new() { DropDownStyle=ComboBoxStyle.DropDownList, Width=200 };
-    private readonly ComboBox _backgroundComputeBox=new(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly ComboBox _backgroundTreatmentBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly ComboBox _ocrLoadBox = new GamePlanBox() { DropDownStyle=ComboBoxStyle.DropDownList, Width=200 };
+    private readonly ComboBox _backgroundComputeBox=new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};
 
     private ApiSettings UiSettings => new()
     {
+        InterfaceLanguage = _interfaceLanguageBox.SelectedIndex>=0?(ApplicationLanguage)_interfaceLanguageBox.SelectedIndex:_translationOptions.InterfaceLanguage,
         TypographyConfigVersion = FontManager.CurrentConfigVersion,
         ApiUrl = _apiUrlBox.Text.Trim(), ApiKey = _apiKeyBox.Text,
         Model = _modelBox.Text.Trim(), TargetLanguage = UiTargetLanguageDisplay.CodeFromDisplay(_targetLanguageBox.SelectedItem?.ToString()),
@@ -253,12 +256,11 @@ public sealed partial class MainForm : Form, IMessageFilter
         TranslationProvider = _translationOptions.TranslationProvider,
         TranslationProviderKind = _translationOptions.TranslationProviderKind,
         TranslationPromptVersion = TranslationPromptBuilder.Version,
+        SourceLanguages = _sourceLanguageChoices.SelectedLanguages,
         SourceLanguage = _sourceLanguageBox.SelectedIndex >= 0
             ? (SourceLanguageMode)_sourceLanguageBox.SelectedIndex
             : _translationOptions.SourceLanguage,
-        TranslationStyle = _translationStyleBox.SelectedIndex >= 0
-            ? (TranslationStyle)_translationStyleBox.SelectedIndex
-            : _translationOptions.TranslationStyle,
+        TranslationStyle = TranslationStyleSelection.Read(_translationStyleBox, _translationOptions.TranslationStyle),
         ProviderDisplayName = string.IsNullOrWhiteSpace(_providerDisplayNameBox.Text)
             ? _translationOptions.ProviderDisplayName : _providerDisplayNameBox.Text.Trim(),
         CustomTranslationPrompt = _customPromptBox.Text,
@@ -274,19 +276,21 @@ public sealed partial class MainForm : Form, IMessageFilter
         if(name=="历史")name="主页";
         using var uiTiming=UiPerformanceTrace.Measure("main-navigation" );
         if(name=="设置"){using var timing=DesktopStages.MeasureOnce("settings-first-entry-prepared");EnsureSettingsCategory(Math.Max(0,_settingsNavigation.SelectedIndex));}
-        if(_currentMainPage=="设置"&&name!="设置"&&!ConfirmProfileLeave())return;
+        if(_currentMainPage=="设置"&&name!="设置"&&!ConfirmSettingsLeave())return;
         CancelBindingCapture();
         _lastNavigationEvent=$"{DateTimeOffset.Now:O} NavigationClick:{name}";
         if(!_pages.ContainsKey(name))throw new ArgumentOutOfRangeException(nameof(name),name,"Unknown main page");
         var current=_pages[name];
         if(_currentMainPage==name&&!current.IsDisposed&&current.Visible&&current.Parent==_mainContentHost&&current.Controls.Count>0&&_mainContentHost.Controls.GetChildIndex(current)==0)return;
+        using var repaint=new WorkspacePaintBatch(_mainContentHost);
+        ConfigureWorkspaceRenderingForPage(name);
         if(_pages.TryGetValue(_currentMainPage,out var previousPage))RememberPosition(previousPage);
         WorkspacePages.Show(_mainContentHost,_pages[name]);_currentMainPage=name;
         RestorePosition(_pages[name]);
         ValidatePageHost(name,"NavigationClick");
         if (name == "主页") RefreshHistory();
-        if (name == "内嵌翻译"){RefreshGameState();ScheduleLibraryRefresh();}
-        RefreshFusionChrome();
+        if (name == "内嵌翻译")RefreshGameState();
+        RefreshFusionChrome();RecordPageLocation();
     }
 
     private void ToggleTheme()
@@ -458,16 +462,16 @@ public sealed partial class MainForm : Form, IMessageFilter
         _backgroundTreatmentBox.SelectedIndexChanged+=(_,_)=>_backgroundComputeBox.Enabled=_backgroundTreatmentBox.SelectedIndex!=1;
         _ocrLoadBox.Items.AddRange(["标准","低负载（实验）"]);
         _ocrEngineBox.Items.Add("RapidOCR（快速）");_visualModelBox.Items.Add("关闭（产品模式）");
-        _ocrLanguageBox.DropDownStyle=ComboBoxStyle.DropDownList;_cleanupStrengthBox.Items.AddRange(["关闭","普通","严格"]);_targetLanguageBox.Items.AddRange(UiTargetLanguageDisplay.DisplayNames.ToArray());_sourceLanguageBox.Items.AddRange(Enum.GetValues<SourceLanguageMode>().Select(UiStrings.SourceLanguageName).ToArray());_translationStyleBox.Items.AddRange(Enum.GetValues<TranslationStyle>().Select(UiStrings.TranslationStyleName).ToArray());_apiKeyBox.UseSystemPasswordChar=true;_previewDefaultImageBox.Items.AddRange(["原图","译图（存在时）"]);_previewDefaultTextBox.Items.AddRange(["OCR 原文","整理后原文","译文（存在时）"]);_translationSourceBox.Items.AddRange(["自动（推荐）","整理后原文","OCR 原文"]);
+        _ocrLanguageBox.DropDownStyle=ComboBoxStyle.DropDownList;_cleanupStrengthBox.Items.AddRange(["关闭","普通","严格"]);_targetLanguageBox.Items.AddRange(UiTargetLanguageDisplay.DisplayNames.ToArray());_sourceLanguageBox.Items.AddRange(Enum.GetValues<SourceLanguageMode>().Select(UiStrings.SourceLanguageName).ToArray());TranslationStyleSelection.Select(_translationStyleBox,TranslationStyle.GameLocalization);_apiKeyBox.UseSystemPasswordChar=true;_previewDefaultImageBox.Items.AddRange(["原图","译图（存在时）"]);_previewDefaultTextBox.Items.AddRange(["OCR 原文","整理后原文","译文（存在时）"]);_translationSourceBox.Items.AddRange(["自动（推荐）","整理后原文","OCR 原文"]);
         _previewSizingBox.Items.AddRange(Enum.GetValues<PreviewWindowSizingMode>().Select(UiStrings.PreviewSizeModeName).ToArray());_uiFontModeBox.Items.AddRange(["产品默认","自定义字体"]);_previewFontModeBox.Items.AddRange(["产品默认","跟随软件界面字体","自定义字体"]);_overlayFontModeBox.Items.AddRange(["产品默认","自定义字体"]);_overlayBackgroundBox.Items.AddRange(Enum.GetValues<TranslationOverlayBackgroundStyle>().Select(UiStrings.BackgroundStyleName).ToArray());PrepareFontChoices();
         foreach(var box in new[]{_previewSizingBox,_uiFontModeBox,_previewFontModeBox,_overlayFontModeBox,_overlayBackgroundBox})box.SelectedIndexChanged+=(_,_)=>UpdateAppearanceEnabled();
         // Values and handlers are initialized before reading settings; layout is prepared separately.
-        _embeddedKey.Items.AddRange(Enumerable.Range(1,12).Select(x=>(object)("F"+x)).ToArray());
+        
         _configPathLabel.AutoSize=true;_configPathLabel.MaximumSize=new(600,0);_keyStatusLabel.AutoSize=true;
 
     }
 
-    private static TableLayoutPanel SettingsTable(){var t=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2,Padding=new Padding(12),BackColor=Color.FromArgb(18,23,34),ForeColor=Color.White};t.ColumnStyles.Add(new(SizeType.Absolute,160));t.ColumnStyles.Add(new(SizeType.Percent,100));return t;}private SettingsPage SettingsTab(string name,Control content){var p=new SettingsPage(name){AutoScroll=true,BackColor=Color.FromArgb(18,23,34),ForeColor=Color.White,Padding=new Padding(8),Tag=content};p.Controls.Add(content);AttachHostDiagnostics(p,$"SettingsTab:{name}");AttachHostDiagnostics(content,$"SettingsRoot:{name}");EnsureSettingsVisibility(p);return p;}
+    private static TableLayoutPanel SettingsTable(){var t=new TableLayoutPanel{Dock=DockStyle.Top,AutoSize=true,ColumnCount=2,Padding=new Padding(12),BackColor=Color.FromArgb(18,23,34),ForeColor=Color.White};if(_buildingSettingsLayout)t.SuspendLayout();t.ColumnStyles.Add(new(SizeType.Absolute,160));t.ColumnStyles.Add(new(SizeType.Percent,100));return t;}private SettingsPage SettingsTab(string name,Control content){var p=new SettingsPage(name){AutoScroll=true,BackColor=Color.FromArgb(18,23,34),ForeColor=Color.White,Padding=new Padding(8),Tag=content};p.Controls.Add(content);AttachHostDiagnostics(p,$"SettingsTab:{name}");AttachHostDiagnostics(content,$"SettingsRoot:{name}");EnsureSettingsVisibility(p);return p;}
     private Control BuildCustomThemeEditor()
     {
         var panel=new FlowLayoutPanel{AutoSize=true,WrapContents=true};
@@ -517,7 +521,7 @@ public sealed partial class MainForm : Form, IMessageFilter
     private Control BuildBindingEditor(InputActionId action)
     {
         var current=action switch{InputActionId.StartCapture=>_translationOptions.StartCaptureBinding??InputBindingDefaults.StartCapture,InputActionId.CancelCapture=>_translationOptions.CancelCaptureBinding??InputBindingDefaults.CancelCapture,InputActionId.ToggleResults=>_translationOptions.ToggleResultsBinding??InputBindingDefaults.ToggleResults,InputActionId.PreviewZoomIn=>_translationOptions.PreviewZoomInBinding??InputBindingDefaults.ZoomIn,InputActionId.PreviewZoomOut=>_translationOptions.PreviewZoomOutBinding??InputBindingDefaults.ZoomOut,_=>_translationOptions.PreviewResetFitBinding??InputBindingDefaults.ResetFit};
-        var editor=new InputBindingCaptureButton(current);void Set(InputBinding b){switch(action){case InputActionId.StartCapture:_translationOptions.StartCaptureBinding=b;_startBindingEditor=editor;break;case InputActionId.CancelCapture:_translationOptions.CancelCaptureBinding=b;_cancelBindingEditor=editor;break;case InputActionId.ToggleResults:_translationOptions.ToggleResultsBinding=b;_toggleBindingEditor=editor;break;case InputActionId.PreviewZoomIn:_translationOptions.PreviewZoomInBinding=b;_zoomInBindingEditor=editor;break;case InputActionId.PreviewZoomOut:_translationOptions.PreviewZoomOutBinding=b;_zoomOutBindingEditor=editor;break;default:_translationOptions.PreviewResetFitBinding=b;_resetFitBindingEditor=editor;break;}_settingsDirty=true;ShowBindingWarnings();}editor.BindingChanged+=Set;Set(current);
+        var editor=new InputBindingCaptureButton(current);void Set(InputBinding b){switch(action){case InputActionId.StartCapture:_translationOptions.StartCaptureBinding=b;_startBindingEditor=editor;break;case InputActionId.CancelCapture:_translationOptions.CancelCaptureBinding=b;_cancelBindingEditor=editor;break;case InputActionId.ToggleResults:_translationOptions.ToggleResultsBinding=b;_toggleBindingEditor=editor;break;case InputActionId.PreviewZoomIn:_translationOptions.PreviewZoomInBinding=b;_zoomInBindingEditor=editor;break;case InputActionId.PreviewZoomOut:_translationOptions.PreviewZoomOutBinding=b;_zoomOutBindingEditor=editor;break;default:_translationOptions.PreviewResetFitBinding=b;_resetFitBindingEditor=editor;break;}_settingsDirty=true;ShowBindingWarnings();UpdateSettingsSaveState();}editor.BindingChanged+=Set;Set(current);
         editor.Tag=action;var change=MakeButton("修改",Point.Empty,new(70,32));change.Tag=action;BindBindingCommandButton(change,()=>{TraceBinding($"UiEvent=ModifyCommand Target={action} BEFORE={CaptureStateDiagnostic()}");BeginInvoke(()=>BeginBindingCapture(action,editor));});
         var clear=MakeButton("清除",Point.Empty,new(70,32));BindBindingCommandButton(clear,()=>{CancelBindingCapture("ClearCommand");ApplyBinding(action,editor,new(),"Clear");});
         var reset=MakeButton("恢复默认",Point.Empty,new(90,32));BindBindingCommandButton(reset,()=>{CancelBindingCapture("RestoreDefaultCommand");var value=action switch{InputActionId.StartCapture=>InputBindingDefaults.StartCapture,InputActionId.CancelCapture=>InputBindingDefaults.CancelCapture,InputActionId.ToggleResults=>InputBindingDefaults.ToggleResults,InputActionId.PreviewZoomIn=>InputBindingDefaults.ZoomIn,InputActionId.PreviewZoomOut=>InputBindingDefaults.ZoomOut,_=>InputBindingDefaults.ResetFit};ApplyBinding(action,editor,value,"RestoreDefault");});
@@ -567,6 +571,7 @@ public sealed partial class MainForm : Form, IMessageFilter
     private bool IsProtectedMouseContext(InputBinding binding){if(_captureOpen||_previews.Any(x=>!x.IsDisposed&&x.ContainsFocus&&x.Bounds.Contains(Cursor.Position)))return true;if(binding.Kind==InputBindingKind.MouseButton&&binding.MouseButton is InputMouseButton.Left or InputMouseButton.Right&&Bounds.Contains(Cursor.Position))return true;return false;}
     public bool PreFilterMessage(ref Message m)
     {
+        if(HandlePageMouse(ref m))return true;
         // UI-thread fallback only. Never capture messages belonging to another
         // foreground window or commit an outside click before its cancel is queued.
         if(_activeBindingCapture is not { } editor||_bindingCaptureState==BindingCaptureState.Idle
@@ -782,6 +787,7 @@ public sealed partial class MainForm : Form, IMessageFilter
 
     private async Task RunStartupHealthCheckAsync()
     {
+        var rapid = _ocrRuntimeManager.GetStatus(OcrEngineKind.Rapid);
         var rapidProbe = await _ocrRuntimeManager.CheckAsync(OcrEngineKind.Rapid, CancellationToken.None);
         var visionRoot = ResolveBundledVisionRoot();
         var ppModel = Path.Combine(visionRoot, "paddlex", "official_models", "PP-DocLayout-S");
@@ -790,16 +796,20 @@ public sealed partial class MainForm : Form, IMessageFilter
         var providerReady = !string.IsNullOrWhiteSpace(CurrentSettings.ApiUrl)
             && !string.IsNullOrWhiteSpace(CurrentSettings.ApiKey)
             && !string.IsNullOrWhiteSpace(CurrentSettings.Model);
-        var rapidReady = rapidProbe.Ready;
+        var rapidReady = rapid.Ready && rapidProbe.Ready;
         if (_homeOcrStatus is not null)
             _homeOcrStatus.Text = $"本地环境：RapidOCR {(rapidReady ? "正常" : "需恢复")} · 快捷键 {(AppDataPaths.DisableGlobalInput ? "本次启动禁用" : _hotKeyRegistered ? "正常" : "未注册")}";
         if (_homeApiStatus is not null)
             _homeApiStatus.Text = providerReady ? "翻译 Provider：已配置" : "翻译 Provider：尚未配置，请在设置 → 翻译中填写";
 
         var riskyPath = AppContext.BaseDirectory.Any(ch => ch > 127);
-        if (!rapidReady)
+        if (!ModelManagerOperations.RequiredStartupComponentsReady(rapidReady, _hotKeyRegistered || AppDataPaths.DisableGlobalInput))
         {
-            _statusLabel.Text = "OCR 可选依赖未就绪；设置和游戏库仍可使用。详情见设置 → 运行依赖。";
+            _statusLabel.Text = "首次运行检查发现本地组件或快捷键需要处理；请点击“检查并修复运行环境”。";
+            AppDialog.Show(this, "首次运行检查",
+                "本地运行环境未完全就绪。请使用主页的“检查并修复运行环境”入口。",
+                AppDialogKind.Warning,
+                $"Rapid={rapidReady}; PP-S=OFF (OptionalInstalled={ppInstalled}); HotKey={_hotKeyRegistered}; Runtime={_ocrRuntimeManager.RuntimeRoot}; Vision={visionRoot}");
         }
         else if (riskyPath)
         {
@@ -844,6 +854,7 @@ public sealed partial class MainForm : Form, IMessageFilter
                 return;
             }
             ApplySettingsToControls(settings);
+            LoadTranslationContentToControls();
             ApplyDesktopAppearance(settings);
             _settingsLoadSucceeded = true;
         }
@@ -858,6 +869,7 @@ public sealed partial class MainForm : Form, IMessageFilter
     private void ApplySettingsToControls(ApiSettings settings)
     {
         _translationOptions = ApiSettingsSnapshot.Copy(settings);
+        if(_interfaceLanguageBox.Items.Count>0)_interfaceLanguageBox.SelectedIndex=(int)settings.InterfaceLanguage;
         RefreshBindingEditors();
         _apiUrlBox.Text = settings.ApiUrl;
         _apiKeyBox.Text = settings.ApiKey;
@@ -890,7 +902,8 @@ public sealed partial class MainForm : Form, IMessageFilter
         _hideMainDuringCaptureBox.Checked = settings.HideMainWindowDuringCapture;
         _hidePreviewsDuringCaptureBox.Checked = settings.HidePreviewWindowsDuringCapture;
         SelectIndexIfAvailable(_sourceLanguageBox, (int)settings.SourceLanguage);
-        SelectIndexIfAvailable(_translationStyleBox, (int)settings.TranslationStyle);
+        _sourceLanguageChoices.SelectLanguages(settings.SourceLanguages);
+        TranslationStyleSelection.Select(_translationStyleBox, settings.TranslationStyle);
         _providerDisplayNameBox.Text = settings.ProviderDisplayName;
         _customPromptBox.Text = settings.CustomTranslationPrompt;
         _preserveIdentifiersBox.Checked = settings.PreserveIdentifiers;
@@ -940,7 +953,7 @@ public sealed partial class MainForm : Form, IMessageFilter
             _apiKeyBox.Text = updated.ApiKey;
             _modelBox.Text = updated.Model;
             _targetLanguageBox.SelectedItem = UiTargetLanguageDisplay.DisplayFromCode(updated.TargetLanguage);
-            _sourceLanguageBox.SelectedIndex=(int)updated.SourceLanguage;_translationStyleBox.SelectedIndex=(int)updated.TranslationStyle;_providerDisplayNameBox.Text=updated.ProviderDisplayName;_customPromptBox.Text=updated.CustomTranslationPrompt;_preserveIdentifiersBox.Checked=updated.PreserveIdentifiers;_preserveNumbersBox.Checked=updated.PreserveNumbers;_preserveVariablesBox.Checked=updated.PreserveVariables;
+            _sourceLanguageBox.SelectedIndex=(int)updated.SourceLanguage;_sourceLanguageChoices.SelectLanguages(updated.SourceLanguages);TranslationStyleSelection.Select(_translationStyleBox,updated.TranslationStyle);_providerDisplayNameBox.Text=updated.ProviderDisplayName;_customPromptBox.Text=updated.CustomTranslationPrompt;_preserveIdentifiersBox.Checked=updated.PreserveIdentifiers;_preserveNumbersBox.Checked=updated.PreserveNumbers;_preserveVariablesBox.Checked=updated.PreserveVariables;
         }
         finally { _applyingSettings = false; }
         foreach (var preview in _previews.Where(x => !x.IsDisposed && !x.Disposing))
@@ -974,6 +987,7 @@ public sealed partial class MainForm : Form, IMessageFilter
         _hideMainDuringCaptureBox.CheckedChanged += SettingsControlChanged;
         _hidePreviewsDuringCaptureBox.CheckedChanged += SettingsControlChanged;
         _sourceLanguageBox.SelectedIndexChanged += SettingsControlChanged;
+        _sourceLanguageChoices.SelectionChanged += SettingsControlChanged;
         _translationStyleBox.SelectedIndexChanged += SettingsControlChanged;
         _providerDisplayNameBox.TextChanged += SettingsControlChanged;
         _customPromptBox.TextChanged += SettingsControlChanged;
@@ -995,7 +1009,8 @@ public sealed partial class MainForm : Form, IMessageFilter
     {
         if (_applyingSettings || _loadingFusion || !_settingsLoadSucceeded) return;
         if(IsProfileControl(sender)){ProfileEdited();return;}
-        _settingsDirty = true;
+        if(IsTranslationContentControl(sender)){UpdateTranslationContentStatus();return;}
+        _settingsDirty = true;UpdateSettingsSaveState();
         // Applying a font recreates native control handles. Keep editing stable;
         // apply the complete font choice together when settings are saved.
     }
@@ -1050,12 +1065,12 @@ public sealed partial class MainForm : Form, IMessageFilter
             {preview.ApplyPreviewWindowSettings(current,preview==active);preview.ApplyAppearanceSettings(current);}
             _settingsLoadCompleted = true;
             _settingsLoadSucceeded = true;
-            _settingsDirty = false;
+            _settingsDirty = false;UpdateSettingsSaveState();
             UpdateConfigStatus(current.ApiKey);
             if(_currentMainPage=="主页")RefreshHistory();
             if (show) _statusLabel.Text = "设置已保存。截图设置用于新任务；游戏内设置需应用后在下次启动时生效。";
         }
-        catch (Exception ex) { if (show) _statusLabel.Text = "设置保存失败：" + ex.Message; }
+        catch (Exception ex) { UpdateSettingsSaveState("保存失败，修改仍然保留");if (show) _statusLabel.Text = "设置保存失败：" + ex.Message; }
         finally{if(selectedCategory>=0&&selectedCategory<_settingsNavigation.Items.Count){_settingsNavigation.SelectedIndex=selectedCategory;_settingsTabs!.SelectedIndex=selectedCategory;}ValidateUiInvariants("SettingsSave");RestorePosition(this);_settingsNavigation.Commit(_settingsTabs?.SelectedIndex??-1);}
     }
 
@@ -1108,12 +1123,6 @@ public sealed partial class MainForm : Form, IMessageFilter
 
     private async void BeginCapture()
     {
-        if (!_captureDiagnostics.Enabled && !CursorCaptureStageDump.Enabled)
-        {
-            var dependencies = await OcrDependencyChecker.CheckAsync(AppContext.BaseDirectory, CancellationToken.None, FusionRuntime.Root);
-            ApplyOcrAvailability(dependencies);
-            if (!dependencies.Ready) { _statusLabel.Text = "截图文字识别不可用：" + dependencies.Detail; return; }
-        }
         if (_captureOpen) return;
         if(CursorCaptureStageDump.Enabled&&!CursorCaptureStageDump.TryBeginRun(out var dumpError))
         {
@@ -1425,8 +1434,8 @@ public sealed partial class MainForm : Form, IMessageFilter
         // DrawToBitmap does not honor overlapping WinForms child z-order reliably.
         // Temporarily suppress sibling pages only while producing the automated artifact.
         var current=_pages.GetValueOrDefault(_currentMainPage);
-        var siblings=_pages.Values.Where(x=>x!=current).ToArray();
-        foreach(var sibling in siblings)sibling.Visible=false;
+        var siblings=_pages.Values.Where(x=>x!=current).Select(page=>(Page:page,WasVisible:page.Visible)).ToArray();
+        foreach(var sibling in siblings)sibling.Page.Visible=false;
         try
         {
             DrawToBitmap(target,ClientRectangle);using var graphics=Graphics.FromImage(target);
@@ -1436,7 +1445,7 @@ public sealed partial class MainForm : Form, IMessageFilter
             void PaintTabs(Control root){if(root is DarkTabControl tabs){var screen=tabs.PointToScreen(Point.Empty);var here=new Point(screen.X-Left,screen.Y-Top);tabs.PaintThemeFrame(graphics,here);}foreach(Control child in root.Controls)PaintTabs(child);}
             foreach(Control child in Controls)PaintTabs(child);
         }
-        finally{foreach(var sibling in siblings)sibling.Visible=true;current?.BringToFront();}
+        finally{foreach(var sibling in siblings)sibling.Page.Visible=sibling.WasVisible;current?.BringToFront();}
     }
     internal IReadOnlyList<string> SettingsVisibleTextsForSmoke(){var values=new List<string>();void Scan(Control c){if(!string.IsNullOrWhiteSpace(c.Text))values.Add(c.Text);if(c is ComboBox box)values.AddRange(box.Items.Cast<object>().Select(x=>x?.ToString()??""));foreach(Control child in c.Controls)Scan(child);}if(_settingsTabs is not null)Scan(_settingsTabs);return values;}
     internal static readonly string[] MainPageNamesForSmoke=["主页","历史","设置"];
@@ -1536,7 +1545,7 @@ public sealed partial class MainForm : Form, IMessageFilter
             using var original=new Bitmap(256,96);
             using(var g=Graphics.FromImage(original)){g.Clear(Color.FromArgb(37,51,71));g.DrawString("Data root verification",SystemFonts.DefaultFont,Brushes.White,12,30);}
             using var translated=new Bitmap(original);
-            using(var g=Graphics.FromImage(translated)){g.Clear(Color.FromArgb(37,51,71));g.DrawString("独立数据目录验证",SystemFonts.DefaultFont,Brushes.White,12,30);}
+            using(var g=Graphics.FromImage(translated)){g.Clear(Color.FromArgb(37,51,71));g.DrawString(UiLanguage.Text("独立数据目录验证"),SystemFonts.DefaultFont,Brushes.White,12,30);}
             _session.AddHistory(original,OcrEngineKind.Rapid,"Data root verification","独立数据目录验证","zh-CN",CurrentSettings,translated);
             using var preview=new PreviewForm(original,PreviewMode.OcrOnly,CurrentSettings,
                 _ocrService,_translationService,_ocrRuntimeManager,_visionRuntimeManager,_session);
@@ -1632,7 +1641,7 @@ public sealed partial class MainForm : Form, IMessageFilter
             _trayIcon.ShowBalloonTip(1500,"截图翻译器","程序仍在后台运行，截图快捷键继续可用。",ToolTipIcon.Info);
             return;
         }
-        if(!e.Cancel&&!ConfirmProfileLeave()){e.Cancel=true;_trueExit=false;_trayIcon.Visible=true;return;}
+        if(!e.Cancel&&!ConfirmSettingsLeave()){e.Cancel=true;_trueExit=false;_trayIcon.Visible=true;return;}
         _profileTestCancellation?.Cancel();
         if(!e.Cancel)
         {
@@ -1678,7 +1687,9 @@ public sealed partial class MainForm : Form, IMessageFilter
             catch(Exception ex){AppLog.Write("shutdown",$"OCR cleanup fallback pid={pid}",ex);}
         }
         _session.Dispose();
+        var trayIcon = _trayIcon.Icon;
         _trayIcon.Dispose();
+        trayIcon?.Dispose();
         base.OnFormClosed(e);
     }
 }

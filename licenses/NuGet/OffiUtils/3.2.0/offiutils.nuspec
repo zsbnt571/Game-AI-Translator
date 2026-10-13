@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>OffiUtils</id>
+    <version>3.2.0</version>
+    <authors>NotOfficer</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <description>Utils and Extensions for .NET</description>
+    <copyright>Copyright (c) 2026 NotOfficer</copyright>
+    <tags>utils, extensions</tags>
+    <repository type="git" url="https://github.com/NotOfficer/Utils" branch="refs/heads/master" commit="3c6391fac38e2de58eb6bcfa399bba78645bce4f" />
+    <dependencies>
+      <group targetFramework="net10.0">
+        <dependency id="CommunityToolkit.HighPerformance" version="8.4.2" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

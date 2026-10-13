@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>Oodle.NET</id>
+    <version>2.2.0</version>
+    <authors>NotOfficer</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <description>A .NET wrapper for Oodle</description>
+    <copyright>Copyright (c) 2025 NotOfficer</copyright>
+    <tags>oodle, compression</tags>
+    <repository type="git" url="https://github.com/NotOfficer/Oodle.NET" branch="refs/heads/master" commit="6a6b78bc3c145eddd6a3ae139fd95d6678049e12" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+      <group targetFramework="net9.0" />
+      <group targetFramework="net10.0" />
+    </dependencies>
+  </metadata>
+</package>

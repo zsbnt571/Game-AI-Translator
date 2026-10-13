@@ -1,0 +1,8 @@
+Package: Vortice.Direct3D11
+Version: 3.8.3
+Source: https://github.com/amerkoleci/Vortice.Windows
+Authors: Amer Koleci
+Copyright: Copyright (c) Amer Koleci and Contributors
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

@@ -50,7 +50,7 @@ public sealed partial class MainForm
             MainSection=current.MainSection=="tag:"+category?"all":current.MainSection};
         (_libraryMetadata??=new LibraryMetadata()).RemoveCategory(category);
         LibraryPreferencesStore.Save(next);_libraryPreferences=next;
-        if(_libraryTag==category){_libraryTag="";_libraryScope="home";_libraryPage=0;}
+        if(_libraryTag==category){_libraryTag="";_libraryScope="home";}
         ScheduleLibraryRefresh();
         if(_statusLabel is not null)_statusLabel.Text="已删除分类“"+category+"”，游戏和磁盘文件保留。";
     }

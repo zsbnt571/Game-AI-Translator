@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
@@ -25,11 +25,11 @@ public sealed partial class MainForm
     private readonly Label _dataFeedback=WorkspaceLabel("");
     private readonly Label _dataPage=WorkspaceLabel("");
     private readonly ComboBox _dataScope=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=136};
-    private readonly TextBox _dataSearch=new(){Width=190,PlaceholderText="搜索原名、中文名或编号"};
+    private readonly TextBox _dataSearch=new(){Width=190,PlaceholderText=UiLanguage.Text("搜索原名、中文名或编号")};
     private readonly GameDataGrid _dataGrid=new(){Name="GameDataGrid",Height=250,Dock=DockStyle.Fill};
     private readonly NumericUpDown _dataValue=new WorkspaceNumberBox(){Width=118,Minimum=int.MinValue,Maximum=int.MaxValue};
     private readonly CheckBox _dataBoolean=new WorkspaceSwitch(){Text="开启",Height=36,Width=118,AccessibleName="目标开关状态"};
-    private readonly TextBox _dataChinese=new(){Width=180,PlaceholderText="填写中文名"};
+    private readonly TextBox _dataChinese=new(){Width=180,PlaceholderText=UiLanguage.Text("填写中文名")};
     private readonly RpgMapGrid _dataMap=new(){Height=260,Dock=DockStyle.Fill};
     private readonly Label _dataMapSelection=WorkspaceLabel("点击地图选择格子");
     private Button? _dataLaunch,_dataToggle,_dataRefresh,_dataRestore,_dataPrevious,_dataNext;
@@ -133,7 +133,9 @@ public sealed partial class MainForm
             using var process=Process.Start(connection.StartInfo(action=="launch"))??throw new IOException("未能启动游戏。");
             session.Launched(action=="launch"?GameLaunchMode.Translation:action=="plain"?GameLaunchMode.Ordinary:GameLaunchMode.Modification,null,null,null);data.Feedback="正在等待此游戏的数据连接…";
             AppLog.Write("rpg-session","launched; accepting game connection");RenderGameSessionState();await RecordGameStartedAsync(game,process.Id);
-            await connection.AcceptAsync();AppLog.Write("rpg-session","game connection authenticated");
+            await EmbeddedLaunchWait.AcceptAsync(connection,process,_desktopLifetime.Token,progress=>
+            {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}});
+            AppLog.Write("rpg-session","game connection authenticated");
             if(action=="modify"){await connection.RequestAsync(new(){["op"]="enable"});data.Enabled=true;}
             else if(SameGame(game.ExePath,_selectedGame?.ExePath)&&session.Section==2)data.EnableOnEntry=true;
             if(translationSettings is not null)
@@ -147,13 +149,17 @@ public sealed partial class MainForm
                 session.Feedback="";
             }
             data.Feedback="已连接。进入游戏或读取存档后，点击“刷新”读取数据。";
+            session.Feedback="";
             if(SameGame(game.ExePath,_selectedGame?.ExePath))await RefreshGameDataAsync();
         }
         catch(Exception ex)
         {
-            connection?.Dispose();session.Feedback=ex is OperationCanceledException?"未连接到游戏。游戏保持运行，修改未开启；可退出游戏后重试。":SafeDiagnosticOutput.ExceptionSummary(ex);
+            if(ex is EmbeddedLaunchExitedException)session.LaunchExited();
+            connection?.Dispose();
+            if(connection is not null&&_dataSessions.TryGetValue(game.ExePath,out var failed)&&ReferenceEquals(failed.Connection,connection))
+            {_dataSessions.Remove(game.ExePath);failed.Dispose();}
+            session.Feedback=ex is OperationCanceledException?"游戏连接已取消，可重新启动。":SafeDiagnosticOutput.ExceptionSummary(ex);
             AppLog.Write("rpg-session",session.Feedback);
-            if(_dataSessions.TryGetValue(game.ExePath,out var data))data.Feedback=session.Feedback;
         }
         finally{session.Busy=false;_gameRootOperations.Remove(root);if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
     }

@@ -859,7 +859,7 @@ public sealed class CaptureOverlay : Form
         if (selected is null) return;
         using var dialog = new SaveFileDialog
         {
-            Title = "保存截图", Filter = "PNG 图片|*.png|JPEG 图片|*.jpg",
+            Title = UiLanguage.Text("保存截图"), Filter = UiLanguage.Text("PNG 图片|*.png|JPEG 图片|*.jpg"),
             DefaultExt = "png", AddExtension = true,
             FileName = $"截图_{DateTime.Now:yyyyMMdd_HHmmss}.png"
         };

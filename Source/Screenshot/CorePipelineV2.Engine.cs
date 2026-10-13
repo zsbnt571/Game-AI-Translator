@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -113,7 +113,6 @@ internal static class CorePipelineEngine
             else if (IsPerformanceOverlay(text)) Set(block, TextSelectionAction.Preserve, "PRESERVE_PERFORMANCE_OVERLAY");
             else if (IsPureNumber(text)) Set(block, TextSelectionAction.Preserve, "PURE_NUMBER");
             else if (IsPureSymbols(text)) Set(block, TextSelectionAction.Preserve, "PURE_SYMBOLS");
-            else if (IsAlreadyTargetLanguage(text)) Set(block, TextSelectionAction.Preserve, "ALREADY_TARGET_LANGUAGE");
             else if (IsEmbeddedInImageRegion(block, visualEvidence, canvasArea))
                 Set(block, TextSelectionAction.Preserve, "EMBEDDED_IMAGE_TEXT");
             else Set(block, TextSelectionAction.Translate, "ORDINARY_SCREEN_TEXT");
@@ -143,11 +142,16 @@ internal static class CorePipelineEngine
             RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
     }
 
-    private static bool IsAlreadyTargetLanguage(string text)
+    internal static void ApplyLanguagePolicy(CorePipelineDocument document, ApiSettings settings)
     {
-        var han = text.Count(c => c is >= '\u3400' and <= '\u9fff');
-        var latin = text.Count(c => c is >= 'A' and <= 'Z' or >= 'a' and <= 'z');
-        return han > 0 && latin == 0;
+        foreach (var block in document.VisualBlocks)
+        {
+            if (block.TextSelectionReason is "ALREADY_TARGET_LANGUAGE" or "LANGUAGE_OPTION_NAME" or "SOURCE_LANGUAGE_EXCLUDED")
+                Set(block, TextSelectionAction.Translate, "ORDINARY_SCREEN_TEXT");
+            if (block.TextSelection != TextSelectionAction.Translate) continue;
+            var reason = TranslationLanguagePolicy.PreserveReason(block.SourceText, settings);
+            if (reason.Length > 0) Set(block, TextSelectionAction.Preserve, reason);
+        }
     }
 
     private static bool IsEmbeddedInImageRegion(VisualBlock block,

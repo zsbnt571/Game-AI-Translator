@@ -7,7 +7,6 @@
 *.tpk
 *.ttf
 *.otf
-Source/Plugin/CloudMeadow/FontAssets/font-index.json
 **/bin/
 **/obj/
 artifacts/
@@ -43,3 +42,11 @@ __pycache__/
 *.cache
 **/dependencies.json
 **/runtime-payloads/
+
+# Current .176 local build inputs and private data
+Build/
+Dependencies/
+data/
+*.pyc
+Source/UnrealCatalog/Native/oo2core*
+Source/Plugin/References/UnityEngine*.dll

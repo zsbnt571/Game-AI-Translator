@@ -1,4 +1,4 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 // Always recompute physical pixels from logical constants, never scale previous bounds.
 internal sealed class GameActionButton:Button
@@ -6,6 +6,7 @@ internal sealed class GameActionButton:Button
     private bool hovering;
     internal string IconKey {get;set;}="";
     internal bool Primary {get;set;}
+    internal Color? PrimaryFill {get;set;}
     internal bool NavigationStyle {get;set;}
     internal bool TabStyle {get;set;}
     internal bool CoverOverlay {get;set;}
@@ -23,7 +24,7 @@ internal sealed class GameActionButton:Button
     internal void RefreshMetrics()
     {
         var d=DeviceDpi/96f;Padding=new((int)(10*d),0,(int)(10*d),0);
-        Size=new(Text.Length==0?(int)(MinimumLogicalWidth*d):Math.Max((int)(MinimumLogicalWidth*d),TextRenderer.MeasureText(Text,Font).Width+Padding.Horizontal+(int)((NavigationStyle?60:IconKey.Length>0?28:6)*d)),RowHeight(this,LogicalHeight));
+        Size=new(Text.Length==0?(int)(MinimumLogicalWidth*d):Math.Max((int)(MinimumLogicalWidth*d),TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width+Padding.Horizontal+(int)((NavigationStyle?60:IconKey.Length>0?28:6)*d)),RowHeight(this,LogicalHeight));
     }
     protected override void OnFontChanged(EventArgs e){base.OnFontChanged(e);RefreshMetrics();}
     protected override void OnTextChanged(EventArgs e){base.OnTextChanged(e);RefreshMetrics();}
@@ -46,7 +47,7 @@ internal sealed class GameActionButton:Button
             if(hovering||Focused&&ShowFocusCues)
             {using var fill=new SolidBrush(Color.FromArgb(65,0,0,0));using var shape=WorkspaceDrawing.Round(Rectangle.Inflate(ClientRectangle,-1,-1),6*DeviceDpi/96);g.FillPath(fill,shape);}
             var overlayInk=Enabled?Color.White:Color.FromArgb(170,220,225,235);int size=20*DeviceDpi/96;
-            int total=size+8*DeviceDpi/96+TextRenderer.MeasureText(Text,Font).Width,left=Math.Max(7*DeviceDpi/96,(Width-total)/2);
+            int total=size+8*DeviceDpi/96+TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width,left=Math.Max(7*DeviceDpi/96,(Width-total)/2);
             WorkspaceSkin.Icon(g,IconKey,new(left,(Height-size)/2,size,size),overlayInk);
             WorkspaceDrawing.Text(g,Text,Font,new(left+size+8*DeviceDpi/96,0,Math.Max(0,Width-left-size-12*DeviceDpi/96),Height),overlayInk);
             if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,Rectangle.Inflate(ClientRectangle,-3,-3),Color.White,Color.Black);
@@ -57,7 +58,7 @@ internal sealed class GameActionButton:Button
             using(var line=new Pen(p.Border))g.DrawLine(line,0,Height-1,Width,Height-1);
             var tabForeground=Enabled?(Primary?p.Accent:p.Text):p.SecondaryText;
             int size=IconKey.Length>0?20*DeviceDpi/96:0;
-            int textWidth=TextRenderer.MeasureText(Text,Font).Width;
+            int textWidth=TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width;
             int gap=size>0?8*DeviceDpi/96:0;
             int left=Math.Max(4*DeviceDpi/96,(Width-textWidth-size-gap)/2);
             if(size>0)WorkspaceSkin.Icon(g,IconKey,new(left,(Height-size)/2,size,size),tabForeground);
@@ -68,20 +69,22 @@ internal sealed class GameActionButton:Button
         }
         if(NavigationStyle){using var line=new Pen(p.Border);g.DrawLine(line,0,0,Width,0);int d=DeviceDpi;WorkspaceSkin.Icon(g,IconKey,new(9*d/96,(Height-21*d/96)/2,21*d/96,21*d/96),p.Text);WorkspaceDrawing.Text(g,Text,Font,new(42*d/96,0,Width-75*d/96,Height),p.Accent);WorkspaceSkin.Icon(g,"next",new(Width-24*d/96,(Height-15*d/96)/2,15*d/96,15*d/96),p.SecondaryText);return;}
         var bounds=Rectangle.Inflate(ClientRectangle,-1,-1);using var path=WorkspaceDrawing.Round(bounds,7*DeviceDpi/96);
-        bool primary=Primary||Equals(Tag,"workspace-selected");var color=Enabled?(primary?p.Accent:p.Main):p.Main;
-        if(hovering&&Enabled)color=ControlPaint.Light(color,.08f);
+        bool primary=Primary||Equals(Tag,"workspace-selected");var color=Enabled?(primary?(PrimaryFill??p.Accent):p.Main):p.Main;
+        if(hovering&&Enabled)color=primary&&PrimaryFill.HasValue?ControlPaint.Dark(color,.08f):ControlPaint.Light(color,.08f);
         using(var brush=new SolidBrush(color))g.FillPath(brush,path);
         using(var border=new Pen(primary?p.Accent:p.Border))g.DrawPath(border,path);
         var foreground=Enabled?(primary?Color.White:p.Text):p.SecondaryText;
         var text=Rectangle.Inflate(bounds,-6,0);
-        if(IconKey.Length>0){int s=20*DeviceDpi/96;int tw=TextRenderer.MeasureText(Text,Font).Width;int total=s+(Text.Length>0?8*DeviceDpi/96+tw:0);int x=Text.Length==0?(Width-s)/2:Math.Max(7*DeviceDpi/96,(Width-total)/2);WorkspaceSkin.Icon(g,IconKey,new(x,(Height-s)/2,s,s),Enabled?(primary?Color.White:p.Accent):p.SecondaryText);text=new(x+s+6*DeviceDpi/96,0,Math.Max(0,Width-x-s-12*DeviceDpi/96),Height);}
+        if(IconKey.Length>0){int s=20*DeviceDpi/96;int tw=TextRenderer.MeasureText(Text,Font,Size.Empty,TextFormatFlags.NoPrefix|TextFormatFlags.SingleLine).Width;int total=s+(Text.Length>0?8*DeviceDpi/96+tw:0);int x=Text.Length==0?(Width-s)/2:Math.Max(7*DeviceDpi/96,(Width-total)/2);WorkspaceSkin.Icon(g,IconKey,new(x,(Height-s)/2,s,s),Enabled?(primary?Color.White:p.Accent):p.SecondaryText);text=new(x+s+6*DeviceDpi/96,0,Math.Max(0,Width-x-s-12*DeviceDpi/96),Height);}
         WorkspaceDrawing.Text(g,Text,Font,text,foreground,(IconKey.Length>0?TextFormatFlags.Left:TextFormatFlags.HorizontalCenter)|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);
         if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(g,Rectangle.Inflate(bounds,-4,-4),p.Text,color);
     }
 }
 
-internal sealed class GamePlanBox:ComboBox
+internal class GamePlanBox:ComboBox
 {
+    private IntPtr editBackground;
+    private Color editBackgroundColor;
     internal int LogicalHeight {get;set;}=36;
     internal GamePlanBox()
     {
@@ -90,14 +93,15 @@ internal sealed class GamePlanBox:ComboBox
     }
     protected override void OnDropDown(EventArgs e)
     {
+        base.OnDropDown(e);
         // Native owner-drawn combos can otherwise expand to the entire screen.
         var anchor=RectangleToScreen(ClientRectangle);var area=FindForm()?.RectangleToScreen(FindForm()!.ClientRectangle)??Screen.FromControl(this).WorkingArea;
         int room=Math.Max(area.Bottom-anchor.Bottom,anchor.Top-area.Top)-8*DeviceDpi/96;
         DropDownHeight=Math.Max(ItemHeight+2,Math.Min(8*ItemHeight+2,room));
-        DropDownWidth=Width;
+        DropDownWidth=Math.Min(Screen.FromControl(this).WorkingArea.Width-16*DeviceDpi/96,
+            Math.Max(Width,FontDropDownPolicy.RequiredWidth(this,Items.Cast<object>().Select(MainForm.InterfaceItemText))));
         var info=new ComboInfo{Size=System.Runtime.InteropServices.Marshal.SizeOf<ComboInfo>()};
-        if(GetComboBoxInfo(Handle,ref info)&&info.List!=IntPtr.Zero)NativeMethods.SetWindowTheme(info.List,UiTheme.Current.Main.GetBrightness()<.5f?"DarkMode_Explorer":"Explorer",null);
-        base.OnDropDown(e);
+        if(GetComboBoxInfo(Handle,ref info))SettingsNativeTheme.ApplyHandle(info.List,UiTheme.Current.Main.GetBrightness()<.5f);
     }
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     private struct ComboInfo {public int Size;public int ItemLeft,ItemTop,ItemRight,ItemBottom,ButtonLeft,ButtonTop,ButtonRight,ButtonBottom,ButtonState;public IntPtr Combo,Item,List;}
@@ -111,19 +115,46 @@ internal sealed class GamePlanBox:ComboBox
         if(ItemHeight!=height)ItemHeight=height;
     }
     protected override void OnFontChanged(EventArgs e){base.OnFontChanged(e);RefreshMetrics();}
-    protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);RefreshMetrics();}
+    protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);RefreshMetrics();SettingsNativeTheme.Apply(this);}
+    protected override void OnEnabledChanged(EventArgs e){base.OnEnabledChanged(e);Invalidate(true);}
     protected override void OnDpiChangedAfterParent(EventArgs e){base.OnDpiChangedAfterParent(e);RefreshMetrics();}
     protected override void OnSelectedIndexChanged(EventArgs e){base.OnSelectedIndexChanged(e);Invalidate();}
     protected override void OnTextChanged(EventArgs e){base.OnTextChanged(e);Invalidate();}
     protected override void OnGotFocus(EventArgs e){base.OnGotFocus(e);Invalidate();}
     protected override void OnLostFocus(EventArgs e){base.OnLostFocus(e);Invalidate();}
+    protected override void WndProc(ref Message message)
+    {
+        // Editable combos contain a separate native EDIT window. Disabled EDITs
+        // ask for WM_CTLCOLORSTATIC and otherwise fall back to a white system brush.
+        if(message.Msg is 0x0133 or 0x0138)
+        {
+            var p=UiTheme.Current;
+            if(editBackground==IntPtr.Zero||editBackgroundColor!=p.Secondary)
+            {
+                if(editBackground!=IntPtr.Zero)DeleteObject(editBackground);
+                editBackground=CreateSolidBrush(ColorTranslator.ToWin32(p.Secondary));editBackgroundColor=p.Secondary;
+            }
+            SetBkColor(message.WParam,ColorTranslator.ToWin32(p.Secondary));
+            SetTextColor(message.WParam,ColorTranslator.ToWin32(Enabled?p.Text:p.SecondaryText));
+            message.Result=editBackground;return;
+        }
+        base.WndProc(ref message);
+    }
+    protected override void Dispose(bool disposing)
+    {if(editBackground!=IntPtr.Zero){DeleteObject(editBackground);editBackground=IntPtr.Zero;}base.Dispose(disposing);}
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")]private static extern IntPtr CreateSolidBrush(int color);
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")]private static extern bool DeleteObject(IntPtr handle);
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")]private static extern int SetBkColor(IntPtr dc,int color);
+    [System.Runtime.InteropServices.DllImport("gdi32.dll")]private static extern int SetTextColor(IntPtr dc,int color);
     protected override void OnPaint(PaintEventArgs e)
     {
         var p=UiTheme.Current;var g=e.Graphics;int d=DeviceDpi;
         g.Clear(p.Secondary);
         int button=Math.Max(20,24*d/96),inset=Math.Max(1,d/96);
         var text=new Rectangle(9*d/96,0,Math.Max(0,Width-button-12*d/96),Height);
-        TextRenderer.DrawText(g,SelectedItem is null?Text:GetItemText(SelectedItem),Font,text,Enabled?p.Text:p.SecondaryText,
+        var value=SelectedItem is null?UiLanguage.Text(Text):MainForm.InterfaceItemText(SelectedItem);
+        if(value.Length==0&&this is FontChoiceBox)value=UiLanguage.Choose("自动","Automatic");
+        TextRenderer.DrawText(g,value,Font,text,Enabled?p.Text:p.SecondaryText,
             TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis|TextFormatFlags.NoPrefix);
         using(var border=new Pen(Focused?p.Accent:p.Border,inset))
             g.DrawRectangle(border,inset/2,inset/2,Math.Max(1,Width-inset),Math.Max(1,Height-inset));

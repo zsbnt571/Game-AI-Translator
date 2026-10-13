@@ -226,6 +226,7 @@ public sealed partial class PreviewForm : Form
         _recognitionPipelineV2 = new RecognitionPipelineV2(_ocrRuntimeManager, _visionRuntimeManager);
         _session = session;
         Text = $"游戏 AI 截图翻译器 {BuildIdentity.ProductVersion} · 预览";
+        AppBranding.Apply(this);
         TopMost=_settings.PreviewAlwaysOnTop;
         StartPosition = FormStartPosition.CenterScreen;
         Size = new Size(1220, 800);
@@ -369,7 +370,7 @@ public sealed partial class PreviewForm : Form
         _retryButton = Add("重新翻译", (_, _) => StartTranslation());
         _textVisibilityButton=Add(_settings.PreviewTextPanelVisible?"隐藏文本":"显示文本",(_,_)=>SetTextPanelVisibility(!_settings.PreviewTextPanelVisible,true));
         Button pin=null!;pin=Add(TopMost?"📌 已置顶":"📌 置顶",(_,_)=>{TopMost=!TopMost;_settings.PreviewAlwaysOnTop=TopMost;pin.Text=TopMost?"📌 已置顶":"📌 置顶";AppearanceSettingsChanged?.Invoke(ApiSettingsSnapshot.Copy(_settings));});
-        var moreMenu=new ContextMenuStrip();
+        var moreMenu=new LocalizedContextMenuStrip();
         void Menu(string text,EventHandler action){var item=moreMenu.Items.Add(text);item.Click+=action;}
         Menu("按当前模式重绘",async(_,_)=>await RedrawUsingCurrentModeAsync());
         Menu("编辑 OCR 区域",(_,_)=>ShowOcrBlockEditor());Menu("区域与调试图层",(_,_)=>ShowV2LayerDialog());Menu("取消翻译",(_,_)=>CancelTranslation());
@@ -377,8 +378,8 @@ public sealed partial class PreviewForm : Form
         Menu("复制图片",(_,_)=>CopyImage());Menu("复制当前文本",(_,_)=>CopyText());Menu("保存图片",(_,_)=>SaveImage());Menu("截取当前预览",(_,_)=>RequestSelfCapture());Menu("翻译输入追踪",(_,_)=>ShowTranslationInputTrace());Menu("重新选择",(_,_)=>{ReSelectRequested?.Invoke(this,EventArgs.Empty);Close();});
         Menu(_settings.PreviewChromeMode==PreviewChromeMode.GameCompact?"切换到完整模式":"切换到游戏简洁模式",(_,_)=>ToggleChromeMode());
         _moreButton=Add("⋯ 更多",(_,_)=>moreMenu.Show(Cursor.Position));
-        var imageMenu=new ContextMenuStrip();var copySource=imageMenu.Items.Add("复制原图");copySource.Click+=(_,_)=>CopySpecificImage(_original,"已复制原图");var copyTranslated=imageMenu.Items.Add("复制译图");copyTranslated.Click+=(_,_)=>{if(_translatedDisplay is not null)CopySpecificImage(_translatedDisplay,"已复制译图");};imageMenu.Opening+=(_,_)=>copyTranslated.Enabled=_translatedDisplay is not null;imageMenu.Items.Add(new ToolStripSeparator());var saveCurrent=imageMenu.Items.Add("保存图片");saveCurrent.Click+=(_,_)=>SaveImage();_picture.ContextMenuStrip=imageMenu;_imagePanel.ContextMenuStrip=imageMenu;
-        var textMenu=new ContextMenuStrip();var copyCurrentText=textMenu.Items.Add("复制文字");copyCurrentText.Click+=(_,_)=>CopyText();_text.ContextMenuStrip=textMenu;
+        var imageMenu=new LocalizedContextMenuStrip();var copySource=imageMenu.Items.Add("复制原图");copySource.Click+=(_,_)=>CopySpecificImage(_original,"已复制原图");var copyTranslated=imageMenu.Items.Add("复制译图");copyTranslated.Click+=(_,_)=>{if(_translatedDisplay is not null)CopySpecificImage(_translatedDisplay,"已复制译图");};imageMenu.Opening+=(_,_)=>copyTranslated.Enabled=_translatedDisplay is not null;imageMenu.Items.Add(new ToolStripSeparator());var saveCurrent=imageMenu.Items.Add("保存图片");saveCurrent.Click+=(_,_)=>SaveImage();_picture.ContextMenuStrip=imageMenu;_imagePanel.ContextMenuStrip=imageMenu;
+        var textMenu=new LocalizedContextMenuStrip();var copyCurrentText=textMenu.Items.Add("复制文字");copyCurrentText.Click+=(_,_)=>CopyText();_text.ContextMenuStrip=textMenu;
         Button FullAdd(string text,EventHandler action){var control=Add(text,action);_fullModeControls.Add(control);return control;}
         FullAdd("编辑 OCR 区域",(_,_)=>ShowOcrBlockEditor());FullAdd("区域与调试图层",(_,_)=>ShowV2LayerDialog());FullAdd("取消翻译",(_,_)=>CancelTranslation());
         _errorDetailsButton=FullAdd("查看错误详情",(_,_)=>ShowTranslationErrorDetails());_errorDetailsButton.Enabled=false;
@@ -1130,6 +1131,7 @@ public sealed partial class PreviewForm : Form
     {
         RequireRenderOwnerThread();
         var core=ProductControlPlaneAuthority.RequireCore(_corePipelineV2,"CreateTranslationRequestSnapshot");
+        CorePipelineEngine.ApplyLanguagePolicy(core, _settings);
         var source = _settings.TranslationTextSource;
         var semanticGroups = core.VisualBlocks.Where(x=>x.TextSelection==TextSelectionAction.Translate)
             .Select((x,index)=>new TranslationSemanticGroup(x.BlockId,x.SourceText,x.Lines.Select(l=>l.SourceId).ToArray(),SegmentType.Body,x.Bounds,index)).ToArray();
@@ -1232,7 +1234,7 @@ public sealed partial class PreviewForm : Form
         InvalidateTranslationRequest("runtime translation settings changed");
         CopyTranslationSettings(updated, _settings);
         _settings.BackgroundComputeDevice=updated.BackgroundComputeDevice;
-        SetStatus($"翻译设置已应用到当前 Preview：{_settings.TargetLanguage} / {_settings.TranslationStyle} / {_settings.Model}");
+        SetStatus($"翻译设置已应用到当前 Preview：{_settings.TargetLanguage} / {UiLanguage.Text(UiStrings.TranslationStyleName(_settings.TranslationStyle))} / {_settings.Model}");
         TranslationService.DiagnosticLog(
             $"preview runtime settings applied target={_settings.TargetLanguage} style={_settings.TranslationStyle} " +
             $"provider={TranslationProviderRegistry.Get(_settings.TranslationProviderKind).Id} model={_settings.Model} " +
@@ -1247,7 +1249,7 @@ public sealed partial class PreviewForm : Form
     private static void CopyTranslationSettings(ApiSettings source, ApiSettings target)
     {
         target.ApiUrl = source.ApiUrl; target.ApiKey = source.ApiKey; target.Model = source.Model;
-        target.TargetLanguage = source.TargetLanguage; target.SourceLanguage = source.SourceLanguage;
+        target.TargetLanguage = source.TargetLanguage; target.SourceLanguage = source.SourceLanguage; target.SourceLanguages = TranslationLanguagePolicy.Normalize(source.SourceLanguages);
         target.TranslationProvider = source.TranslationProvider; target.TranslationProviderKind = source.TranslationProviderKind;
         target.ProviderDisplayName = source.ProviderDisplayName; target.TranslationStyle = source.TranslationStyle;
         target.CustomTranslationPrompt = source.CustomTranslationPrompt; target.PreserveIdentifiers = source.PreserveIdentifiers;
@@ -1894,7 +1896,7 @@ public sealed partial class PreviewForm : Form
             if(e.Button!=MouseButtons.Right)return;
             _rightTextContextUrl=SafeHttpUrlAt(_text.Text,_text.GetCharIndexFromPosition(e.Location));
         };
-        var menu=new ContextMenuStrip();
+        var menu=new LocalizedContextMenuStrip();
         var open=menu.Items.Add("用默认浏览器打开链接");
         var copy=menu.Items.Add("复制链接地址");
         menu.Opening+=(_,_)=>{var enabled=_rightTextContextUrl is not null;open.Enabled=enabled;copy.Enabled=enabled;};
@@ -2520,7 +2522,7 @@ public sealed partial class PreviewForm : Form
         Path.GetExtension(path).Equals(".jpg",StringComparison.OrdinalIgnoreCase)?ImageFormat.Jpeg:ImageFormat.Png);
     private void SaveImage()
     {
-        using var dialog = new SaveFileDialog { Filter = "PNG 图片|*.png|JPEG 图片|*.jpg", FileName = $"译文截图_{DateTime.Now:yyyyMMdd_HHmmss}.png" };
+        using var dialog = new SaveFileDialog { Filter = UiLanguage.Text("PNG 图片|*.png|JPEG 图片|*.jpg"), FileName = $"译文截图_{DateTime.Now:yyyyMMdd_HHmmss}.png" };
         if(AppDataPaths.HasExplicitRoot)dialog.InitialDirectory=AppDataPaths.OutputRoot;
         if (ShowPreviewDialog(dialog) != DialogResult.OK) return;
         SaveDisplayedImage(dialog.FileName);

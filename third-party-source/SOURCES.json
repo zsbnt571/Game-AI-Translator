@@ -1,0 +1,26 @@
+[
+  {
+    "file": "BepInEx-5b766a3-source.zip",
+    "url": "https://codeload.github.com/BepInEx/BepInEx/zip/5b766a3b7f6c164d4798924a93f3acf4db769d06",
+    "sha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
+    "bytes": 1207906
+  },
+  {
+    "file": "UnityDoorstop-4.5.0-source.zip",
+    "url": "https://codeload.github.com/NeighTools/UnityDoorstop/zip/refs/tags/v4.5.0",
+    "sha256": "7f0c963104aa08bf5fefef8ff85e7fecd8306838f5af3101487d9db4e9188d63",
+    "bytes": 109881
+  },
+  {
+    "file": "Il2CppInterop-1.5.3-source.zip",
+    "url": "https://codeload.github.com/BepInEx/Il2CppInterop/zip/refs/tags/v1.5.3",
+    "sha256": "32c37dc7cbd94aeb97a26bdcf14c551118062633d2e2d5491d258570f8b5dd9a",
+    "bytes": 922434
+  },
+  {
+    "file": "Disarm-8574010-source.zip",
+    "url": "https://codeload.github.com/SamboyCoding/Disarm/zip/8574010015c8c56bb7faad7e407c50b0abe9cc72",
+    "sha256": "9e36d2b36a64c60a1f633b396ac1ebb8d3469dae78a4b83bda799ec74216d4cb",
+    "bytes": 78273
+  }
+]

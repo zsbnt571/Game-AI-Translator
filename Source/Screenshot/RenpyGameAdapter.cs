@@ -12,9 +12,11 @@ internal static class RenpyGameAdapter
     internal static RenpyInstallation? Detect(string exe)
     {
         string root=Path.GetDirectoryName(Path.GetFullPath(exe))!,game=Path.Combine(root,"game"),engine=Path.Combine(root,"renpy","__init__.py");
-        if(!Directory.Exists(game)||!File.Exists(engine)||!File.Exists(Path.Combine(root,"renpy","config.py"))||!Directory.Exists(Path.Combine(root,"lib")))return null;
-        if(new FileInfo(engine).Length>256*1024)return null;
-        var versions=Regex.Matches(File.ReadAllText(engine),@"version_tuple\s*=\s*\((\d+),\s*(\d+),\s*(\d+)").Select(m=>m.Groups[1].Value+"."+m.Groups[2].Value+"."+m.Groups[3].Value).Distinct().ToArray();
+        if(!Directory.Exists(game)||!PythonModuleExists(engine)||!PythonModuleExists(Path.Combine(root,"renpy","config.py"))||!Directory.Exists(Path.Combine(root,"lib")))return null;
+        // Some official distributions ship only compiled Python modules. Recognize
+        // their container header; never import/execute bytecode during detection.
+        var source=File.Exists(engine)&&new FileInfo(engine).Length<=256*1024?File.ReadAllText(engine):"";
+        var versions=Regex.Matches(source,@"version_tuple\s*=\s*\((\d+),\s*(\d+),\s*(\d+)").Select(m=>m.Groups[1].Value+"."+m.Groups[2].Value+"."+m.Groups[3].Value).Distinct().ToArray();
         bool python2=Directory.Exists(Path.Combine(root,"lib","python2.7"));
         string version=versions.FirstOrDefault(v=>v.StartsWith(python2?"7.":"8.",StringComparison.Ordinal))??versions.FirstOrDefault()??"未知版本";
         string versionFile=Path.Combine(root,"renpy","vc_version.py");
@@ -24,6 +26,14 @@ internal static class RenpyGameAdapter
             .Where(d=>Path.GetFileName(d).Contains("windows",StringComparison.OrdinalIgnoreCase))
             .SelectMany(d=>new[]{Path.Combine(d,"pythonw.exe"),Path.Combine(d,"python.exe"),Path.Combine(d,Path.GetFileName(exe))}).Where(File.Exists).ToArray();
         return runtimes.Length>0?new(root,game,version,runtimes):null;
+    }
+    private static bool PythonModuleExists(string source)
+    {
+        if(File.Exists(source))return new FileInfo(source).Length is >0 and <=1048576;
+        string compiled=source+"c";
+        if(!File.Exists(compiled)||new FileInfo(compiled).Length is <16 or >4194304)return false;
+        using var input=File.OpenRead(compiled);Span<byte> header=stackalloc byte[4];
+        return input.Read(header)==4&&header[0]!=0&&header[2]==13&&header[3]==10;
     }
     internal static string Storage(string exe)=>Path.Combine(AppDataPaths.Root,"renpy-adapters",Convert.ToHexString(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(Path.GetFullPath(exe).ToUpperInvariant()))).ToLowerInvariant());
     private sealed record InstallRecord(string Exe,string Script,string Hash);

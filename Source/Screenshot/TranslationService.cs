@@ -40,12 +40,26 @@ public sealed class TranslationService
 
     public async Task<TranslationBatchResult> TranslateBatchAsync(
         IReadOnlyList<TranslationItem> items, ApiSettings settings,
+        IProgress<TranslationProgress>? progress = null, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if(settings.SourceLanguage==SourceLanguageMode.Mixed && TranslationLanguagePolicy.Selected(settings).Length==0)
+            throw new InvalidOperationException("请至少选择一种需要翻译的原文语言。");
+        var kept=items.Where(i=>!TranslationLanguagePolicy.ShouldTranslate(i.Text,settings)).ToDictionary(i=>i.Id,i=>i.Text,StringComparer.Ordinal);
+        var eligible=items.Where(i=>!kept.ContainsKey(i.Id)).Select(i=>i with {RequiredLiteralSpans=TranslationLanguageSpans.Required(i.Text,settings)}).ToArray();
+        var result=eligible.Length==0?new TranslationBatchResult(new(StringComparer.Ordinal),0,0,[],false):
+            await TranslateEligibleBatchAsync(eligible,settings,progress,cancellationToken);
+        if(kept.Count==0)return result;
+        var translations=new Dictionary<string,string>(result.Translations,StringComparer.Ordinal);
+        foreach(var pair in kept)translations[pair.Key]=pair.Value;
+        return result with {Translations=translations,FullTranslation=string.Join("\n\n",items.Where(i=>translations.ContainsKey(i.Id)).Select(i=>translations[i.Id]))};
+    }
+
+    private async Task<TranslationBatchResult> TranslateEligibleBatchAsync(
+        IReadOnlyList<TranslationItem> items, ApiSettings settings,
         IProgress<TranslationProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        // Direct callers may bypass settings normalization. Protect diagnostics even
-        // when an empty/numeric batch returns before provider validation or I/O.
-        SafeDiagnosticOutput.RegisterCredential(settings.ApiKey);
         progress?.Report(new(TranslationStage.OrganizingParagraphs, 0, 0, "正在整理段落"));
         var pending = items.Where(x => !string.IsNullOrWhiteSpace(x.Text)).ToList();
         if (pending.Count == 0) return new(new(StringComparer.Ordinal), 0, 0, [], false, "", true,new());
@@ -126,6 +140,11 @@ public sealed class TranslationService
     public async Task<PlainTranslationResult> TranslatePlainAsync(
         string text, ApiSettings settings, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        bool plain=settings.RequestKind==TranslationRequestKind.PlainOrScreenshot;
+        if(plain&&settings.SourceLanguage==SourceLanguageMode.Mixed&&TranslationLanguagePolicy.Selected(settings).Length==0)
+            throw new InvalidOperationException("请至少选择一种需要翻译的原文语言。");
+        if(plain&&!TranslationLanguagePolicy.ShouldTranslate(text,settings))return new(text,0,0,0);
         ValidateSettings(settings);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         timeout.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(settings.RequestTimeoutSeconds, 30, 180)));
@@ -138,6 +157,9 @@ public sealed class TranslationService
             var translated = json.RootElement.GetProperty("choices")[0]
                 .GetProperty("message").GetProperty("content").GetString()?.Trim();
             if (string.IsNullOrWhiteSpace(translated)) throw new InvalidOperationException("API返回了空译文。");
+            if(plain&&(!TranslationLanguageSpans.Preserved(text,translated,settings)||!TranslationLanguagePolicy.MenuNamesPreserved(text,translated)||
+                TranslationLanguageSpans.UnchangedEligibleText(text,translated,settings)))
+                throw new InvalidDataException("译文改动了应保留的语言内容，或遗漏了需要翻译的内容，未采用此结果。");
             return new(translated, stats.Count, stats.WaitMs, raw.StatusCode);
         }
         catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
@@ -195,7 +217,7 @@ public sealed class TranslationService
             stats.CompletionTokens+=metadata.CompletionTokens;
             stats.TotalTokens+=metadata.TotalTokens;
             if (!response.IsSuccessStatusCode)
-                throw new InvalidOperationException($"API 返回 {(int)response.StatusCode}：{ExtractApiError(body)}");
+                throw new TranslationHttpException((int)response.StatusCode,$"API 返回 {(int)response.StatusCode}：{ExtractApiError(body)}");
             progress?.Report(new(TranslationStage.ParsingResponse, number, stats.WaitMs, "正在解析翻译结果"));
             return new RawResponse(body, (int)response.StatusCode);
         }
@@ -351,10 +373,10 @@ public sealed class TranslationService
         return JsonSerializer.Serialize(items.Select(x =>
             OcrTranslationContextContract.IsApplicable(x) ? (object)new
             {
-                id = x.Id, type = x.RoleType.ToString(), semanticPurpose=x.SemanticPurpose, text = x.Text, sourceIds = x.StableSourceIds, sourceNeighbors=x.SourceNeighbors, sourcePhrase=SourcePhrase(x),
+                id = x.Id, type = x.RoleType.ToString(), semanticPurpose=x.SemanticPurpose, text = x.Text, sourceIds = x.StableSourceIds, sourceNeighbors=x.SourceNeighbors, requiredLiteralSpans=x.RequiredLiteralSpans, sourcePhrase=SourcePhrase(x),
                 ocrContext = new { schema = x.OcrContext!.Schema,
                     sourceTextSha256 = x.OcrContext.SourceTextSha256, tokenHints = x.OcrContext.TokenHints }
-            } : new { id = x.Id, type = x.RoleType.ToString(), semanticPurpose=x.SemanticPurpose, text = x.Text, sourceIds = x.StableSourceIds, sourceNeighbors=x.SourceNeighbors, sourcePhrase=SourcePhrase(x) }));
+            } : new { id = x.Id, type = x.RoleType.ToString(), semanticPurpose=x.SemanticPurpose, text = x.Text, sourceIds = x.StableSourceIds, sourceNeighbors=x.SourceNeighbors, requiredLiteralSpans=x.RequiredLiteralSpans, sourcePhrase=SourcePhrase(x) }));
     }
     private static string SourcePhrase(TranslationItem item)
     {
@@ -424,7 +446,7 @@ public sealed class TranslationService
     }
 
     private static HttpRequestMessage BuildPlainRequest(string text, ApiSettings settings) => BuildRequest(settings, [
-        new { role = "system", content = TranslationPromptBuilder.BuildPlainSystemPrompt(settings) },
+        new { role = "system", content = TranslationPromptBuilder.BuildPlainSystemPrompt(settings)+TranslationLanguageSpans.RequestGuidance(text,settings) },
         new { role = "user", content = text }
     ]);
 
@@ -800,7 +822,8 @@ public sealed class TranslationService
         return value.Trim();
     }
 
-    public async Task TestAsync(ApiSettings settings) => _ = await TranslatePlainAsync("Hello", settings);
+    public async Task TestAsync(ApiSettings settings)
+    {var probe=ApiSettingsSnapshot.Copy(settings);probe.RequestKind=TranslationRequestKind.GameText;_ = await TranslatePlainAsync("Hello",probe);}
 
     private static void ValidateSettings(ApiSettings settings)
     {
@@ -841,3 +864,4 @@ public sealed class TranslationService
         catch { }
     }
 }
+

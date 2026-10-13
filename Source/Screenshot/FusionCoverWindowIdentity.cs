@@ -33,7 +33,7 @@ internal static class CoverWindowIdentity
         try{
             var h=OpenProcess(0x1000,false,(uint)pid);if(h==IntPtr.Zero)return null;
             try{var path=new StringBuilder(32768);uint size=(uint)path.Capacity;if(!QueryFullProcessImageName(h,0,path,ref size))return null;
-                using var p=Process.GetProcessById(pid);return new(pid,Path.GetFullPath(path.ToString()),p.StartTime.ToUniversalTime().Ticks);}
+                using var p=Process.GetProcessById(pid);return new(pid,GameLaunchPathIdentity.Canonical(path.ToString()),p.StartTime.ToUniversalTime().Ticks);}
             finally{CloseHandle(h);}
         }catch{return null;}
     }
@@ -98,4 +98,29 @@ internal static class CoverWindowIdentity
             return(null,"window-not-found","未找到对应游戏窗口，请等窗口出现后更新");
         }
     }
+}
+
+// Shared with the capture helper. Only the narrowly shaped Fusion launch alias
+// is canonicalized; unrelated links and executables keep their existing identity.
+internal static class GameLaunchPathIdentity
+{
+    internal static string Canonical(string path)
+    {
+        if(string.IsNullOrEmpty(path))return path;
+        string full=Path.GetFullPath(path);
+        try
+        {
+            var directory=new DirectoryInfo(Path.GetDirectoryName(full)!);
+            if(!directory.Name.Equals("game",StringComparison.OrdinalIgnoreCase)||directory.Parent is not {} session
+                ||!Guid.TryParseExact(session.Name,"N",out _)||session.Parent?.Name!="FusionUnityLaunch"
+                ||(directory.Attributes&FileAttributes.ReparsePoint)==0)return full;
+            using var file=File.OpenHandle(full,FileMode.Open,FileAccess.Read,FileShare.ReadWrite|FileShare.Delete);
+            var buffer=new StringBuilder(32768);uint length=GetFinalPathNameByHandle(file,buffer,(uint)buffer.Capacity,0);
+            if(length==0||length>=buffer.Capacity)return full;
+            string actual=buffer.ToString();if(actual.StartsWith(@"\\?\",StringComparison.Ordinal))actual=actual[4..];
+            return Path.IsPathFullyQualified(actual)&&!actual.StartsWith(@"\\",StringComparison.Ordinal)?Path.GetFullPath(actual):full;
+        }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or ArgumentException){return full;}
+    }
+    [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]private static extern uint GetFinalPathNameByHandle(Microsoft.Win32.SafeHandles.SafeFileHandle file,StringBuilder path,uint capacity,uint flags);
 }

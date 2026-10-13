@@ -1,4 +1,4 @@
-extends Node
+﻿extends Node
 
 # Godot 3.5+ bridge. Godot 4 uses the separately compiled dialect.
 # Text is looked up immediately before drawing, without changing the game's locale.
@@ -8,6 +8,9 @@ var secret = ""
 var enabled = false
 var epoch = 0
 var cache = {}
+# Session-start entries stay exact-only and never enter template indices.
+var startup_exact = {}
+var startup_loaded = false
 var staged_cache = {}
 var preparing = false
 var pending = {}
@@ -60,13 +63,8 @@ func _ready():
     process_priority = 2147483647
     last_request = _ticks()
     current_locale = TranslationServer.get_locale()
-    var startup = _json(_read(session + "/startup.json", 33554432))
-    if typeof(startup) == TYPE_DICTIONARY and startup.get("secret", "") == secret and typeof(startup.get("entries")) == TYPE_DICTIONARY:
-        for source in startup.entries:
-            var text = startup.entries[source]
-            if _valid(source) and typeof(text) == TYPE_STRING and text.length() <= 12000:
-                cache[source] = text
     enabled = OS.get_environment("FUSION_GODOT_TRANSLATION") == "1"
+    _load_startup(_json(_read(session + "/startup.json", 33554432)))
     _prepare_font()
     get_tree().connect("node_added", self, "_added")
     VisualServer.connect("frame_pre_draw", self, "_before_draw")
@@ -83,6 +81,19 @@ func _ready():
                     _queue_resource(str(path))
     scan_thread.start(self, "_scan_worker")
     _write("hello.json", {"pid": OS.get_process_id(), "secret": secret, "protocol": 73, "version": Engine.get_version_info().string})
+
+# Read only the host's bounded snapshot for this session. Normal launches do
+# not retain translations for a later enable, and malformed rows keep originals.
+func _load_startup(startup):
+    if not enabled or typeof(startup) != TYPE_DICTIONARY or startup.get("secret", "") != secret or typeof(startup.get("entries")) != TYPE_DICTIONARY:
+        return
+    if startup.entries.size() > 100000:
+        return
+    for source in startup.entries:
+        var text = startup.entries[source]
+        if _valid(source) and typeof(text) == TYPE_STRING and text.strip_edges() != "" and text.length() <= 12000 and source.find(char(0)) < 0 and text.find(char(0)) < 0:
+            startup_exact[source] = text
+    startup_loaded = true
 
 func _ticks():
     return OS.get_ticks_msec()
@@ -183,9 +194,27 @@ func _catalog_page(cursor):
     var metadata = []
     for i in range(start, stop):
         texts.append(selected_catalog[i])
-        metadata.append(selected_metadata[i])
+        metadata.append(selected_metadata[i].duplicate())
     var result = {"texts": texts, "metadata": metadata, "next": stop, "total": size, "skipped": catalog_skipped, "done": ready, "scanning": not ready, "warnings": catalog_warnings.duplicate(), "sourceLanguage": source_language, "selectedLanguage": selected_language if ready else "", "skippedByLanguage": language_excluded if ready else 0}
     catalog_mutex.unlock()
+    # IPC pages run on the main thread. Resolve actual serialized localization
+    # keys only after releasing the scanner lock, with at most 128 lookups.
+    # The raw row cursor remains unchanged even when localized values duplicate
+    # existing Translation rows; the session deduplicates actual source text.
+    var active_locale = TranslationServer.get_locale()
+    for i in range(metadata.size()):
+        var row = metadata[i]
+        if not row.kind in ["scene", "scene_binary", "resource_text", "script_tr"]:
+            continue
+        var localized = str(TranslationServer.translate(row.source))
+        if localized == row.source or not _valid(localized):
+            continue
+        row["originalKey"] = row.source
+        row["resolvedBy"] = "TranslationServer"
+        row.source = localized
+        row.locale = active_locale
+        row.language = _locale_language(active_locale)
+        texts[i] = localized
     return result
 
 func _locale_language(value):
@@ -274,8 +303,15 @@ func _catalog_identity(value, path, locale):
     return language if language != "" else _text_language(value)
 
 func _choose_catalog_language(mode):
+    # An actual active translation resource outranks a fallback or allow-list.
+    # The operating-system locale alone is not proof of a game resource.
+    var active = _locale_language(current_locale)
+    if active != "":
+        for row in catalog_metadata:
+            if _locale_language(row.locale) == active or _path_language(row.path) == active:
+                return active
     if mode == "Mixed":
-        return "*"
+        mode = "Auto"
     if mode != "Auto":
         return _locale_language(mode)
     var weights = {}
@@ -318,6 +354,9 @@ func _build_language_catalog(mode, revision):
     var excluded = 0
     for row in catalog_metadata:
         var matches = selected == "*" or row.language == selected or (row.language == "han" and selected in ["zh", "ja"])
+        if mode in ["Auto", "Mixed"] and row.locale == "" and _path_language(row.path) == "":
+            # A genuine foreign line inside shared source is not a backup pack.
+            matches = true
         if not matches:
             excluded += 1
         elif not seen.has(row.source):
@@ -524,14 +563,183 @@ func _text_translation_resource(source, path):
     if locale_match != null:
         locale = locale_match.get_string(1)
     var messages = RegEx.new()
-    messages.compile('(?s)(?:^|\\n)messages\\s*=\\s*(\\{(?:[^"{}]|"(?:[^"\\\\]|\\\\.)*")*\\})')
+    messages.compile('(?m)^messages\\s*=\\s*')
     var found = messages.search(source)
-    if found != null:
-        var values = _json(found.get_string(1))
-        if typeof(values) == TYPE_DICTIONARY:
-            for key in values:
-                _catalog_add(values[key], path, str(key), locale, "translation_text")
+    if found == null:
+        return true
+    # Translation resources are data, not scripts. Parse only their bounded
+    # literal message table; never load a resource or execute constructors.
+    # Godot 3 saves alternating strings, while Godot 4.6 saves context/key and
+    # plural-form StringName arrays. Older plain string dictionaries still work.
+    var tokens = _translation_tokens(source, found.get_end())
+    var cursor = {"at": 0, "bad": false}
+    var table = _translation_literal(tokens, cursor, 0)
+    var rows = []
+    if not cursor.bad and cursor.at == tokens.size():
+        rows = _translation_rows(table)
+    if cursor.bad or rows == null:
+        _warning("翻译资源消息表无法解析：" + path)
+        return true
+    for row in rows:
+        _catalog_add(row.value, path, row.key, locale, "translation_text")
     return true
+
+func _translation_tokens(source, start):
+    var tokens = []
+    var at = start
+    var depth = 0
+    var opened = false
+    while at < source.length() and tokens.size() < 400000:
+        if tokens.size() % 128 == 0:
+            catalog_mutex.lock()
+            var cancelled = scan_stop
+            catalog_mutex.unlock()
+            if cancelled:
+                return []
+        var c = source.substr(at, 1)
+        if c in [" ", "\t", "\r", "\n"]:
+            at += 1
+            continue
+        if c == "&":
+            # StringName's serialized prefix is allowed only before a string.
+            at += 1
+            if at >= source.length() or source.substr(at, 1) != '"':
+                return []
+            c = '"'
+        if c == '"':
+            var begin = at
+            at += 1
+            var closed = false
+            while at < source.length():
+                c = source.substr(at, 1)
+                if c == "\\":
+                    at += 2
+                elif c == '"':
+                    at += 1
+                    closed = true
+                    break
+                else:
+                    at += 1
+            if not closed:
+                return []
+            var literal = source.substr(begin, at - begin).replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+            var value = _json(literal)
+            if typeof(value) != TYPE_STRING:
+                return []
+            tokens.append({"kind": "string", "value": value})
+            continue
+        if c in ["{", "[", "("]:
+            opened = true
+            depth += 1
+            if depth > 8:
+                return []
+            tokens.append(c)
+            at += 1
+            continue
+        if c in ["}", "]", ")"]:
+            depth -= 1
+            if depth < 0:
+                return []
+            tokens.append(c)
+            at += 1
+            if opened and depth == 0:
+                return tokens
+            continue
+        if c in [",", ":"]:
+            tokens.append(c)
+            at += 1
+            continue
+        var matched = false
+        for constructor in ["PoolStringArray", "PackedStringArray"]:
+            if source.substr(at, constructor.length()) == constructor:
+                tokens.append(constructor)
+                at += constructor.length()
+                matched = true
+                break
+        if not matched:
+            return []
+    return []
+
+func _translation_at(tokens, at, value):
+    return at < tokens.size() and typeof(tokens[at]) == TYPE_STRING and tokens[at] == value
+
+func _translation_literal(tokens, cursor, depth):
+    if cursor.bad or depth > 8 or cursor.at >= tokens.size():
+        cursor.bad = true
+        return null
+    var token = tokens[cursor.at]
+    cursor.at += 1
+    if typeof(token) == TYPE_DICTIONARY:
+        return token
+    if token in ["PoolStringArray", "PackedStringArray"]:
+        if not _translation_at(tokens, cursor.at, "("):
+            cursor.bad = true
+            return null
+        cursor.at += 1
+        token = "("
+    if not token in ["{", "[", "("]:
+        cursor.bad = true
+        return null
+    var close = "}" if token == "{" else ("]" if token == "[" else ")")
+    var values = []
+    while cursor.at < tokens.size() and not _translation_at(tokens, cursor.at, close):
+        var item = _translation_literal(tokens, cursor, depth + 1)
+        if cursor.bad:
+            return null
+        if token == "{":
+            if not _translation_at(tokens, cursor.at, ":"):
+                cursor.bad = true
+                return null
+            cursor.at += 1
+            var value = _translation_literal(tokens, cursor, depth + 1)
+            if cursor.bad:
+                return null
+            values.append({"key": item, "value": value})
+        else:
+            values.append(item)
+        if _translation_at(tokens, cursor.at, ","):
+            cursor.at += 1
+        elif not _translation_at(tokens, cursor.at, close):
+            cursor.bad = true
+            return null
+    if not _translation_at(tokens, cursor.at, close):
+        cursor.bad = true
+        return null
+    cursor.at += 1
+    return {"kind": "map" if token == "{" else "array", "values": values}
+
+func _translation_rows(table):
+    if typeof(table) != TYPE_DICTIONARY:
+        return null
+    var rows = []
+    if table.kind == "array":
+        if table.values.size() % 2 != 0:
+            return null
+        for at in range(0, table.values.size(), 2):
+            if table.values[at].kind != "string" or table.values[at + 1].kind != "string":
+                return null
+            rows.append({"key": table.values[at].value, "value": table.values[at + 1].value})
+        return rows
+    if table.kind != "map":
+        return null
+    for pair in table.values:
+        var key = ""
+        if pair.key.kind == "string":
+            key = pair.key.value
+        elif pair.key.kind == "array" and pair.key.values.size() == 2 and pair.key.values[0].kind == "string" and pair.key.values[1].kind == "string":
+            key = str(pair.key.values[0].value.length()) + ":" + pair.key.values[0].value + pair.key.values[1].value
+        else:
+            return null
+        if pair.value.kind == "string":
+            rows.append({"key": key, "value": pair.value.value})
+        elif pair.value.kind == "array":
+            for at in range(pair.value.values.size()):
+                if pair.value.values[at].kind != "string":
+                    return null
+                rows.append({"key": key + "#" + str(at), "value": pair.value.values[at].value})
+        else:
+            return null
+    return rows
 
 func _file_size(path):
     var f = File.new()
@@ -857,6 +1065,8 @@ func _match_template(candidate, value):
 func _lookup(value, depth = 0):
     if cache.has(value):
         return cache[value]
+    if depth == 0 and startup_exact.has(value):
+        return startup_exact[value]
     if lookup_dirty:
         _index_cache()
     if lookup_memo.has(value):
@@ -1008,9 +1218,16 @@ func _before_draw():
 func _command(q):
     match q.get("op", ""):
         "translationPrepare":
+            var preserve = startup_loaded and q.get("preserveStartup", false) == true
+            startup_loaded = false
             epoch += 1
             preparing = true
             staged_cache.clear()
+            cache.clear()
+            if not preserve:
+                enabled = false
+                startup_exact.clear()
+            lookup_dirty = true
             pending.clear()
             _prepare_catalog_language(str(q.get("sourceLanguage", "Auto")))
             return {"epoch": epoch}
@@ -1025,6 +1242,9 @@ func _command(q):
             return {"epoch": epoch}
         "translationDisable":
             enabled = false
+            startup_loaded = false
+            startup_exact.clear()
+            lookup_dirty = true
             preparing = false
             staged_cache.clear()
             epoch += 1
@@ -1041,7 +1261,7 @@ func _command(q):
                     break
                 texts.append(text)
                 pending.erase(text)
-            return {"epoch": epoch, "texts": texts, "ahead": []}
+            return {"epoch": epoch, "texts": texts, "ahead": [], "activeTextLanguage": selected_language if selected_language == _locale_language(current_locale) else ""}
         "translationApply":
             if int(q.get("epoch", -1)) != epoch or (not enabled and not q.get("prime", false)):
                 return {"stale": true, "applied": 0}
@@ -1061,7 +1281,7 @@ func _command(q):
             return {"applied": count}
         "translationState":
             var snapshot = _catalog_page(0)
-            return {"enabled": enabled, "epoch": epoch, "entries": cache.size(), "savedir": OS.get_user_data_dir(), "catalog": snapshot.total, "scanning": snapshot.scanning, "skipped": snapshot.skipped, "warnings": snapshot.warnings, "locale": TranslationServer.get_locale(), "scan_max_ms": scan_max_ms, "scan_overruns": scan_overruns, "scan_thread": true, "scene_resource_loads": 0, "sourceLanguage": snapshot.sourceLanguage, "selectedLanguage": snapshot.selectedLanguage, "skippedByLanguage": snapshot.skippedByLanguage}
+            return {"enabled": enabled, "epoch": epoch, "entries": cache.size(), "startupExactCache": startup_exact.size(), "savedir": OS.get_user_data_dir(), "catalog": snapshot.total, "scanning": snapshot.scanning, "skipped": snapshot.skipped, "warnings": snapshot.warnings, "locale": TranslationServer.get_locale(), "scan_max_ms": scan_max_ms, "scan_overruns": scan_overruns, "scan_thread": true, "scene_resource_loads": 0, "sourceLanguage": snapshot.sourceLanguage, "selectedLanguage": snapshot.selectedLanguage, "skippedByLanguage": snapshot.skippedByLanguage}
     return null
 
 func _exit_tree():
@@ -1080,6 +1300,8 @@ func _exit_tree():
     entries.clear()
     known.clear()
     cache.clear()
+    startup_exact.clear()
+    startup_loaded = false
     staged_cache.clear()
     pending.clear()
     optimized_work.clear()
@@ -1089,6 +1311,15 @@ func _exit_tree():
         directory_reader = null
 
 func _process(delta):
+    var latest_locale = TranslationServer.get_locale()
+    if latest_locale != current_locale:
+        catalog_mutex.lock()
+        current_locale = latest_locale
+        language_revision += 1
+        selected_catalog = []
+        selected_metadata = []
+        catalog_mutex.unlock()
+        epoch += 1
     if enabled:
         _refresh()
         call_deferred("_before_draw")

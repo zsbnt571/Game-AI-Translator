@@ -7,7 +7,7 @@ internal static class GameCapabilities
     internal static bool EmbeddedTranslation(GameInfo? game) => game?.AdapterId switch
     {
         "rpg-maker-mv" or "rpg-maker-mz" or "renpy" => true,
-        "godot3" or "godot4" or "unity-mono" or "unity-il2cpp" or "unreal" => game.Support==SupportLevel.Candidate,
+        "godot3" or "godot4" or "unity-mono" or "unity-il2cpp" or "unreal" or "gamemaker" or "web-rpg" or "web-construct" or "web-tyrano" or "web-vnmaker" or "web-choicescript" or "defold" or "wolf" or "yukar-bakin" or "rgss" => game.Support==SupportLevel.Candidate,
         "mgi" or "cloud-meadow" => game.Engine == "Unity Mono"
             && (game.Support is SupportLevel.Supported or SupportLevel.Candidate),
         _ => false
@@ -34,3 +34,4 @@ public sealed partial class MainForm
         catch (KeyNotFoundException) { return false; }
     }
 }
+

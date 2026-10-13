@@ -1,4 +1,4 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 internal sealed record ThemePalette(Color Main, Color Secondary, Color Control, Color Text,
     Color SecondaryText, Color Accent, Color Border)
@@ -22,7 +22,7 @@ internal static class UiTheme
         using var timing=UiPerformanceTrace.Measure("theme-apply");
         Current = Resolve(settings);
         using(var batch=new UiLayoutBatch(root))ApplyRecursive(root, Current,dataSurface);
-        root.Invalidate(true);
+        UiLanguage.BindTree(root);SettingsColors.Apply(root);root.Invalidate(true);
     }
 
     private static ThemePalette Resolve(ApiSettings settings)

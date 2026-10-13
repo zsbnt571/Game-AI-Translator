@@ -1,12 +1,16 @@
-using System.Buffers.Binary;
+﻿using System.Buffers.Binary;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace ScreenshotTranslationUiTester;
 
 /// <summary>Retains one declared StringTable language without letting earlier language tables consume its quota.</summary>
-internal sealed class UnityLocalizedTableSelection(SourceLanguageMode mode)
+internal sealed class UnityLocalizedTableSelection
 {
+    private readonly SourceLanguageMode mode;
+    private readonly string preferredLanguage;
+    internal UnityLocalizedTableSelection(SourceLanguageMode source,string preferredLanguage="")
+    {mode=source==SourceLanguageMode.Mixed?SourceLanguageMode.Auto:source;this.preferredLanguage=preferredLanguage;}
     private readonly HashSet<string> texts=new(StringComparer.Ordinal);
     private readonly HashSet<UInt128> all=new(),chosen=new();
     private long characters;
@@ -23,7 +27,7 @@ internal sealed class UnityLocalizedTableSelection(SourceLanguageMode mode)
     {
         Seen=true;
         string locale=UnityTextResourceLanguageSelection.DeclaredLocale(code);
-        string? requested=UnityTextResourceLanguageSelection.RequestedLanguage(mode);
+        string? requested=preferredLanguage.Length>0?preferredLanguage:UnityTextResourceLanguageSelection.RequestedLanguage(mode);
         if(mode==SourceLanguageMode.Mixed||locale=="und-declared")return;
         if(requested is not null){if(locale==requested)SelectedLanguage=requested;return;}
         if(!Better(locale,SelectedLanguage))return;

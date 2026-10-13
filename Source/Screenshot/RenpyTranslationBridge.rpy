@@ -4,7 +4,7 @@ init 999 python hide:
         import os
         if not os.environ.get('FUSION_RENPY_PIPE') or not os.environ.get('FUSION_RENPY_SECRET'):
             return
-        import renpy, threading, collections, weakref, json, ast, re, struct
+        import renpy, threading, collections, weakref, json, ast, re, struct, time
         try:
             import builtins as native_builtins
         except ImportError:
@@ -31,6 +31,10 @@ init 999 python hide:
                 self.lock = threading.RLock()
                 self.ready = threading.Event()
                 self.cache = {}
+                self.startup_exact = {}
+                self.staged_cache = {}
+                self.preparing = False
+                self.startup_loaded = False
                 self.pending = collections.OrderedDict()
                 self.changed = set()
                 self.refresh_all = False
@@ -45,10 +49,19 @@ init 999 python hide:
                 self.patterns = {}
                 self.resolved = collections.OrderedDict()
                 self.original_set_text = renpy.text.text.Text.set_text
+                self.original_tokenize = renpy.text.text.Text.tokenize
+                self.inline_fragments = set()
+                self.cursor_next = 0
+                self.cursor_state = None
+                self.cursor_repairs = 0
+                self.cursor_query = None
+                self.cursor_query_source = 'pygame'
+                self.cursor_history = []
                 self.catalog = []
                 self.catalog_set = set()
                 self.catalog_skipped = 0
                 self.source_language = 'Auto'
+                self.active_text_language = getattr(renpy.game.preferences, 'language', None)
                 self.language_excluded = set()
                 self.nonoriginal_nodes = set()
                 self.ahead = []
@@ -61,12 +74,101 @@ init 999 python hide:
                 self.font = os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts', 'msyh.ttc').replace('\\', '/')
                 if not os.path.isfile(self.font):
                     self.font = None
+                # Keep the existing Chinese/Japanese fallback first. Korean is
+                # covered by Malgun when installed; never bundle system fonts.
+                korean_font = os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts', 'malgun.ttf').replace('\\', '/')
+                self.fallback_fonts = [font for font in (self.font, korean_font) if font and os.path.isfile(font)]
                 self.glyph_fallback = os.environ.get('FUSION_RENPY_GLYPH_FALLBACK','1') != '0'
                 self.font_maps = {}
                 self.glyph_maps = {}
+                self.load_startup_cache()
+
+            def load_startup_cache(self):
+                # The host publishes only this session's exact, language-filtered
+                # translations before launch. No network or desktop wait occurs
+                # in Ren'Py's init/render thread, and no entry enters save data.
+                path = os.environ.get('FUSION_RENPY_STARTUP_FILE')
+                if not startup_translation or not path:
+                    return
+                try:
+                    with open(path, 'rb') as stream:
+                        raw = stream.read(33554433)
+                    if len(raw) > 33554432:
+                        return
+                    # Some shipped Ren'Py 7 runtimes omit the utf_8_sig codec.
+                    # Plain UTF-8 is built in; consume only a leading byte BOM.
+                    if raw.startswith(b'\xef\xbb\xbf'):
+                        raw = raw[3:]
+                    data = json.loads(raw.decode('utf-8'))
+                    if not isinstance(data, dict) or data.get('secret') != os.environ.get('FUSION_RENPY_SECRET') or data.get('exactOnly') is not True:
+                        return
+                    entries = data.get('entries')
+                    if not isinstance(entries, list) or len(entries) > 150000:
+                        return
+                    accepted = {}
+                    for item in entries:
+                        if not isinstance(item, dict):
+                            continue
+                        source, text = item.get('source'), item.get('text')
+                        if self.valid(source) and self.valid_pair(source, text):
+                            accepted[source] = text
+                    self.startup_exact = accepted
+                    # Templates are registered only by normal validated Apply.
+                    # Startup entries match the complete original text exactly.
+                    self.startup_loaded = True
+                except (IOError, OSError, ValueError, TypeError, LookupError):
+                    # A missing/corrupt snapshot keeps the game's original text.
+                    return
 
             def valid(self, text):
-                return isinstance(text, string_type) and 1 < len(text) <= 6000 and any(c.isalpha() for c in text)
+                return isinstance(text, string_type) and 0 < len(text) <= 6000 and '\x00' not in text and any(c.isalpha() for c in text)
+
+            def text_codes(self, text):
+                # Match the host's token scanner: nested indices and quoted
+                # brackets are legal, while doubled delimiters are literals.
+                codes, i = [], 0
+                while i < len(text):
+                    opening = text[i]
+                    if opening not in '[{':
+                        i += 1
+                        continue
+                    end = i + 1
+                    if end < len(text) and text[end] == opening:
+                        end += 1
+                    else:
+                        closing = ']' if opening == '[' else '}'
+                        quote, depth = None, 1
+                        while end < len(text):
+                            char = text[end]
+                            if quote is not None:
+                                if char == '\\':
+                                    end += 2
+                                    continue
+                                if char == quote: quote = None
+                            elif opening == '[' and char in ('\"', "'"):
+                                quote = char
+                            elif char == opening:
+                                depth += 1
+                            elif char == closing:
+                                depth -= 1
+                                if depth == 0: break
+                            end += 1
+                        if end >= len(text):
+                            i += 1
+                            continue
+                        end += 1
+                    codes.append(text[i:end])
+                    i = end
+                return codes
+
+            def valid_pair(self, source, text):
+                if not isinstance(text, string_type) or not text.strip() or len(text) > 12000 or '\x00' in text or u'⟦RPG' in text:
+                    return False
+                a, b = self.text_codes(source), self.text_codes(text)
+                if sorted(a) != sorted(b): return False
+                def control(code):
+                    return not (code.startswith('[') and not code.startswith('[['))
+                return list(filter(control, a)) == list(filter(control, b))
 
             def fragments(self, text):
                 try:
@@ -91,6 +193,22 @@ init 999 python hide:
                         args = parsed[1].get('arguments')
                         return [text for key, expr in getattr(args, 'arguments', ()) for text in self.expression_texts(expr)]
                 return []
+
+            def inline_literals(self, text):
+                # Prefetch literal arguments in display interpolation, without
+                # running its function or replacing variables in game state.
+                # Runtime matching still decides which words are actually shown.
+                for code in self.text_codes(text):
+                    if not code.startswith('[') or code.startswith('[['): continue
+                    try: tree = ast.parse(code[1:-1], mode='eval').body
+                    except Exception: continue
+                    for node in ast.walk(tree):
+                        if not isinstance(node, ast.Call): continue
+                        for arg in node.args:
+                            try: value = ast.literal_eval(arg)
+                            except Exception: continue
+                            if self.valid(value) and len(value) > 1 and not re.search(r'[/\\\\#{}\[\]]', value):
+                                yield value
 
             def walk_story(self, roots, limit):
                 # Inspect graph links only: never evaluate conditions, calls or Python.
@@ -123,7 +241,7 @@ init 999 python hide:
             def locale_language(self, key):
                 if not isinstance(key, string_type): return ''
                 value = key.strip().lower().replace('-', '_')
-                aliases = {'english':'en','eng':'en','japanese':'ja','jp':'ja','jpn':'ja','chinese':'zh','simplifiedchinese':'zh','simplified_chinese':'zh','schinese':'zh','korean':'ko','kr':'ko','kor':'ko'}
+                aliases = {'english':'en','eng':'en','japanese':'ja','jp':'ja','jpn':'ja','chinese':'zh','simplifiedchinese':'zh','simplified_chinese':'zh','schinese':'zh','korean':'ko','kr':'ko','kor':'ko','french':'fr','german':'de','spanish':'es','portuguese':'pt','russian':'ru'}
                 value = aliases.get(value, value)
                 if not re.match(r'^[a-z]{2}(?:_(?:latn|cyrl|arab|hans|hant|jpan|kore|deva|hebr|thai|grek))?(?:_(?:[a-z]{2}|[0-9]{3}))?$', value): return ''
                 value = value.split('_')[0]
@@ -141,8 +259,8 @@ init 999 python hide:
                 languages = set(language for language, value in entries)
                 if len(languages) < 2 or not languages.difference(('id','no')): return None
                 mode = self.source_language
-                selected = '*' if mode == 'Mixed' else self.locale_language(mode)
-                if mode == 'Auto':
+                selected = self.locale_language(self.active_text_language) or ('und-declared' if self.active_text_language is not None else self.locale_language(mode))
+                if not selected:
                     selected = 'en' if 'en' in languages else ('ja' if 'ja' in languages else sorted(languages)[0])
                 kept = []
                 for language, value in entries:
@@ -151,6 +269,19 @@ init 999 python hide:
                         for text in self.literal_values(value, False):
                             if self.valid(text): self.language_excluded.add(text)
                 return kept
+
+            def translation_source(self, tree):
+                if not isinstance(tree, ast.Call): return None
+                func = tree.func
+                marker = isinstance(func, ast.Name) and func.id in ('_', '__', '___')
+                native = isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and func.value.id == 'renpy' and func.attr == 'translate_string'
+                if not marker and not native: return None
+                # Read the original literal only. In particular, ___ interpolation
+                # and translate_string language selection are never executed.
+                if tree.args: return tree.args[0]
+                for keyword in tree.keywords:
+                    if keyword.arg == 's': return keyword.value
+                return None
 
             def literal_values(self, tree, select_language=True):
                 # Only evaluate Python literals. Conditions, variables and function
@@ -162,8 +293,9 @@ init 999 python hide:
                         return
                 except Exception:
                     pass
-                if isinstance(tree, ast.Call) and isinstance(tree.func, ast.Name) and tree.func.id in ('_', '__') and len(tree.args) == 1:
-                    for text in self.literal_values(tree.args[0], select_language): yield text
+                translated = self.translation_source(tree)
+                if translated is not None:
+                    for text in self.literal_values(translated, select_language): yield text
                 elif isinstance(tree, ast.IfExp):
                     for branch in (tree.body, tree.orelse):
                         for text in self.literal_values(branch, select_language): yield text
@@ -199,9 +331,14 @@ init 999 python hide:
                     elif isinstance(node, ast.Call):
                         func = node.func
                         name = func.id if isinstance(func, ast.Name) else (func.attr if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name) and func.value.id == 'renpy' else '')
-                        if name in ('_', '__', 'notify', 'Text', 'text', 'textbutton', 'label'):
+                        translated = self.translation_source(node)
+                        if translated is not None: expressions = [translated]
+                        elif name in ('notify', 'Text', 'text', 'textbutton', 'label'):
                             expressions = node.args[:1]
                         elif name == 'say': expressions = node.args[1:2]
+                        if not expressions and name in ('notify', 'say'):
+                            key = 'message' if name == 'notify' else 'what'
+                            expressions = [keyword.value for keyword in node.keywords if keyword.arg == key]
                     for expression in expressions:
                         for text in self.literal_values(expression):
                             # Data assignments often contain asset paths/internal IDs.
@@ -233,6 +370,10 @@ init 999 python hide:
                 self.catalog_skipped = 0
                 self.language_excluded = set()
                 self.nonoriginal_nodes = set()
+                self.catalog_marked = False
+                self.catalog_iter = self.catalog_steps()
+
+            def catalog_steps(self):
                 def add(text):
                     if not isinstance(text, string_type): return
                     if len(text) > 6000:
@@ -246,32 +387,74 @@ init 999 python hide:
                 # all_stmts also contains translated children, even when their
                 # filename is an ordinary script. Mark structural descendants
                 # without following next/call/jump links into original statements.
-                todo = [node for node in nodes if isinstance(node, translated_types) and getattr(node, 'language', None) is not None]
-                while todo and len(self.nonoriginal_nodes) < 1000000:
-                    node = todo.pop()
-                    if node is None or id(node) in self.nonoriginal_nodes: continue
-                    self.nonoriginal_nodes.add(id(node))
+                todo, active_nodes, marked = [], set(), set()
+                active_language = self.active_text_language
+                for node in nodes:
+                    if isinstance(node, translated_types) and getattr(node, 'language', None) is not None:
+                        todo.append((node, getattr(node, 'language', None) == active_language))
+                    yield None
+                while todo and len(marked) < 1000000:
+                    node, is_active = todo.pop()
+                    if node is None or id(node) in marked: continue
+                    marked.add(id(node))
+                    if is_active: active_nodes.add(id(node))
+                    else: self.nonoriginal_nodes.add(id(node))
                     block = getattr(node, 'block', None)
-                    if isinstance(block, (list, tuple)): todo.extend(block)
+                    if isinstance(block, (list, tuple)): todo.extend((child, is_active) for child in block)
                     for entry in getattr(node, 'entries', ()):
-                        if isinstance(entry, (list, tuple)) and len(entry) > 1 and isinstance(entry[1], (list, tuple)): todo.extend(entry[1])
+                        if isinstance(entry, (list, tuple)) and len(entry) > 1 and isinstance(entry[1], (list, tuple)):
+                            todo.extend((child, is_active) for child in entry[1])
                     if isinstance(node, renpy.ast.Menu):
                         for item in node.items:
-                            if len(item) > 2 and item[2]: todo.extend(item[2])
+                            if len(item) > 2 and item[2]: todo.extend((child, is_active) for child in item[2])
+                    yield None
+                self.catalog_marked = True
                 # The opening graph goes first. The remaining loaded scripts include
                 # unvisited branches and compiled/archive scripts, without playing them.
-                opening = list(self.walk_story([script.namemap.get('start')], 3000))
+                import itertools
                 seen = set()
-                for node in opening + sorted(nodes, key=lambda n: (getattr(n, 'filename', ''), getattr(n, 'linenumber', 0))):
+                extras = []
+                for node in itertools.chain(self.walk_story([script.namemap.get('start')], 3000), nodes):
                     if id(node) in seen or id(node) in self.nonoriginal_nodes: continue
                     seen.add(id(node))
                     filename = getattr(node, 'filename', '').replace('\\', '/')
-                    if '/tl/' in '/' + filename: continue
-                    for text in self.node_texts(node): add(text)
+                    if active_language is not None and id(node) not in active_nodes: continue
+                    if '/tl/' in '/' + filename and id(node) not in active_nodes: continue
+                    for text in self.node_texts(node):
+                        add(text)
+                        for fragment in self.inline_literals(text): add(fragment)
+                        yield None
+                    extras.append(node)
+                    yield None
+                # Publish all ordinary dialogue/choices before expensive screen
+                # expressions and Python data tables. They need no event execution.
+                for node in extras:
+                    filename = getattr(node, 'filename', '').replace('\\', '/')
                     if isinstance(node, renpy.ast.Screen):
-                        for text in self.screen_texts(node.screen): add(text)
+                        for text in self.screen_texts(node.screen):
+                            add(text)
+                            yield None
                     if '/renpy/common/' not in '/' + filename and filename.rsplit('/', 1)[-1] not in ('zz_fusion_translation.rpy', 'zz_fusion_translation.rpyc'):
-                        for text in self.python_texts(getattr(node, 'code', None)): add(text)
+                        for text in self.python_texts(getattr(node, 'code', None)):
+                            add(text)
+                            yield None
+                    yield None
+
+            def advance_catalog(self, budget=0.004):
+                # Only the game thread reads engine AST objects. Small batches
+                # allow UI and the transport to start before a large scan ends.
+                deadline = time.time() + budget
+                with self.lock:
+                    if self.catalog_iter is None: return
+                    try:
+                        for unused in range(65536):
+                            next(self.catalog_iter)
+                            if time.time() >= deadline: break
+                    except StopIteration:
+                        self.catalog_iter = None
+                    except Exception:
+                        self.catalog_skipped += 1
+                        self.catalog_iter = None
 
             def register_template(self, source):
                 # Character dialogue may interpolate before constructing Text. Match
@@ -316,6 +499,7 @@ init 999 python hide:
             def resolve(self, value, keys):
                 if not self.enabled or not isinstance(value, string_type): return value
                 if value in self.cache: return self.cache[value]
+                if value in self.startup_exact: return self.startup_exact[value]
                 if value in self.resolved:
                     source, result = self.resolved[value]
                     keys.add(source)
@@ -333,6 +517,9 @@ init 999 python hide:
                         # are never mistaken for another interpolation expression.
                         names = list(collections.OrderedDict.fromkeys(fields))
                         substitutions = dict((field, match.group('f%d' % fields.index(field))) for field in names)
+                        for field, value_part in substitutions.items():
+                            if '{' in value_part and '(' in field and len(self.inline_fragments) < 4096:
+                                self.inline_fragments.update(self.fragments(value_part))
                         expression = '|'.join(re.escape(field) for field in sorted(names, key=len, reverse=True))
                         if names: rendered = re.sub(expression, lambda m: substitutions[m.group(0)], rendered)
                         if specificity == best:
@@ -349,19 +536,31 @@ init 999 python hide:
                 return value
 
             def refresh_text(self, displayable, original, keys):
+                # Text.text belongs to Ren'Py's say-screen identity and slow-text
+                # checks. Invalidate only layout; translation happens in tokenize.
+                displayable.dirty = True
+                displayable.kill_layout()
+                renpy.display.render.redraw(displayable, 0)
+                return True
+
+            def tokenize(self, displayable, text):
+                if isinstance(displayable, renpy.display.behavior.Input) or getattr(displayable, 'tokenized', False) or self.layout_only(displayable):
+                    return self.original_tokenize(displayable, text)
+                keys = set(self.scopes.get(displayable, (None, set()))[1])
+                mapped, prepared = [], set()
                 with self.lock:
-                    mapped = [self.resolve(t, keys) for t in original]
-                ready = set()
-                for before, after in zip(original, mapped):
-                    if isinstance(before, string_type) and before != after:
-                        ready.update(self.fragments(after))
-                self.pretranslated[displayable] = ready
-                changed = displayable.text != mapped
-                displayable.text = mapped
-                if changed:
-                    displayable.dirty = True
-                    renpy.display.render.redraw(displayable, 0)
-                return changed
+                    for value in text:
+                        translated = self.resolve(value, keys)
+                        mapped.append(translated)
+                        if isinstance(value, string_type) and value != translated:
+                            prepared.update(self.fragments(translated))
+                    # Decorated values were produced by the game, not evaluated by
+                    # Fusion. Translate their visible text before custom tags can
+                    # turn animated characters into displayables.
+                    prepared.difference_update(self.inline_fragments)
+                self.pretranslated[displayable] = prepared
+                self.dependencies[displayable] = keys
+                return self.original_tokenize(displayable, mapped)
 
             def display_string(self, value):
                 # Some Python 2 Chinese localizations hand Text a legacy byte
@@ -404,51 +603,54 @@ init 999 python hide:
                 except Exception:pass
                 return value
 
+            def layout_only(self, displayable):
+                # Games use fully transparent Text as a spacer behind image UI.
+                # Translating that invisible string changes its height and moves
+                # neighbouring sliders. Visible outlined text is still eligible.
+                try:
+                    color = displayable.style.color
+                    if color is None or len(color) < 4 or color[3] != 0:
+                        return False
+                    for outline in displayable.style.outlines or ():
+                        if outline[1] is not None and outline[1][3] != 0:
+                            return False
+                    return True
+                except Exception:
+                    return False
+
             def set_text(self, displayable, text, scope=None, substitute=False, update=True):
-                if isinstance(displayable, renpy.display.behavior.Input) or getattr(displayable, 'tokenized', False) or getattr(displayable, 'locked', False):
+                if isinstance(displayable, renpy.display.behavior.Input) or getattr(displayable, 'tokenized', False) or getattr(displayable, 'locked', False) or self.layout_only(displayable):
+                    self.scopes.pop(displayable, None)
+                    self.pretranslated.pop(displayable, None)
+                    self.dependencies.pop(displayable, None)
                     return self.original_set_text(displayable, text, scope, substitute, update)
                 text=[self.display_string(value) for value in text] if isinstance(text,list) else self.display_string(text)
-                previous = getattr(displayable, 'text', None)
-                entry = self.scopes.get(displayable)
-                # Scope checks must compare original resolved text with original text,
-                # not Chinese with English (which would force perpetual redraws).
-                if entry is not None: displayable.text = entry[0]
-                try:
-                    result = self.original_set_text(displayable, text, scope, substitute, update)
-                    resolved = displayable.text
-                finally:
-                    displayable.text = previous
+                result = self.original_set_text(displayable, text, scope, substitute, update)
                 if update:
-                    original = list(resolved)
+                    original = list(displayable.text)
                     source = text if isinstance(text, list) else [text]
                     keys = set(t for t in source + original if self.valid(t))
-                    result = self.refresh_text(displayable, original, keys) or result
                     self.scopes[displayable] = (original, keys)
                 return result
 
             def tags(self, displayable, tokens):
-                # The engine first resolves its own interpolation, custom tags and filters.
-                # Replace only final TEXT tokens; original templates and scope checks stay intact.
-                result = self.original_tags(tokens) if self.tags_static else self.original_tags(displayable, tokens)
-                if isinstance(displayable, renpy.display.behavior.Input):
-                    return result
-                keys = set(self.scopes.get(displayable, (None, set()))[1])
+                if isinstance(displayable, renpy.display.behavior.Input) or self.layout_only(displayable):
+                    return self.original_tags(tokens) if self.tags_static else self.original_tags(displayable, tokens)
+                keys = set(self.dependencies.get(displayable, self.scopes.get(displayable, (None, set()))[1]))
                 prepared = self.pretranslated.get(displayable, set())
                 output = []
                 with self.lock:
-                    for kind, value in result:
+                    for kind, value in tokens:
                         if kind == renpy.text.text.TEXT and self.valid(value) and value not in prepared:
                             keys.add(value)
                             if self.enabled:
                                 original = value
                                 value = self.resolve(value, keys)
-                                if original not in self.cache and original not in self.resolved:
-                                    if len(self.pending) < 512:
-                                        self.pending[value] = True
-                                    # Keep the original language until a real translation exists.
+                                if original not in self.cache and original not in self.startup_exact and original not in self.resolved:
+                                    if len(self.pending) < 512: self.pending[original] = True
                         output.append((kind, value))
                 self.dependencies[displayable] = keys
-                return output
+                return self.original_tags(output) if self.tags_static else self.original_tags(displayable, output)
 
             def font_map(self, name):
                 # Read only the small Unicode cmap table, including fonts inside
@@ -503,8 +705,8 @@ init 999 python hide:
                 self.font_maps[name]=result
                 return result
 
-            def has_glyph(self, segment, character, fallback=False):
-                name=self.font if fallback else segment.font
+            def has_glyph(self, segment, character, fallback=False, font=None):
+                name=font or (self.font if fallback else segment.font)
                 if not isinstance(name,string_type):return None
                 bold,italic=segment.bold,segment.italic
                 name,bold,italic=config.font_replacement_map.get((name,bold,italic),(name,bold,italic))
@@ -554,39 +756,147 @@ init 999 python hide:
                 # Local glyph fallback only. Never assign style.font or style.size:
                 # Ren'Py shares styles between unrelated controls, including menu buttons.
                 for original, value in self.original_subsegment(segment, text):
-                    if not self.glyph_fallback or not self.font:
+                    if not self.glyph_fallback or not self.fallback_fonts:
                         yield original, value
                         continue
-                    def missing(c):
+                    def fallback_font(c):
                         n = ord(c)
-                        cjk=0x2e80 <= n <= 0x9fff or 0xf900 <= n <= 0xfaff or 0xff00 <= n <= 0xffef or 0x20000 <= n <= 0x323af
                         # Preserve the original font when supported or coverage is
                         # unknown; fallback only for a confirmed missing glyph.
-                        try:return cjk and self.has_glyph(original,c) is False and self.has_glyph(original,c,True) is True
-                        except Exception:return False
+                        try:
+                            if n < 32 or c.isspace() or self.has_glyph(original,c) is not False:
+                                return None
+                            for candidate in self.fallback_fonts:
+                                if self.has_glyph(original,c,font=candidate) is True:
+                                    return candidate
+                        except Exception:pass
+                        return None
                     start = 0
                     while start < len(value):
-                        fallback = missing(value[start])
+                        fallback = fallback_font(value[start])
                         end = start + 1
-                        while end < len(value) and missing(value[end]) == fallback:
+                        while end < len(value) and fallback_font(value[end]) == fallback:
                             end += 1
                         selected = original
                         if fallback:
                             selected = renpy.text.text.TextSegment(original)
-                            selected.font = self.font
+                            selected.font = fallback
                         yield selected, value[start:end]
                         start = end
 
+            def cursor_visible(self, mouse):
+                if hasattr(mouse, 'get_visible'): return bool(mouse.get_visible())
+                # pygame_sdl2 shipped with Ren'Py lacks pygame's get_visible.
+                # Query the SDL already loaded by this game; -1 never changes it.
+                if self.cursor_query is None:
+                    self.cursor_query = False
+                    if os.name == 'nt':
+                        import ctypes
+                        module = ctypes.windll.kernel32.GetModuleHandleW
+                        module.argtypes = [ctypes.c_wchar_p]
+                        module.restype = ctypes.c_void_p
+                        for name in ('librenpython.dll', 'SDL2.dll', 'libSDL2.dll'):
+                            handle = module(name)
+                            if not handle: continue
+                            try:
+                                query = ctypes.CDLL(name, handle=handle).SDL_ShowCursor
+                                query.argtypes = [ctypes.c_int]
+                                query.restype = ctypes.c_int
+                                self.cursor_query = query
+                                self.cursor_query_source = 'loaded-sdl'
+                                break
+                            except (AttributeError, OSError): pass
+                        if not self.cursor_query:
+                            # Older bundled SDL builds do not export the query.
+                            # Read Windows' cursor state; never alter ShowCursor's
+                            # counter. Recovery below still requires game focus.
+                            class Point(ctypes.Structure):
+                                _fields_ = [('x', ctypes.c_long), ('y', ctypes.c_long)]
+                            class CursorInfo(ctypes.Structure):
+                                _fields_ = [('size', ctypes.c_uint), ('flags', ctypes.c_uint),
+                                            ('cursor', ctypes.c_void_p), ('position', Point)]
+                            get_info = ctypes.windll.user32.GetCursorInfo
+                            get_info.argtypes = [ctypes.POINTER(CursorInfo)]
+                            get_info.restype = ctypes.c_int
+                            def system_cursor_query(ignored):
+                                info = CursorInfo()
+                                info.size = ctypes.sizeof(CursorInfo)
+                                if not get_info(ctypes.byref(info)) or info.flags & 2: return -1
+                                return 1 if info.flags & 1 else 0
+                            self.cursor_query = system_cursor_query
+                            self.cursor_query_source = 'windows'
+                if self.cursor_query:
+                    result = self.cursor_query(-1)
+                    if result in (0, 1): return bool(result)
+                return None
+
+            def record_cursor(self, state):
+                if state == self.cursor_state: return
+                self.cursor_state = state
+                self.cursor_history.append(state)
+                self.cursor_history = self.cursor_history[-24:]
+                path = os.environ.get('FUSION_RENPY_CURSOR_LOG')
+                if path:
+                    with open(path, 'wb') as stream:
+                        stream.write(json.dumps({'current': state, 'recentStates': self.cursor_history}).encode('ascii'))
+
+            def cursor_health(self):
+                now = time.time()
+                if now < self.cursor_next: return
+                self.cursor_next = now + 1.0
+                try:
+                    interface = renpy.game.interface
+                    mouse = renpy.display.core.pygame.mouse
+                    intended = bool(interface.is_mouse_visible())
+                    focused = bool(mouse.get_focused())
+                    visible = self.cursor_visible(mouse)
+                    recent = 0 <= renpy.display.core.get_time() - interface.mouse_event_time < 2
+                    ordinary = config.mouse_displayable is None
+                    # Repair only a stale system-cursor cache. Respect cutscenes,
+                    # gamepad hiding, idle hiding and software cursors. The engine
+                    # restores its own hardware cursor image when one is configured.
+                    if intended and focused and recent and ordinary and interface.old_mouse is not False and visible is False:
+                        interface.old_mouse = None
+                        interface.update_mouse(None)
+                        self.cursor_repairs += 1
+                        visible = self.cursor_visible(mouse)
+                    state = {'intended': intended, 'focused': focused, 'visible': visible,
+                             'visibilitySource': self.cursor_query_source,
+                             'recentMouse': recent, 'systemCursor': ordinary,
+                             'fullscreen': bool(renpy.game.preferences.fullscreen), 'repairs': self.cursor_repairs,
+                             'gameVisible': bool(getattr(renpy.store, 'mouse_visible', True)),
+                             'interactionVisible': bool(getattr(interface, 'show_mouse', True)),
+                             'video': bool(getattr(renpy.display.video, 'fullscreen', False)),
+                             'lessMouse': bool(getattr(renpy.game, 'less_mouse', False))}
+                    self.record_cursor(state)
+                except Exception as error:
+                    try: self.record_cursor({'error': type(error).__name__})
+                    except Exception: pass
+
             def periodic(self):
+                latest_language = getattr(renpy.game.preferences, 'language', None)
+                if latest_language != self.active_text_language:
+                    with self.lock:
+                        self.active_text_language = latest_language
+                        self.collect_catalog()
+                        self.epoch += 1
+                        self.ahead = []
+                        self.last_current = None
+                        self.refresh_all = True
+                self.advance_catalog()
+                self.cursor_health()
                 if self.previous_periodic is not None:
                     self.previous_periodic()
                 current = getattr(renpy.game.context(), 'current', None)
-                if self.enabled and current != self.last_current:
+                if self.enabled and self.catalog_marked and current != self.last_current:
                     self.last_current = current
                     root = renpy.game.script.namemap.get(current)
                     texts = []
                     for node in self.walk_story([root], 800):
-                        texts.extend(t for t in self.node_texts(node) if self.valid(t))
+                        for text in self.node_texts(node):
+                            if self.valid(text):
+                                texts.append(text)
+                                texts.extend(self.inline_literals(text))
                         if len(texts) >= 96: break
                     with self.lock: self.ahead = list(collections.OrderedDict.fromkeys(texts))[:96]
                 with self.lock:
@@ -611,11 +921,15 @@ init 999 python hide:
                 with self.lock:
                     op = request.get('op')
                     if op == 'translationPrepare':
-                        # Keep rendering original text until all cached translations
-                        # have been primed and the desktop explicitly enables them.
-                        self.enabled = False
-                        self.epoch += 1
+                        preserve = self.startup_loaded and request.get('preserveStartup') is True
+                        self.startup_loaded = False
+                        self.preparing = True
+                        self.staged_cache.clear()
                         self.cache.clear()
+                        if not preserve:
+                            self.enabled = False
+                            self.startup_exact.clear()
+                        self.epoch += 1
                         self.patterns.clear()
                         self.resolved.clear()
                         self.pending.clear()
@@ -629,12 +943,25 @@ init 999 python hide:
                         self.refresh_all = True
                         return {'epoch': self.epoch}
                     if op == 'translationEnable':
+                        if self.preparing:
+                            self.cache = self.staged_cache
+                            self.staged_cache = {}
+                            self.preparing = False
+                            self.patterns.clear()
+                            self.resolved.clear()
+                            for source in self.cache:
+                                self.register_template(source)
                         self.enabled = True
                         self.refresh_all = True
                         self.ready.set()
                         return {'epoch': self.epoch}
                     if op == 'translationDisable':
                         self.enabled = False
+                        self.epoch += 1
+                        self.startup_loaded = False
+                        self.startup_exact.clear()
+                        self.preparing = False
+                        self.staged_cache.clear()
                         self.ready.set()
                         self.pending.clear()
                         self.refresh_all = True
@@ -642,43 +969,64 @@ init 999 python hide:
                     if op == 'translationCatalog':
                         offset = max(0, min(len(self.catalog), int(request.get('cursor', 0))))
                         texts, size = [], 0
-                        for text in self.catalog[offset:offset + 128]:
+                        for text in self.catalog[offset:offset + 512]:
                             cost = len(json.dumps(text, ensure_ascii=True))
                             if texts and size + cost > 42000: break
                             texts.append(text)
                             size += cost
-                        return {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded)}
+                        return {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded)}
                     if op == 'translationPoll':
                         texts = list(self.pending.keys())[:128]
                         for text in texts:
                             self.pending.pop(text, None)
-                        return {'epoch': self.epoch, 'texts': texts, 'ahead': self.ahead}
+                        return {'epoch': self.epoch, 'texts': texts, 'ahead': self.ahead, 'activeTextLanguage': self.locale_language(self.active_text_language)}
                     if op == 'translationApply':
                         if request.get('epoch') != self.epoch:
                             return {'stale': True}
                         count = 0
                         for pair in request.get('entries', [])[:128]:
+                            if not isinstance(pair, dict): continue
                             source, text = pair.get('source'), pair.get('text')
-                            if self.valid(source) and isinstance(text, string_type) and 0 < len(text) <= 12000:
-                                if self.cache.get(source) != text:
-                                    self.cache[source] = text
-                                    self.register_template(source)
-                                    self.resolved.clear()
-                                    self.changed.add(source)
+                            if self.valid(source) and self.valid_pair(source, text):
+                                target = self.staged_cache if self.preparing and request.get('prime') else self.cache
+                                if target.get(source) != text:
+                                    target[source] = text
+                                    if target is self.cache:
+                                        self.register_template(source)
+                                        self.resolved.clear()
+                                        self.changed.add(source)
                                     # Character may already have substituted its variables
                                     # before Text was created. A new template can therefore
                                     # match visible text whose dependency key is the resolved form.
-                                    if '[' in source: self.refresh_all = True
+                                        if '[' in source: self.refresh_all = True
                                 count += 1
                         return {'applied': count}
                     if op == 'translationState':
-                        return {'enabled': self.enabled, 'entries': len(self.cache), 'savedir': config.savedir, 'version': renpy.version_only, 'pending': len(self.pending), 'catalog': len(self.catalog)}
+                        return {'enabled': self.enabled, 'entries': len(set(self.cache).union(self.startup_exact)), 'startupExactCache': len(self.startup_exact), 'savedir': config.savedir, 'version': renpy.version_only, 'pending': len(self.pending), 'catalog': len(self.catalog)}
                     raise Exception('Unknown translation request')
 
             def serve(self):
+                pipe, secret = os.environ['FUSION_RENPY_PIPE'], os.environ['FUSION_RENPY_SECRET']
+                while True:
+                    self.serve_once(pipe, secret)
+                    threading.Event().wait(1.0)
+                    try:
+                        path = os.environ.get('FUSION_RENPY_RECONNECT')
+                        if path:
+                            with open(path, 'rb') as stream: raw = stream.read(4097)
+                            if len(raw) > 4096: continue
+                            if raw.startswith(b'\xef\xbb\xbf'): raw = raw[3:]
+                            data = json.loads(raw.decode('utf-8'))
+                            if data.get('protocol') != 156 or data.get('pid') != os.getpid(): continue
+                            if not re.match(r'^fusion-rpg-[a-f0-9]{32}$', data.get('pipe', '')) or not re.match(r'^[a-f0-9]{64}$', data.get('secret', '')): continue
+                            pipe, secret = data['pipe'], data['secret']
+                    except Exception:
+                        pass
+
+            def serve_once(self, pipe, secret):
                 fd = None
                 try:
-                    fd = os.open('\\\\.\\pipe\\' + os.environ['FUSION_RENPY_PIPE'], os.O_RDWR | os.O_BINARY)
+                    fd = os.open('\\\\.\\pipe\\' + pipe, os.O_RDWR | os.O_BINARY)
                     def send(value):
                         data = (json.dumps(value, ensure_ascii=True) + '\n').encode('utf8')
                         while data:
@@ -686,7 +1034,8 @@ init 999 python hide:
                             if written <= 0:
                                 raise IOError('Connection closed')
                             data = data[written:]
-                    send({'hello': 1, 'secret': os.environ['FUSION_RENPY_SECRET'], 'pid': os.getpid()})
+                    send({'hello': 1, 'secret': secret, 'pid': os.getpid(), 'reconnect': 156})
+                    with self.lock: self.connected = True
                     pending = b''
                     while True:
                         while b'\n' not in pending and len(pending) <= 262144:
@@ -710,9 +1059,19 @@ init 999 python hide:
                     if fd is not None:
                         os.close(fd)
                     with self.lock:
+                        was_active = self.connected or self.enabled
                         self.enabled = False
+                        self.epoch += 1
+                        self.startup_loaded = False
+                        self.startup_exact.clear()
+                        self.cache.clear()
+                        self.preparing = False
+                        self.staged_cache.clear()
+                        self.patterns.clear()
+                        self.resolved.clear()
+                        self.pending.clear()
                         self.connected = False
-                        self.refresh_all = True
+                        self.refresh_all = self.refresh_all or was_active
                     self.ready.set()
 
         bridge = Bridge()
@@ -730,17 +1089,24 @@ init 999 python hide:
             return bridge.subsegment(self, s)
         def set_text(self, text, scope=None, substitute=False, update=True):
             return bridge.set_text(self, text, scope, substitute, update)
+        def tokenize(self, text):
+            return bridge.tokenize(self, text)
+        renpy.text.text.Text.tokenize = tokenize
         renpy.text.text.Text.set_text = set_text
         renpy.text.text.Text.apply_custom_tags = TextTags()
         renpy.text.text.TextSegment.subsegment = subsegment
         if config.replace_text is None:
             config.replace_text = lambda text: text
         config.periodic_callback = bridge.periodic
+        # Script ASTs are already loaded at init 999. Seed the first directory
+        # page here, before connection, menus or live translation can run. Keep
+        # the startup allowance bounded; later ticks continue larger catalogues.
+        bridge.advance_catalog(0.04)
         worker = threading.Thread(target=bridge.serve)
         worker.daemon = True
         worker.start()
-        # Prime existing translations before the first menu frame, not the whole story.
-        # Slow preparation and a broken connection both preserve the original text.
-        if startup_translation:
-            bridge.ready.wait(12.0)
+        # Cached exact translations were loaded locally before hooks were installed.
+        # Newly encountered text keeps its original while the worker translates it;
+        # never stall game initialization on a desktop/API handshake.
     _fusion_start()
+

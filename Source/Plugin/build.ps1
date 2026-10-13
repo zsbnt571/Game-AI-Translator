@@ -1,7 +1,7 @@
 param(
     [string]$ReferenceDirectory = "$PSScriptRoot\References",
     [string]$OutputDirectory = "$PSScriptRoot\..\..\Work\plugin-build",
-    [string]$DotNet = (Get-Command dotnet -ErrorAction Stop).Source,
+    [string]$DotNet = 'C:\Program Files\dotnet\dotnet.exe',
     [string]$SdkVersion = '10.0.103'
 )
 $ErrorActionPreference = 'Stop'
@@ -19,6 +19,7 @@ New-Item -ItemType Directory -Force -Path $output | Out-Null
 $arguments = @($compiler,'-nologo','-target:library','-langversion:latest','-nostdlib+','-optimize+',"-out:$output\MGITranslator.dll")
 $arguments += $references | ForEach-Object { "-reference:$_" }
 $arguments += "$PSScriptRoot\MGITranslator.cs"
+$arguments += "$PSScriptRoot\GameScanShortcut.cs"
 $arguments += "$PSScriptRoot\FungusDialogueNormalizer.cs"
 & $DotNet @arguments
 if ($LASTEXITCODE -ne 0) { throw 'Plugin compilation failed.' }

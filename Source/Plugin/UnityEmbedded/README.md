@@ -1,6 +1,6 @@
 # Unity embedded translation candidate (.75)
 
-This is a generic Unity integration path. Existing specialized adapters remain separate and unchanged. Engine identification and successful compilation do not mean every game is supported.
+This is a new generic path. The accepted MGI and Cloud Meadow plugins remain separate and unchanged. Engine identification and successful compilation do not mean every game is supported.
 
 ## Components
 

@@ -79,9 +79,21 @@ Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod
 
 ## 开发与许可
 
-本版本源码见对应 Release 的 `*-source.zip`；可审阅的产品源码快照在 [releases/0.6.0.176-preview.1](releases/0.6.0.176-preview.1/README.md)。根目录 `Source/` 保留历史公开 Alpha 分支，不作为 .176 的源码或验收依据。构建 .176 请使用完整源码附件并核对 [构建说明](docs/BUILD-176.md)。历史 Alpha 的构建说明只适用于它自己的基线，不应当作 .176 的依赖指南。
+主分支的 [Source/](Source) 是当前 **0.6.0.176 Preview 1** 产品源码，[tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) 是对应构建入口。源码文件与已发布源码附件逐文件对应，见 [源码校验清单](git-source-index.json)。
 
-项目自有代码沿用 **GPL-3.0-only**；第三方组件保留各自许可证。发布包提供许可证、组件清单与对应第三方源码材料。不能将某个引擎名称视为全游戏兼容承诺。
+| 目录 | 内容 |
+| --- | --- |
+| [Source/](Source) | 当前桌面程序、截图翻译和游戏引擎适配源码 |
+| [tools/](tools) | 当前版本的构建工具 |
+| [docs/](docs/README.md) | 当前使用说明、构建步骤、依赖和已知问题 |
+| [licenses/](licenses/README.md) | 第三方许可证与组件清单 |
+| [third-party-source/](third-party-source/README.md) | 随源码附件提供的第三方源码索引 |
+
+Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `*-source.zip`，按 [构建说明](docs/BUILD-176.md) 操作。普通用户直接下载上方 with-runtime 主包。
+
+旧 Alpha 的源码和说明保存在原标签、历史提交与旧发布页中，入口见 [版本历史](docs/HISTORY.md)。
+
+项目自有代码沿用 **GPL-3.0-only**；第三方组件保留各自许可证。发布包提供许可证、组件清单与对应第三方源码材料，详见 [第三方声明](THIRD_PARTY_NOTICES.md)。不能将某个引擎名称视为全游戏兼容承诺。
 
 反馈请附版本、系统、游戏/引擎、来源/目标语言、复现步骤和最小示例。日志先移除密钥、令牌与个人信息，无需上传游戏或存档。
 

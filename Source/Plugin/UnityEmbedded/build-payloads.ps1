@@ -1,10 +1,10 @@
-param([string]$WorkRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..')),[string]$ToolRoot='',[string]$DotNet=(Get-Command dotnet -ErrorAction Stop).Source)
+param([string]$WorkRoot=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..\..\..')),[string]$ToolRoot='')
 $ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $buildRoot=Join-Path $WorkRoot 'Build\UnityEmbedded'
 $unityToolRoot=if($ToolRoot){$ToolRoot}else{Join-Path $WorkRoot 'Tools\UnityEmbedded'}
-& (Join-Path $PSScriptRoot 'build-mono.ps1') -OutputDirectory (Join-Path $buildRoot 'Mono') -DotNet $DotNet
-& $DotNet build (Join-Path $PSScriptRoot 'FusionUnityIL2CPP.csproj') -c Release -o (Join-Path $buildRoot 'IL2CPP') --nologo "-p:LoaderDirectory=$unityToolRoot\BepInEx6-IL2CPP\BepInEx\core" "-p:BaseIntermediateOutputPath=$buildRoot\IL2CPP-obj\"
+& (Join-Path $PSScriptRoot 'build-mono.ps1') -OutputDirectory (Join-Path $buildRoot 'Mono')
+& 'C:\Program Files\dotnet\dotnet.exe' build (Join-Path $PSScriptRoot 'FusionUnityIL2CPP.csproj') -c Release -o (Join-Path $buildRoot 'IL2CPP') --nologo "-p:LoaderDirectory=$unityToolRoot\BepInEx6-IL2CPP\BepInEx\core" "-p:BaseIntermediateOutputPath=$buildRoot\IL2CPP-obj\"
 if($LASTEXITCODE -ne 0){throw 'IL2CPP compilation failed.'}
 $packages=@(
     @{Input='BepInEx_win_x64_5.4.23.5.zip';Output='UnityEmbeddedMono64.zip';Runtime='Mono'},

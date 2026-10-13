@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -31,20 +31,36 @@ public sealed partial class MainForm
     private void ApplyDesktopAppearance(ApiSettings settings)
     {
         // No credentials or translation parameters participate in this UI identity.
-        var identity=JsonSerializer.Serialize(new{settings.ThemeMode,settings.CustomThemeMainBackground,
+        var identity=JsonSerializer.Serialize(new{settings.InterfaceLanguage,settings.ThemeMode,settings.CustomThemeMainBackground,
             settings.CustomThemeSecondaryBackground,settings.CustomThemeText,settings.CustomThemeSecondaryText,
             settings.CustomThemeAccent,settings.CustomThemeBorder,settings.UiFontMode,settings.UiFontFamily,settings.UiFontSize});
         if(identity==_desktopAppearance)return;
+        var previous=_appliedDesktopSettings;
+        bool metricsChanged=_desktopAppearance is null||previous.InterfaceLanguage!=settings.InterfaceLanguage||
+            previous.UiFontMode!=settings.UiFontMode||previous.UiFontFamily!=settings.UiFontFamily||previous.UiFontSize!=settings.UiFontSize;
         _appliedDesktopSettings=ApiSettingsSnapshot.Copy(settings);
-        RememberPosition(this);
+        using var repaint=new WorkspacePaintBatch(this);
+        if(metricsChanged)RememberPosition(this);
         using(var layout=new UiLayoutBatch(this))
         {
-            UiTheme.Apply(this,settings);FontManager.ApplyUi(this,settings);
+            UiLanguage.Set(settings.InterfaceLanguage);
+            UiTheme.Apply(this,settings);if(metricsChanged)FontManager.ApplyUi(this,settings);
+            UiLanguage.Preserve(_sessionCompactTitle);UiLanguage.BindTree(this);
+            foreach(var button in _navigationButtons.Values)UiLanguage.Bind(button);
+            UiLanguage.Bind(_statusLabel);
             RefreshFusionChrome();_settingsNavigation.Commit(_settingsTabs?.SelectedIndex??-1);
             ApplyHistoryScrollTheme();
         }
-        Invalidate();
-        _desktopAppearance=identity;RestorePosition(this);
+        if(metricsChanged)
+        {
+            if(_settingsTabs is not null)
+                foreach(var page in _settingsTabs.TabPages)
+                    if(page.Tag is SettingsContent content)content.FitTo(page);
+            _workspaceCaption?.PerformLayout();
+            ArrangeShotWorkspace();_shotLeft.PerformLayout();_shotRight.PerformLayout();
+            RestorePosition(this);
+        }
+        Invalidate();_desktopAppearance=identity;
     }
     private void ReturnFromProfile(bool save)
     {

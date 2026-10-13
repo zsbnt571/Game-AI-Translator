@@ -24,7 +24,7 @@ namespace MGITranslator;
 public sealed class TranslatorPlugin : BaseUnityPlugin
 {
 	private ConfigEntry<bool> enabledConfig;
-    private ConfigEntry<KeyCode> toggleKey;
+    private Fusion.InputSupport.GameScanShortcut toggleKey;
     private string effectivePrompt;
 
 	private ConfigEntry<string> endpointConfig;
@@ -95,7 +95,7 @@ public sealed class TranslatorPlugin : BaseUnityPlugin
 		concurrentRequestsConfig = ((BaseUnityPlugin)this).Config.Bind<int>("General", "ConcurrentRequests", 3, "Maximum simultaneous translation requests. Recommended range: 2-4.");
 		batchSizeConfig = ((BaseUnityPlugin)this).Config.Bind<int>("General", "BatchSize", 8, "Maximum text items combined into one API request.");
 		requestTimeoutConfig = ((BaseUnityPlugin)this).Config.Bind<float>("General", "RequestTimeoutSeconds", 15f, "Cancel a translation request after this many seconds.");
-		toggleKey = Config.Bind<KeyCode>("General", "ToggleKey", KeyCode.F8, "Toggle new text scanning; pending requests may finish.");
+		toggleKey = new Fusion.InputSupport.GameScanShortcut(Config.Bind<string>("General", "ToggleKey", "F8", "Game-local key or Ctrl/Alt/Shift chord. Queued work continues.").Value);
         var encoded = Config.Bind<string>("Translation", "PromptBase64", "", "Fusion effective translation instructions.");
         effectivePrompt = string.IsNullOrEmpty(encoded.Value) ? systemPromptConfig.Value : Encoding.UTF8.GetString(Convert.FromBase64String(encoded.Value));
         string identity = "fusion-cache-v1|" + ResolveEndpoint(endpointConfig.Value) + "|" + modelConfig.Value + "|" + targetLanguageConfig.Value + "|" + effectivePrompt;
@@ -111,7 +111,7 @@ public sealed class TranslatorPlugin : BaseUnityPlugin
 
 	private void Update()
 	{
-		if (Input.GetKeyDown(toggleKey.Value))
+		if (toggleKey.Pressed())
 		{
 			enabledConfig.Value = !enabledConfig.Value;
 			Logger.LogInfo((object)("Translation " + (enabledConfig.Value ? "enabled" : "disabled")));

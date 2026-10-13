@@ -20,8 +20,8 @@ internal static class NativeOcrContextWireSelfTests
             if(!root.TryGetProperty("wire",out var wire)||!root.TryGetProperty("source",out var source))continue;
             var sourcePath=source.GetString()!;
             // Read-only registered evidence paths. Never use History loading/migration to obtain input.
-            if(!Path.GetFullPath(sourcePath).StartsWith(ValidationPaths.RequiredRoot("ST_FIX_READONLY_INPUT_ROOT")+Path.DirectorySeparatorChar,StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Wire evidence source must be below the registered read-only evidence root");
+            if(!Path.GetFullPath(sourcePath).StartsWith("E:\\",StringComparison.OrdinalIgnoreCase))
+                throw new InvalidDataException("Wire evidence source must be on E");
             using var image=Image.FromFile(sourcePath);
             var blocks=ExternalOcrEngine.ParseWireBlocksForTest(wire.GetRawText(),sourcePath,image.Size,OcrEngineKind.Rapid);
             var result=new OcrEngineResult {Blocks=blocks.ToList()};

@@ -1,0 +1,25 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>FixedMathSharp</id>
+    <version>4.0.1</version>
+    <authors>mrdav30</authors>
+    <license type="file">LICENSE</license>
+    <licenseUrl>https://aka.ms/deprecateLicenseUrl</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <iconUrl>https://raw.githubusercontent.com/mrdav30/fixedmathsharp/main/icon.png</iconUrl>
+    <description>FixedMathSharp: A high-precision, deterministic fixed-point math library for .NET. Ideal for simulations, games, and physics engines requiring reliable arithmetic without floating-point inaccuracies.</description>
+    <tags>fixed-point fixed-point-arithmetic deterministic lockstep csharp dotnet math-library trigonometry vector-math game-development simulation high-precision procedural-generation</tags>
+    <repository type="git" url="https://github.com/mrdav30/FixedMathSharp" commit="f15ca366f8fd1b9db96e54ef38aee7e6d35e1c0e" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="MemoryPack" version="1.21.4" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="MemoryPack" version="1.21.4" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.5" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

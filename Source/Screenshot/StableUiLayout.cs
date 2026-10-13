@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -17,20 +17,40 @@ internal class BufferedPage : Panel
     }
 }
 
-internal sealed class SettingsPage : BufferedPage { internal SettingsPage(string title) { Text=title; } }
+internal sealed class SettingsPage : BufferedPage
+{
+    internal SettingsPage(string title) { Text=title; }
+    // Font/theme updates may leave native non-client scrollbar styles from a
+    // suspended layout. Publish the settled ScrollableControl flags again.
+    internal void SynchronizeScrollStyles() { if(IsHandleCreated)UpdateStyles(); }
+}
 
-// Composite the active workspace and its native descendants together. Keep the
-// custom top-level window outside this boundary so restore/show owns its frame.
+// Library and settings keep their existing native-descendant composition.
+// The screenshot workspace owns local buffering and selects its own policy.
 internal sealed class WorkspacePageHost : BufferedPage
 {
+    private bool compositeChildren = true;
+    internal bool CompositeChildren
+    {
+        get => compositeChildren;
+        set
+        {
+            if (compositeChildren == value) return;
+            compositeChildren = value;
+            // Reapply the extended style to the existing HWND. Recreating the
+            // host would also disrupt its native children and their state.
+            if (IsHandleCreated) UpdateStyles();
+        }
+    }
     protected override CreateParams CreateParams
-    {get{var cp=base.CreateParams;cp.ExStyle|=0x02000000;return cp;}}
+    {get{var cp=base.CreateParams;cp.ExStyle=compositeChildren?cp.ExStyle|0x02000000:cp.ExStyle&~0x02000000;return cp;}}
 }
 
 internal static class WorkspacePages
 {
     internal static void Show(Control host,Control next)
     {
+        using var destinationLayout=new UiLayoutBatch(next);
         host.SuspendLayout();
         try
         {
@@ -49,7 +69,7 @@ internal static class WorkspacePages
 internal sealed class SettingsPageHost : BufferedPage
 {
     private int selected=-1;
-    internal SettingsPageHost() { TabPages=new Pages(this);Padding=new Padding(1); }
+    internal SettingsPageHost() { TabPages=new Pages(this);Padding=Padding.Empty; }
     internal Pages TabPages {get;}
     internal int TabCount=>TabPages.Count;
     internal SettingsPage? SelectedTab=>selected>=0&&selected<TabCount?TabPages[selected]:null;
@@ -67,8 +87,7 @@ internal sealed class SettingsPageHost : BufferedPage
     }
     protected override void OnPaint(PaintEventArgs e)
     {
-        base.OnPaint(e);using var pen=new Pen(UiTheme.Current.Border);
-        e.Graphics.DrawRectangle(pen,0,0,Math.Max(0,Width-1),Math.Max(0,Height-1));
+        base.OnPaint(e);
     }
     internal sealed class Pages(SettingsPageHost owner) : Collection<SettingsPage>
     {

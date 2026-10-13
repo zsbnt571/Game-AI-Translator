@@ -15,7 +15,7 @@ internal sealed record GameTranslationPresentation(string Badge,string Font,stri
     {
         bool supported=GameCapabilities.EmbeddedTranslation(game);
         if(connected&&supported)
-            return new("组件已连接",game?.AdapterId=="renpy"?"保持游戏字号":"跟随游戏原有字体","游戏文字内替换",true,false,false);
+            return new("组件已连接",game?.AdapterId=="wolf"?"保持游戏字号，缺字自动补齐":game?.AdapterId=="renpy"?"保持游戏字号":"跟随游戏原有字体","游戏文字内替换",true,false,false);
         if(!string.IsNullOrWhiteSpace(blockedReason))
             return new("翻译未接入","未接入，暂不可用","翻译未接入",false,true,false);
         if(game?.Support==SupportLevel.Candidate)
@@ -43,7 +43,7 @@ internal sealed partial class FusionAdapterInstaller
             Path.Combine(data,"Managed","Assembly-CSharp.dll"),Path.Combine(data,"Managed","Game.dll"),
             Path.Combine(data,"Managed","Unity.TextMeshPro.dll"),Path.Combine(data,"Managed","mscorlib.dll"),
             Path.Combine(data,"Mono","mono.dll"),Path.Combine(data,"Mono","EmbedRuntime","mono.dll")};
-        var stamp=new StringBuilder(game.ExePath).Append('|').Append(Directory.GetLastWriteTimeUtc(root).Ticks);
+        var stamp=new StringBuilder(game.ExePath).Append('|').Append(TranslationRoute.GenericTest(game.ExePath)).Append('|').Append(Directory.GetLastWriteTimeUtc(root).Ticks);
         foreach(var path in paths){var f=new FileInfo(path);stamp.Append('|').Append(f.Exists?f.Length:-1).Append(':').Append(f.Exists?f.LastWriteTimeUtc.Ticks:0);}
         return stamp.ToString();
     }

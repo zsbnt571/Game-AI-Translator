@@ -1,0 +1,288 @@
+[
+  {
+    "component": "SharpGen.Runtime/2.4.2-beta",
+    "files": [
+      "licenses/NuGet/SharpGen.Runtime/2.4.2-beta/sharpgen.runtime.nuspec"
+    ]
+  },
+  {
+    "component": "SharpGen.Runtime.COM/2.4.2-beta",
+    "files": [
+      "licenses/NuGet/SharpGen.Runtime.COM/2.4.2-beta/sharpgen.runtime.com.nuspec"
+    ]
+  },
+  {
+    "component": "System.IO.Pipelines/9.0.1",
+    "files": [
+      "licenses/NuGet/System.IO.Pipelines/9.0.1/LICENSE.TXT",
+      "licenses/NuGet/System.IO.Pipelines/9.0.1/system.io.pipelines.nuspec",
+      "licenses/NuGet/System.IO.Pipelines/9.0.1/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "System.Text.Encodings.Web/9.0.1",
+    "files": [
+      "licenses/NuGet/System.Text.Encodings.Web/9.0.1/LICENSE.TXT",
+      "licenses/NuGet/System.Text.Encodings.Web/9.0.1/system.text.encodings.web.nuspec",
+      "licenses/NuGet/System.Text.Encodings.Web/9.0.1/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "System.Text.Json/9.0.1",
+    "files": [
+      "licenses/NuGet/System.Text.Json/9.0.1/LICENSE.TXT",
+      "licenses/NuGet/System.Text.Json/9.0.1/system.text.json.nuspec",
+      "licenses/NuGet/System.Text.Json/9.0.1/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "Vortice.Direct3D11/3.8.3",
+    "files": [
+      "licenses/NuGet/Vortice.Direct3D11/3.8.3/vortice.direct3d11.nuspec"
+    ]
+  },
+  {
+    "component": "Vortice.DirectX/3.8.3",
+    "files": [
+      "licenses/NuGet/Vortice.DirectX/3.8.3/vortice.directx.nuspec"
+    ]
+  },
+  {
+    "component": "Vortice.DXGI/3.8.3",
+    "files": [
+      "licenses/NuGet/Vortice.DXGI/3.8.3/vortice.dxgi.nuspec"
+    ]
+  },
+  {
+    "component": "Vortice.Mathematics/2.1.0",
+    "files": [
+      "licenses/NuGet/Vortice.Mathematics/2.1.0/vortice.mathematics.nuspec"
+    ]
+  },
+  {
+    "component": "Blake3/3.0.2",
+    "files": [
+      "licenses/NuGet/Blake3/3.0.2/blake3.nuspec"
+    ]
+  },
+  {
+    "component": "BouncyCastle.Cryptography/2.6.2",
+    "files": [
+      "licenses/NuGet/BouncyCastle.Cryptography/2.6.2/bouncycastle.cryptography.nuspec",
+      "licenses/NuGet/BouncyCastle.Cryptography/2.6.2/LICENSE.md"
+    ]
+  },
+  {
+    "component": "CommunityToolkit.HighPerformance/8.4.2",
+    "files": [
+      "licenses/NuGet/CommunityToolkit.HighPerformance/8.4.2/communitytoolkit.highperformance.nuspec",
+      "licenses/NuGet/CommunityToolkit.HighPerformance/8.4.2/License.md"
+    ]
+  },
+  {
+    "component": "CUE4Parse/1.2.2.202609",
+    "files": [
+      "licenses/NuGet/CUE4Parse/1.2.2.202609/cue4parse.nuspec"
+    ]
+  },
+  {
+    "component": "FixedMathSharp/4.0.1",
+    "files": [
+      "licenses/NuGet/FixedMathSharp/4.0.1/COPYRIGHT",
+      "licenses/NuGet/FixedMathSharp/4.0.1/fixedmathsharp.nuspec",
+      "licenses/NuGet/FixedMathSharp/4.0.1/LICENSE",
+      "licenses/NuGet/FixedMathSharp/4.0.1/NOTICE"
+    ]
+  },
+  {
+    "component": "Fmod5Sharp/3.1.0",
+    "files": [
+      "licenses/NuGet/Fmod5Sharp/3.1.0/fmod5sharp.nuspec"
+    ]
+  },
+  {
+    "component": "GenericReader/2.3.0",
+    "files": [
+      "licenses/NuGet/GenericReader/2.3.0/genericreader.nuspec"
+    ]
+  },
+  {
+    "component": "IndexRange/1.1.0",
+    "files": [
+      "licenses/NuGet/IndexRange/1.1.0/indexrange.nuspec"
+    ]
+  },
+  {
+    "component": "Infrablack.UE4Config/0.7.2.97",
+    "files": [
+      "licenses/NuGet/Infrablack.UE4Config/0.7.2.97/infrablack.ue4config.nuspec"
+    ]
+  },
+  {
+    "component": "K4os.Compression.LZ4/1.3.8",
+    "files": [
+      "licenses/NuGet/K4os.Compression.LZ4/1.3.8/k4os.compression.lz4.nuspec"
+    ]
+  },
+  {
+    "component": "K4os.Compression.LZ4.Streams/1.3.8",
+    "files": [
+      "licenses/NuGet/K4os.Compression.LZ4.Streams/1.3.8/k4os.compression.lz4.streams.nuspec"
+    ]
+  },
+  {
+    "component": "K4os.Hash.xxHash/1.0.8",
+    "files": [
+      "licenses/NuGet/K4os.Hash.xxHash/1.0.8/k4os.hash.xxhash.nuspec"
+    ]
+  },
+  {
+    "component": "LZMA-SDK/22.1.1",
+    "files": [
+      "licenses/NuGet/LZMA-SDK/22.1.1/lzma-sdk.nuspec"
+    ]
+  },
+  {
+    "component": "MemoryPack/1.21.4",
+    "files": [
+      "licenses/NuGet/MemoryPack/1.21.4/memorypack.nuspec"
+    ]
+  },
+  {
+    "component": "MemoryPack.Core/1.21.4",
+    "files": [
+      "licenses/NuGet/MemoryPack.Core/1.21.4/memorypack.core.nuspec"
+    ]
+  },
+  {
+    "component": "MemoryPack.Generator/1.21.4",
+    "files": [
+      "licenses/NuGet/MemoryPack.Generator/1.21.4/memorypack.generator.nuspec"
+    ]
+  },
+  {
+    "component": "Microsoft.Bcl.Memory/9.0.14",
+    "files": [
+      "licenses/NuGet/Microsoft.Bcl.Memory/9.0.14/LICENSE.TXT",
+      "licenses/NuGet/Microsoft.Bcl.Memory/9.0.14/microsoft.bcl.memory.nuspec",
+      "licenses/NuGet/Microsoft.Bcl.Memory/9.0.14/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "Microsoft.NETCore.Platforms/1.1.0",
+    "files": [
+      "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/microsoft.netcore.platforms.nuspec"
+    ]
+  },
+  {
+    "component": "NAudio.Core/2.2.1",
+    "files": [
+      "licenses/NuGet/NAudio.Core/2.2.1/naudio.core.nuspec"
+    ]
+  },
+  {
+    "component": "NETStandard.Library/1.6.1",
+    "files": [
+      "licenses/NuGet/NETStandard.Library/1.6.1/netstandard.library.nuspec"
+    ]
+  },
+  {
+    "component": "Newtonsoft.Json/13.0.4",
+    "files": [
+      "licenses/NuGet/Newtonsoft.Json/13.0.4/LICENSE.md",
+      "licenses/NuGet/Newtonsoft.Json/13.0.4/newtonsoft.json.nuspec"
+    ]
+  },
+  {
+    "component": "OffiUtils/3.2.0",
+    "files": [
+      "licenses/NuGet/OffiUtils/3.2.0/offiutils.nuspec"
+    ]
+  },
+  {
+    "component": "OggVorbisEncoder/1.2.2",
+    "files": [
+      "licenses/NuGet/OggVorbisEncoder/1.2.2/oggvorbisencoder.nuspec"
+    ]
+  },
+  {
+    "component": "Oodle.NET/2.2.0",
+    "files": [
+      "licenses/NuGet/Oodle.NET/2.2.0/oodle.net.nuspec"
+    ]
+  },
+  {
+    "component": "OodleSharp/0.0.1",
+    "files": [
+      "licenses/NuGet/OodleSharp/0.0.1/oodlesharp.nuspec"
+    ]
+  },
+  {
+    "component": "Serilog/4.3.1",
+    "files": [
+      "licenses/NuGet/Serilog/4.3.1/serilog.nuspec"
+    ]
+  },
+  {
+    "component": "Serilog.Sinks.Console/6.1.1",
+    "files": [
+      "licenses/NuGet/Serilog.Sinks.Console/6.1.1/serilog.sinks.console.nuspec"
+    ]
+  },
+  {
+    "component": "SubstreamSharp/1.0.3",
+    "files": [
+      "licenses/NuGet/SubstreamSharp/1.0.3/substreamsharp.nuspec"
+    ]
+  },
+  {
+    "component": "System.IO.Hashing/10.0.8",
+    "files": [
+      "licenses/NuGet/System.IO.Hashing/10.0.8/system.io.hashing.nuspec",
+      "licenses/NuGet/System.IO.Hashing/10.0.8/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "System.Numerics.Tensors/10.0.10",
+    "files": [
+      "licenses/NuGet/System.Numerics.Tensors/10.0.10/system.numerics.tensors.nuspec",
+      "licenses/NuGet/System.Numerics.Tensors/10.0.10/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "VGAudio/2.2.1",
+    "files": [
+      "licenses/NuGet/VGAudio/2.2.1/vgaudio.nuspec"
+    ]
+  },
+  {
+    "component": "Zlib-ng.NET/1.2.0",
+    "files": [
+      "licenses/NuGet/Zlib-ng.NET/1.2.0/zlib-ng.net.nuspec"
+    ]
+  },
+  {
+    "component": "ZstdSharp.Port/0.8.8",
+    "files": [
+      "licenses/NuGet/ZstdSharp.Port/0.8.8/zstdsharp.port.nuspec"
+    ]
+  },
+  {
+    "component": "AssetsTools.NET/3.0.5",
+    "files": [
+      "licenses/NuGet/AssetsTools.NET/3.0.5/assetstools.net.nuspec"
+    ]
+  },
+  {
+    "component": "AssetsTools.NET.MonoCecil/3.0.4",
+    "files": [
+      "licenses/NuGet/AssetsTools.NET.MonoCecil/3.0.4/assetstools.net.monocecil.nuspec"
+    ]
+  },
+  {
+    "component": "Mono.Cecil/0.11.3",
+    "files": [
+      "licenses/NuGet/Mono.Cecil/0.11.3/mono.cecil.nuspec"
+    ]
+  }
+]

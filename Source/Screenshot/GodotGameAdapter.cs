@@ -45,7 +45,10 @@ internal static class GodotGameAdapter
         return null;
     }
     internal static string Storage(string exe)=>Path.Combine(AppDataPaths.Root,"godot-adapters",Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(exe).ToUpperInvariant()))));
-    private sealed record Ledger(string Exe,string ScriptHash,string ConfigHash,string Version);
+    private sealed record Ledger(string Exe,string ScriptHash,string ConfigHash,string Version,
+        string? OriginalConfig=null,GodotOverrideConfiguration.Entry[]? ConfigEntries=null);
+    private sealed record RestoreReceipt(string RecordHash,string? BeforeHash,string? AfterHash,string Archive);
+    private static string? TextHash(string? text)=>text is null?null:Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     private static string Record(string exe)=>Path.Combine(Storage(exe),"install.json");
     internal static bool HasRecord(string exe)=>File.Exists(Record(exe));
     private static string Hash(string path)=>Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
@@ -64,44 +67,109 @@ internal static class GodotGameAdapter
     }
     internal static bool IsInstalled(string exe)
     {
-        try{var record=JsonSerializer.Deserialize<Ledger>(File.ReadAllText(Record(exe)));return record is not null&&record.Exe.Equals(Path.GetFullPath(exe),StringComparison.OrdinalIgnoreCase)&&Hash(InGame(exe,Script))==record.ScriptHash&&Hash(InGame(exe,"override.cfg"))==record.ConfigHash;}catch{return false;}
+        try
+        {
+            var record=ReadLedger(exe);
+            return record.Exe.Equals(Path.GetFullPath(exe),StringComparison.OrdinalIgnoreCase)
+                &&Hash(InGame(exe,Script))==record.ScriptHash
+                &&GodotOverrideConfiguration.Owns(ReadConfig(InGame(exe,"override.cfg")),OwnedEntries(exe,record));
+        }
+        catch{return false;}
+    }
+    private static Ledger ReadLedger(string exe)
+    {
+        string path=Record(exe);if(new FileInfo(path).Length>2*GodotOverrideConfiguration.MaxBytes)throw new IOException("组件记录过大。");
+        return JsonSerializer.Deserialize<Ledger>(File.ReadAllText(path))??throw new IOException("组件记录无效。");
+    }
+    private static string ReadConfig(string path)
+    {
+        if(new FileInfo(path).Length>GodotOverrideConfiguration.MaxBytes)throw new IOException("游戏配置过大，未修改。");
+        return GodotOverrideConfiguration.Decode(File.ReadAllBytes(path));
+    }
+    private static GodotOverrideConfiguration.Entry[] OwnedEntries(string exe,Ledger record)
+    {
+        var expected=GodotOverrideConfiguration.Entries(InGame(exe,Script),File.Exists(InGame(exe,GameTestCopyEnvironment.Marker)));
+        if(record.ConfigEntries is null)return expected;
+        var regenerated=GodotOverrideConfiguration.Install(record.OriginalConfig??"",expected);
+        if(!regenerated.Entries.SequenceEqual(record.ConfigEntries)
+            ||Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(regenerated.Text)))!=record.ConfigHash)
+            throw new IOException("组件配置记录不完整，已保留游戏文件。");
+        return regenerated.Entries;
+    }
+    private static void ReplaceConfig(string path,string expected,string replacement,string backup)
+    {
+        string pending=path+".fusion-"+Guid.NewGuid().ToString("N")+".pending";
+        try
+        {
+            using(var output=new FileStream(pending,FileMode.CreateNew,FileAccess.Write,FileShare.None))
+            {output.Write(Encoding.UTF8.GetBytes(replacement));output.Flush(true);}
+            if(ReadConfig(path)!=expected)throw new IOException("游戏配置正在改变，未覆盖。");
+            File.Replace(pending,path,backup);
+        }
+        finally{if(File.Exists(pending))File.Delete(pending);}
     }
     internal static void Install(string exe)
     {
         var engine=Detect(exe)??throw new IOException("未识别到可接入的 Godot 3.5+ / 4.x 游戏包。");Stopped(exe);
         if(HasRecord(exe))Restore(exe);
         string script=InGame(exe,Script),cfg=InGame(exe,"override.cfg");
-        if(File.Exists(script)||File.Exists(cfg))throw new IOException("游戏已有 override.cfg 或同名翻译组件，已保留原文件；此安装方式暂不与现有配置合并。");
+        if(File.Exists(script))throw new IOException("游戏已有同名翻译组件，已保留原文件。");
         string resource=engine.Major==3?"Fusion.GodotTranslationBridge.gd":"Fusion.Godot4TranslationBridge.gd";
         using var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream(resource)??throw new IOException("缺少 Godot 翻译组件。");using var reader=new StreamReader(stream);
-        string payload=reader.ReadToEnd(),config="[autoload]\nFusionTranslation=\"*"+script.Replace('\\','/').Replace("\"","\\\"")+"\"\n";
+        string payload=reader.ReadToEnd();
+        string? original=File.Exists(cfg)?ReadConfig(cfg):null;
         string marker=InGame(exe,GameTestCopyEnvironment.Marker);
         if(File.Exists(marker))
         {
             if(new FileInfo(marker).Length>128||File.ReadAllText(marker).Trim()!="FusionTranslationTestCopy/1")throw new IOException("测试副本标记无效。");
-            // Test copies must never inherit an absolute custom user-data folder.
-            config+="\n[application]\nconfig/use_custom_user_dir=false\nconfig/custom_user_dir_name=\"\"\n";
         }
-        var record=new Ledger(Path.GetFullPath(exe),Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))),Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(config))),engine.Version);
+        var merged=GodotOverrideConfiguration.Install(original??"",GodotOverrideConfiguration.Entries(script,File.Exists(marker)));
+        string config=merged.Text;
+        var record=new Ledger(Path.GetFullPath(exe),Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(payload))),Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(config))),engine.Version,original,merged.Entries);
         // Write ownership before files, so an interrupted partial install can be restored.
         PortableDataStorage.WriteJson(Record(exe),record);
         try
         {
             using(var output=new FileStream(script,FileMode.CreateNew,FileAccess.Write,FileShare.None)){output.Write(Encoding.UTF8.GetBytes(payload));output.Flush(true);}
-            using(var output=new FileStream(cfg,FileMode.CreateNew,FileAccess.Write,FileShare.None)){output.Write(Encoding.UTF8.GetBytes(config));output.Flush(true);}
+            if(original is not null)ReplaceConfig(cfg,original,config,Path.Combine(Storage(exe),"override-"+Guid.NewGuid().ToString("N")+".before"));
+            else using(var output=new FileStream(cfg,FileMode.CreateNew,FileAccess.Write,FileShare.None)){output.Write(Encoding.UTF8.GetBytes(config));output.Flush(true);}
         }
         catch{try{Restore(exe);}catch{}throw;}
     }
     internal static void Restore(string exe)
     {
         if(!HasRecord(exe))return;Stopped(exe);
-        var record=JsonSerializer.Deserialize<Ledger>(File.ReadAllText(Record(exe)))??throw new IOException("组件记录无效。");
+        var record=ReadLedger(exe);
         if(!record.Exe.Equals(Path.GetFullPath(exe),StringComparison.OrdinalIgnoreCase))throw new IOException("组件记录不属于所选游戏。");
-        foreach(var pair in new[]{(Script,record.ScriptHash),("override.cfg",record.ConfigHash)})
-            if(File.Exists(InGame(exe,pair.Item1))&&Hash(InGame(exe,pair.Item1))!=pair.Item2)throw new IOException("组件或配置被其他程序改变，未覆盖。");
-        string archive=Path.Combine(Storage(exe),"restored-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(archive);
-        foreach(string name in new[]{Script,"override.cfg"})if(File.Exists(InGame(exe,name)))File.Move(InGame(exe,name),Path.Combine(archive,name));
+        string script=InGame(exe,Script),cfg=InGame(exe,"override.cfg");
+        if(File.Exists(script)&&Hash(script)!=record.ScriptHash)throw new IOException("组件被其他程序改变，未覆盖。");
+        string? current=File.Exists(cfg)?ReadConfig(cfg):null,replacement=null;
+        bool untouched=current==record.OriginalConfig;
+        string receiptPath=Path.Combine(Storage(exe),"restore-pending.json");RestoreReceipt? receipt=null;
+        if(File.Exists(receiptPath))
+        {
+            if(new FileInfo(receiptPath).Length>16384)throw new IOException("恢复记录无效。");
+            receipt=JsonSerializer.Deserialize<RestoreReceipt>(File.ReadAllText(receiptPath))??throw new IOException("恢复记录无效。");
+            if(receipt.RecordHash!=Hash(Record(exe))||!Guid.TryParseExact(receipt.Archive,"N",out _))throw new IOException("恢复记录不匹配，未修改。");
+            if(TextHash(current)!=receipt.BeforeHash&&TextHash(current)!=receipt.AfterHash)throw new IOException("恢复期间游戏配置被改变，已保留。");
+        }
+        bool resumed=receipt is not null&&TextHash(current)==receipt.AfterHash;
+        if(current is not null&&!untouched&&!resumed)
+        {
+            if(Hash(cfg)==record.ConfigHash)replacement=record.OriginalConfig;
+            else replacement=GodotOverrideConfiguration.Restore(current,OwnedEntries(exe,record));
+        }
+        receipt??=new RestoreReceipt(Hash(Record(exe)),TextHash(current),TextHash(untouched?current:replacement),Guid.NewGuid().ToString("N"));
+        string archive=AppDataPaths.ValidateExplicitRoot(Path.Combine(Storage(exe),"restored-"+receipt.Archive));Directory.CreateDirectory(archive);
+        PortableDataStorage.WriteJson(receiptPath,receipt);
+        if(current is not null&&!untouched&&!resumed)
+        {
+            if(replacement is null)File.Move(cfg,Path.Combine(archive,"override.cfg"));
+            else ReplaceConfig(cfg,current,replacement,Path.Combine(archive,"override.cfg"));
+        }
+        if(File.Exists(script))File.Move(script,Path.Combine(archive,Script));
         File.Move(Record(exe),Path.Combine(archive,"install.json"));
+        File.Delete(receiptPath);
     }
 }
 

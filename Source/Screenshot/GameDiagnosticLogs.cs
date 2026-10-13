@@ -67,6 +67,7 @@ internal static class GameDiagnosticLogs
             if (game.Engine.Contains("Unity", StringComparison.OrdinalIgnoreCase))
             {
                 Candidate("unity", Path.Combine(root, "BepInEx", "LogOutput.log"));
+                Candidate("fusion-native", Path.Combine(root, ".fusion-native-runtime", "runtime.log"));
                 if (data is not null) Candidate("unity", Path.Combine(data, "output_log.txt"));
                 Candidate("unity", Path.Combine(root, "output_log.txt"));
             }

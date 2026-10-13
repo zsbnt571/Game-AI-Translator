@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>LZMA-SDK</id>
+    <version>22.1.1</version>
+    <title>LZMA SDK</title>
+    <authors>Mihir Mone</authors>
+    <owners>Mihir Mone</owners>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>7z_rm01.jpg</icon>
+    <projectUrl>https://github.com/monemihir/LZMA-SDK</projectUrl>
+    <description>This SDK is packaged as is from www.7-zip.org.
+
+All source code is copyright of Igor Pavlov.</description>
+    <summary>LZMA SDK provided by the 7zip library</summary>
+    <releaseNotes>Strong naming the assemblies</releaseNotes>
+    <copyright>(c) 2023 Mihir Mone</copyright>
+    <language>en-AU</language>
+    <tags>7zip 7z sevenzip lzma sdk</tags>
+    <dependencies>
+      <group targetFramework=".NETFramework2.0" />
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>

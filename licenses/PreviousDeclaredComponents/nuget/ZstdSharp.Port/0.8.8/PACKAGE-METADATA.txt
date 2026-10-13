@@ -1,0 +1,8 @@
+Package: ZstdSharp.Port
+Version: 0.8.8
+Source: https://github.com/oleg-st/ZstdSharp.git
+Authors: Oleg Stepanischev
+Copyright: Copyright Oleg Stepanischev 2026
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

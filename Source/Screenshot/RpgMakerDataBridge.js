@@ -1,14 +1,18 @@
-﻿/* Fusion RPG Maker MV/MZ adapter. No arbitrary expressions or object paths.
+/* Fusion RPG Maker MV/MZ adapter. No arbitrary expressions or object paths.
  * Inert unless launched with a per-session Fusion pipe and secret. */
 (function () {
     "use strict";
+    function fusionFinite(v){return typeof v==="number"&&isFinite(v);}
+    function fusionInteger(v){return fusionFinite(v)&&Math.floor(v)===v;}
+    function fusionSafeInteger(v){return fusionInteger(v)&&Math.abs(v)<=9007199254740991;}
+
     function createAdapter(g,io) {
         var enabled = false, locks = Object.create(null), history = [], generation = 0;
         var party, variables, switches, timer = null, lastError = "";
         var advanced=typeof createFusionRpgAdvanced==="function"?createFusionRpgAdvanced(g,io):null;
         function fail(text) { throw new Error(text); }
         function integer(v, min, max) {
-            if (typeof v !== "number" || !Number.isSafeInteger(v) || v < min || v > max) fail("数值超出此项目允许的范围。");
+            if (typeof v !== "number" || !fusionSafeInteger(v) || v < min || v > max) fail("数值超出此项目允许的范围。");
             return v;
         }
         function sync() {
@@ -67,7 +71,7 @@
             }
             fail("此数据项尚不支持修改。");
         }
-        function validate(d,v) { if(d.type === "boolean"){if(typeof v !== "boolean")fail("开关值应为开启或关闭。");}else if(d.type==="string"){if(typeof v!=="string"||v.length>2000)fail("文本值无效。");}else if(d.key.indexOf("field:")===0){if(typeof v!=="number"||!Number.isFinite(v))fail("数值无效。");}else integer(v,d.min,d.max); }
+        function validate(d,v) { if(d.type === "boolean"){if(typeof v !== "boolean")fail("开关值应为开启或关闭。");}else if(d.type==="string"){if(typeof v!=="string"||v.length>2000)fail("文本值无效。");}else if(d.key.indexOf("field:")===0){if(typeof v!=="number"||!fusionFinite(v))fail("数值无效。");}else integer(v,d.min,d.max); }
         function row(key) {
             var d=descriptor(key), value=d.read();
             var result={key:key,name:d.name,value:value,type:d.type,min:d.min,max:d.max,canLock:d.canLock,locked:Object.prototype.hasOwnProperty.call(locks,key)};
@@ -103,7 +107,7 @@
             return {index:index,rows:rows,met:rows.every(function(r){return r.met;}),commandCount:page.list.filter(function(cmd){return cmd.code!==0&&cmd.code!==108&&cmd.code!==408;}).length};
             }
             var live=!q.common&&detail.mapId===g.$gameMap.mapId()?g.$gameMap.event(detail.id):null;
-            var activePage=live&&Number.isInteger(live._pageIndex)?(live._erased?-1:live._pageIndex):null;
+            var activePage=live&&fusionInteger(live._pageIndex)?(live._erased?-1:live._pageIndex):null;
             if(q.allPages)return {activePage:activePage,pages:detail.pages.map(describePage)};
             var index=integer(q.page||0,0,detail.pages.length-1),result=describePage(detail.pages[index],index);
             result.activePage=activePage;return result;
@@ -195,17 +199,18 @@
     }
     if(typeof window === "undefined") { if(typeof module !== "undefined")module.exports=createAdapter;return; }
     try {
-        if(window.top!==window)return;
+        if(window.top!==window||window.__fusionRpgBridgeStarted)return;
         var nodeRequire=typeof require === "function"?require:window.nw && window.nw.require;
         if(!nodeRequire)return;
         var process=nodeRequire("process"),env=process.env,pipe=env.FUSION_RPG_PIPE,secret=env.FUSION_RPG_SECRET;
         function log(message){try{if(env.FUSION_RPG_LOG)nodeRequire("fs").appendFileSync(env.FUSION_RPG_LOG,new Date().toISOString()+" "+message+"\n");}catch(_){}}
         log("bridge loaded");
         if(!/^fusion-rpg-[a-f0-9]{32}$/.test(pipe || "") || !/^[a-f0-9]{64}$/.test(secret || ""))return;
+        window.__fusionRpgBridgeStarted=true;
         var adapter=createAdapter(window,{readMap:function(id){
             var path=nodeRequire("path"),fs=nodeRequire("fs"),root=env.FUSION_RPG_DATA_ROOT;
             if(typeof root!=="string"||!path.isAbsolute(root))throw new Error("游戏数据目录未确认，请从 Fusion 重新启动游戏。");
-            var file=path.join(root,"data","Map"+String(id).padStart(3,"0")+".json");
+            var file=path.join(root,"data","Map"+("000"+String(id)).slice(-Math.max(3,String(id).length))+".json");
             if(fs.statSync(file).size>32*1024*1024)throw new Error("地图文件过大。");return JSON.parse(fs.readFileSync(file,"utf8").replace(/^\uFEFF/,""));
         }}),translation=createFusionRpgTranslation(window),socket=nodeRequire("net").connect("\\\\.\\pipe\\"+pipe),buffer="";
         socket.setEncoding("utf8");
@@ -219,5 +224,5 @@
         });
         socket.on("error",function(error){log("pipe error: "+String(error.code||"unknown"));adapter.disable();translation.disable();});socket.on("close",function(){log("pipe closed");adapter.disable();translation.disable();});
         window.addEventListener("beforeunload",function(){adapter.disable();translation.disable();socket.destroy();});
-    } catch (_) { /* Unsupported Node context leaves the game unchanged. */ }
+    } catch (_) { if(typeof log==="function")log("bridge initialization failed: "+String(_.name||"Error")); }
 }());

@@ -1,4 +1,4 @@
-using System.Drawing.Imaging;
+﻿using System.Drawing.Imaging;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -11,7 +11,7 @@ internal static class NativeCardLayoutSelfTests
         Synthetic(test);
         NativeCardCaptionLayoutSelfTests.Run(output, test);
         ActualScopeBoundaries(output, test);
-        var baseRoot=ValidationPaths.LayoutEvidenceRoot;
+        var baseRoot=@"E:\Codex\2026-09-04\ScreenshotTranslator-V2-R49-Final-Visual-Convergence";
         var fixedRoot=Path.Combine(baseRoot,@"scoped-fix\R64-review-fix-20260904-180559\inputs\fixed-full37\fixtures");
         var traceRoot=Path.Combine(baseRoot,@"visual-native-recovery\C3-QQ-20260905-035147\runs\NATIVE-A1-native-fixed-priority8-combined\results\fixtures");
         if(!Directory.Exists(traceRoot))return;
@@ -69,7 +69,7 @@ internal static class NativeCardLayoutSelfTests
     }
     private static void ActualScopeBoundaries(string output,Action<string,Action> test)
     {
-        var root=ValidationPaths.LayoutEvidenceRoot;
+        var root=@"E:\Codex\2026-09-04\ScreenshotTranslator-V2-R49-Final-Visual-Convergence";
         var run=Path.Combine(root,@"visual-native-recovery\C3-QQ-20260905-035147\runs\NATIVE-A4-native-fixed-full37-combo-regression\results\fixtures");
         if(!Directory.Exists(run))return;
         foreach(var id in new[]{"NEW-018","NEW-019","NEW-007","NEW-011","OLD-004"})

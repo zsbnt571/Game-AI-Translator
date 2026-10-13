@@ -77,6 +77,12 @@ internal sealed partial class FusionConfiguration
     internal string SelectedId(bool embedded)=>(embedded?State.EmbeddedProfile:State.ScreenshotProfile)??State.CommonProfile;
     internal static List<string> Missing(ApiSettings p)
     {
+        var missing=MissingConnection(p);
+        if(p.SourceLanguage==SourceLanguageMode.Mixed && TranslationLanguagePolicy.Selected(p).Length==0)missing.Add("原文语言（至少选择一种）");
+        return missing;
+    }
+    internal static List<string> MissingConnection(ApiSettings p)
+    {
         var missing=new List<string>();
         if(!Uri.TryCreate(p.ApiUrl,UriKind.Absolute,out var uri)||uri.Scheme is not ("http" or "https"))missing.Add("有效的 http/https 接口地址");
         if(string.IsNullOrWhiteSpace(p.Model))missing.Add("模型");
@@ -84,6 +90,8 @@ internal sealed partial class FusionConfiguration
         return missing;
     }
     internal static string EditIdentity(ApiSettings p)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(TranslationIdentity(p)+"|"+p.AllowEmptyApiKey+"|"+p.FirstByteTimeoutSeconds+"|"+p.RequestTimeoutSeconds)));
+    internal static string ConnectionIdentity(ApiSettings p)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+    {p.ApiUrl,p.ApiKey,p.Model,p.AllowEmptyApiKey,p.ProviderDisplayName,p.TranslationProviderKind,p.FirstByteTimeoutSeconds,p.RequestTimeoutSeconds}))));
     internal string[] References(string id)
     {
         var refs=new List<string>();
@@ -102,7 +110,19 @@ internal sealed partial class FusionConfiguration
         name=name.Trim();if(name.Length==0)throw new InvalidOperationException("请填写方案名称。");
         if(State.ProfileInfo.Any(x=>x.Key!=id&&x.Value.Name.Equals(name,StringComparison.OrdinalIgnoreCase)))throw new InvalidOperationException("已有同名方案，请使用不同名称。");
         SafeDiagnosticOutput.RegisterCredential(p.ApiKey);
-        Change(next=>{next.Profiles[id]=ApiSettingsSnapshot.Copy(p);next.ProfileInfo[id]=new(){Name=name,Origin=next.ProfileInfo.GetValueOrDefault(id)?.Origin??origin,Draft=Missing(p).Count>0};});
+        Change(next=>
+        {
+            var connection=ApiSettingsSnapshot.Copy(next.Profiles.GetValueOrDefault(id)??new ApiSettings());
+            ApplyConnection(connection,p);
+            next.Profiles[id]=connection;
+            next.ProfileInfo[id]=new(){Name=name,Origin=next.ProfileInfo.GetValueOrDefault(id)?.Origin??origin,Draft=MissingConnection(connection).Count>0};
+        });
+    }
+    internal void SaveTranslationContent(TranslationContentSettings content)
+    {
+        if(content.HasEmptyCombination)throw new InvalidOperationException("请至少选择一种需要翻译的原文语言。");
+        var snapshot=new ApiSettings();content.ApplyTo(snapshot);
+        Change(next=>next.TranslationContent=TranslationContentSettings.From(snapshot));
     }
     internal void DeleteProfile(string id)
     {
@@ -111,7 +131,7 @@ internal sealed partial class FusionConfiguration
     }
     internal void RequireReady(bool embedded)
     {
-        var id=SelectedId(embedded);var p=State.Profiles[id];var missing=Missing(p);
+        var id=SelectedId(embedded);var p=Effective(new ApiSettings(),embedded);var missing=Missing(p);
         if(missing.Count>0)throw new InvalidOperationException(Name(id)+" 尚未配置完成："+string.Join("、",missing)+"。请点击“编辑此方案”。");
         if(embedded&&string.IsNullOrEmpty(p.ApiKey))throw new InvalidOperationException("当前 MGI 插件仍需密钥；无鉴权方案可用于截图，请为内嵌选择带密钥的方案。");
     }

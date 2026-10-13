@@ -18,7 +18,7 @@ public sealed partial class MainForm
     {
         int S(int value)=>value*DeviceDpi/96;
         using var dialog=new Form{Text=title,StartPosition=FormStartPosition.CenterParent,AutoScaleMode=AutoScaleMode.None,ClientSize=new(S(400),S(180)),Font=Font,FormBorderStyle=FormBorderStyle.FixedDialog,MinimizeBox=false,MaximizeBox=false};
-        var input=new TextBox{Text=initial,MaxLength=64,Width=330,PlaceholderText="例如：剧情游戏、正在玩、待整理"};
+        var input=new TextBox{Text=initial,MaxLength=64,Width=330,PlaceholderText=UiLanguage.Text("例如：剧情游戏、正在玩、待整理")};
         var layout=WorkspaceColumn();layout.Dock=DockStyle.Top;layout.AutoSize=true;layout.Padding=new(S(18));
         WorkspaceAdd(layout,WorkspaceLabel(label));WorkspaceAdd(layout,SearchField(input,label=="分类名称"?"tag":"folder"),SizeType.Absolute,S(36));
         var save=WorkspaceButton("保存",(_,_)=>{if(input.Text.Trim().Length>0)dialog.DialogResult=DialogResult.OK;});
@@ -48,7 +48,7 @@ public sealed partial class MainForm
     }
     private async Task ChooseLibraryRootAsync()
     {
-        using var dialog=new FolderBrowserDialog{Description="选择存放多个游戏的总目录；包括其中所有子文件夹",UseDescriptionForTitle=true};
+        using var dialog=new FolderBrowserDialog{Description=UiLanguage.Text("选择存放多个游戏的总目录；包括其中所有子文件夹"),UseDescriptionForTitle=true};
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
         try{RegisterLibraryRoots([dialog.SelectedPath]);await ImportLibraryFolderAsync(dialog.SelectedPath);}catch(Exception ex){ShowFusionError(ex);}
     }

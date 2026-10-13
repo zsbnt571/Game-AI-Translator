@@ -9,8 +9,41 @@ public sealed partial class MainForm
     private bool _workspaceResizing;
     private bool _workspaceWasMinimized;
     private bool _workspaceSizingLayout;
+    private bool _workspaceScreenshotRendering;
+    internal bool ScreenshotResizeSkipRedrawBatchForSmoke { get; set; }
+    internal bool? ScreenshotResizeRedrawBatchOverrideForSmoke { get; set; }
+    internal bool? ScreenshotFrameSeparateLinesOverrideForSmoke { get; set; }
+    private Action<string,double>? _screenshotPaintTraceForSmoke;
+    internal Action<string,double>? ScreenshotPaintTraceForSmoke
+    {
+        get => _screenshotPaintTraceForSmoke;
+        set
+        {
+            if(value is not null && !ScreenshotRebuildSelfTests.IsActive)
+                throw new InvalidOperationException("Paint tracing requires the isolated screenshot self-test guard.");
+            _screenshotPaintTraceForSmoke = value;
+        }
+    }
+    internal bool ScreenshotResizeUsesRedrawBatchForSmoke => UseWorkspaceResizeRedrawBatch;
+    private bool UseWorkspaceResizeRedrawBatch => ScreenshotRebuildSelfTests.IsActive
+        ? ScreenshotResizeRedrawBatchOverrideForSmoke ?? (!ScreenshotResizeSkipRedrawBatchForSmoke && !_workspaceScreenshotRendering)
+        : !_workspaceScreenshotRendering;
+
+    private void ConfigureWorkspaceRenderingForPage(string name)
+    {
+        // Set both policies before publishing the destination, so the library
+        // and settings retain their original resize path as soon as they show.
+        _workspaceScreenshotRendering = name == "主页";
+        if (_mainContentHost is WorkspacePageHost host)
+            host.CompositeChildren = !_workspaceScreenshotRendering;
+    }
+
     protected override void OnResize(EventArgs e)
     {
+        // Screenshot controls paint their changed bounds using local buffers.
+        // A whole-host redraw batch duplicates that work during each size step.
+        if(!UseWorkspaceResizeRedrawBatch)
+        {base.OnResize(e);return;}
         // Native children can request immediate painting while nested layouts
         // are still moving their siblings. Batch this single synchronous size
         // transaction; never keep redraw disabled between input messages.
@@ -38,10 +71,44 @@ public sealed partial class MainForm
     }
     protected override void OnPaint(PaintEventArgs e)
     {
+        var trace = _screenshotPaintTraceForSmoke;
+        if(trace is null)
+        {
+            base.OnPaint(e);PaintWorkspaceBorder(e.Graphics);return;
+        }
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
         base.OnPaint(e);
+        trace("Form.OnPaintBaseMs",System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+        started = System.Diagnostics.Stopwatch.GetTimestamp();
+        PaintWorkspaceBorder(e.Graphics);
+        trace("Form.OnPaintFrameMs",System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+    }
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        var trace = _screenshotPaintTraceForSmoke;
+        if(trace is null){base.OnPaintBackground(e);return;}
+        var started = System.Diagnostics.Stopwatch.GetTimestamp();
+        base.OnPaintBackground(e);
+        trace("Form.OnPaintBackgroundMs",System.Diagnostics.Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+    }
+    private void PaintWorkspaceBorder(Graphics graphics)
+    {
         var color=UiTheme.Current.Main.GetBrightness()>.5f?Color.FromArgb(139,159,184):Color.FromArgb(89,111,140);
         using var pen=new Pen(color,Math.Max(1,DeviceDpi/96f));
-        e.Graphics.DrawRectangle(pen,0,0,Math.Max(0,ClientSize.Width-1),Math.Max(0,ClientSize.Height-1));
+        int right=Math.Max(0,ClientSize.Width-1),bottom=Math.Max(0,ClientSize.Height-1);
+        bool separateLines=ScreenshotRebuildSelfTests.IsActive
+            ? ScreenshotFrameSeparateLinesOverrideForSmoke ?? _workspaceScreenshotRendering
+            : _workspaceScreenshotRendering;
+        if(separateLines)
+        {
+            // On a visible window, one GDI+ rectangle incurs work over its
+            // entire bounding surface. Keep the same pen on four narrow edges.
+            graphics.DrawLine(pen,0,0,right,0);
+            graphics.DrawLine(pen,right,0,right,bottom);
+            graphics.DrawLine(pen,right,bottom,0,bottom);
+            graphics.DrawLine(pen,0,bottom,0,0);
+        }
+        else graphics.DrawRectangle(pen,0,0,right,bottom);
     }
 
     protected override void OnHandleCreated(EventArgs e)
@@ -133,7 +200,7 @@ internal sealed class WorkspaceCaption:Control
         MinimizeButton.Click+=(_,_)=>owner.WindowState=FormWindowState.Minimized;
         MaximizeButton.Click+=(_,_)=>ToggleMaximize();CloseButton.Click+=(_,_)=>owner.Close();
         owner.Resize+=OwnerResize;
-        tips.SetToolTip(MinimizeButton,"最小化");tips.SetToolTip(MaximizeButton,"最大化 / 还原");tips.SetToolTip(CloseButton,"关闭");
+        tips.SetToolTip(MinimizeButton,UiLanguage.Text("最小化"));tips.SetToolTip(MaximizeButton,UiLanguage.Text("最大化 / 还原"));tips.SetToolTip(CloseButton,UiLanguage.Text("关闭"));
         FontManager.MarkPreviewTextRoot(this);
     }
     private void OwnerResize(object? sender,EventArgs e){MaximizeButton.Restored=owner.WindowState==FormWindowState.Maximized;MaximizeButton.AccessibleName=MaximizeButton.Restored?"还原":"最大化";MaximizeButton.Invalidate();}
@@ -147,8 +214,8 @@ internal sealed class WorkspaceCaption:Control
     protected override void OnPaint(PaintEventArgs e)
     {
         var p=UiTheme.Current;var g=e.Graphics;g.Clear(p.Main);g.SmoothingMode=SmoothingMode.AntiAlias;int s=DeviceDpi;
-        int icon=18*s/96;WorkspaceSkin.Icon(g,"brand",new(10*s/96,(Height-icon)/2,icon,icon),p.Accent);
-        using var font=new Font("Segoe UI",9);WorkspaceDrawing.Text(g,"FUSION R1",font,new(36*s/96,0,83*s/96,Height),p.Text);
+        int icon=24*s/96;WorkspaceSkin.Icon(g,"brand",new(8*s/96,(Height-icon)/2,icon,icon),p.Accent);
+        using var font=new Font("Segoe UI",9);WorkspaceDrawing.Text(g,"FUSION R1",font,new(42*s/96,0,77*s/96,Height),p.Text);
         using var versionFont=new Font("Segoe UI",8);WorkspaceDrawing.Text(g,BuildIdentity.BuildVersion,versionFont,new(123*s/96,0,106*s/96,Height),p.SecondaryText);
         using var border=new Pen(p.Border);g.DrawLine(border,0,Height-1,Width,Height-1);
     }

@@ -36,7 +36,7 @@ internal static class GameLibraryWindowIdentity
         try{
             var h=OpenProcess(0x1000,false,(uint)pid);if(h==IntPtr.Zero)return null;
             try{var path=new StringBuilder(32768);uint size=(uint)path.Capacity;if(!QueryFullProcessImageName(h,0,path,ref size))return null;
-                using var p=Process.GetProcessById(pid);return new(pid,Path.GetFullPath(path.ToString()),p.StartTime.ToUniversalTime().Ticks);}
+                using var p=Process.GetProcessById(pid);return new(pid,GameLaunchPathIdentity.Canonical(path.ToString()),p.StartTime.ToUniversalTime().Ticks);}
             finally{CloseHandle(h);}
         }catch{return null;}
     }

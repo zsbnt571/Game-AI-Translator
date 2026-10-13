@@ -10,15 +10,7 @@ namespace UnityEngine
 namespace UnityEngine.UI {public class Text:UnityEngine.Component {public string text {get;set;}public UnityEngine.Font font{get;set;}=new();}public class InputField:UnityEngine.Component{} }
 namespace ScreenshotTranslationUiTester
 {
-    // This test-only declaration avoids pulling Windows Forms models into the
-    // offline fixture; Program verifies its members against the production source.
-    public enum SourceLanguageMode { Auto, English, SimplifiedChinese, Japanese, Korean, Mixed }
-    internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Unreadable)
-    {
-        internal string SelectedLanguage { get; init; } = "";
-        internal int SkippedByLanguage { get; init; }
-        internal IReadOnlySet<string> TrustedSourceTexts { get; init; }
-    }
+    internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Unreadable);
     internal enum SupportLevel { Candidate } internal enum FusionGameProcessState { Stopped }
     internal sealed record GameInfo(string ExePath,string Name,string Engine,string Architecture,string Details,SupportLevel Support,string DataDirectory);
     internal static class FusionAdapterInstaller {internal static FusionGameProcessState ProcessState(GameInfo game)=>FusionGameProcessState.Stopped;}

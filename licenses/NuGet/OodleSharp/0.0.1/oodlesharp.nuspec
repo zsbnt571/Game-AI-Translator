@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>OodleSharp</id>
+    <version>0.0.1</version>
+    <authors>NotOfficer</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <description>A C# port of the Oodle compression library</description>
+    <copyright>Copyright (c) 2026 NotOfficer</copyright>
+    <tags>oodle, compression</tags>
+    <repository type="git" url="https://github.com/NotOfficer/OodleSharp" branch="refs/heads/master" commit="716d8b9ce3bd74ece37097d2b5e5ef67ef0c48c5" />
+    <dependencies>
+      <group targetFramework="net10.0" />
+    </dependencies>
+  </metadata>
+</package>

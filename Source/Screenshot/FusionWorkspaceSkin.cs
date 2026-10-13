@@ -8,16 +8,13 @@ internal static class WorkspaceSkin
     internal static void Icon(Graphics g,string key,Rectangle box,Color color)
     {
         if(box.Width<2||box.Height<2)return;
+        if(key=="brand"){AppBranding.DrawLogo(g,box);return;}
         var state=g.Save();g.TranslateTransform(box.X,box.Y);g.ScaleTransform(box.Width/24f,box.Height/24f);
         using var p=new Pen(color,1.65f){StartCap=LineCap.Round,EndCap=LineCap.Round,LineJoin=LineJoin.Round};
         using var b=new SolidBrush(color);
         void Line(params PointF[] points)=>g.DrawLines(p,points);
         switch(key)
         {
-            case "brand":
-                using(var gradient=new LinearGradientBrush(new Rectangle(0,0,24,24),Color.FromArgb(105,215,255),Color.FromArgb(0,91,255),90f))
-                {g.FillPolygon(gradient,new Point[] {new(1,8),new(12,1),new(23,8),new(23,11),new(12,18),new(1,11)});g.FillPolygon(gradient,new Point[] {new(1,14),new(12,21),new(23,14),new(23,18),new(12,25),new(1,18)});}
-                g.FillPolygon(Brushes.White,new Point[] {new Point(8,8),new(12,5),new(16,8),new(12,11)});break;
             case "game":
                 Line(new(5,5),new(9,7),new(15,7),new(19,5),new(22,17),new(21,20),new(18,20),new(14,15),new(10,15),new(6,20),new(3,20),new(2,17),new(5,5));
                 Line(new(5,10),new(9,10));Line(new(7,8),new(7,12));g.FillEllipse(b,16,8,2,2);g.FillEllipse(b,18,11,2,2);break;
@@ -49,6 +46,8 @@ internal static class WorkspaceSkin
             case "minus":Line(new(4,12),new(20,12));break;
             case "down":Line(new(6,9),new(12,15),new(18,9));break;
             case "check":Line(new(5,12),new(10,17),new(20,6));break;
+            case "lock":g.DrawRectangle(p,5,10,14,11);g.DrawArc(p,8,2,8,14,180,180);Line(new(8,8),new(8,10));Line(new(16,8),new(16,10));g.FillEllipse(b,11,14,2,2);break;
+            case "unlock":g.DrawRectangle(p,5,10,14,11);g.DrawArc(p,8,2,8,14,180,170);Line(new(8,8),new(8,10));g.FillEllipse(b,11,14,2,2);break;
             case "close":Line(new(5,5),new(19,19));Line(new(19,5),new(5,19));break;
             case "next":Line(new(9,5),new(16,12),new(9,19));break;
             case "back":Line(new(15,5),new(8,12),new(15,19));break;
@@ -82,7 +81,7 @@ internal sealed class WorkspaceBrand:Control
         WorkspaceSkin.Icon(e.Graphics,"brand",new(S(10),S(5),S(35),S(35)),p.Accent);
         using var title=new Font(Font.FontFamily,13.5f,FontStyle.Bold);using var sub=new Font(Font.FontFamily,9f);
         WorkspaceDrawing.Text(e.Graphics,"FUSION R1",title,new(S(57),S(3),Width-S(58),S(26)),p.Text);
-        WorkspaceDrawing.Text(e.Graphics,"你的游戏工作台",sub,new(S(57),S(29),Width-S(58),S(23)),p.SecondaryText);
+        WorkspaceDrawing.Text(e.Graphics,UiLanguage.Text("你的游戏工作台"),sub,new(S(57),S(29),Width-S(58),S(23)),p.SecondaryText);
     }
 }
 
@@ -198,6 +197,6 @@ internal sealed class WorkspaceSwitch:CheckBox
     {
         int S(int n)=>n*DeviceDpi/96;var p=UiTheme.Current;var g=e.Graphics;g.Clear(Parent?.BackColor??p.Main);g.SmoothingMode=SmoothingMode.AntiAlias;
         var r=new Rectangle(0,(Height-S(22))/2,S(40),S(22));using var path=WorkspaceDrawing.Round(r,S(11));using var fill=new SolidBrush(Checked?p.Accent:Color.FromArgb(179,188,200));g.FillPath(fill,path);g.FillEllipse(Brushes.White,Checked?r.Right-S(20):S(2),r.Y+S(2),S(18),S(18));
-        WorkspaceDrawing.Text(g,Unavailable?"未接入":(Checked?"开启":"关闭"),Font,new(S(47),0,Width-S(47),Height),p.SecondaryText);
+        WorkspaceDrawing.Text(g,UiLanguage.Text(Unavailable?"未接入":(Checked?"开启":"关闭")),Font,new(S(47),0,Width-S(47),Height),p.SecondaryText);
     }
 }

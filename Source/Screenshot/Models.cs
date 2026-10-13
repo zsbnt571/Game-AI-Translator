@@ -1,4 +1,4 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -24,7 +24,9 @@ public enum ApplicationThemeMode { Day, Night, Custom }
 public enum CloseMainWindowBehavior { Exit, MinimizeToTray }
 public enum HistoryThumbnailSize { Small, Medium, Large }
 public enum TranslationTextSource { Auto, Organized, Raw }
-public enum TranslationStyle { Natural, Literal, GameLocalization, Custom }
+// Existing numeric values are persisted in user profiles; never reorder them.
+public enum TranslationStyle { Natural = 0, Literal = 1, GameLocalization = 2, Custom = 3, CulturalLocalization = 4, Literary = 5 }
+internal enum TranslationRequestKind { PlainOrScreenshot, GameText, GameJson }
 public enum TranslationProviderKind { OpenAiCompatible }
 public enum OcrEngineKind { Windows, Rapid, Paddle }
 public enum OcrComparisonMode { Standard, ExperimentalWindows }
@@ -64,6 +66,7 @@ public sealed class ApiSettings
     public bool AutoFontSize { get; set; } = true;
     public bool AutoWrapping { get; set; } = true;
     public SourceLanguageMode SourceLanguage { get; set; } = SourceLanguageMode.Auto;
+    public string[] SourceLanguages { get; set; } = ["en", "ja"];
     public string HotKeyModifiers { get; set; } = "Ctrl + Alt";
     public string HotKeyKey { get; set; } = "Z";
     public InputBinding? StartCaptureBinding { get; set; }
@@ -84,6 +87,9 @@ public sealed class ApiSettings
     public string ProviderDisplayName { get; set; } = "DeepSeek (OpenAI Compatible)";
     public TranslationStyle TranslationStyle { get; set; } = TranslationStyle.GameLocalization;
     public string CustomTranslationPrompt { get; set; } = "";
+    // Per-request transport contract, never serialized into a user's profile.
+    internal TranslationRequestKind RequestKind { get; set; }
+    internal string CatalogLanguageHint { get; set; } = "";
     public bool PreserveIdentifiers { get; set; } = true;
     public bool PreserveNumbers { get; set; } = true;
     public bool PreserveVariables { get; set; } = true;
@@ -117,6 +123,7 @@ public sealed class ApiSettings
     public int LastUserPreviewWidth { get; set; } = 1220;
     public int LastUserPreviewHeight { get; set; } = 800;
     public bool LastUserPreviewMaximized { get; set; }
+    public ApplicationLanguage InterfaceLanguage { get; set; } = ApplicationLanguage.SimplifiedChinese;
     public ApplicationThemeMode ThemeMode { get; set; } = ApplicationThemeMode.Night;
     public string CustomThemeMainBackground { get; set; } = "#121722";
     public string CustomThemeSecondaryBackground { get; set; } = "#1D222C";
@@ -440,6 +447,7 @@ public sealed record TranslationItem(string Id, string Text,
 {
     public OcrTranslationContext? OcrContext { get; init; }
     public string SemanticPurpose { get; init; } = "";
+    internal string[] RequiredLiteralSpans { get; init; } = [];
     public IReadOnlyList<SourceNeighborText> SourceNeighbors { get; init; } = [];
     public IReadOnlyList<string> StableSourceIds => SourceIds ?? [];
 }

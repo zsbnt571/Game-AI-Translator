@@ -40,8 +40,14 @@ internal static class EngineStructureDetection
     internal static GameInfo? Detect(string exe,string name,string architecture)
     {
         if(!IsPortableExecutable(exe))return null;
-        if(UnrealBootstrap.Target(exe) is {} declared&&Detect(declared,Path.GetFileNameWithoutExtension(declared),architecture) is {} target&&target.Engine=="Unreal Engine")
-            return target with{ExePath=exe,Name=name};
+        if(UnrealBootstrap.Read(exe) is {} launch)
+        {
+            if(launch.Project is {} declaredProject&&HasUnrealPackages(declaredProject))
+                return new(exe,name,"Unreal Engine",architecture,"已识别虚幻项目启动入口",SupportLevel.Planned,declaredProject);
+            if(!launch.Runtime.Equals(exe,StringComparison.OrdinalIgnoreCase)&&new FileInfo(launch.Runtime).Length>2*1024*1024
+                &&Detect(launch.Runtime,Path.GetFileNameWithoutExtension(launch.Runtime),architecture) is {} target&&target.Engine=="Unreal Engine")
+                return target with{ExePath=exe,Name=name};
+        }
         string root=Path.GetDirectoryName(exe)!;
         string? godot=ReadPck(Path.ChangeExtension(exe,".pck"),false)??ReadPck(exe,true);
         if(godot is not null)return new(exe,name,"Godot",architecture,"Godot "+godot+" · 已识别引擎，内嵌翻译尚未接入",SupportLevel.Planned,root);
@@ -73,11 +79,22 @@ internal static class EngineStructureDetection
 
     internal static string[] UnrealRuntimeExecutables(string selected)
     {
-        if(UnrealBootstrap.Target(selected) is {} declared)return UnrealRuntimeExecutables(declared);
+        if(UnrealBootstrap.Read(selected) is {} launch)
+        {
+            if(launch.Project is {} declaredProject&&HasUnrealPackages(declaredProject))return [launch.Runtime];
+            if(!launch.Runtime.Equals(selected,StringComparison.OrdinalIgnoreCase)&&new FileInfo(launch.Runtime).Length>2*1024*1024)return UnrealRuntimeExecutables(launch.Runtime);
+            return [];
+        }
         string stem=Path.GetFileNameWithoutExtension(selected);
         var game=Detect(selected,stem,"");
         return game?.Engine=="Unreal Engine"&&game.DataDirectory is {} project
             ?MatchingUnrealExecutables(project,selected,stem).ToArray():[];
+    }
+    private static bool HasUnrealPackages(string project)
+    {
+        string paks=Path.Combine(project,"Content","Paks");if(!Directory.Exists(paks)||IsLink(project)||IsLink(paks))return false;
+        return Files(paks,"*").Take(PackageLimit).Any(p=>p.EndsWith(".pak",StringComparison.OrdinalIgnoreCase)&&IsPak(p)
+            ||p.EndsWith(".utoc",StringComparison.OrdinalIgnoreCase)&&IsIoStore(p));
     }
 
     private static IEnumerable<string> MatchingUnrealExecutables(string project,string selected,string stem)

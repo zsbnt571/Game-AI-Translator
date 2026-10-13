@@ -113,7 +113,7 @@ public sealed partial class MainForm
                 try{_libraryCollection="";_libraryScope="home";_libraryTag="";_libraryEngine.SelectedIndex=0;_libraryFolder.SelectedIndex=0;_libraryFilter.SelectedIndex=0;_librarySearch.Clear();}
                 finally{_libraryFiltersLoading=false;}
             }
-            _libraryPage=0;ScheduleLibraryRefresh();
+            ScheduleLibraryRefresh();
         }
         catch(Exception ex){ShowFusionError(ex);}
     }

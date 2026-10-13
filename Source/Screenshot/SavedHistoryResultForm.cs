@@ -10,6 +10,7 @@ internal sealed class SavedHistoryResultForm : Form
     {
         if(item.OriginalPng.Length!=0)throw new ArgumentException("Use normal history preview when source exists",nameof(item));
         Text="历史保存结果 · 原图缺失";
+        AppBranding.Apply(this);
         Size=new(1000,720);MinimumSize=new(480,320);StartPosition=FormStartPosition.CenterParent;
         SavedText=item.TranslationText??item.TranslationSummary??"";
         var notice=new Label{Dock=DockStyle.Top,Height=54,Padding=new(10),

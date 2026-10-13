@@ -65,24 +65,66 @@ internal static class UnrealTextReader
   }catch(DecoderFallbackException){return null;}
  }
  internal static Dictionary<string,(string Text,uint Hash)> ReadLocres(byte[] data) {
-  if(data.Length is <33 or >8*1024*1024||!data.AsSpan(0,16).SequenceEqual(Convert.FromHexString("0E147475674A03FC4A15909DC3377F1B"))||data[16]!=3)throw new InvalidDataException("Unsupported locres");
-  long offset=BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(17));if(offset<33||offset>data.Length-4)throw new InvalidDataException();
-  int at=(int)offset;int count=Count(data,ref at);var strings=new string[count];var expectedRefs=new int[count];
-  for(int i=0;i<count;i++){strings[i]=ReadString(data,ref at,12000)??throw new InvalidDataException();expectedRefs[i]=Count(data,ref at);}
-  if(at!=data.Length)throw new InvalidDataException();
-  int bound=(int)offset;at=25;int expected=Count(data,ref at),namespaces=Count(data,ref at);var references=new int[count];
+  // Read-only format support, not a package or localization-resource writer.
+  // Legacy stores inline strings; compact (1) adds a shared string table;
+  // optimized (2/3) adds key hashes, total entries and table reference counts.
+  // Do not infer a native culture or identity source from a filename here.
+  if(data.Length is <4 or >8*1024*1024)throw new InvalidDataException("Invalid locres size");
+  var magic=Convert.FromHexString("0E147475674A03FC4A15909DC3377F1B");
+  int version=0,at=0;
+  if(data.Length>=16&&data.AsSpan(0,16).SequenceEqual(magic)) {
+   if(data.Length<17||(version=data[16])>3)throw new InvalidDataException("Unsupported locres version");
+   at=17;
+  }
+  int bound=data.Length;string[] strings=[];int[] expectedRefs=[],references=[];
+  if(version>=1) {
+   int pointer=at;Advance(ref at,8,data.Length);
+   long offset=BinaryPrimitives.ReadInt64LittleEndian(data.AsSpan(pointer));
+   int minimum=at+(version>=2?8:4);
+   if(offset<minimum||offset>data.Length-4)throw new InvalidDataException("Invalid locres string table offset");
+   bound=(int)offset;int tableAt=bound,count=BoundedCount(ref tableAt,data.Length);
+   strings=new string[count];references=new int[count];expectedRefs=new int[count];
+   for(int i=0;i<count;i++) {
+    strings[i]=Text(ref tableAt,data.Length,12000);
+    if(version>=2)expectedRefs[i]=BoundedCount(ref tableAt,data.Length);
+   }
+   if(tableAt!=data.Length)throw new InvalidDataException("Unexpected locres string table suffix");
+  }
+  int expected=version>=2?BoundedCount(ref at,bound):-1,namespaces=BoundedCount(ref at,bound);
   var result=new Dictionary<string,(string,uint)>(StringComparer.Ordinal);
+  var seenNamespaces=new HashSet<string>(StringComparer.Ordinal);
   for(int n=0;n<namespaces;n++) {
-   Advance(ref at,4,bound);string ns=ReadString(data,ref at,512)??throw new InvalidDataException();int keys=Count(data,ref at);
-   if(result.Count+keys>expected)throw new InvalidDataException();
+   if(version>=2)Advance(ref at,4,bound);
+   string ns=Text(ref at,bound,512);
+   if(ns.Any(char.IsControl)||!seenNamespaces.Add(ns))throw new InvalidDataException("Invalid locres namespace");
+   int keys=BoundedCount(ref at,bound);
+   if(result.Count+keys>100000||(expected>=0&&result.Count+keys>expected))throw new InvalidDataException("Invalid locres entry count");
    for(int k=0;k<keys;k++) {
-    Advance(ref at,4,bound);string key=ReadString(data,ref at,256)??throw new InvalidDataException();
-    int pos=at;Advance(ref at,8,bound);uint hash=BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(pos));int index=BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(pos+4));
-    if(index<0||index>=count||!result.TryAdd(ns+"\0"+key,(strings[index],hash)))throw new InvalidDataException();references[index]++;
+    if(version>=2)Advance(ref at,4,bound);
+    string key=Text(ref at,bound,256);
+    if(key.Length==0||key.Any(char.IsControl))throw new InvalidDataException("Invalid locres key");
+    int pos=at;Advance(ref at,4,bound);uint hash=BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(pos));
+    string value;
+    if(version>=1) {
+     int index=BoundedCount(ref at,bound);
+     if(index>=strings.Length)throw new InvalidDataException("Invalid locres string index");
+     value=strings[index];references[index]++;
+    } else value=Text(ref at,bound,12000);
+    if(!result.TryAdd(ns+"\0"+key,(value,hash)))throw new InvalidDataException("Duplicate locres identity");
    }
   }
-  if(at!=offset||result.Count!=expected||!references.SequenceEqual(expectedRefs))throw new InvalidDataException();return result;
+  if(at!=bound||(expected>=0&&result.Count!=expected)||(version>=2&&!references.SequenceEqual(expectedRefs)))throw new InvalidDataException("Locres structure mismatch");
+  return result;
+  int BoundedCount(ref int cursor,int end) {
+   int pos=cursor;Advance(ref cursor,4,end);int count=BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(pos));
+   return count is >=0 and <=100000?count:throw new InvalidDataException("Invalid locres count");
+  }
+  string Text(ref int cursor,int end,int limit) {
+   if(cursor>end-4)throw new InvalidDataException("Truncated locres string");
+   string value=ReadString(data,ref cursor,limit)??throw new InvalidDataException("Invalid locres string");
+   if(cursor>end)throw new InvalidDataException("Locres string crosses table boundary");
+   return value;
+  }
  }
- private static int Count(byte[] data,ref int at){int pos=at;Advance(ref at,4,data.Length);int n=BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(pos));return n is >=0 and <=100000?n:throw new InvalidDataException();}
  private static void Advance(ref int at,int n,int limit){if(at<0||at>limit-n)throw new InvalidDataException();at+=n;}
 }

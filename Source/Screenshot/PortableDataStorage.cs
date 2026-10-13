@@ -5,16 +5,17 @@ namespace ScreenshotTranslationUiTester;
 
 internal static class PortableDataStorage
 {
-    private sealed record Location(string Path,string? CopyFrom=null,string? MigrationId=null);
+    private sealed record Location(string Path,string? CopyFrom=null,string? MigrationId=null,bool RequireExisting=false);
     private sealed record Receipt(string MigrationId,string Source);
     internal static string LocationFile=>System.IO.Path.Combine(AppContext.BaseDirectory,"data-location.json");
     internal static string Resolve(string applicationRoot)
     {
         var locationFile=System.IO.Path.Combine(applicationRoot,"data-location.json");
-        if(!File.Exists(locationFile))return System.IO.Path.Combine(applicationRoot,"data");
+        if(!File.Exists(locationFile))return DataContinuity.Resolve(applicationRoot)??System.IO.Path.Combine(applicationRoot,"data");
         if(new FileInfo(locationFile).Length>16384)throw new IOException("数据位置配置无法读取，未使用其他位置。");
         var location=JsonSerializer.Deserialize<Location>(File.ReadAllText(locationFile))??throw new IOException("数据位置配置为空。");
         var target=AppDataPaths.ValidateExplicitRoot(System.IO.Path.GetFullPath(location.Path,applicationRoot));
+        if(location.RequireExisting&&!Directory.Exists(target))throw new IOException("已有数据目录不可用，请检查数据位置；未创建空库代替。");
         if(location.CopyFrom is { } source)
         {
             CopyForRelocation(source,target,location.MigrationId);

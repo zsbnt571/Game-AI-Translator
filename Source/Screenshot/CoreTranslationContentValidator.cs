@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using ScreenshotTranslationUiTester.CorePipelineV2;
 
 namespace ScreenshotTranslationUiTester;
@@ -7,10 +7,17 @@ internal sealed record CoreContentValidation(bool Accepted,string Text,bool Reco
 
 internal static class CoreTranslationContentValidator
 {
-    internal const string ContractVersion="core-content-v18-arabic-literal";
+    internal const string ContractVersion="core-content-v21-language-completion";
 
     internal static CoreContentValidation Validate(TranslationItem item,string translated,string requestId,string targetLanguage="")
     {
+        if(!TranslationLanguageSpans.Preserved(item.RequiredLiteralSpans,translated))
+            return new(false,translated,false,"EXCLUDED_OR_TARGET_LANGUAGE_CHANGED");
+        if(!TranslationLanguagePolicy.MenuNamesPreserved(item.Text,translated))
+            return new(false,translated,false,"LANGUAGE_OPTION_NAME_CHANGED");
+        if(!string.IsNullOrWhiteSpace(targetLanguage)&&TranslationLanguageSpans.UnchangedEligibleText(item.Text,translated,
+            new ApiSettings{TargetLanguage=targetLanguage,SourceLanguage=SourceLanguageMode.Auto},item.RequiredLiteralSpans))
+            return new(false,translated,false,"UNTRANSLATED_ELIGIBLE_CONTENT");
         if(item.IdentityContract!=TranslationIdentityContract.CoreV2Block)
             return new(true,translated,false,"NON_CORE_CONTRACT");
         var result=ValidateSeparators(item,translated,requestId);

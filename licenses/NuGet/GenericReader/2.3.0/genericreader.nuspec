@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>GenericReader</id>
+    <version>2.3.0</version>
+    <authors>NotOfficer</authors>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <icon>icon.png</icon>
+    <readme>README.md</readme>
+    <description>A generic binary reader for .NET</description>
+    <copyright>Copyright (c) 2025 NotOfficer</copyright>
+    <tags>generic, binary, reader</tags>
+    <repository type="git" url="https://github.com/NotOfficer/GenericReader" branch="refs/heads/master" commit="225929b6e5455745fd4588c23dcfdad8e12035a4" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+      <group targetFramework="net9.0" />
+      <group targetFramework="net10.0" />
+    </dependencies>
+  </metadata>
+</package>

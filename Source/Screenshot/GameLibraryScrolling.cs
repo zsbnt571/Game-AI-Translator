@@ -8,6 +8,7 @@ internal sealed partial class GameLibraryGrid
     internal bool HasScrollBar=>scrollMaximum>0;
     internal Point ScrollOffset=>scrollOffset;
     internal int ScrollMaximum=>scrollMaximum;
+    internal void ScrollToStart()=>SetScrollValue(0);
     private int ScrollValue=>ShelfMode?scrollOffset.X:scrollOffset.Y;
     private Rectangle ContentViewport=>new(0,0,Math.Max(0,ClientSize.Width-(!ShelfMode&&HasScrollBar?S(12):0)),Math.Max(0,ClientSize.Height-(ShelfMode&&HasScrollBar?S(12):0)));
     private Rectangle ScrollTrack=>!HasScrollBar?Rectangle.Empty:ShelfMode?
@@ -80,7 +81,11 @@ internal sealed partial class GameLibraryGrid
         if(ShelfMode)
         {if(tile.Left<view.Left)SetScrollValue(ScrollValue+tile.Left-view.Left-S(2));else if(tile.Right>view.Right)SetScrollValue(ScrollValue+tile.Right-view.Right+S(2));}
         else
-        {if(tile.Top<view.Top)SetScrollValue(ScrollValue+tile.Top-view.Top-S(3));else if(tile.Bottom>view.Bottom)SetScrollValue(ScrollValue+tile.Bottom-view.Bottom+S(3));}
+        {
+            int margin=Math.Max(0,Math.Min(S(3),(view.Height-tile.Height)/2));
+            if(tile.Top<view.Top)SetScrollValue(ScrollValue+tile.Top-view.Top-margin);
+            else if(tile.Bottom>view.Bottom)SetScrollValue(ScrollValue+tile.Bottom-view.Bottom+margin);
+        }
     }
     protected override void OnMouseCaptureChanged(EventArgs e){base.OnMouseCaptureChanged(e);if(!Capture){scrollDragging=false;selecting=false;boxScrollTimer?.Stop();Invalidate();}}
     protected override void OnMouseWheel(MouseEventArgs e)

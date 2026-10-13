@@ -4,6 +4,7 @@ internal sealed record CatalogText(string ns,string key,string source,string cul
  [property:JsonIgnore(Condition=JsonIgnoreCondition.WhenWritingNull)] string? provenance=null)
 {
  internal const string BlueprintLocalizedCandidate="blueprintLocalizedCandidate";
+ internal const string NativeLocalizedCandidate="nativeLocalizedCandidate";
 }
 
 internal static class CatalogMerge
@@ -14,8 +15,8 @@ internal static class CatalogMerge
    if(old.source!=row.source){conflicts.Add(id);return;}
    // An unverified byte-pattern candidate can neither downgrade an existing
    // source nor contribute localized strings. A stronger source upgrades it.
-   if(row.provenance==CatalogText.BlueprintLocalizedCandidate)return;
-   if(old.provenance==CatalogText.BlueprintLocalizedCandidate){rows[id]=row;return;}
+   if(row.provenance is CatalogText.BlueprintLocalizedCandidate or CatalogText.NativeLocalizedCandidate)return;
+   if(old.provenance is CatalogText.BlueprintLocalizedCandidate or CatalogText.NativeLocalizedCandidate){rows[id]=row;return;}
    foreach(var pair in row.localized)old.localized[pair.Key]=pair.Value;
    if(row.localized.Count>0)rows[id]=row with { localized=old.localized };
   } else if(rows.Count<100000)rows[id]=row;

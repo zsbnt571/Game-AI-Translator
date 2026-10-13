@@ -8,6 +8,7 @@ public sealed class AppearanceSettingsDialog : Form
     public ApiSettings Value=>_value;
     public AppearanceSettingsDialog(ApiSettings settings)
     {
+        AppBranding.Apply(this);
         SuspendLayout();AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);
         _value=ApiSettingsSnapshot.Copy(settings); Text="预览、字体与译图设置"; ClientSize=new(760,600); MinimumSize=new(700,540); StartPosition=FormStartPosition.CenterParent;
         var tabs=new DarkTabControl{Dock=DockStyle.Fill}; tabs.TabPages.Add(Page("截图与预览",BuildPreview())); tabs.TabPages.Add(Page("外观",BuildAppearance())); tabs.TabPages.Add(Page("译图",BuildOverlay()));

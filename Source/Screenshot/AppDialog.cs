@@ -9,6 +9,7 @@ internal static class AppDialog
         using var form = new Form { Text=title, StartPosition=owner is null?FormStartPosition.CenterScreen:FormStartPosition.CenterParent,
             ClientSize=new Size(520,210), MinimumSize=new Size(440,210), MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false,
             BackColor=UiTheme.Current.Main,ForeColor=UiTheme.Current.Text };
+        AppBranding.Apply(form);
         form.SuspendLayout();form.AutoScaleMode=AutoScaleMode.Dpi;form.AutoScaleDimensions=new SizeF(96,96);
         var body=new Label{Dock=DockStyle.Fill,Padding=new Padding(24),Text=message,ForeColor=UiTheme.Current.Text};
         var buttons=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=58,FlowDirection=FlowDirection.RightToLeft,Padding=new Padding(10),BackColor=UiTheme.Current.Secondary};
@@ -47,6 +48,7 @@ internal static class ModalSafety
 {
     internal static DialogResult Show(IWin32Window? owner, Form dialog)
     {
+        UiLanguage.BindTree(dialog);
         var ownerForm=owner as Form;
         var wasTopMost=ownerForm?.TopMost==true;
         try

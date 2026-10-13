@@ -1,0 +1,8 @@
+Package: Fmod5Sharp
+Version: 3.1.0
+Source: https://github.com/SamboyCoding/Fmod5Sharp.git
+Authors: Sam Byass (Samboy063)
+Copyright: not specified in package metadata
+Declared licence: MIT
+Licence URL: https://licenses.nuget.org/MIT
+This metadata does not replace the upstream licence or prove rights to unrelated native binaries.

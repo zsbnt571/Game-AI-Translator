@@ -1,8 +1,8 @@
 # Unity embedded translation: third-party notices
 
-This source repository retains upstream notices and provenance for external loader/dependency inputs. Their binaries are not included. FusionUnityEmbedded is a separately built plugin; a binary distribution requires its own packaging and licence review.
+These upstream components are redistributed as separate, unmodified loader/dependency binaries. FusionUnityEmbedded is a separately built plugin.
 
-## Referenced external loaders
+## Shipped loaders
 
 - Mono x86/x64: BepInEx 5.4.23.5 (MIT).
 - IL2CPP x64: BepInEx 6.0.0-be.788+5b766a3 (LGPL-2.1).

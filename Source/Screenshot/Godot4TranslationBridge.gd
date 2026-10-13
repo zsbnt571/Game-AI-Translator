@@ -8,6 +8,9 @@ var secret = ""
 var enabled = false
 var epoch = 0
 var cache = {}
+# Session-start entries stay exact-only and never enter template indices.
+var startup_exact = {}
+var startup_loaded = false
 var staged_cache = {}
 var preparing = false
 var pending = {}
@@ -43,11 +46,19 @@ var elapsed = 0.0
 var chinese_font = null
 var current_locale = ""
 var refreshing = false
+var entry_cursor = 0
+var entry_refresh_max_ms = 0.0
 var scan_thread = Thread.new()
 var catalog_mutex = Mutex.new()
 var scan_stop = false
 var pending_writes = {}
 var dirty_viewports = {}
+var slot_groups = []
+var slot_known = {}
+var slot_cursor = 0
+var slot_rows = 0
+var slot_limit_hits = 0
+var slot_max_ms = 0.0
 
 
 func _ready():
@@ -63,13 +74,8 @@ func _ready():
     process_priority = 2147483647
     last_request = _ticks()
     current_locale = TranslationServer.get_locale()
-    var startup = _json(_read(session + "/startup.json", 33554432))
-    if typeof(startup) == TYPE_DICTIONARY and startup.get("secret", "") == secret and typeof(startup.get("entries")) == TYPE_DICTIONARY:
-        for source in startup.entries:
-            var text = startup.entries[source]
-            if _valid(source) and typeof(text) == TYPE_STRING and text.length() <= 12000:
-                cache[source] = text
     enabled = OS.get_environment("FUSION_GODOT_TRANSLATION") == "1"
+    _load_startup(_json(_read(session + "/startup.json", 33554432)))
     _prepare_font()
     get_tree().connect("node_added", Callable(self, "_added"))
     RenderingServer.connect("frame_pre_draw", Callable(self, "_before_draw"))
@@ -86,6 +92,19 @@ func _ready():
                     _queue_resource(str(path))
     scan_thread.start(Callable(self, "_scan_worker"))
     _write("hello.json", {"pid": OS.get_process_id(), "secret": secret, "protocol": 73, "version": Engine.get_version_info().string})
+
+# Read only the host's bounded snapshot for this session. Normal launches do
+# not retain translations for a later enable, and malformed rows keep originals.
+func _load_startup(startup):
+    if not enabled or typeof(startup) != TYPE_DICTIONARY or startup.get("secret", "") != secret or typeof(startup.get("entries")) != TYPE_DICTIONARY:
+        return
+    if startup.entries.size() > 100000:
+        return
+    for source in startup.entries:
+        var text = startup.entries[source]
+        if _valid(source) and typeof(text) == TYPE_STRING and text.strip_edges() != "" and text.length() <= 12000 and source.find(char(0)) < 0 and text.find(char(0)) < 0:
+            startup_exact[source] = text
+    startup_loaded = true
 
 func _ticks():
     return Time.get_ticks_msec()
@@ -158,6 +177,12 @@ func _read_bytes(path, limit):
         value = f.get_buffer(f.get_length())
     f.close()
     return value
+func _scan_cancelled():
+    catalog_mutex.lock()
+    var result = scan_stop
+    catalog_mutex.unlock()
+    return result
+
 func _scan_worker(_unused = null):
     while true:
         catalog_mutex.lock()
@@ -185,9 +210,27 @@ func _catalog_page(cursor):
     var metadata = []
     for i in range(start, stop):
         texts.append(selected_catalog[i])
-        metadata.append(selected_metadata[i])
+        metadata.append(selected_metadata[i].duplicate())
     var result = {"texts": texts, "metadata": metadata, "next": stop, "total": size, "skipped": catalog_skipped, "done": ready, "scanning": not ready, "warnings": catalog_warnings.duplicate(), "sourceLanguage": source_language, "selectedLanguage": selected_language if ready else "", "skippedByLanguage": language_excluded if ready else 0}
     catalog_mutex.unlock()
+    # IPC pages run on the main thread. Resolve actual serialized localization
+    # keys only after releasing the scanner lock, with at most 128 lookups.
+    # The raw row cursor remains unchanged even when localized values duplicate
+    # existing Translation rows; the session deduplicates actual source text.
+    var active_locale = TranslationServer.get_locale()
+    for i in range(metadata.size()):
+        var row = metadata[i]
+        if not row.kind in ["scene", "scene_binary", "resource_text", "script_tr"]:
+            continue
+        var localized = str(TranslationServer.translate(row.source))
+        if localized == row.source or not _valid(localized):
+            continue
+        row["originalKey"] = row.source
+        row["resolvedBy"] = "TranslationServer"
+        row.source = localized
+        row.locale = active_locale
+        row.language = _locale_language(active_locale)
+        texts[i] = localized
     return result
 
 func _locale_language(value):
@@ -276,15 +319,26 @@ func _catalog_identity(value, path, locale):
     return language if language != "" else _text_language(value)
 
 func _choose_catalog_language(mode):
+    # An actual active translation resource outranks a fallback or allow-list.
+    # The operating-system locale alone is not proof of a game resource.
+    var active = _locale_language(current_locale)
+    if active != "":
+        for row in catalog_metadata:
+            if _locale_language(row.locale) == active or _path_language(row.path) == active:
+                return active
     if mode == "Mixed":
-        return "*"
+        mode = "Auto"
     if mode != "Auto":
         return _locale_language(mode)
     var weights = {}
     var english_prose = 0
     var english_prose_letters = 0
     var english_labels = {}
+    var inspected = 0
     for row in catalog_metadata:
+        inspected += 1
+        if inspected % 128 == 0 and _scan_cancelled():
+            return ""
         var language = row.language
         weights[language] = int(weights.get(language, 0)) + min(row.source.length(), 512)
         if language != "en":
@@ -318,8 +372,15 @@ func _build_language_catalog(mode, revision):
     var metadata = []
     var seen = {}
     var excluded = 0
+    var inspected = 0
     for row in catalog_metadata:
+        inspected += 1
+        if inspected % 128 == 0 and _scan_cancelled():
+            return ""
         var matches = selected == "*" or row.language == selected or (row.language == "han" and selected in ["zh", "ja"])
+        if mode in ["Auto", "Mixed"] and row.locale == "" and _path_language(row.path) == "":
+            # A genuine foreign line inside shared source is not a backup pack.
+            matches = true
         if not matches:
             excluded += 1
         elif not seen.has(row.source):
@@ -327,7 +388,7 @@ func _build_language_catalog(mode, revision):
             texts.append(row.source)
             metadata.append(row)
     catalog_mutex.lock()
-    if revision == language_revision:
+    if not scan_stop and revision == language_revision:
         selected_catalog = texts
         selected_metadata = metadata
         selected_language = selected
@@ -399,6 +460,8 @@ func _scan_step():
     var start = _ticks()
     var count = 0
     while count < 128 and _ticks() - start < 3:
+        if _scan_cancelled():
+            break
         count += 1
         if optimized_work.size() > 0:
             _optimized_step()
@@ -526,14 +589,183 @@ func _text_translation_resource(source, path):
     if locale_match != null:
         locale = locale_match.get_string(1)
     var messages = RegEx.new()
-    messages.compile('(?s)(?:^|\\n)messages\\s*=\\s*(\\{(?:[^"{}]|"(?:[^"\\\\]|\\\\.)*")*\\})')
+    messages.compile('(?m)^messages\\s*=\\s*')
     var found = messages.search(source)
-    if found != null:
-        var values = _json(found.get_string(1))
-        if typeof(values) == TYPE_DICTIONARY:
-            for key in values:
-                _catalog_add(values[key], path, str(key), locale, "translation_text")
+    if found == null:
+        return true
+    # Translation resources are data, not scripts. Parse only their bounded
+    # literal message table; never load a resource or execute constructors.
+    # Godot 3 saves alternating strings, while Godot 4.6 saves context/key and
+    # plural-form StringName arrays. Older plain string dictionaries still work.
+    var tokens = _translation_tokens(source, found.get_end())
+    var cursor = {"at": 0, "bad": false}
+    var table = _translation_literal(tokens, cursor, 0)
+    var rows = []
+    if not cursor.bad and cursor.at == tokens.size():
+        rows = _translation_rows(table)
+    if cursor.bad or rows == null:
+        _warning("翻译资源消息表无法解析：" + path)
+        return true
+    for row in rows:
+        _catalog_add(row.value, path, row.key, locale, "translation_text")
     return true
+
+func _translation_tokens(source, start):
+    var tokens = []
+    var at = start
+    var depth = 0
+    var opened = false
+    while at < source.length() and tokens.size() < 400000:
+        if tokens.size() % 128 == 0:
+            catalog_mutex.lock()
+            var cancelled = scan_stop
+            catalog_mutex.unlock()
+            if cancelled:
+                return []
+        var c = source.substr(at, 1)
+        if c in [" ", "\t", "\r", "\n"]:
+            at += 1
+            continue
+        if c == "&":
+            # StringName's serialized prefix is allowed only before a string.
+            at += 1
+            if at >= source.length() or source.substr(at, 1) != '"':
+                return []
+            c = '"'
+        if c == '"':
+            var begin = at
+            at += 1
+            var closed = false
+            while at < source.length():
+                c = source.substr(at, 1)
+                if c == "\\":
+                    at += 2
+                elif c == '"':
+                    at += 1
+                    closed = true
+                    break
+                else:
+                    at += 1
+            if not closed:
+                return []
+            var literal = source.substr(begin, at - begin).replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
+            var value = _json(literal)
+            if typeof(value) != TYPE_STRING:
+                return []
+            tokens.append({"kind": "string", "value": value})
+            continue
+        if c in ["{", "[", "("]:
+            opened = true
+            depth += 1
+            if depth > 8:
+                return []
+            tokens.append(c)
+            at += 1
+            continue
+        if c in ["}", "]", ")"]:
+            depth -= 1
+            if depth < 0:
+                return []
+            tokens.append(c)
+            at += 1
+            if opened and depth == 0:
+                return tokens
+            continue
+        if c in [",", ":"]:
+            tokens.append(c)
+            at += 1
+            continue
+        var matched = false
+        for constructor in ["PoolStringArray", "PackedStringArray"]:
+            if source.substr(at, constructor.length()) == constructor:
+                tokens.append(constructor)
+                at += constructor.length()
+                matched = true
+                break
+        if not matched:
+            return []
+    return []
+
+func _translation_at(tokens, at, value):
+    return at < tokens.size() and typeof(tokens[at]) == TYPE_STRING and tokens[at] == value
+
+func _translation_literal(tokens, cursor, depth):
+    if cursor.bad or depth > 8 or cursor.at >= tokens.size():
+        cursor.bad = true
+        return null
+    var token = tokens[cursor.at]
+    cursor.at += 1
+    if typeof(token) == TYPE_DICTIONARY:
+        return token
+    if token in ["PoolStringArray", "PackedStringArray"]:
+        if not _translation_at(tokens, cursor.at, "("):
+            cursor.bad = true
+            return null
+        cursor.at += 1
+        token = "("
+    if not token in ["{", "[", "("]:
+        cursor.bad = true
+        return null
+    var close = "}" if token == "{" else ("]" if token == "[" else ")")
+    var values = []
+    while cursor.at < tokens.size() and not _translation_at(tokens, cursor.at, close):
+        var item = _translation_literal(tokens, cursor, depth + 1)
+        if cursor.bad:
+            return null
+        if token == "{":
+            if not _translation_at(tokens, cursor.at, ":"):
+                cursor.bad = true
+                return null
+            cursor.at += 1
+            var value = _translation_literal(tokens, cursor, depth + 1)
+            if cursor.bad:
+                return null
+            values.append({"key": item, "value": value})
+        else:
+            values.append(item)
+        if _translation_at(tokens, cursor.at, ","):
+            cursor.at += 1
+        elif not _translation_at(tokens, cursor.at, close):
+            cursor.bad = true
+            return null
+    if not _translation_at(tokens, cursor.at, close):
+        cursor.bad = true
+        return null
+    cursor.at += 1
+    return {"kind": "map" if token == "{" else "array", "values": values}
+
+func _translation_rows(table):
+    if typeof(table) != TYPE_DICTIONARY:
+        return null
+    var rows = []
+    if table.kind == "array":
+        if table.values.size() % 2 != 0:
+            return null
+        for at in range(0, table.values.size(), 2):
+            if table.values[at].kind != "string" or table.values[at + 1].kind != "string":
+                return null
+            rows.append({"key": table.values[at].value, "value": table.values[at + 1].value})
+        return rows
+    if table.kind != "map":
+        return null
+    for pair in table.values:
+        var key = ""
+        if pair.key.kind == "string":
+            key = pair.key.value
+        elif pair.key.kind == "array" and pair.key.values.size() == 2 and pair.key.values[0].kind == "string" and pair.key.values[1].kind == "string":
+            key = str(pair.key.values[0].value.length()) + ":" + pair.key.values[0].value + pair.key.values[1].value
+        else:
+            return null
+        if pair.value.kind == "string":
+            rows.append({"key": key, "value": pair.value.value})
+        elif pair.value.kind == "array":
+            for at in range(pair.value.values.size()):
+                if pair.value.values[at].kind != "string":
+                    return null
+                rows.append({"key": key + "#" + str(at), "value": pair.value.values[at].value})
+        else:
+            return null
+    return rows
 
 func _file_size(path):
     var f = FileAccess.open(path, FileAccess.READ)
@@ -693,10 +925,11 @@ func _collect(node):
         _collect(child)
 
 func _added(node):
+    _slot_added(node)
     if node == self or node.has_meta("fusion_rich_display") or (node.get_parent() != null and node.get_parent().has_meta("fusion_rich_display")) or known.has(node.get_instance_id()) or entries.size() >= 20000:
         return
     var properties = []
-    if node is Label or node is Button:
+    if node is Label or (node is Button and not node is OptionButton) or node is Label3D:
         properties.append("text")
     elif node is RichTextLabel:
         properties.append("text")
@@ -711,8 +944,175 @@ func _added(node):
         var value = str(node.get(property))
         var entry = {"id": node.get_instance_id(), "ref": weakref(node), "property": property, "source": value, "last": value, "fonts": {}}
         entries.append(entry)
-        if not property in ["tooltip_text", "hint_tooltip"]:
+        if not property in ["tooltip_text", "hint_tooltip"] and node is Control:
             node.theme_changed.connect(Callable(self, "_font_style_changed").bind(entry))
+
+# Collection text lives behind item APIs, not the node's text property. Keep
+# only weak references and re-read the current slot before using a cache hit.
+# Indexed items can move: a unique owned text can follow a reorder; ambiguous
+# equal translations are never installed for different originals in one list.
+func _slot_added(node):
+    if node is PopupMenu and node.get_parent() is OptionButton:
+        return
+    if node is TabContainer:
+        _added(node.get_tab_bar())
+    if not (node is PopupMenu or node is OptionButton or node is ItemList or node is Tree or node is TabBar):
+        return
+    var id = node.get_instance_id()
+    if slot_known.has(id) or slot_groups.size() >= 2000:
+        return
+    slot_known[id] = true
+    var group = {"id":id,"ref":weakref(node),"property":"items","fonts":{},"rows":{},"owned":{},"next":0,"cycle":0,"tree_ref":null,"column":0,"cleanup":[],"cleanup_at":0,"cleanup_owned":{}}
+    slot_groups.append(group)
+    if node.has_signal("theme_changed"):
+        node.theme_changed.connect(Callable(self, "_font_style_changed").bind(group))
+
+func _slot_read(node, row):
+    if node is Tree:
+        var item = row.ref.get_ref()
+        return item.get_text(row.index) if item != null and row.index < node.columns else null
+    if node is TabBar:
+        return node.get_tab_title(row.index) if row.index < node.tab_count else null
+    return node.get_item_text(row.index) if row.index < node.item_count else null
+
+func _slot_write(node, row, text):
+    if node is Tree:
+        var item = row.ref.get_ref()
+        if item != null and row.index < node.columns:
+            item.set_text(row.index, text)
+    elif node is TabBar:
+        node.set_tab_title(row.index, text)
+    else:
+        node.set_item_text(row.index, text)
+
+func _slot_cycle(group, node):
+    group.cleanup = group.rows.keys()
+    group.cleanup_at = 0
+    group.cleanup_owned = {}
+    if group.cleanup.is_empty():
+        _slot_cycle_ready(group, node)
+
+func _slot_cycle_ready(group, node):
+    group.owned = group.cleanup_owned
+    group.cleanup = []
+    group.cycle += 1
+    group.next = 0
+    group.column = 0
+    var item = node.get_root() if node is Tree else null
+    group.tree_ref = weakref(item) if item != null else null
+
+func _slot_step(group, node):
+    # Reclaim stale rows and rebuild ownership a row at a time. A large menu's
+    # cycle boundary must not add an unbudgeted full-table walk to a draw frame.
+    if not group.cleanup.is_empty():
+        var key = group.cleanup[group.cleanup_at]
+        var row = group.rows[key]
+        if row.cycle < group.cycle:
+            group.rows.erase(key)
+            slot_rows -= 1
+        elif row.last != row.source:
+            group.cleanup_owned[row.last] = row.source
+        group.cleanup_at += 1
+        if group.cleanup_at >= group.cleanup.size():
+            _slot_cycle_ready(group, node)
+        return
+    if group.cycle == 0:
+        _slot_cycle(group, node)
+    var row
+    var key
+    if node is Tree:
+        var item = group.tree_ref.get_ref() if group.tree_ref != null else null
+        if item == null:
+            _slot_cycle(group, node)
+            return
+        key = str(item.get_instance_id()) + ":" + str(group.column)
+        row = {"ref":weakref(item),"index":group.column}
+        group.column += 1
+        if group.column >= node.columns:
+            group.column = 0
+            var next = item.get_next_in_tree()
+            group.tree_ref = weakref(next) if next != null else null
+    else:
+        var count = node.tab_count if node is TabBar else node.item_count
+        if group.next >= count:
+            _slot_cycle(group, node)
+            return
+        key = group.next
+        row = {"index":group.next}
+        group.next += 1
+    var current = _slot_read(node, row)
+    if current == null:
+        return
+    if not group.rows.has(key):
+        if slot_rows >= 20000:
+            slot_limit_hits += 1
+            return
+        row.source = group.owned.get(current, current)
+        row.last = current
+        group.rows[key] = row
+        slot_rows += 1
+    row = group.rows[key]
+    row.cycle = group.cycle
+    if current != row.last:
+        row.source = group.owned.get(current, current)
+    var result = row.source
+    if _valid(result):
+        var localized = str(TranslationServer.translate(result))
+        var translated = _lookup(localized)
+        if translated == null and localized != result:
+            translated = _lookup(result)
+        if translated != null:
+            result = translated
+        elif pending.size() < 4096:
+            pending[localized] = true
+    if result != row.source and group.owned.has(result) and group.owned[result] != row.source:
+        result = row.source
+    if result != current:
+        _slot_write(node, row, result)
+        if _slot_read(node, row) != result:
+            return
+        _redraw_viewport(node.get_viewport())
+    row.last = result
+    if result != row.source:
+        group.owned[result] = row.source
+        _font(node, group, result)
+
+func _slots_refresh():
+    var began = Time.get_ticks_usec()
+    if not enabled:
+        # Explicit disable/exit restores only values that still equal ours.
+        for group in slot_groups:
+            var node = group.ref.get_ref()
+            if node == null:
+                continue
+            for row in group.rows.values():
+                var current = _slot_read(node, row)
+                if current != null and group.owned.has(current):
+                    _slot_write(node, row, group.owned[current])
+            _font(node, group, "")
+            slot_rows -= group.rows.size()
+            group.rows.clear()
+            group.owned.clear()
+            group.cleanup.clear()
+            group.cleanup_owned.clear()
+            group.cycle = 0
+        return
+    var count = 0
+    while not slot_groups.is_empty() and count < 128:
+        slot_cursor %= slot_groups.size()
+        var group = slot_groups[slot_cursor]
+        var node = group.ref.get_ref()
+        if node == null:
+            slot_rows -= group.rows.size()
+            slot_known.erase(group.id)
+            slot_groups.remove_at(slot_cursor)
+        else:
+            _slot_step(group, node)
+            slot_cursor += 1
+        count += 1
+        if Time.get_ticks_usec() - began >= 2000:
+            break
+    slot_max_ms = max(slot_max_ms, (Time.get_ticks_usec() - began) / 1000.0)
 
 func _font_style_changed(entry):
     entry.font_style_dirty = true
@@ -787,11 +1187,13 @@ func _rich_present(node, entry, text):
     if display.text != presented_text:
         display.text = presented_text
         _redraw_viewport(node.get_viewport())
-    if display.visible_ratio != node.visible_ratio:
-        display.visible_ratio = node.visible_ratio
+    var reveal_ratio = min(node.visible_ratio, entry.get("rich_reveal_ratio", 1.0))
+    if display.visible_ratio != reveal_ratio:
+        display.visible_ratio = reveal_ratio
     entry.rich_fonts.property = "text"
     _font(display, entry.rich_fonts, text)
-    var layout_key = [presented_text, node.size, node.autowrap_mode, node.scroll_active]
+    # Color/alpha animation changes paint, not the translated glyph layout.
+    var layout_key = [entry.get("rich_layout_text", presented_text), node.size, node.autowrap_mode, node.scroll_active]
     if style_changed or layout_key != entry.rich_layout_key:
         _rich_fit(node, display, entry.rich_fonts.get("font_cjk", false))
         entry.rich_layout_key = layout_key
@@ -851,13 +1253,63 @@ func _rich_fit(node, display, cjk):
 
 func _rich_refresh(node, entry, source):
     entry.rich_mode = true
-    var translated = _lookup(source) if enabled and _valid(source) else null
+    entry.rich_reveal_ratio = 1.0
+    var request_source = source
+    var document = null
+    var waiting_reveal = false
+    if enabled and entry.get("rich_bbcode", false):
+        if entry.get("rich_document_source", null) != source:
+            entry.rich_document_source = source
+            entry.rich_document = _rich_style_document(source)
+        document = entry.get("rich_document")
+        if document != null:
+            if document.reveal != null:
+                # Prove a moving visibility boundary before treating transparent
+                # text as a typewriter animation. Static hidden spans stay hidden.
+                var reveal = document.reveal
+                if entry.get("rich_reveal_key", null) != reveal.text:
+                    entry.rich_reveal_key = reveal.text
+                    entry.rich_reveal_chars = document.visible
+                    entry.rich_reveal_active = false
+                    entry.rich_reveal_since = _ticks()
+                elif entry.rich_reveal_chars != document.visible:
+                    entry.rich_reveal_active = true
+                    entry.rich_reveal_chars = document.visible
+                if entry.rich_reveal_active:
+                    document = reveal
+                    entry.rich_reveal_ratio = float(entry.rich_reveal_chars) / max(1, entry.rich_document.total)
+                elif not document.closed or _ticks() - entry.rich_reveal_since < 180:
+                    waiting_reveal = true
+            else:
+                entry.erase("rich_reveal_key")
+            request_source = document.text
+    var translated = null
+    var menu = _rich_menu_document(source) if enabled and entry.get("rich_bbcode", false) else null
+    if menu != null:
+        if lookup_dirty:
+            _index_cache()
+        request_source = menu.canonical
+        var menu_words = rich_menu_cache.get(menu.key)
+        if menu_words != null:
+            translated = _rich_menu_present_text(source, menu, menu_words)
+            entry.rich_layout_text = JSON.stringify(menu_words)
+    elif enabled and _valid(request_source):
+        translated = _lookup(request_source)
+        if translated == null and document != null:
+            translated = rich_style_cache.get(request_source)
+        if translated != null and document != null:
+            entry.rich_layout_text = translated
+            translated = _rich_paint(translated, document)
+        else:
+            entry.rich_layout_text = translated
+        if waiting_reveal and translated == null:
+            request_source = ""
     if translated != null and translated != source:
         _rich_present(node, entry, translated)
     else:
         _rich_release(node, entry)
-        if enabled and _valid(source) and translated == null and pending.size() < 4096:
-            pending[source] = true
+        if enabled and _valid(request_source) and translated == null and pending.size() < 4096:
+            pending[request_source] = true
     entry.last = str(node.get(entry.property))
     entry.last_parsed = node.get_parsed_text()
 
@@ -867,7 +1319,21 @@ func _prepare_font():
     chinese_font.allow_system_fallback = true
 
 func _font(node, entry, translated):
-    if not node is Control or entry.property in ["tooltip_text", "hint_tooltip"]:
+    if node is Label3D:
+        if enabled and translated != "" and chinese_font != null:
+            if not entry.has("world_font") or node.font != entry.world_font.owned:
+                var original = node.font
+                var replacement = FontVariation.new()
+                replacement.base_font = original if original != null else ThemeDB.fallback_font
+                replacement.fallbacks = [chinese_font]
+                entry.world_font = {"original":original,"owned":replacement}
+                node.font = replacement
+        elif entry.has("world_font"):
+            if node.font == entry.world_font.owned:
+                node.font = entry.world_font.original
+            entry.erase("world_font")
+        return
+    if not (node is Control or (node is Window and node.has_method("add_theme_font_override"))) or entry.property in ["tooltip_text", "hint_tooltip"]:
         return
     # Unchanged strings do not need another Unicode scan on every draw pass.
     if entry.get("font_text", null) != translated:
@@ -926,6 +1392,238 @@ var lookup_dirty = true
 var plain_cache = {}
 var rich_tag_pattern = null
 var rich_unknown_pattern = null
+var rich_style_cache = {}
+var rich_style_records = {}
+var rich_style_pattern = null
+var rich_color_pattern = null
+
+# Cache identity includes all words, numbers, links and format boundaries. Only
+# valid hexadecimal color values are paint parameters. Unsupported/complex BBCode
+# stays on the original exact path instead of guessing its document semantics.
+func _rich_style_document(value):
+    if value.length() > 12000:
+        return null
+    if rich_style_pattern == null:
+        rich_style_pattern = RegEx.new()
+        rich_style_pattern.compile("\\[(/?)([a-z_]+)(?:=([^\\]\\r\\n]*))?\\]")
+        rich_color_pattern = RegEx.new()
+        rich_color_pattern.compile("^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$")
+    var matches = rich_style_pattern.search_all(value)
+    if matches.size() > 256:
+        return null
+    var stack = []
+    var parts = []
+    var reduced = []
+    var colors = []
+    var reduced_colors = []
+    var tags = []
+    var reduced_tags = []
+    var position = 0
+    var total = 0
+    var visible = 0
+    var hidden = false
+    var hidden_seen = false
+    var visible_after_hidden = false
+    var zero_count = 0
+    for token_index in range(matches.size() + 1):
+        var found = matches[token_index] if token_index < matches.size() else null
+        var end = found.get_start() if found != null else value.length()
+        var run = value.substr(position, end - position)
+        parts.append(run)
+        reduced.append(run)
+        total += run.length()
+        if run.length() > 0:
+            if hidden:
+                hidden_seen = true
+            else:
+                visible += run.length()
+                visible_after_hidden = visible_after_hidden or hidden_seen
+        if found == null:
+            break
+        position = found.get_end()
+        var name = found.get_string(2)
+        var closing = found.get_string(1) == "/"
+        var raw = found.get_string()
+        if name in ["lb", "rb"] and not closing and raw in ["[lb]", "[rb]"]:
+            parts.append(raw)
+            reduced.append(raw)
+            total += 1
+            if hidden:
+                hidden_seen = true
+            else:
+                visible += 1
+                visible_after_hidden = visible_after_hidden or hidden_seen
+            continue
+        if not name in ["b", "i", "u", "s", "color", "font", "font_size", "url", "center", "right", "left", "fill", "wave", "shake", "rainbow", "outline_size", "outline_color", "bgcolor", "fgcolor"]:
+            return null
+        var zero = false
+        var paint = false
+        var canonical = raw
+        if closing:
+            if stack.size() == 0 or stack.back().name != name:
+                return null
+            var popped = stack.pop_back()
+            zero = popped.zero
+            hidden = popped.hidden_before
+        else:
+            paint = name == "color" and rich_color_pattern.search(found.get_string(3)) != null
+            if paint:
+                canonical = "[color=#FFFFFFFF]"
+                zero = raw.length() == 17 and found.get_string(3).right(2) == "00"
+                colors.append(raw)
+                if not zero:
+                    reduced_colors.append(raw)
+            stack.append({"name":name,"zero":zero,"hidden_before":hidden})
+            if name == "color":
+                hidden = zero
+            if zero:
+                zero_count += 1
+        parts.append(canonical)
+        tags.append(canonical)
+        if not zero:
+            reduced.append(canonical)
+            reduced_tags.append(canonical)
+    var closed = stack.size() == 0
+    for opened in stack:
+        if not opened.zero:
+            return null
+    var reveal = null
+    if zero_count > 0 and hidden_seen and not visible_after_hidden:
+        reveal = {"text":"".join(reduced),"colors":reduced_colors,"tags":reduced_tags,"closed":true}
+    elif not closed:
+        return null
+    return {"text":"".join(parts),"colors":colors,"tags":tags,"closed":closed,"reveal":reveal,"visible":visible,"total":total}
+
+# Only a document made entirely of separate, plain link labels is projected.
+# Paint, hidden sentinels and whitespace remain in the live document. Link IDs,
+# order, label text and numbers form its identity; arbitrary rich text falls back.
+var rich_menu_records = {}
+var rich_menu_cache = {}
+
+func _rich_menu_document(value):
+    if value.find("[url=") < 0 or value.length() > 12000:
+        return null
+    # Reuse the bounded, balanced BBCode lexer, not a permissive tag stripper.
+    var validated = _rich_style_document(value)
+    if validated == null or not validated.closed:
+        return null
+    var urls = []
+    var words = []
+    var spans = []
+    var stack = []
+    var hidden = false
+    var in_link = false
+    var position = 0
+    for token in rich_style_pattern.search_all(value):
+        var run = value.substr(position, token.get_start() - position)
+        if in_link:
+            if token.get_string() != "[/url]" or run.strip_edges() == "":
+                return null
+            var word = run.strip_edges()
+            var start = position + run.find(word)
+            words.append(word)
+            spans.append([start, start + word.length()])
+        elif not hidden and run.strip_edges() != "":
+            return null
+        var name = token.get_string(2)
+        var closing = token.get_string(1) == "/"
+        if not name in ["url", "color", "bgcolor", "fgcolor", "center", "left", "right"]:
+            return null
+        if closing:
+            if stack.is_empty() or stack.back().name != name:
+                return null
+            hidden = stack.pop_back().hidden
+            if name == "url":
+                in_link = false
+        else:
+            stack.append({"name":name,"hidden":hidden})
+            if name == "url":
+                if hidden or token.get_string(3) == "" or urls.size() >= 128:
+                    return null
+                urls.append(token.get_string(3))
+                in_link = true
+            elif name == "color":
+                var color = token.get_string(3).trim_prefix("#")
+                if color.length() == 8 and color.is_valid_hex_number() and color.ends_with("00"):
+                    hidden = true
+        position = token.get_end()
+    if not stack.is_empty() or value.substr(position).strip_edges() != "" or urls.is_empty() or words.size() != urls.size():
+        return null
+    var canonical = ""
+    for i in range(words.size()):
+        canonical += "[url=" + urls[i] + "]" + words[i] + "[/url]\n"
+    return {"key":JSON.stringify([urls,words]),"canonical":canonical,"urls":urls,"words":words,"spans":spans}
+
+func _rich_menu_index(values):
+    # Sorting makes old conflicting hover variants choose the same wording on
+    # every startup. A canonical entry (including a user edit) has precedence.
+    var sources = values.keys()
+    sources.sort()
+    for source in sources:
+        if source.find("[url=") < 0:
+            continue
+        var record = rich_menu_records.get(source)
+        if record == null or record.value != values[source]:
+            var original = _rich_menu_document(source)
+            var translated = _rich_menu_document(values[source])
+            record = {"value":values[source],"original":original,"translated":translated}
+            if rich_menu_records.size() < 20000 or rich_menu_records.has(source):
+                rich_menu_records[source] = record
+        var original = record.original
+        var translated = record.translated
+        if original == null or translated == null or original.urls != translated.urls:
+            continue
+        if not rich_menu_cache.has(original.key) or source == original.canonical:
+            rich_menu_cache[original.key] = translated.words
+
+func _rich_menu_present_text(source, document, translated_words):
+    if translated_words.size() != document.spans.size():
+        return null
+    var result = ""
+    var position = 0
+    for i in range(document.spans.size()):
+        var span = document.spans[i]
+        result += source.substr(position, span[0] - position) + translated_words[i]
+        position = span[1]
+    return result + source.substr(position)
+
+
+func _rich_paint(text, document):
+    var translated = _rich_style_document(text)
+    if translated == null or translated.tags != document.tags or translated.colors.size() != document.colors.size():
+        return null
+    var output = ""
+    var position = 0
+    for color in document.colors:
+        var at = text.find("[color=#FFFFFFFF]", position)
+        if at < 0:
+            return null
+        output += text.substr(position, at - position) + color
+        position = at + 17
+    return output + text.substr(position)
+
+func _rich_index_styles(values):
+    for source in values:
+        if source.find("[color=#") < 0:
+            continue
+        var record = rich_style_records.get(source)
+        if record == null or record.value != values[source]:
+            var original = _rich_style_document(source)
+            var translated = _rich_style_document(values[source])
+            record = {"value":values[source],"aliases":[]}
+            if original != null and translated != null:
+                if original.closed and translated.closed and original.tags == translated.tags:
+                    record.aliases.append([original.text,translated.text])
+                if original.reveal != null and translated.reveal != null and original.reveal.tags == translated.reveal.tags:
+                    record.aliases.append([original.reveal.text,translated.reveal.text])
+            # Provider batches must not repeatedly parse the whole startup cache.
+            if rich_style_records.size() < 20000 or rich_style_records.has(source):
+                rich_style_records[source] = record
+        # An exact canonical entry from the host wins in _lookup. Old variants
+        # retain one valid wording instead of switching along with their paint.
+        for alias in record.aliases:
+            if not rich_style_cache.has(alias[0]):
+                rich_style_cache[alias[0]] = alias[1]
 
 func _plain_rich_text(value, require_closed = true):
     # Lossless text-only aliases for ordinary emphasis/color wrappers. Complex
@@ -983,6 +1681,19 @@ func _index_cache():
     lookup_memo.clear()
     plain_cache.clear()
     lookup_dirty = false
+    rich_style_cache.clear()
+    rich_menu_cache.clear()
+    for source in rich_menu_records.keys():
+        if not cache.has(source) and not startup_exact.has(source):
+            rich_menu_records.erase(source)
+    _rich_menu_index(startup_exact)
+    # Current canonical translations take precedence over inherited variants.
+    _rich_menu_index(cache)
+    for source in rich_style_records.keys():
+        if not cache.has(source) and not startup_exact.has(source):
+            rich_style_records.erase(source)
+    _rich_index_styles(cache)
+    _rich_index_styles(startup_exact)
     var ambiguous = {}
     for source in cache:
         if source.find("[") < 0:
@@ -1059,6 +1770,8 @@ func _match_template(candidate, value):
 func _lookup(value, depth = 0):
     if cache.has(value):
         return cache[value]
+    if depth == 0 and startup_exact.has(value):
+        return startup_exact[value]
     if lookup_dirty:
         _index_cache()
     if plain_cache.has(value):
@@ -1140,11 +1853,18 @@ func _refresh(all = false):
     if refreshing:
         return
     refreshing = true
-    var stale = []
-    for entry in entries:
+    var stale = {}
+    var start = Time.get_ticks_usec()
+    var available = entries.size()
+    for ignored in range(available if all else min(available, 128)):
+        if not all and ignored > 0 and Time.get_ticks_usec() - start > 2000:
+            break
+        entry_cursor %= available
+        var entry = entries[entry_cursor]
+        entry_cursor += 1
         var node = entry.ref.get_ref()
         if node == null:
-            stale.append(entry)
+            stale[entry.id] = true
             continue
         if not all and node is CanvasItem and not node.is_visible_in_tree():
             continue
@@ -1178,9 +1898,13 @@ func _refresh(all = false):
             _redraw_viewport(node.get_viewport())
         _font(node, entry, result if result != entry.source else "")
         entry.last = result
-    for entry in stale:
-        known.erase(entry.id)
-        entries.erase(entry)
+    if not stale.is_empty():
+        for id in stale:
+            known.erase(id)
+        # One compaction after scene deletion, not O(n^2) erase per dead node.
+        entries = entries.filter(func(entry):return not stale.has(entry.id))
+    entry_refresh_max_ms = max(entry_refresh_max_ms, (Time.get_ticks_usec() - start) / 1000.0)
+    _slots_refresh()
     refreshing = false
 
 # A one-shot viewport may have already consumed its draw before text and font
@@ -1217,9 +1941,16 @@ func _before_draw():
 func _command(q):
     match q.get("op", ""):
         "translationPrepare":
+            var preserve = startup_loaded and q.get("preserveStartup", false) == true
+            startup_loaded = false
             epoch += 1
             preparing = true
             staged_cache.clear()
+            cache.clear()
+            if not preserve:
+                enabled = false
+                startup_exact.clear()
+            lookup_dirty = true
             pending.clear()
             _prepare_catalog_language(str(q.get("sourceLanguage", "Auto")))
             return {"epoch": epoch}
@@ -1234,6 +1965,9 @@ func _command(q):
             return {"epoch": epoch}
         "translationDisable":
             enabled = false
+            startup_loaded = false
+            startup_exact.clear()
+            lookup_dirty = true
             preparing = false
             staged_cache.clear()
             epoch += 1
@@ -1250,7 +1984,7 @@ func _command(q):
                     break
                 texts.append(text)
                 pending.erase(text)
-            return {"epoch": epoch, "texts": texts, "ahead": []}
+            return {"epoch": epoch, "texts": texts, "ahead": [], "activeTextLanguage": selected_language if selected_language == _locale_language(current_locale) else "", "entryRefreshMaxMs":entry_refresh_max_ms, "slotBindings":slot_rows, "slotRefreshMaxMs":slot_max_ms, "runtimeWarning":"本次运行部分列表文字达到读取容量上限" if slot_limit_hits > 0 else ""}
         "translationApply":
             if int(q.get("epoch", -1)) != epoch or (not enabled and not q.get("prime", false)):
                 return {"stale": true, "applied": 0}
@@ -1270,7 +2004,7 @@ func _command(q):
             return {"applied": count}
         "translationState":
             var snapshot = _catalog_page(0)
-            return {"enabled": enabled, "epoch": epoch, "entries": cache.size(), "savedir": OS.get_user_data_dir(), "catalog": snapshot.total, "scanning": snapshot.scanning, "skipped": snapshot.skipped, "warnings": snapshot.warnings, "locale": TranslationServer.get_locale(), "scan_max_ms": scan_max_ms, "scan_overruns": scan_overruns, "scan_thread": true, "scene_resource_loads": 0, "sourceLanguage": snapshot.sourceLanguage, "selectedLanguage": snapshot.selectedLanguage, "skippedByLanguage": snapshot.skippedByLanguage}
+            return {"enabled": enabled, "epoch": epoch, "entries": cache.size(), "startupExactCache": startup_exact.size(), "savedir": OS.get_user_data_dir(), "catalog": snapshot.total, "scanning": snapshot.scanning, "skipped": snapshot.skipped, "warnings": snapshot.warnings, "locale": TranslationServer.get_locale(), "scan_max_ms": scan_max_ms, "scan_overruns": scan_overruns, "scan_thread": true, "scene_resource_loads": 0, "sourceLanguage": snapshot.sourceLanguage, "selectedLanguage": snapshot.selectedLanguage, "skippedByLanguage": snapshot.skippedByLanguage}
     return null
 
 func _exit_tree():
@@ -1288,7 +2022,12 @@ func _exit_tree():
     dirty_viewports.clear()
     entries.clear()
     known.clear()
+    slot_groups.clear()
+    slot_known.clear()
+    slot_rows = 0
     cache.clear()
+    startup_exact.clear()
+    startup_loaded = false
     staged_cache.clear()
     pending.clear()
     optimized_work.clear()
@@ -1298,6 +2037,15 @@ func _exit_tree():
         directory_reader = null
 
 func _process(delta):
+    var latest_locale = TranslationServer.get_locale()
+    if latest_locale != current_locale:
+        catalog_mutex.lock()
+        current_locale = latest_locale
+        language_revision += 1
+        selected_catalog = []
+        selected_metadata = []
+        catalog_mutex.unlock()
+        epoch += 1
     if enabled:
         _refresh()
         call_deferred("_before_draw")
@@ -1382,7 +2130,7 @@ func _binary_name():
 
 func _binary_variant(depth = 0):
     binary_items += 1
-    if binary_bad or depth > 48 or binary_items > 2000000:
+    if binary_bad or depth > 48 or binary_items > 2000000 or (binary_items % 128 == 0 and _scan_cancelled()):
         binary_bad = true
         return null
     var type = _binary_u32()
@@ -1683,3 +2431,4 @@ const SMAZ = [
 " we", "ly", "ee", " n", "id", " cl", "ac", "il", "</", "rt", " wi", "div",
 "e, ", " it", "whi", " ma", "ge", "x", "e c", "men", ".com"
 ]
+

@@ -1,0 +1,46 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>Fmod5Sharp</id>
+    <version>3.1.0</version>
+    <title>FMOD5 Sharp</title>
+    <authors>Sam Byass (Samboy063)</authors>
+    <license type="expression">MIT</license>
+    <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+    <projectUrl>https://github.com/SamboyCoding/Fmod5Sharp</projectUrl>
+    <description>Decoder for FMOD 5 sound banks (FSB files)</description>
+    <tags>fmod audio</tags>
+    <repository type="git" url="https://github.com/SamboyCoding/Fmod5Sharp.git" branch="refs/heads/master" commit="d9df2cbcc1aa478d7de9fcb64f83f7ba49f23258" />
+    <dependencies>
+      <group targetFramework="net8.0">
+        <dependency id="IndexRange" version="1.1.0" exclude="Build,Analyzers" />
+        <dependency id="NAudio.Core" version="2.2.1" exclude="Build,Analyzers" />
+        <dependency id="OggVorbisEncoder" version="1.2.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net9.0">
+        <dependency id="IndexRange" version="1.1.0" exclude="Build,Analyzers" />
+        <dependency id="NAudio.Core" version="2.2.1" exclude="Build,Analyzers" />
+        <dependency id="OggVorbisEncoder" version="1.2.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework="net10.0">
+        <dependency id="IndexRange" version="1.1.0" exclude="Build,Analyzers" />
+        <dependency id="NAudio.Core" version="2.2.1" exclude="Build,Analyzers" />
+        <dependency id="OggVorbisEncoder" version="1.2.2" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.0">
+        <dependency id="IndexRange" version="1.1.0" exclude="Build,Analyzers" />
+        <dependency id="NAudio.Core" version="2.2.1" exclude="Build,Analyzers" />
+        <dependency id="OggVorbisEncoder" version="1.2.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.3" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="IndexRange" version="1.1.0" exclude="Build,Analyzers" />
+        <dependency id="NAudio.Core" version="2.2.1" exclude="Build,Analyzers" />
+        <dependency id="OggVorbisEncoder" version="1.2.2" exclude="Build,Analyzers" />
+        <dependency id="System.Text.Json" version="10.0.3" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

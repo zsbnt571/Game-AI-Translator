@@ -3,7 +3,7 @@ namespace ScreenshotTranslationUiTester;
 public sealed partial class MainForm
 {
     private readonly GameLibraryGrid _libraryGrid=new(){Dock=DockStyle.Fill};
-    private readonly TextBox _librarySearch=new(){PlaceholderText="搜索名称、标签或便签",Width=220};
+    private readonly TextBox _librarySearch=new(){PlaceholderText=UiLanguage.Text("搜索名称、标签或便签"),Width=220};
     private readonly ComboBox _libraryFilter=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=125};
     private readonly ComboBox _libraryEngine=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=155};
     private readonly ComboBox _libraryFolder=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=155};
@@ -18,11 +18,11 @@ public sealed partial class MainForm
     private Task<LibraryMetadata>? _libraryMetadataTask;
     private bool _libraryLoading,_libraryRefreshPending,_libraryFiltersLoading;
     private bool _libraryIdentifying;
-    private int _libraryPage,_libraryDetailEpoch,_libraryViewRevision;
+    private int _libraryDetailEpoch,_libraryViewRevision;
+    private string _libraryScrollScope="";
     private Button? _plainLaunchButton;
     private readonly Label _librarySelectionLabel=WorkspaceLabel("双击游戏进入详细主页");
     private RecentGameStore? _librarySubscribedStore;
-    private const int LibraryPageSize=48;
     private FlowLayoutPanel? _libraryPager;
     private static GameActionButton IconButton(string text,string icon,EventHandler action,bool primary=false,int minWidth=84)
     {var button=new GameActionButton(text){IconKey=icon,Primary=primary,MinimumLogicalWidth=minWidth};if(text.Length==0)button.LogicalHeight=30;button.RefreshMetrics();button.Click+=action;return button;}
@@ -75,16 +75,15 @@ public sealed partial class MainForm
         _recentShelf.SizeChanged+=(_,_)=>SizeRecentShelf();_recentShelf.FontChanged+=(_,_)=>SizeRecentShelf();
         WorkspaceAdd(body,_mainSectionHeading);_mainSectionHeading.Dock=DockStyle.None;_mainSectionHeading.Anchor=AnchorStyles.Left;
         _libraryGrid.Portrait=_libraryPreferences.Portrait;_libraryGrid.CoverWidth=_libraryPreferences.CoverWidth;WorkspaceAdd(body,_libraryGrid,SizeType.Percent,100);
-        var previous=WorkspaceButton("上一页",(_,_)=>{if(_libraryPage>0){_libraryPage--;ScheduleLibraryRefresh();}});var next=WorkspaceButton("下一页",(_,_)=>{_libraryPage++;ScheduleLibraryRefresh();});
-        _libraryPager=WorkspaceRow(previous,next,_libraryRetention);_libraryPager.Visible=false;WorkspaceAdd(body,_libraryPager);_libraryRetention.LinkClicked+=async(_,_)=>await EditLibraryRetentionAsync();
+        _libraryPager=WorkspaceRow(_libraryRetention);_libraryPager.Visible=false;WorkspaceAdd(body,_libraryPager);_libraryRetention.LinkClicked+=async(_,_)=>await EditLibraryRetentionAsync();
         page.Controls.Add(body);_libraryBody=body;BuildGameSessionWorkspace(page);
         foreach(var grid in new[]{_libraryGrid,_recentShelf})
         {
             grid.GameSelected+=game=>SelectFusionGame(game.ExePath,recordSelection:false);grid.GameActivated+=async game=>await OpenLibraryGameAsync(game.ExePath);
             grid.ContextRequested+=(game,point)=>{_libraryContextSource=grid;ShowLibraryContextMenu(game,_libraryGrid.PointToClient(grid.PointToScreen(point)));};
         }
-        _librarySearch.TextChanged+=(_,_)=>{_libraryPage=0;ScheduleLibraryRefresh();};
-        foreach(var box in new[]{_libraryFilter,_libraryEngine,_libraryFolder})box.SelectedIndexChanged+=(_,_)=>{if(!_libraryFiltersLoading){_libraryPage=0;ScheduleLibraryRefresh();}};
+        _librarySearch.TextChanged+=(_,_)=>ScheduleLibraryRefresh();
+        foreach(var box in new[]{_libraryFilter,_libraryEngine,_libraryFolder})box.SelectedIndexChanged+=(_,_)=>{if(!_libraryFiltersLoading)ScheduleLibraryRefresh();};
         _libraryRefreshTimer.Tick+=async(_,_)=>{_libraryRefreshTimer.Stop();await RefreshLibraryAsync();};
         void DropTarget(Control control)
         {
@@ -98,7 +97,7 @@ public sealed partial class MainForm
     }
     private async void ChooseLibraryGame()
     {
-        using var dialog=new OpenFileDialog{Filter="游戏程序|*.exe",Title="导入游戏 · 支持多选",Multiselect=true};
+        using var dialog=new OpenFileDialog{Filter=UiLanguage.Text("游戏程序|*.exe"),Title=UiLanguage.Text("导入游戏 · 支持多选"),Multiselect=true};
         if(dialog.ShowDialog(this)==DialogResult.OK)await ImportLibraryPathsAsync(dialog.FileNames,false);
     }
     private void LibraryStoreChanged()
@@ -145,9 +144,8 @@ public sealed partial class MainForm
             if(_libraryEngine.SelectedIndex>0)filtered=filtered.Where(x=>_libraryEngines.GetValueOrDefault(x.ExePath)==_libraryEngine.Text);
             if(_libraryFolder.SelectedIndex>0)filtered=filtered.Where(x=>LibraryFolders.Contains(_libraryFolder.Text,x.ExePath));
             if(query.Length>0)filtered=filtered.Where(x=>(x.Name+" "+_libraryMetadata.Get(x.Id).ChineseName+" "+_libraryMetadata.Get(x.Id).Note+" "+_libraryMetadata.Get(x.Id).Tags).Contains(query,StringComparison.OrdinalIgnoreCase));
-            var found=filtered.ToArray();int pages=Math.Max(1,(found.Length+LibraryPageSize-1)/LibraryPageSize);_libraryPage=Math.Clamp(_libraryPage,0,pages-1);
-            var batch=found.Skip(_libraryPage*LibraryPageSize).Take(LibraryPageSize).Select(x=>(Game:x,Note:_libraryMetadata.Get(x.Id),Engine:_libraryEngines.GetValueOrDefault(x.ExePath)??"待识别")).ToArray();
-            tiles=await Task.Run(()=>batch.Select(x=>new LibraryTile(x.Game,x.Note,x.Engine,store.ReadImage(x.Game,true),store.ReadImage(x.Game,false))).ToArray());
+            var found=filtered.ToArray();
+            tiles=found.Select(x=>new LibraryTile(x,_libraryMetadata.Get(x.Id),_libraryEngines.GetValueOrDefault(x.ExePath)??"待识别",null,null)).ToArray();
             if(Stale())return;
             bool showShelf=all.Length>0&&homeSections;
             var sectionRecords=LibrarySections.Select(all,_libraryPreferences.RecentSection,_libraryMetadata,_libraryEngines,store.RecentLimit,_libraryPreferences).ToArray();
@@ -163,14 +161,16 @@ public sealed partial class MainForm
             {
                 _mainSectionHeading.Text=sectionTitle;
                 _libraryGrid.EmptyText=all.Length>0?"这个范围内暂无游戏\n可切换栏目、筛选或搜索":"把游戏拖到这里\n或点击右上角“导入游戏”";
-                _libraryGrid.SetTiles(tiles,_selectedGame?.ExePath);tiles=null;_libraryGrid.UpdateRunning(running);
+                _libraryGrid.SetTiles(tiles,_selectedGame?.ExePath,game=>(store.ReadImage(game,true),store.ReadImage(game,false)));tiles=null;_libraryGrid.UpdateRunning(running);
+                string scrollScope=string.Join("\0",navigationKey,_libraryPreferences.MainSection,_libraryFilter.SelectedIndex.ToString(),_libraryEngine.Text,_libraryFolder.Text,query);
+                if(_libraryScrollScope!=scrollScope){_libraryGrid.ScrollToStart();_libraryScrollScope=scrollScope;}
                 _showRecentShelf=showShelf;if(_recentShelfHost is not null)_recentShelfHost.Visible=showShelf;
                 _recentSectionTotal=sectionRecords.Length;_recentSectionHeading.Text=LibrarySections.Title(_libraryPreferences.RecentSection,_libraryPreferences)+(sectionRecords.Length>24?$"  24 / {sectionRecords.Length}":"");
                 _recentShelf.EmptyText="这个范围内暂无游戏，可点击标题切换";
                 _recentShelf.SetTiles(recentTiles,_selectedGame?.ExePath);recentTiles=null;_recentShelf.UpdateRunning(running);SizeRecentShelf();
                 _libraryNavigation.UpdateEntries(all,_libraryMetadata,_libraryEngines,running,selectedPath,navigationKey,_libraryPreferences,navIcons);navIcons=null;
                 if(_libraryHeading is not null)_libraryHeading.Text=_libraryCollection.Length>0?LibrarySections.Title("collection:"+_libraryCollection,_libraryPreferences):_libraryTag.Length>0?_libraryTag:_libraryEngine.SelectedIndex>0?_libraryEngine.Text:_libraryFolder.SelectedIndex>0?Path.GetFileName(_libraryFolder.Text):_libraryScope switch{"recent"=>"最近使用","running"=>"正在运行","favorite"=>"收藏",_=>"游戏库"};
-                _libraryCount.Text=$"{found.Length} 款游戏";if(_libraryPager is not null)_libraryPager.Visible=pages>1||_libraryFilter.SelectedIndex==2;
+                _libraryCount.Text=$"{found.Length} 款游戏";if(_libraryPager is not null)_libraryPager.Visible=_libraryFilter.SelectedIndex==2;
             }
             if(_libraryMetadata.Notice.Length>0)_statusLabel.Text=_libraryMetadata.Notice;
             if(_selectedGame is { } game&&store.Find(game.ExePath) is { } record)await RefreshLibraryDetailAsync(store,record);
@@ -199,9 +199,9 @@ public sealed partial class MainForm
         using var cancelTranslation=CancellationTokenSource.CreateLinkedTokenSource(_desktopLifetime.Token);dialog.FormClosed+=(_,_)=>cancelTranslation.Cancel();
         var table=WorkspaceColumn();table.Padding=new(18);table.Dock=DockStyle.Top;table.AutoSize=true;
         var originalName=new TextBox{Text=record.Name,MaxLength=160};
-        var name=new TextBox{Text=note.ChineseName,PlaceholderText="添加中文显示名，保留原名",MaxLength=120};
-        var text=new TextBox{Text=note.Note,PlaceholderText="写一条贴在游戏上的备注",MaxLength=120};
-        var tags=new TextBox{Text=note.Tags,PlaceholderText="标签，例如：RPG, 像素, 待研究",MaxLength=160};
+        var name=new TextBox{Text=note.ChineseName,PlaceholderText=UiLanguage.Text("添加中文显示名，保留原名"),MaxLength=120};
+        var text=new TextBox{Text=note.Note,PlaceholderText=UiLanguage.Text("写一条贴在游戏上的备注"),MaxLength=120};
+        var tags=new TextBox{Text=note.Tags,PlaceholderText=UiLanguage.Text("标签，例如：RPG, 像素, 待研究"),MaxLength=160};
         var bookmark=new CheckBox{Text="在卡片上放置书签",Checked=note.Bookmark,AutoSize=true};
         var color=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList};color.Items.AddRange(["浅黄","淡紫","薄荷"]);color.SelectedIndex=note.Color=="lavender"?1:note.Color=="mint"?2:0;
         var generate=WorkspaceButton("生成中文名",(_,_)=>{});var feedback=WorkspaceLabel("");
@@ -228,7 +228,7 @@ public sealed partial class MainForm
     }
     private async Task ImportLibraryFolderAsync(string? selectedFolder=null)
     {
-        using var folder=new FolderBrowserDialog{Description="选择游戏库文件夹，自动识别并导入游戏主程序"};
+        using var folder=new FolderBrowserDialog{Description=UiLanguage.Text("选择游戏库文件夹，自动识别并导入游戏主程序")};
         if(selectedFolder is null){if(folder.ShowDialog(this)!=DialogResult.OK)return;selectedFolder=folder.SelectedPath;}
         await ImportLibraryPathsAsync([selectedFolder],true);
     }
