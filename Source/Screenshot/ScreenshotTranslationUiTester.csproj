@@ -9,12 +9,13 @@
     <AssemblyName>GameTranslator</AssemblyName>
     <ApplicationIcon>BrandAssets\BlueCat.ico</ApplicationIcon>
     <RootNamespace>ScreenshotTranslationUiTester</RootNamespace>
-    <Version>0.6.0.178</Version><FileVersion>0.6.0.178</FileVersion><AssemblyVersion>0.6.0.178</AssemblyVersion><InformationalVersion>0.6.0.178-candidate-source-pretranslation</InformationalVersion>
+    <Version>0.6.0.178</Version><FileVersion>0.6.0.178</FileVersion><AssemblyVersion>0.6.0.178</AssemblyVersion><InformationalVersion>0.6.0.178-russian-preview.1</InformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj-core-v2\**;bin-core-v2\**;obj-verify\**;bin-verify\**;obj-temporary-wda\**;bin-temporary-wda\**;obj-settings12\**;bin-settings12\**;obj-consolidation-task-a\**;bin-consolidation-task-a\**;obj-mega-r1\**;bin-mega-r1\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="..\RgssBridge\Payload\FusionRgss.dll" Link="adapters\rgss\FusionRgss.dll" CopyToOutputDirectory="PreserveNewest" />
     <EmbeddedResource Include="UiEnglish.json" LogicalName="Fusion.UiEnglish.json" />
+    <EmbeddedResource Include="UiRussian.json" LogicalName="Fusion.UiRussian.json" />
     <EmbeddedResource Include="RgssTranslationBridge.rb" LogicalName="Fusion.RgssTranslationBridge.rb" />
     <EmbeddedResource Include="DefoldTranslationBridge.lua" LogicalName="Fusion.DefoldTranslationBridge.lua" />
     <EmbeddedResource Include="..\WolfBridge\LayoutPattern.txt" LogicalName="Fusion.WolfLayoutPattern.txt" />

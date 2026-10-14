@@ -138,7 +138,12 @@ internal sealed class ScreenshotRebuildSegments : Control
                 using var path = WorkspaceDrawing.Round(box, S(4)); using var brush = new SolidBrush(p.Secondary); g.FillPath(brush, path);
             }
             var color = i == (int)selected || i == hover ? p.Accent : p.SecondaryText;
-            var title=UiLanguage.IsEnglish?new[]{"Image","Translated","Source","Text"}[i]:ScreenshotRebuildPane.ViewTitle((ScreenshotPaneView)i);
+            var title=UiLanguage.Current switch
+            {
+                ApplicationLanguage.English=>new[]{"Image","Translated","Source","Text"}[i],
+                ApplicationLanguage.Russian=>new[]{"Снимок","Перевод","Оригинал","Текст"}[i],
+                _=>ScreenshotRebuildPane.ViewTitle((ScreenshotPaneView)i)
+            };
             TextRenderer.DrawText(g, title, Font, box, color, TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
         }
         if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(ClientRectangle, -S(2), -S(2)), p.Accent, p.Control);

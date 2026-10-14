@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace ScreenshotTranslationUiTester;
@@ -97,6 +97,7 @@ public static class TranslationPromptBuilder
         "en" or "english" => "English (en)",
         "ja" or "japanese" => "Japanese (ja)",
         "ko" or "korean" => "Korean (ko)",
+        "ru" or "ru-ru" or "russian" or "русский" or "俄语" => "Russian (ru)",
         _ => value.Trim()
     };
 

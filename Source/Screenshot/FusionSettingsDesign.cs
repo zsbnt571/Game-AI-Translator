@@ -1,4 +1,4 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
@@ -40,7 +40,7 @@ public sealed partial class MainForm
     private TableLayoutPanel BuildGeneralSettings()
     {
         var table=SettingsTable();
-        if(_interfaceLanguageBox.Items.Count==0)_interfaceLanguageBox.Items.AddRange(["简体中文","English"]);
+        if(_interfaceLanguageBox.Items.Count==0)_interfaceLanguageBox.Items.AddRange(["简体中文","English","Русский"]);
         _interfaceLanguageBox.SelectedIndex=(int)_translationOptions.InterfaceLanguage;
         _interfaceLanguageBox.SelectedIndexChanged+=SettingsControlChanged;
         AddSettingRow(table,"界面语言",_interfaceLanguageBox);

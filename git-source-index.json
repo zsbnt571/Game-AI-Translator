@@ -1,10 +1,10 @@
 {
-  "version": "0.6.0.178-preview.1",
-  "releaseTag": "v0.6.0.178-preview.1",
+  "version": "0.6.0.178-russian-preview.1",
+  "releaseTag": "v0.6.0.178-russian-preview.1",
   "sourceRoot": "Source",
-  "fullSourceAsset": "Fusion-0.6.0.178-Source.zip",
-  "fullSourceAssetSha256": "ea4fa503986576bad41dda590c996a2518a915151bc42c9407b9607149048565",
-  "mainAssemblySha256": "f239161d1e9bb1e5817b0f3a856f8669fdc1d6622457ea405f30e5d11e874050",
+  "fullSourceAsset": "Fusion-0.6.0.178-Russian-Preview1-Source.zip",
+  "fullSourceAssetSha256": "4dc5d8db406337948cb62f9a5756adb58e7fc9e6bfd872fcb800ed3cf3864298",
+  "mainAssemblySha256": "b15b2a02b6d322feed116d7842acfd4172c2eece7df071587d5cd708ab5cf84f",
   "productSourceEdited": false,
   "files": [
     {
@@ -1061,7 +1061,7 @@
     },
     {
       "path": "Source/Screenshot/FusionProfileEditor.cs",
-      "sha256": "8d8f577aed478d38acef47903c653d7d70fe7bbaa82add89413ad562e04b9b9d"
+      "sha256": "677cd63c4a3f038e240ac03c1822564815a696eb1fd0cca484d00aaf3521fbc3"
     },
     {
       "path": "Source/Screenshot/FusionProfileVerification.cs",
@@ -1109,7 +1109,7 @@
     },
     {
       "path": "Source/Screenshot/FusionSettingsDesign.cs",
-      "sha256": "4befa0f315f5cf005542cbb8ab60139a7f3816e30c946627c135b7c0d02f1813"
+      "sha256": "9cb630ce021ab8525d1d1f32697f4f5d116d764cfae3844539f1f1aa5c8b2d27"
     },
     {
       "path": "Source/Screenshot/FusionTestSurface.cs",
@@ -1198,6 +1198,10 @@
     {
       "path": "Source/Screenshot/GameLibraryWindowIdentity.cs",
       "sha256": "f82f984e08d0756d714ff847cd555c5e87af83030da9cd11e3429a0fe278f168"
+    },
+    {
+      "path": "Source/Screenshot/GameMakerErrorDialogCapture.cs",
+      "sha256": "74ba8e7b96bcb28ec3258c9e9a3ccdc8f375aad5ba7b7ebf8ff6041dd82e5481"
     },
     {
       "path": "Source/Screenshot/GameMakerGameAdapter.cs",
@@ -2141,7 +2145,7 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildControls.cs",
-      "sha256": "06867b0d43dcad884ae3803260dbf73c8a5897d06ea13a2fefe64c87d97fc6dc"
+      "sha256": "c2b38cdc936ebcfa8adfc6eca90a6de5ba5e9bd7f9b3218cc0318cdf969efcbe"
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildHistory.cs",
@@ -2153,7 +2157,7 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildPane.cs",
-      "sha256": "0d668821334220a5802df76a1925b7028dcb03545bb706a917c32d208e78190c"
+      "sha256": "432666140cf82ede33806578b8e7a3a9cf7eb980f0a34493e214fd902632167f"
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildSelfTests.cs",
@@ -2173,7 +2177,7 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
-      "sha256": "c6b4b99af17e0446e01c11d852209094754cf65d58284c2e90243a74096e959c"
+      "sha256": "573e04cb24306613a35bb9d200f821c09332cb3869ceb09b4506d6237c4425fd"
     },
     {
       "path": "Source/Screenshot/SecondaryMaterialRejectionRecovery.cs",
@@ -2214,6 +2218,10 @@
     {
       "path": "Source/Screenshot/SingleInstanceCoordinator.cs",
       "sha256": "12361e56ee804a8c9efb693d244acac10ca8652853a87bb53dc6fbec72539fd2"
+    },
+    {
+      "path": "Source/Screenshot/SingleLanguageScriptCatalog.cs",
+      "sha256": "a949e25ed24a51e47369641bf38b258c41357e7154e270b84d01d048a83aeb2d"
     },
     {
       "path": "Source/Screenshot/SnapshotOwnershipFixSelfTests.cs",
@@ -2361,7 +2369,7 @@
     },
     {
       "path": "Source/Screenshot/TargetLanguageDisplay.cs",
-      "sha256": "d42e4bb03ecff232861dfa752f86cb88596735098a006f2ea2a7df4782f4b7b0"
+      "sha256": "6a0e5cd0482d4631d09c9777d26ea6f19c0e0b7cf1c1179debd038bfe1eef7ba"
     },
     {
       "path": "Source/Screenshot/Task4LayoutProductE2EHarness.cs",
@@ -2489,7 +2497,7 @@
     },
     {
       "path": "Source/Screenshot/TranslationSettingsFoundation.cs",
-      "sha256": "87f3d755afb03020b88751a96cd6a3881322dddacca87dacd1df3bcbf11c9b92"
+      "sha256": "84739ab923af643175488e1953658ad7b378110294d4c3314d5eec5fbf49d18c"
     },
     {
       "path": "Source/Screenshot/TranslationStylePolicy.cs",
@@ -2557,7 +2565,7 @@
     },
     {
       "path": "Source/Screenshot/UiLanguage.cs",
-      "sha256": "c24ca763a097ef620180036924e14bfcc823d6ef6b3d4ac6889f496a03d926e8"
+      "sha256": "d771ff77c05f18cc634097519a7511a0e256fac0acd05f3f175f8eb755b6cff4"
     },
     {
       "path": "Source/Screenshot/UiPerformanceTrace.cs",
@@ -2566,6 +2574,10 @@
     {
       "path": "Source/Screenshot/UiRepairVerification.cs",
       "sha256": "6d40f0f48d8102feed228bd50e9048600a1101155f9f347fada3175f38f9d22a"
+    },
+    {
+      "path": "Source/Screenshot/UiRussian.json",
+      "sha256": "ee28c71565fecca4999dc6f44b5692b23f9962f61d8029079e8641abe705dd44"
     },
     {
       "path": "Source/Screenshot/UiStrings.cs",
@@ -3134,14 +3146,6 @@
     {
       "path": "Source/YukarBridge/TextCodes.cs",
       "sha256": "7c79f44beedf9eed2719f47c8897554cf101e3827195220dabd57d2f5ecade8b"
-    },
-    {
-      "path": "Source/Screenshot/GameMakerErrorDialogCapture.cs",
-      "sha256": "74ba8e7b96bcb28ec3258c9e9a3ccdc8f375aad5ba7b7ebf8ff6041dd82e5481"
-    },
-    {
-      "path": "Source/Screenshot/SingleLanguageScriptCatalog.cs",
-      "sha256": "a949e25ed24a51e47369641bf38b258c41357e7154e270b84d01d048a83aeb2d"
     }
   ],
   "binaryPayloadsOnlyInReleaseAssets": [

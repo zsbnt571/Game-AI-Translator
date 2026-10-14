@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="GameTranslator"><HintPath>..\Build\Desktop\ScreenshotTranslationUiTester\bin\Release\net8.0-windows\GameTranslator.dll</HintPath></Reference>
+    <Reference Include="System.Text.Json"><HintPath>..\Build\Desktop\ScreenshotTranslationUiTester\bin\Release\net8.0-windows\System.Text.Json.dll</HintPath></Reference>
+    <Reference Include="System.Text.Encodings.Web"><HintPath>..\Build\Desktop\ScreenshotTranslationUiTester\bin\Release\net8.0-windows\System.Text.Encodings.Web.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>

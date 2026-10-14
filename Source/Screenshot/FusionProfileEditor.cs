@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -9,12 +9,12 @@ public sealed partial class MainForm
     {
         if(item is ProfileChoice {Id:not null} profile)
         {
-            if(!UiLanguage.IsEnglish)return profile.Label;
-            foreach(var suffix in new[]{("（未配置完成）"," (incomplete)"),("（未保存）"," (unsaved)")})
+            if(!UiLanguage.IsTranslated)return profile.Label;
+            foreach(var suffix in new[]{("（未配置完成）",UiLanguage.IsEnglish?" (incomplete)":" (не настроен)"),("（未保存）",UiLanguage.IsEnglish?" (unsaved)":" (не сохранено)")})
                 if(profile.Label.EndsWith(suffix.Item1,StringComparison.Ordinal))return profile.Label[..^suffix.Item1.Length]+suffix.Item2;
             return profile.Label;
         }
-        return item?.ToString()=="关闭"?UiLanguage.Choose("关闭","Off"):UiLanguage.Text(item?.ToString());
+        return item?.ToString()=="关闭"?UiLanguage.Choose("关闭","Off","Выкл."):UiLanguage.Text(item?.ToString());
     }
     private readonly TextBox _schemeName=new(){Name="ProfileName",AccessibleName="方案名称"};
     private readonly CheckBox _noCredential=new(){Text="无需密钥（本地／免鉴权）",AutoSize=true};

@@ -4,20 +4,32 @@
 
 面向 Windows 的游戏翻译工具，结合游戏内翻译、截图 OCR 翻译与游戏库管理。支持自选 API 服务、共享翻译偏好和按实际内容处理混合语言。
 
-**当前测试版：0.6.0.178 Preview 1，公开测试版。** 这是独立的 Windows x64 便携包；不同引擎和游戏的适配程度不同。识别出引擎、提取出文字、生成译文和游戏内成功显示是不同阶段。
+**当前测试版：0.6.0.178 Russian Preview 1，公开测试版。** 这是独立的 Windows x64 便携包；不同引擎和游戏的适配程度不同。识别出引擎、提取出文字、生成译文和游戏内成功显示是不同阶段。
+
+**179 Preview 1 继续保持撤回状态，当前公开下载为 178 俄语预览版。**
+
+## 本次俄语更新
+
+- 软件界面新增 **Русский**：设置 → 软件通用 → 界面语言 → Русский → 保存设置。
+- 翻译目标新增 **俄语**：设置 → 翻译方案 → 翻译内容 → 目标语言 → 俄语 → 保存翻译内容。
+- 两项独立选择和保存；首次启动仍默认简体中文。
+- 已检查语言资源、独立保存和重新加载，并实际打开俄语界面。**游戏内俄语翻译尚未实测**，字体、换行和各游戏兼容性仍需反馈。
+- 本包基于 178，沿用其游戏接入组件。近期“只能实时翻译”的反馈仍需真实游戏复测，本次不声称已经解决。
+
+原始 [178 Preview 1](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.178-preview.1) 继续保留。
 
 ## 下载与开始使用
 
-前往 [0.6.0.178 Preview 1 发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.178-preview.1) 下载附件：
+前往 [0.6.0.178 Russian Preview 1 发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.178-russian-preview.1) 下载附件：
 
 | 文件 | 用途 |
 | --- | --- |
-| `Fusion-0.6.0.178.zip` | 普通用户使用的完整主包，含默认 CPU 路径的本地运行依赖 |
-| `Fusion-0.6.0.178-GPU.zip` | 可选 NVIDIA 背景处理加速依赖，不能独立运行 |
-| `Fusion-0.6.0.178-Source.zip` | 本版本源码与构建材料，供开发者使用 |
-| `SHA256SUMS.txt` | 下载完整性校验 |
+| `Fusion-0.6.0.178-Russian-Preview1.zip` | 普通用户使用的完整主包，含默认 CPU 路径的本地运行依赖 |
+| [Fusion-0.6.0.178-GPU.zip](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.178-preview.1/Fusion-0.6.0.178-GPU.zip) | 可选 NVIDIA 背景处理加速依赖，不能独立运行 |
+| `Fusion-0.6.0.178-Russian-Preview1-Source.zip` | 本版本源码与构建材料，供开发者使用 |
+| `Fusion-0.6.0.178-Russian-Preview1-SHA256SUMS.txt` | 下载完整性校验 |
 
-完整解压主包，运行 `Fusion-0.6.0.178/GameTranslator.exe`。不要在 ZIP 里运行，也不要只复制 exe。GitHub 自动生成的 **Source code** 附件不是可执行版本。
+完整解压主包，运行 `Fusion-0.6.0.178-Russian-Preview1/GameTranslator.exe`。不要在 ZIP 里运行，也不要只复制 exe。GitHub 自动生成的 **Source code** 附件不是可执行版本。
 
 1. **设置 → 翻译方案**：配置 API 地址、密钥与模型，测试连接并保存。
 2. 同页下方 **翻译内容**：选择目标语言、原文范围、风格和提示词，点击 **保存翻译内容**。
@@ -25,7 +37,7 @@
 
 API 方案与翻译内容分别保存。切换 API 不会改变共享的目标语言、风格和提示词。新设置用于新截图任务；运行中的游戏重新启动后生效。界面语言不决定翻译目标。
 
-详细步骤见 [使用说明](docs/USAGE-176.md)；发布包另附可离线阅读的中文 HTML/TXT 与英文说明。
+详细步骤见 [使用说明](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/docs/USAGE-176.md)；发布包另附可离线阅读的中文 HTML/TXT 与英文说明。
 
 ## 可以做什么
 
@@ -54,13 +66,13 @@ API 方案与翻译内容分别保存。切换 API 不会改变共享的目标�
 
 主包包含 .NET、Python、RapidOCR/模型、CPU 背景处理依赖、已集成适配组件及许可证，普通用户无需先安装 Python 或 .NET 8 桌面运行时。
 
-用户仍需 API 服务与额度、游戏、Windows 平台组件，以及可选 GPU 的显卡驱动。旧辅助工具/Windows OCR 依赖系统 .NET Framework 4.8。专有 Oodle 与部分重型可选模型不随包提供。详见 [依赖说明](docs/DEPENDENCIES-176.md)。
+用户仍需 API 服务与额度、游戏、Windows 平台组件，以及可选 GPU 的显卡驱动。旧辅助工具/Windows OCR 依赖系统 .NET Framework 4.8。专有 Oodle 与部分重型可选模型不随包提供。详见 [依赖说明](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/docs/DEPENDENCIES-176.md)。
 
-Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod 可能触发冲突保护。首次翻译依赖服务速度；译图可能出现背景与排版问题；尚未做全新 Windows 虚拟机验收。详见 [已知问题与证据范围](docs/KNOWN-ISSUES.md)。
+Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod 可能触发冲突保护。首次翻译依赖服务速度；译图可能出现背景与排版问题；尚未做全新 Windows 虚拟机验收。详见 [已知问题与证据范围](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/docs/KNOWN-ISSUES.md)。
 
 ## 升级与数据
 
-默认数据位于 `Fusion-0.6.0.178/data`。关闭 Fusion 与相关游戏，备份旧版实际数据目录，再复制到新版本目录。自定义过存储位置的用户先在旧版核对实际路径。
+默认数据位于 `Fusion-0.6.0.178-Russian-Preview1/data`。关闭 Fusion 与相关游戏，备份旧版实际数据目录，再复制到新版本目录。自定义过存储位置的用户先在旧版核对实际路径。
 
 保留旧版和升级前备份，不让两个版本共用同一可写数据目录。迁移后核对目标语言、组合、库与 API；跨 Windows 账号/设备时密钥可能需重填。已生成译文不会因换风格自动清空。
 
@@ -68,21 +80,21 @@ Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod
 
 ## 开发与许可
 
-主分支的 [Source/](Source) 是当前 **0.6.0.178 Preview 1** 产品源码，[tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) 是对应构建入口。源码文件与已发布源码附件逐文件对应，见 [源码校验清单](git-source-index.json)。
+**0.6.0.178 Russian Preview 1** 的源码请查看 [178 俄语预览标签下的 Source/](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.178-russian-preview.1/Source)，对应构建入口为 [tools/Build-Desktop.ps1](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/tools/Build-Desktop.ps1)，文件校验见 [源码校验清单](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/git-source-index.json)。主分支保留后续开发内容，不代表当前公开下载版本。
 
 | 目录 | 内容 |
 | --- | --- |
-| [Source/](Source) | 当前桌面程序、截图翻译和游戏引擎适配源码 |
-| [tools/](tools) | 当前版本的构建工具 |
-| [docs/](docs/README.md) | 当前使用说明、构建步骤、依赖和已知问题 |
-| [licenses/](licenses/README.md) | 第三方许可证与组件清单 |
-| [third-party-source/](third-party-source/README.md) | 随源码附件提供的第三方源码索引 |
+| [Source/](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.178-russian-preview.1/Source) | 当前桌面程序、截图翻译和游戏引擎适配源码 |
+| [tools/](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.178-russian-preview.1/tools) | 当前版本的构建工具 |
+| [docs/](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/docs/README.md) | 当前使用说明、构建步骤、依赖和已知问题 |
+| [licenses/](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/licenses/README.md) | 第三方许可证与组件清单 |
+| [third-party-source/](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/third-party-source/README.md) | 随源码附件提供的第三方源码索引 |
 
-Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `Fusion-0.6.0.178-Source.zip`，按 [构建说明](docs/BUILD-176.md) 操作。普通用户直接下载上方 Fusion-0.6.0.178.zip 主包。
+Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `Fusion-0.6.0.178-Russian-Preview1-Source.zip`，按 [构建说明](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/docs/BUILD-176.md) 操作。普通用户直接下载上方 Fusion-0.6.0.178-Russian-Preview1.zip 主包。
 
-旧 Alpha 的源码和说明保存在原标签、历史提交与旧发布页中，入口见 [版本历史](docs/HISTORY.md)。
+旧 Alpha 的源码和说明保存在原标签、历史提交与旧发布页中，入口见 [版本历史](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/docs/HISTORY.md)。
 
-项目自有代码沿用 **GPL-3.0-only**；第三方组件保留各自许可证。发布包提供许可证、组件清单与对应第三方源码材料，详见 [第三方声明](THIRD_PARTY_NOTICES.md)。不能将某个引擎名称视为全游戏兼容承诺。
+项目自有代码沿用 **GPL-3.0-only**；第三方组件保留各自许可证。发布包提供许可证、组件清单与对应第三方源码材料，详见 [第三方声明](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-russian-preview.1/THIRD_PARTY_NOTICES.md)。不能将某个引擎名称视为全游戏兼容承诺。
 
 反馈请附版本、系统、游戏/引擎、来源/目标语言、复现步骤和最小示例。日志先移除密钥、令牌与个人信息，无需上传游戏或存档。
 

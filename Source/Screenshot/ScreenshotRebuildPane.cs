@@ -287,7 +287,7 @@ internal sealed class ScreenshotRebuildPane : Panel
                 int sideWidth=Math.Max(S(26),TextRenderer.MeasureText(side.Text,side.Font,Size.Empty,TextFormatFlags.NoPadding).Width+S(3));
                 side.Visible = !narrow; side.SetBounds(pad, S(7), sideWidth, S(28));
                 int segmentLeft = narrow ? pad : side.Right+gap;
-                segments.SetBounds(segmentLeft, S(6), Math.Max(S(120), Math.Min(S(UiLanguage.IsEnglish?290:214), maximize.Left - gap - segmentLeft)), S(29));
+                segments.SetBounds(segmentLeft, S(6), Math.Max(S(120), Math.Min(S(UiLanguage.IsTranslated?290:214), maximize.Left - gap - segmentLeft)), S(29));
                 tools.SetBounds(1, headerHeight, Math.Max(1, width - 2), toolsHeight);
                 zoomLabel.Size = new(S(38), S(26)); fontLabel.Size = new(S(38), S(26));
                 int x = pad;

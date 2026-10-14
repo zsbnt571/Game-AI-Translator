@@ -1,0 +1,40 @@
+Fusion R1 0.6.0.178 — Russian Preview 1
+
+中文
+本包基于 178 公开版，新增两个独立选项：俄语软件界面、俄语翻译目标。
+首次启动仍默认简体中文。界面语言和翻译目标分别选择、分别保存。
+界面：设置 > 软件通用 > 界面语言 > Русский > 保存设置。
+目标：设置 > 翻译方案 > 翻译内容 > 目标语言 > 俄语，然后保存翻译内容。
+完整解压到新文件夹，运行 GameTranslator.exe。请自行配置 API。
+本包不包含作者的 API 密钥、游戏库、翻译记录、个人设置或存档。
+已检查俄语资源、设置保存与重新加载，并实际打开俄语界面；游戏内俄语翻译尚未实测。
+游戏内俄文字体、换行和各引擎兼容性需要实际反馈。本次沿用 178 的游戏接入组件。
+179 的界面开发独立进行；本包未包含 179 的界面迁移。
+
+English
+This preview is based on the public 0.6.0.178 package and adds two separate options:
+a Russian software interface and Russian as the translation target language.
+A fresh installation still opens in Simplified Chinese. The two choices are saved independently.
+Interface: Settings > General > Interface language > Русский > Save settings.
+Target: Settings > Translation profiles > Translation content > Target language > Russian,
+then save the translation preferences.
+Extract the complete archive into a new folder and run GameTranslator.exe. Configure your own API.
+No developer API keys, game library, translation history, personal settings, or saves are included.
+Resource coverage and independent setting persistence have been checked, and the Russian UI has been opened.
+In-game translation into Russian has not been tested. Font coverage, wrapping, and engine compatibility
+still need feedback from actual games. Game integration components are unchanged from 178.
+The separate 179 UI migration is not part of this package.
+
+Русский
+Эта предварительная сборка основана на общедоступной версии 0.6.0.178.
+Добавлены два отдельных параметра: русский интерфейс программы и русский язык перевода.
+При первом запуске интерфейс остаётся на упрощённом китайском. Эти параметры сохраняются независимо.
+Интерфейс: 设置 > 软件通用 > 界面语言 > Русский > 保存设置.
+После переключения интерфейса выберите русский язык перевода в настройках профилей перевода
+и сохраните настройки перевода.
+Распакуйте весь архив в новую папку и запустите GameTranslator.exe. Настройте собственный API.
+В архиве нет личных API-ключей разработчика, библиотеки игр, истории переводов, настроек или сохранений.
+Перевод игр на русский пока не проверен. Буду благодарен за отзывы о переводе, шрифтах и переносах строк.
+
+Corresponding source: Fusion-0.6.0.178-Russian-Preview1-Source.zip.
+Original code license and third-party notices are retained in this package.
