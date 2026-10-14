@@ -4,22 +4,22 @@
 
 A Windows game translation tool combining in-game translation, screenshot OCR translation and a game library. Bring your own API provider, share translation preferences across workflows, and control which languages are translated in actually encountered content.
 
-**Current preview: 0.6.0.179 Preview 1.** This is a public Windows x64 portable preview. Engine detection, text extraction, translation generation and successful in-game display are separate stages.
+**Current preview: 0.6.0.178 Preview 1.** This is a public Windows x64 portable preview. Engine detection, text extraction, translation generation and successful in-game display are separate stages.
 
-This preview moves the main window, library, game details, settings and screenshot workspace to WPF while retaining the established layout and services. Specialized editors, some game tools and dialogs keep their existing controls. Fresh installs default to Simplified Chinese; saved language choices are preserved. Ren’Py/Godot source-provenance fixes restore eligible pretranslation. See [179 validation](docs/VALIDATION-179.md) for scope and performance measurements.
+**179 Preview 1 has been withdrawn. Please use 178 Preview 1.**
 
 ## Download and start
 
-Open the [0.6.0.179 Preview 1 release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.179-preview.1) and download its assets:
+Open the [0.6.0.178 Preview 1 release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.178-preview.1) and download its assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `Fusion-0.6.0.179.zip` | Complete application with the default CPU dependency set |
-| [Fusion-0.6.0.178-GPU.zip](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.178-preview.1/Fusion-0.6.0.178-GPU.zip) | Optional NVIDIA background-processing dependencies; not standalone |
-| `Fusion-0.6.0.179-Source.zip` | Version-specific developer source/build materials |
+| `Fusion-0.6.0.178.zip` | Complete application with the default CPU dependency set |
+| `Fusion-0.6.0.178-GPU.zip` | Optional NVIDIA background-processing dependencies; not standalone |
+| `Fusion-0.6.0.178-Source.zip` | Version-specific developer source/build materials |
 | `SHA256SUMS.txt` | Download integrity checks |
 
-Fully extract the main ZIP and run `Fusion-0.6.0.179/GameTranslator.exe`. Keep its companion files. GitHub's automatic **Source code** downloads are not executable packages.
+Fully extract the main ZIP and run `Fusion-0.6.0.178/GameTranslator.exe`. Keep its companion files. GitHub's automatic **Source code** downloads are not executable packages.
 
 1. **Settings > Translation profiles**: configure your endpoint, API key and model, test, then save.
 2. Scroll to **Translation preferences on the same page**: set target, source scope, style and instructions, then **Save preferences**.
@@ -27,7 +27,7 @@ Fully extract the main ZIP and run `Fusion-0.6.0.179/GameTranslator.exe`. Keep i
 
 API profiles and shared preferences save independently. Switching API profiles does not reset your target/style. New preferences apply to new captures and restarted games. The UI language is independent of the translation target.
 
-See [Usage](docs/USAGE-176.en.md). Offline Chinese and English guides are also inside the application ZIP.
+See [Usage](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/docs/USAGE-176.en.md). Offline Chinese and English guides are also inside the application ZIP.
 
 ## Features
 
@@ -56,13 +56,13 @@ The earlier .176 Ren'Py/Godot active-locale samples did not collect inactive-pac
 
 The main package bundles .NET runtimes, Python, RapidOCR/models, CPU background-processing dependencies, integrated adapters and licenses. Users do not need to install Python or the .NET 8 Desktop Runtime first.
 
-API service/credits, games, Windows platform components and optional GPU drivers remain user-provided. Windows OCR/legacy helpers use OS .NET Framework 4.8. Proprietary Oodle and some heavy optional models are excluded. See [Dependencies](docs/DEPENDENCIES-176.en.md).
+API service/credits, games, Windows platform components and optional GPU drivers remain user-provided. Windows OCR/legacy helpers use OS .NET Framework 4.8. Proprietary Oodle and some heavy optional models are excluded. See [Dependencies](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/docs/DEPENDENCIES-176.en.md).
 
-Unity IL2CPP, Unreal and engines not retested here retain compatibility limits. Mods can conflict, first translations depend on provider latency, and translated-image rendering may show artifacts. No clean-Windows VM acceptance has been completed. See [Known issues](docs/KNOWN-ISSUES.en.md).
+Unity IL2CPP, Unreal and engines not retested here retain compatibility limits. Mods can conflict, first translations depend on provider latency, and translated-image rendering may show artifacts. No clean-Windows VM acceptance has been completed. See [Known issues](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/docs/KNOWN-ISSUES.en.md).
 
 ## Upgrade and privacy
 
-Back up the actual old data directory after closing Fusion and affected games, then copy data into the new `Fusion-0.6.0.179/data`. Check the old Storage setting if customized. Keep the old application and pre-upgrade backup; do not share one writable directory between versions.
+Back up the actual old data directory after closing Fusion and affected games, then copy data into the new `Fusion-0.6.0.178/data`. Check the old Storage setting if customized. Keep the old application and pre-upgrade backup; do not share one writable directory between versions.
 
 Verify library, target/source choices and API connectivity after migration. Encrypted keys may require re-entry on a different Windows account/device. Style changes do not clear previous translations.
 
@@ -70,21 +70,21 @@ The public package has no personal keys, game library/history, games or saves. S
 
 ## Development and licenses
 
-The main branch's [Source/](Source) contains the current **0.6.0.179 Preview 1** product code. [tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) is its build entry point. Each tracked product source file matches the published source asset; see the [source checksum index](git-source-index.json).
+For **0.6.0.178 Preview 1**, use [Source/ at the 178 tag](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.178-preview.1/Source), its [build entry point](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/tools/Build-Desktop.ps1), and the [source checksum index](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/git-source-index.json). The main branch retains later development work and does not represent the current public download.
 
 | Directory | Contents |
 | --- | --- |
-| [Source/](Source) | Current desktop, screenshot translation and engine adapter source |
-| [tools/](tools) | Build tools for the current version |
-| [docs/](docs/README.md) | Current usage, build, dependency and known-issue guides |
-| [licenses/](licenses/README.md) | Third-party licenses and component inventories |
-| [third-party-source/](third-party-source/README.md) | Index of third-party sources shipped in the source asset |
+| [Source/](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.178-preview.1/Source) | Current desktop, screenshot translation and engine adapter source |
+| [tools/](https://github.com/zsbnt571/Game-AI-Translator/tree/v0.6.0.178-preview.1/tools) | Build tools for the current version |
+| [docs/](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/docs/README.md) | Current usage, build, dependency and known-issue guides |
+| [licenses/](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/licenses/README.md) | Third-party licenses and component inventories |
+| [third-party-source/](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/third-party-source/README.md) | Index of third-party sources shipped in the source asset |
 
-Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `Fusion-0.6.0.179-Source.zip` and follow [Build instructions](docs/BUILD-176.md). End users should download Fusion-0.6.0.179.zip above.
+Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `Fusion-0.6.0.178-Source.zip` and follow [Build instructions](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/docs/BUILD-176.md). End users should download Fusion-0.6.0.178.zip above.
 
-The historical Alpha source and documentation remain available through their original tag, commits and release. See [Version history](docs/HISTORY.md).
+The historical Alpha source and documentation remain available through their original tag, commits and release. See [Version history](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/docs/HISTORY.md).
 
-Project-owned code remains **GPL-3.0-only**. Third parties retain their own licenses; the package includes notices, component inventories and corresponding third-party source materials. See [Third-party notices](THIRD_PARTY_NOTICES.md).
+Project-owned code remains **GPL-3.0-only**. Third parties retain their own licenses; the package includes notices, component inventories and corresponding third-party source materials. See [Third-party notices](https://github.com/zsbnt571/Game-AI-Translator/blob/v0.6.0.178-preview.1/THIRD_PARTY_NOTICES.md).
 
 Report version, OS/game/engine, source/target settings, steps and a minimal example. Redact credentials and personal content from logs. Games and saves are not required.
 
