@@ -1,13 +1,13 @@
-﻿# FUSION R1 0.6.0.177 Preview 1 — Usage
+# FUSION R1 0.6.0.178 Preview 1 — Usage
 
 
 Download and start
-Choose the Fusion-0.6.0.177.zip, fully extract it, and launch Fusion-0.6.0.177/GameTranslator.exe. Source archives are for developers.
+Choose the Fusion-0.6.0.178.zip, fully extract it, and launch Fusion-0.6.0.178/GameTranslator.exe. Source archives are for developers.
 Use a writable Windows 10/11 x64 folder and allow at least 5 GB free space for extraction; personal caches and history may require more. No native Linux, macOS or ARM package is provided.
 
 Configure API and translation preferences separately
 Settings > Translation profiles stores endpoint, API key, model and connection timeouts. Test connection does not save changes; save the profile explicitly.
-The Translation preferences section is BELOW the API settings on that same page in .177; it is not a separate sidebar page. Target, source scope, style, instructions and protection settings use Save preferences.
+The Translation preferences section is BELOW the API settings on that same page in .178; it is not a separate sidebar page. Target, source scope, style, instructions and protection settings use Save preferences.
 Games and captures share those saved preferences independently of API profiles. New captures use the change; restart games launched with translation. Existing translations are retained.
 Migrating an older configuration initializes shared preferences from the old common/default profile once. Review target, source selection and style after migration.
 The interface display language does not select the translation target.
@@ -39,7 +39,7 @@ Custom: your instructions; empty instructions still aim for accurate natural wor
 Literal (legacy profile): retains the older close-to-source option.
 All modes prioritize meaning. Short menu labels often look identical across styles. Idioms are tools, not a translation objective.
 Changing style does not clear existing translations. To compare, use Translations & terms to retranslate the SAME source, backing up manual edits first.
-The earlier .176 258-row real API regression used Natural style; that API run was not repeated for .177. It tests language scope/protection, not an equally large semantic review of every style.
+The earlier .176 258-row real API regression used Natural style; that API run was not repeated for .178. It tests language scope/protection, not an equally large semantic review of every style.
 
 Games and captures
 Import the game, choose its API profile, and follow the game's available install/translation launch action. Detection, extraction, translation generation and in-game display are separate stages.
@@ -52,7 +52,7 @@ No general-purpose translation LLM or cloud credits are bundled.
 
 Upgrade, rollback and privacy
 The public ZIP has no API profiles, game library, screenshots, saves or personal history.
-Exit Fusion and affected games. Back up the actual old data directory (check Storage in the old app if customized), then copy it to new Fusion-0.6.0.177/data. Copy data, not old runtimes/executables.
+Exit Fusion and affected games. Back up the actual old data directory (check Storage in the old app if customized), then copy it to new Fusion-0.6.0.178/data. Copy data, not old runtimes/executables.
 Never let two versions write the same directory. Verify library, target/source preferences and API connectivity after migration. Windows account/device-bound key encryption may require re-entry.
 Keep the old app and pre-upgrade data backup; use that backup for rollback. Follow the app's instructions for existing game bridge updates; do not remove mods/saves manually.
 For reports, include app/OS/game versions, source/target choices, exact steps, and a minimal text/screenshot example. Redact keys, tokens, personal paths and private content from logs. Games and saves are not required.

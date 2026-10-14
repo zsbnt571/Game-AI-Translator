@@ -92,7 +92,13 @@ internal static class RpgMakerDataAdapter
         using var gate=new FileStream(Path.Combine(storage,"install.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
         var journalPath=Path.Combine(storage,"install.json");
         if(File.Exists(journalPath)){if(Installed(exe))return;throw new InvalidOperationException("安装后的文件发生变化，请先检查或恢复组件，未覆盖。");}
-        if(File.Exists(script))throw new InvalidOperationException("游戏中已有同名组件，未覆盖。");
+        if(File.Exists(script))
+        {
+            // A game copied from another computer carries our script and launch
+            // entries, but not that computer's local installation journal.
+            AdoptTransferred(exe,manifest,script,storage);
+            return;
+        }
         var original=File.ReadAllBytes(manifest);var doc=JsonNode.Parse(original) as JsonObject??throw new InvalidDataException("游戏启动配置无效。");
         if(doc.ContainsKey("inject_js_end")||doc.ContainsKey("inject-js-end"))throw new InvalidOperationException("游戏已有启动脚本，当前适配不覆盖它。");
         // NW 0.12 uses hyphens; 0.13+ uses underscores. Each ignores the other's
@@ -113,7 +119,23 @@ internal static class RpgMakerDataAdapter
     internal static void Restore(string exe)
     {
         RequireStopped(exe);
-        var storage=Storage(exe);var path=Path.Combine(storage,"install.json");if(!File.Exists(path))return;
+        var storage=Storage(exe);var path=Path.Combine(storage,"install.json");
+        if(!File.Exists(path))
+        {
+            var install=Detect(exe);if(install is null)return;
+            var manifest=CheckedPath(install.Root,install.Manifest);
+            var transferred=CheckedPath(install.Root,Path.Combine(Path.GetDirectoryName(manifest)!,ScriptName));
+            if(!File.Exists(transferred))
+            {
+                var document=JsonNode.Parse(File.ReadAllBytes(manifest)) as JsonObject;
+                if(new[]{"inject_js_end","inject-js-end"}.Any(key=>document?[key] is JsonValue value&&value.TryGetValue<string>(out var text)&&text==ScriptName))
+                    throw new IOException("游戏仍有 Fusion 启动记录，但组件和本机备份缺失，尚未恢复；请核对游戏来源。");
+                return;
+            }
+            Directory.CreateDirectory(storage);
+            using var adoptionGate=new FileStream(Path.Combine(storage,"install.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
+            if(!File.Exists(path))AdoptTransferred(exe,manifest,transferred,storage);
+        }
         using var gate=new FileStream(Path.Combine(storage,"install.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
         var j=JsonSerializer.Deserialize<Journal>(File.ReadAllText(path))??throw new InvalidDataException("组件安装记录无效。");
         if(!j.Exe.Equals(Path.GetFullPath(exe),StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("安装记录不属于此游戏。");
@@ -123,6 +145,40 @@ internal static class RpgMakerDataAdapter
         if(now==j.After){var temp=j.Manifest+".fusion-"+Guid.NewGuid().ToString("N")+".tmp";try{File.WriteAllBytes(temp,original);File.Move(temp,j.Manifest,true);}finally{if(File.Exists(temp))File.Delete(temp);}}
         if(File.Exists(script))File.Delete(script);
         File.Move(path,Path.Combine(storage,"install.restored-"+DateTime.UtcNow.ToString("yyyyMMddHHmmssfff")+".json"));
+    }
+    private static void AdoptTransferred(string exe,string manifest,string script,string storage)
+    {
+        byte[] expected=Encoding.UTF8.GetBytes(Payload());
+        if(new FileInfo(script).Length!=expected.Length)throw new InvalidOperationException("游戏中已有同名组件，但内容无法确认为此版本的 Fusion 组件，未覆盖或删除。");
+        byte[] payload=File.ReadAllBytes(script);
+        if(!payload.AsSpan().SequenceEqual(expected))throw new InvalidOperationException("游戏中已有同名组件，但内容无法确认为此版本的 Fusion 组件，未覆盖或删除。");
+        byte[] current=File.ReadAllBytes(manifest);
+        var document=JsonNode.Parse(current) as JsonObject??throw new InvalidDataException("游戏启动配置无效。");
+        var keys=new[]{"inject_js_end","inject-js-end"};int matched=0;
+        foreach(string key in keys)
+        {
+            if(!document.ContainsKey(key))continue;
+            if(document[key] is not JsonValue value||!value.TryGetValue<string>(out var text)||text!=ScriptName)
+                throw new InvalidOperationException("游戏启动脚本已改变，无法安全接管已有组件，未改动游戏。");
+            document.Remove(key);matched++;
+        }
+        if(matched==0)throw new InvalidOperationException("发现 Fusion 组件文件，但启动记录不匹配，未改动游戏。");
+        // This is a reconstruction of launch settings, not a claimed byte-for-byte
+        // original. Preserve the transferred files separately before journalling it.
+        byte[] restored=Encoding.UTF8.GetBytes(document.ToJsonString(new JsonSerializerOptions{WriteIndented=true}));
+        string backup=Path.Combine(storage,"package.original.json");
+        if(File.Exists(backup))
+        {
+            byte[] previous=File.ReadAllBytes(backup);
+            if(!JsonNode.DeepEquals(JsonNode.Parse(previous),document))throw new IOException("本机已有不同的启动备份，未覆盖；请先核对备份。");
+            restored=previous;
+        }
+        string retained=Path.Combine(storage,"transferred-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(retained);
+        File.WriteAllBytes(Path.Combine(retained,"package.json"),current);File.WriteAllBytes(Path.Combine(retained,ScriptName),payload);
+        if(!File.ReadAllBytes(manifest).AsSpan().SequenceEqual(current)||!File.ReadAllBytes(script).AsSpan().SequenceEqual(payload))
+            throw new IOException("游戏文件在接管过程中改变，已停止。");
+        File.WriteAllBytes(backup,restored);
+        PortableDataStorage.WriteJson(Path.Combine(storage,"install.json"),new Journal(Path.GetFullPath(exe),manifest,Hash(restored),Hash(current),Hash(payload)));
     }
     private static void RequireStopped(string exe)
     {

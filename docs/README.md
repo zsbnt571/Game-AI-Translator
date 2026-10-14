@@ -1,6 +1,6 @@
 # 当前版本文档 / Current documentation
 
-这些说明适用于 **Fusion R1 0.6.0.177 Preview 1**。
+这些说明适用于 **Fusion R1 0.6.0.178 Preview 1**。
 
 | 内容 / Topic | 中文 | English |
 | --- | --- | --- |

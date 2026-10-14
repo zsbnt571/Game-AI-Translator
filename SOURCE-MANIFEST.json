@@ -1,6 +1,6 @@
 {
-  "version": "0.6.0.177-preview.1",
-  "mainAssemblySha256": "540f128909344a060756192201b27ac7494d23b46b7df5eb5c92cee9979d80b6",
+  "version": "0.6.0.178-preview.1",
+  "mainAssemblySha256": "f239161d1e9bb1e5817b0f3a856f8669fdc1d6622457ea405f30e5d11e874050",
   "productSourceEditedForPackaging": false,
   "excluded": [
     {
@@ -1398,8 +1398,8 @@
     },
     {
       "path": "Source/Screenshot/DefoldGameAdapter.cs",
-      "sha256": "ed587e1636baed6290803470e7eedae5ebf8073ba4c6741f39cabcbfd91024dc",
-      "bytes": 14547
+      "sha256": "bb84df83b1f3c7d44bc8fef555a66d60da8038d316c9346ff832b11b16036de3",
+      "bytes": 14806
     },
     {
       "path": "Source/Screenshot/DefoldTextCatalog.cs",
@@ -2963,8 +2963,8 @@
     },
     {
       "path": "Source/Screenshot/RgssTextCatalog.cs",
-      "sha256": "3c8323686f632c97a525f11f865901cbd9388cb17e26a0337787d88fcf3b10d4",
-      "bytes": 4980
+      "sha256": "049aca834e089f0bb57c449858b9e201fa1ad5112c88283a8f1fab000a0d498c",
+      "bytes": 5450
     },
     {
       "path": "Source/Screenshot/RgssTranslationBridge.rb",
@@ -2993,8 +2993,8 @@
     },
     {
       "path": "Source/Screenshot/RpgMakerDataAdapter.cs",
-      "sha256": "476a47a5f6c3d7d9b40719a9baa486680fcbe2711e28d5cda87a1329a8116cdc",
-      "bytes": 25171
+      "sha256": "1488210ba83902af5d6cfd0db8cca60ad4e0c489dd9e02d518ad5af3470ed864",
+      "bytes": 29209
     },
     {
       "path": "Source/Screenshot/RpgMakerDataBridge.js",
@@ -3018,8 +3018,8 @@
     },
     {
       "path": "Source/Screenshot/RpgTextCatalog.cs",
-      "sha256": "ca88111b65b6ea16c23324c41d2446b310670c33c5a564cc75aad417aa2c34df",
-      "bytes": 18954
+      "sha256": "fe822d99953f234b4a960074b55f33ec8c0e5f33b44ef8f152a5f6ef05c80c6b",
+      "bytes": 19943
     },
     {
       "path": "Source/Screenshot/RpgTranslationBatch.cs",
@@ -3033,8 +3033,8 @@
     },
     {
       "path": "Source/Screenshot/RpgTranslationQueue.cs",
-      "sha256": "21ba08ab5993d795b47b9c0ffe218a9658a85ed2e3dd0c8333ed7c422c71401b",
-      "bytes": 78761
+      "sha256": "8571ad32f0265010f6a5f6031e6ee4600d0c33e9f92ff7cfdee0076d45c96e4b",
+      "bytes": 78866
     },
     {
       "path": "Source/Screenshot/RpgTranslationSession.cs",
@@ -3133,8 +3133,8 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
-      "sha256": "a2e321f8297f0506a8f7f9a506b52106cf3cb9732d63b9eefcb5b8f0023360b0",
-      "bytes": 12110
+      "sha256": "c6b4b99af17e0446e01c11d852209094754cf65d58284c2e90243a74096e959c",
+      "bytes": 12109
     },
     {
       "path": "Source/Screenshot/ScreenTranslationConnection.cs",
@@ -3688,8 +3688,8 @@
     },
     {
       "path": "Source/Screenshot/UnityEmbeddedCatalog.cs",
-      "sha256": "731fe46fc91ad43620cdf5d967b262e6cbbf6d1d094e1d5cd6e46f1da0e55872",
-      "bytes": 25689
+      "sha256": "c500e24286c553f929bf84a6bb79f52372a8470d41db32608f48f3bbdb680186",
+      "bytes": 25859
     },
     {
       "path": "Source/Screenshot/UnityEmbeddedInstall.cs",
@@ -3763,8 +3763,8 @@
     },
     {
       "path": "Source/Screenshot/UnityTextResourceLanguageSelection.cs",
-      "sha256": "02e42d60703f22f0039efa0ba587eccb61084bae8b14bf106c13b87ad81ed75e",
-      "bytes": 26596
+      "sha256": "a8f1d0b1d05c43beb3578b3c31327bf76c467599c4e1df9151fe50a5fbfb5284",
+      "bytes": 27131
     },
     {
       "path": "Source/Screenshot/UnrealBootstrap.cs",
@@ -3848,8 +3848,8 @@
     },
     {
       "path": "Source/Screenshot/WebTextCatalog.cs",
-      "sha256": "525e3ff5393d3b2b0d6d7c13022c9bc7eab366578e9ed84b65caf4765e3ea8be",
-      "bytes": 9585
+      "sha256": "f6ba54962fc93711adc8062f3a5c4ffbf6775adeaf6a7255013e2f4c5dfd218e",
+      "bytes": 9823
     },
     {
       "path": "Source/Screenshot/WebTranslationConnection.cs",
@@ -3873,8 +3873,8 @@
     },
     {
       "path": "Source/Screenshot/WolfGameAdapter.cs",
-      "sha256": "81183f529bbf22bbc03cac5bc4f15bc7319b998dd5d739b1a676ee0dd6ae391c",
-      "bytes": 10250
+      "sha256": "8f56d105883bb9284a45d7b84e11995f575e1ba3171d77be5b4e572a0f386aac",
+      "bytes": 10635
     },
     {
       "path": "Source/Screenshot/WolfTextCatalog.cs",
@@ -5580,6 +5580,26 @@
       "path": "Dependencies/Python/lupa-2.8.dist-info/WHEEL",
       "sha256": "ad1e507ec59c665de6adae409920fb15dd1dcd0c59de51c2a43a3bd0891f0cae",
       "bytes": 101
+    },
+    {
+      "path": "tools/SourcePretranslation178/Program.cs",
+      "sha256": "c4ce40a63295c55be474419630a750f48277b48039db738c42ef2c59590db563",
+      "bytes": 11834
+    },
+    {
+      "path": "tools/SourcePretranslation178/README.md",
+      "sha256": "af5c6baac585fd024c1e9549eb9881544ed56c49f11287ab66e2dd983ff86a0d",
+      "bytes": 861
+    },
+    {
+      "path": "tools/SourcePretranslation178/SourcePretranslation178.csproj",
+      "sha256": "0db2e4d4a57b41c1752a2637cdff4c6e79da365d809368e7e0cf9506054fb1cb",
+      "bytes": 799
+    },
+    {
+      "path": "tools/SourcePretranslation178/TransferredInstallTests.cs",
+      "sha256": "2fd3b93c557064af6db74b577902bba6b72eb6b96c114b5afc160a2dfc8c6446",
+      "bytes": 4718
     }
   ],
   "byteReproducibleBuildClaim": false,

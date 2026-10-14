@@ -35,6 +35,7 @@ internal sealed class UnityTextResourceLanguageSelection
     internal string SelectedLanguage {get;private set;}="";
     internal int SkippedByLanguage {get;private set;}
     internal HashSet<string> TrustedSourceTexts {get;}=new(StringComparer.Ordinal);
+    internal HashSet<string> UnlocalizedSourceTexts {get;}=new(StringComparer.Ordinal);
     internal HashSet<UInt128> ExcludedSourceIdentities {get;}=new();
     private static readonly Regex DisplayField=new(@"(?:^m_?text$|dialog|speech|subtitle|caption|description|display.?name|localized|localised|(?:^|_)message$|^(?:m_?)?(?:desc|helpText|body|prompt|title|label|text|content|sentence|originalText|sourceText)$)",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex IdentifierField=new(@"^(?:m_)?(?:id|key|guid|path|file|fileName|asset|speakerId|lineId|choiceId|identifier|type|command|locale|language|culture|languageCode|sourceLanguage|originalLanguage|baseLanguage|condition|conditions|script|onClick|callback|eventName|targetId|nextId|expression|variable|variables)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
@@ -162,8 +163,13 @@ internal sealed class UnityTextResourceLanguageSelection
         }
         LimitReached=false;
         TrustedSourceTexts.Clear();
+        UnlocalizedSourceTexts.Clear();
         foreach(var family in families.Values)
         {
+            // Only shared, untagged display fields qualify. Paired original /
+            // translated columns and declared source-language tables still
+            // require the active-locale path, even if a default view was selected.
+            if(family.OriginalLanguages.Count==0)UnlocalizedSourceTexts.UnionWith(family.SharedOriginal);
             if(sourceLanguage==SourceLanguageMode.Mixed)
             {
                 emitted.UnionWith(family.Original);
@@ -210,6 +216,7 @@ internal sealed class UnityTextResourceLanguageSelection
         ExcludedSourceIdentities.Clear();ExcludedSourceIdentities.UnionWith(candidateIdentities);ExcludedSourceIdentities.ExceptWith(emitted.Select(UnityLocalizedTableSelection.Identity));
         ExcludedSourceIdentities.ExceptWith(omittedSource);
         SkippedByLanguage=ExcludedSourceIdentities.Count;
+        UnlocalizedSourceTexts.IntersectWith(emitted);
         foreach(string text in emitted)add(text);
     }
     private static bool UserFacingNameContext(string context)=>Regex.IsMatch(context,@"^(?:items|missions|quests|tasks|journalEntries|abilities|scenes|sceneNames|characters|options|buttons)$",RegexOptions.IgnoreCase);

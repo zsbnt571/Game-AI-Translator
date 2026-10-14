@@ -460,7 +460,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     {if(catalog.Contains(source))completed++;if(observed.Contains(source))observedDone++;if(additional.Contains(source))additionalDone++;}
                 }
             }
-            void AddCatalog(string text,bool trusted=false)
+            void AddCatalog(string text,bool trusted=false,bool unlocalizedSource=false)
             {
                 discoveredCatalog.Add(text);
                 if(!RpgTranslationText.HasTranslatableText(text,options.Syntax))return;
@@ -468,7 +468,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     TranslationLanguagePolicy.Canonical(cacheSettings.TargetLanguage)==extraction.ScriptSourceLanguage;
                 if(!language.AllowsSelectedText(text)||scriptAlreadyTarget){languageExcluded.Add(text);return;}
                 // A deferred, unproven source is not a confirmed excluded language.
-                if(!language.AllowsActiveCatalog(text,trusted)&&!language.AllowsScriptCatalog(text,extraction.ScriptSourceLanguage))
+                if(!unlocalizedSource&&!language.AllowsActiveCatalog(text,trusted)&&!language.AllowsScriptCatalog(text,extraction.ScriptSourceLanguage))
                 {if(!observed.Contains(text)&&!aheadObserved.Contains(text))deferredCatalog.Add(text);return;}
                 deferredCatalog.Remove(text);
                 if(!catalog.Contains(text))ReuseDisplayTranslation(text);
@@ -610,7 +610,7 @@ internal sealed class RpgTranslationSession : IDisposable
                         language.SelectCatalog(extraction.Texts,extraction.SelectedLanguage);
                         declaredLanguageSkipped+=extraction.SkippedByLanguage;
                         bool trusted=extraction.SelectedLanguage.Length>0&&language.CatalogHint==GameSourceLanguageTracker.Canonical(extraction.SelectedLanguage);
-                        foreach(var text in extraction.Texts)AddCatalog(text,trusted&&(extraction.TrustedSourceTexts is null||extraction.TrustedSourceTexts.Contains(text)));
+                        foreach(var text in extraction.Texts)AddCatalog(text,trusted&&(extraction.TrustedSourceTexts is null||extraction.TrustedSourceTexts.Contains(text)),extraction.UnlocalizedSourceTexts?.Contains(text)==true);
                     }
                 }
                 // A stalled game request must not stall provider completions,

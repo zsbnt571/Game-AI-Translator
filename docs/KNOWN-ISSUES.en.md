@@ -1,12 +1,12 @@
-# FUSION R1 0.6.0.177 Preview 1 — Known issues
+# FUSION R1 0.6.0.178 Preview 1 — Known issues
 
-- The reported Sloppy Fields crash is still undiagnosed. Restoring catalogue admission and recording error dialogs does not establish a crash fix.
-- GameMaker pretranslation fallback requires a conservatively inferred single-language script catalogue and matching fresh runtime evidence. Mixed, uncertain or unextractable content may still rely on live collection. Extraction is not full-game coverage.
-- Standard error dialogs are scoped to the verified game process. Brief/custom windows, blocked access or direct process termination may escape capture. Do not delete saves or existing mods for troubleshooting.
-- Short words, names, Han-only text and limited context can be misidentified. Nonselected sources and existing target-language text are retained. In-flight requests may finish during a locale switch.
-- The 245 + 756 + 22 checks are controlled tests including real extracted resources, not new live API quality comparisons, long commercial-game sessions or all-engine visual acceptance. Historical .176 API results are not newly repeated .177 evidence.
-- Unity IL2CPP, Unreal and other engines retain compatibility limits. Detection/extraction does not prove writeback, glyph, layout or complete gameplay. Existing loaders/mods may trigger conflict protection.
-- Changing target/style/instructions does not automatically replace all cached translations. First translation remains dependent on API latency, quota and model behavior.
-- The default CPU dependencies are bundled; service/credits, platform components, games and GPU drivers are not. Optional GPU runtime files are reused without new all-hardware inference acceptance.
+- The reported squares-before-Chinese glyph/font behavior has not been reproduced visually or established as fixed. The earlier Sloppy Fields crash remains undiagnosed.
+- Pretranslation covers base display text that the readers can establish. Inactive language packs, unknown sources and uncertain scripts remain protected. Dynamic/unextractable text still needs live collection; extraction is not full-game coverage.
+- GameMaker single-language fallback still needs conservative catalogue analysis plus fresh runtime source evidence. Short words, names and limited context can be ambiguous.
+- RPG Maker recovery only adopts an exact Fusion payload and verifiable launch records. Unrelated mods, changed components and inconsistent backups remain protected.
+- This build passed 1,187 controlled queue, language-boundary, recovery and compatibility checks, including three read-only real-resource admission checks. There were no new live API quality comparisons, commercial-game launches, long sessions or full visual acceptance. Historical .176 live API evidence was not repeated for this build.
+- Unity IL2CPP, Unreal and other engines retain compatibility limits. Detection/extraction does not establish writeback, glyph, layout or in-game acceptance.
+- Changing target, style or instructions does not rewrite all existing translations. First translation depends on API latency, quota and model behavior.
+- Default CPU dependencies are bundled; API service/credits, games, platform components and GPU drivers are not. Optional GPU files are reused without new all-hardware inference acceptance.
 - Proprietary Oodle and some optional heavy vision models are excluded. Experimental image translation may leave background/layout artifacts.
-- No new all-DPI/theme visual acceptance or clean-Windows-VM acceptance is claimed. Ten local package check groups and 15 Unicode-path cases passed. See the separate release asset PACKAGE-VERIFICATION.json for details.
+- No clean-Windows-VM, all-DPI/theme or all-engine gameplay acceptance is claimed. See PACKAGE-VERIFICATION.json for isolated package and integrity checks.

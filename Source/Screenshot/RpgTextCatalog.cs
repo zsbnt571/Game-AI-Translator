@@ -15,6 +15,10 @@ internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Un
     // Null retains older catalogue contracts; a supplied set limits the locale
     // trust to those exact sources, leaving untagged resources subject to detection.
     internal IReadOnlySet<string>? TrustedSourceTexts {get;init;}
+    // Engine display fields with no alternative-locale provenance can be
+    // pretranslated without a locale-reporting bridge. This does not authorize
+    // an inactive language pack or prove that every row will be displayed.
+    internal IReadOnlySet<string>? UnlocalizedSourceTexts {get;init;}
     // Optional static extraction provenance. This never grants runtime writeback
     // or full-buffer authority on its own; older adapters may leave it empty.
     internal IReadOnlyList<EmbeddedCatalogSource> Sources {get;init;}=[];
@@ -43,7 +47,7 @@ internal static class RpgTextCatalog
     {
         if(mode==SourceLanguageMode.Mixed)mode=SourceLanguageMode.Auto; // A combination does not select every language pack.
         limits??=new();var watch=System.Diagnostics.Stopwatch.StartNew();token.ThrowIfCancellationRequested();
-        var texts=new HashSet<string>(StringComparer.Ordinal);var excluded=new HashSet<string>(StringComparer.Ordinal);var trusted=new HashSet<string>(StringComparer.Ordinal);var selectedLanguages=new HashSet<string>(StringComparer.Ordinal);var issues=new HashSet<CatalogReadIssue>();int files=0,nodes=0;string current="游戏目录";bool trustedSource=false;
+        var texts=new HashSet<string>(StringComparer.Ordinal);var excluded=new HashSet<string>(StringComparer.Ordinal);var trusted=new HashSet<string>(StringComparer.Ordinal);var unlocalized=new HashSet<string>(StringComparer.Ordinal);var selectedLanguages=new HashSet<string>(StringComparer.Ordinal);var issues=new HashSet<CatalogReadIssue>();int files=0,nodes=0;string current="游戏目录";bool trustedSource=false,unlocalizedSource=false;
         void Issue(CatalogIssueKind kind,string reason){if(issues.Count<256)issues.Add(new(kind,current,reason));}
         if(archive?.UnreadableEntries>0)Issue(CatalogIssueKind.Unsupported,"资源包中部分索引超出文件范围，已跳过这些条目");
         void Check(bool countNode=true)
@@ -55,6 +59,7 @@ internal static class RpgTextCatalog
         {
             if(value is null||!IsText(value))return;
             if(trustedSource)trusted.Add(value);
+            if(unlocalizedSource&&!trustedSource)unlocalized.Add(value);
             if(texts.Contains(value))return;
             if(texts.Count>=limits.Texts){Issue(CatalogIssueKind.Limited,"达到本次文本条数上限，已提取文字保留");throw new ScanLimit();}
             texts.Add(value);
@@ -62,7 +67,7 @@ internal static class RpgTextCatalog
         var scriptText=new RpgScriptCatalog(()=>Check(false),()=>{Issue(CatalogIssueKind.Limited,"脚本文字关系达到本次读取上限，动态文字由实时接入继续补充");throw new ScanLimit();});
         RpgTextCatalogResult Finish()=>new(texts.ToArray(),files,issues.Select(i=>i.Source+"："+i.Reason).ToArray()){
             SelectedLanguage=preferredLanguage.Length>0?preferredLanguage:selectedLanguages.Count==1?selectedLanguages.Single():"",
-            TrustedSourceTexts=trusted,SkippedByLanguage=excluded.Except(texts).Count(),Report=new(issues.Count==0,issues.ToArray())};
+            TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized,SkippedByLanguage=excluded.Except(texts).Count(),Report=new(issues.Count==0,issues.ToArray())};
         RpgMakerInstallation? install;
         try{install=archive is null?RpgMakerDataAdapter.Detect(exe):new("","",prefix,"packaged");}
         catch(Exception ex)when(ex is IOException or JsonException or UnauthorizedAccessException){Issue(CatalogIssueKind.Failed,"游戏入口资料未能读取");return Finish();}
@@ -78,7 +83,7 @@ internal static class RpgTextCatalog
         {
             if(node.ValueKind!=JsonValueKind.Object)return false;
             // Only an explicit multilingual object establishes locale identity.
-            // Untagged strings remain subject to the shared source-language gate.
+            // Shared display fields retain their own non-pack provenance.
             var fields=node.EnumerateObject().ToArray();
             var entries=fields.Select(p=>(Language:Locale(p.Name),p.Value)).Where(p=>p.Language.Length>0&&p.Value.ValueKind is JsonValueKind.String or JsonValueKind.Array or JsonValueKind.Object).ToArray();
             if(entries.Select(p=>p.Language).Distinct(StringComparer.Ordinal).Count()<2||!entries.Any(p=>p.Language is not ("id" or "no")))return false;
@@ -171,8 +176,11 @@ internal static class RpgTextCatalog
                     string? fileLocale=UnityTextResourceLanguageSelection.ResourceLocale(current);
                     if(fileLocale is not null&&preferredLanguage.Length>0&&fileLocale!=preferredLanguage){Exclude(json.RootElement);continue;}
                     trustedSource=fileLocale is not null;
+                    // Only the engine's standard database/event files establish
+                    // base-content provenance; arbitrary plugin/locale files do not.
+                    unlocalizedSource=fileLocale is null&&Regex.IsMatch(current,@"^(?:Actors|Classes|Skills|Items|Weapons|Armors|Enemies|Troops|States|System|CommonEvents|Map\d+)\.json$",RegexOptions.IgnoreCase);
                     if(fileLocale is not null)selectedLanguages.Add(fileLocale);
-                    try{Walk(json.RootElement);}finally{trustedSource=false;}
+                    try{Walk(json.RootElement);}finally{trustedSource=false;unlocalizedSource=false;}
                 }
                 catch(Exception ex)when(ex is IOException or JsonException or UnauthorizedAccessException){Issue(CatalogIssueKind.Failed,ex is JsonException?"JSON 解析失败":"文件未能读取");}
             }
@@ -197,7 +205,8 @@ internal static class RpgTextCatalog
                         foreach(var plugin in json.RootElement.EnumerateArray())
                         {
                             Check();if(plugin.ValueKind!=JsonValueKind.Object){Issue(CatalogIssueKind.Unsupported,"插件列表包含非对象条目，已跳过该条目");continue;}
-                            if(plugin.TryGetProperty("status",out var status)&&status.ValueKind==JsonValueKind.True&&plugin.TryGetProperty("parameters",out var parameters))Plugin(parameters);
+                            if(plugin.TryGetProperty("status",out var status)&&status.ValueKind==JsonValueKind.True&&plugin.TryGetProperty("parameters",out var parameters))
+                            {unlocalizedSource=true;try{Plugin(parameters);}finally{unlocalizedSource=false;}}
                         }
                     }
                 }

@@ -124,6 +124,7 @@ internal static class WolfGameAdapter
         var r=ExperimentalRpgCatalog.Read(exe,token);
         var issues=r.Files.Where(f=>f.Status!="读取完成").Select(f=>new CatalogReadIssue(f.Status=="格式未支持"?CatalogIssueKind.Unsupported:f.Status=="达到限制"?CatalogIssueKind.Limited:CatalogIssueKind.Failed,f.File,f.Detail)).ToList();
         issues.Insert(0,new(CatalogIssueKind.Incomplete,"WOLF","已读取事件文本；动态文字在游戏中补译，混合控制码段落暂保留原显示。"));
-        return new(r.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(f=>f.Status=="读取完成"),[]){ReadCompleted=false,Report=new(false,issues.ToArray())};
+        var unlocalized=r.Entries.Where(e=>UnityTextResourceLanguageSelection.ResourceLocale(e.File) is null&&System.Text.RegularExpressions.Regex.IsMatch(e.File.Replace('\\','/'),@"^Data/(?:MapData/[^/]+\.mps|BasicData/CommonEvent\.dat)$",System.Text.RegularExpressions.RegexOptions.IgnoreCase)).Select(e=>e.Text).ToHashSet(StringComparer.Ordinal);
+        return new(r.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(f=>f.Status=="读取完成"),[]){UnlocalizedSourceTexts=unlocalized,ReadCompleted=false,Report=new(false,issues.ToArray())};
     }
 }

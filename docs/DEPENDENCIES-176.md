@@ -1,10 +1,10 @@
-﻿# FUSION R1 0.6.0.177 Preview 1 — 依赖清单
+# FUSION R1 0.6.0.178 Preview 1 — 依赖清单
 
 
 普通用户需要哪个包
-必选：Fusion-0.6.0.177.zip
-可选：Fusion-0.6.0.177-GPU.zip
-开发者：Fusion-0.6.0.177-Source.zip
+必选：Fusion-0.6.0.178.zip
+可选：Fusion-0.6.0.178-GPU.zip
+开发者：Fusion-0.6.0.178-Source.zip
 SHA256SUMS.txt 用于核对下载完整性。不要把 GitHub 自动生成的 Source code 当作运行包。
 
 完整主包已含
@@ -26,13 +26,13 @@ SHA256SUMS.txt 用于核对下载完整性。不要把 GitHub 自动生成的 So
 
 GPU 补充包
 这个包只补充背景处理 GPU 依赖，不是独立程序，不替代主包，也不是游戏翻译 API 加速器。
-退出 Fusion，解压补充包，把 runtime 合并到主程序的 Fusion-0.6.0.177/runtime。
-正确路径：Fusion-0.6.0.177/runtime/background-gpu/site。
-不要多嵌套一层 Fusion-0.6.0.177/runtime/runtime。补充包不包含显卡驱动。
-组件内容沿用 .169 补充包，重整了本版说明；已核对压缩包与逐文件完整性，但未宣称 .177 在全部 NVIDIA 硬件完成推理验收。
+退出 Fusion，解压补充包，把 runtime 合并到主程序的 Fusion-0.6.0.178/runtime。
+正确路径：Fusion-0.6.0.178/runtime/background-gpu/site。
+不要多嵌套一层 Fusion-0.6.0.178/runtime/runtime。补充包不包含显卡驱动。
+组件内容沿用 .169 补充包，重整了本版说明；已核对压缩包与逐文件完整性，但未宣称 .178 在全部 NVIDIA 硬件完成推理验收。
 这些 NVIDIA 组件保留原许可证，不自动适用于 AMD/Intel GPU；不能使用时保留默认 CPU 配置。
 
 开发者与许可证
 项目自有代码沿用仓库 GPL-3.0-only；第三方组件遵循各自许可证。运行包附 LICENSE.txt、THIRD_PARTY_NOTICES.txt 与 licenses/。
-source ZIP 提供本次 .177 的源码与构建说明。为避免把私有游戏/系统依赖带入公开材料，排除 Oodle 和 Unity 引擎编译引用；单独重编部分游戏插件需合法自行提供引用。
+source ZIP 提供本次 .178 的源码与构建说明。为避免把私有游戏/系统依赖带入公开材料，排除 Oodle 和 Unity 引擎编译引用；单独重编部分游戏插件需合法自行提供引用。
 第三方快照不是游戏本体或游戏数据。保留许可证、版权声明与对应源码分发材料。

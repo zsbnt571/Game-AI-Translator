@@ -27,7 +27,8 @@ internal static class WebTextCatalog
         if(NovelWebCatalog.IsNovel(w.Engine))return NovelWebCatalog.Read(w,token,preferredLanguage);
         using var archive=new WebGameArchive(w.Archive);var texts=new HashSet<string>(StringComparer.Ordinal);var issues=new List<CatalogReadIssue>();int files=0,nodes=0;var watch=System.Diagnostics.Stopwatch.StartNew();
         // Resource selection follows the running game's locale, independently
-        // of the translation allow-list. Untagged scene text stays untrusted.
+        // of the translation allow-list. Scene display text has separate
+        // non-pack provenance; it does not declare an active game locale.
         var localized=new UnityTextResourceLanguageSelection(SourceLanguageMode.Auto,preferredLanguage);
         void Check(){token.ThrowIfCancellationRequested();if(++nodes>2000000||watch.ElapsedMilliseconds>30000||texts.Count>100000)throw new InvalidDataException("目录读取达到本次数量或时间上限。");}
         void Add(string? s){Check();if(s is not null&&RpgTextCatalog.IsText(s))texts.Add(s);}
@@ -93,10 +94,11 @@ internal static class WebTextCatalog
             issues.Add(new(CatalogIssueKind.Unsupported,"运行时表达式","变量拼接、插件和图片里的文字不能全部由静态目录确定；可见文本继续补译"));
         }
         catch(Exception e)when(e is IOException or InvalidDataException or JsonException or InvalidOperationException or IndexOutOfRangeException or KeyNotFoundException or RegexMatchTimeoutException){issues.Add(new(CatalogIssueKind.Failed,"网页资源包","部分文本结构未能完整读取"));}
-        try{localized.Complete(Add,preferredLanguage.Length>0?preferredLanguage:null);}
+        var unlocalized=new HashSet<string>(texts,StringComparer.Ordinal);
+        try{localized.Complete(Add,preferredLanguage.Length>0?preferredLanguage:null);unlocalized.UnionWith(localized.UnlocalizedSourceTexts);}
         catch(IOException){issues.Add(new(CatalogIssueKind.Limited,"语言资源","语言候选达到本次读取上限，当前可见文本继续补译"));}
         return new(texts.ToArray(),files,issues.Select(i=>i.Source+"："+i.Reason).ToArray()){
-            SelectedLanguage=localized.SelectedLanguage,TrustedSourceTexts=new HashSet<string>(localized.TrustedSourceTexts,StringComparer.Ordinal),
+            SelectedLanguage=localized.SelectedLanguage,TrustedSourceTexts=new HashSet<string>(localized.TrustedSourceTexts,StringComparer.Ordinal),UnlocalizedSourceTexts=unlocalized,
             SkippedByLanguage=localized.SkippedByLanguage,Report=new(false,issues.ToArray())};
     }
 }

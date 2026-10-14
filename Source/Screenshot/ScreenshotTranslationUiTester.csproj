@@ -9,7 +9,7 @@
     <AssemblyName>GameTranslator</AssemblyName>
     <ApplicationIcon>BrandAssets\BlueCat.ico</ApplicationIcon>
     <RootNamespace>ScreenshotTranslationUiTester</RootNamespace>
-    <Version>0.6.0.177</Version><FileVersion>0.6.0.177</FileVersion><AssemblyVersion>0.6.0.177</AssemblyVersion><InformationalVersion>0.6.0.177-fusion-r1-catalog-pretranslation</InformationalVersion>
+    <Version>0.6.0.178</Version><FileVersion>0.6.0.178</FileVersion><AssemblyVersion>0.6.0.178</AssemblyVersion><InformationalVersion>0.6.0.178-candidate-source-pretranslation</InformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj-core-v2\**;bin-core-v2\**;obj-verify\**;bin-verify\**;obj-temporary-wda\**;bin-temporary-wda\**;obj-settings12\**;bin-settings12\**;obj-consolidation-task-a\**;bin-consolidation-task-a\**;obj-mega-r1\**;bin-mega-r1\**</DefaultItemExcludes>
   </PropertyGroup>
   <ItemGroup>

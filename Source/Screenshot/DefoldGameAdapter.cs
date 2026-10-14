@@ -148,6 +148,7 @@ internal static class DefoldGameAdapter
     internal static RpgTextCatalogResult ReadCatalog(string exe,CancellationToken ct)
     {
         var r=DefoldTextCatalog.Read(exe,ct);
-        return new(r.Entries.Select(x=>x.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(x=>x.Status=="读取完成"),[]){ReadCompleted=false,Report=new(false,[new(CatalogIssueKind.Incomplete,"Defold","已读取资源内文本；动态拼接和编译后的脚本在游戏中补充。")])};
+        var unlocalized=r.Entries.Where(e=>e.Location.StartsWith("gui-node:",StringComparison.Ordinal)&&UnityTextResourceLanguageSelection.ResourceLocale(e.File) is null).Select(e=>e.Text).ToHashSet(StringComparer.Ordinal);
+        return new(r.Entries.Select(x=>x.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(x=>x.Status=="读取完成"),[]){UnlocalizedSourceTexts=unlocalized,ReadCompleted=false,Report=new(false,[new(CatalogIssueKind.Incomplete,"Defold","已读取资源内文本；动态拼接和编译后的脚本在游戏中补充。")])};
     }
 }

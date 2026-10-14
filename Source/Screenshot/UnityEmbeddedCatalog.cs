@@ -196,6 +196,7 @@ internal static class UnityEmbeddedCatalog
         foreach(string text in otherTexts)Add(text);
         var trusted=tableChosen?new HashSet<string>(localizedTables.Texts,StringComparer.Ordinal):new(StringComparer.Ordinal);
         trusted.UnionWith(selected.TrustedSourceTexts);trusted.IntersectWith(texts);
+        var unlocalized=new HashSet<string>(selected.UnlocalizedSourceTexts,StringComparer.Ordinal);unlocalized.IntersectWith(texts);
         if(selected.LimitReached)Fail("文本目录","单语言候选文本超过本次读取上限");
         if(tableChosen&&localizedTables.LimitReached||texts.Count>=150000)Fail("文本目录","已达到本次目标语言文本条数或容量上限");
         var issues=readIssues?.ToHashSet()??failures.Select(reason=>new CatalogReadIssue(CatalogIssueKind.Incomplete,"文本目录",reason)).ToHashSet();
@@ -204,7 +205,7 @@ internal static class UnityEmbeddedCatalog
             Report=new(readCompleted&&issues.Count==0,issues.ToArray()),
             ReadCompleted=readCompleted&&(fileCount>0||failures.Count>0)&&!selected.LimitReached&&!localizedTables.LimitReached&&texts.Count<150000,
             SelectedLanguage=sourceLanguage==SourceLanguageMode.Mixed?"":chosen.Length>0?chosen:selected.SelectedLanguage,
-            SkippedByLanguage=localizedTables.Excluded(otherTexts,excludedOther,chosen),TrustedSourceTexts=trusted};
+            SkippedByLanguage=localizedTables.Excluded(otherTexts,excludedOther,chosen),TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized};
     }
     internal static void ReadSerializedFields(AssetTypeValueField value,bool context,UnityTextResourceLanguageSelection selected,string family,CancellationToken cancellation,Action<string> incomplete)
     {
