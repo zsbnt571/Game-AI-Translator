@@ -6,8 +6,9 @@ internal sealed partial class GameLibraryGrid
     private int imageEpoch;
     private bool imagesLoading;
     private readonly HashSet<string> imagesLoaded=[];
+    private readonly HashSet<int> loadedImageIndices=[];
     private void ResetTileImages(Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader)
-    {imageEpoch++;imageLoader=loader;imagesLoaded.Clear();imagesLoading=false;}
+    {imageEpoch++;imageLoader=loader;imagesLoaded.Clear();loadedImageIndices.Clear();imagesLoading=false;}
 
     private void RetainTileImages(LibraryTile[] next,Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader)
     {
@@ -25,6 +26,7 @@ internal sealed partial class GameLibraryGrid
             // Transfer ownership; the old tile array can now be safely disposed.
             tiles[prior.index]=prior.tile with{Cover=null,Icon=null};
             imagesLoaded.Add(b.Id);
+            loadedImageIndices.Add(i);
         }
     }
 
@@ -33,11 +35,11 @@ internal sealed partial class GameLibraryGrid
     {
         if(imagesLoading||imageLoader is null||IsDisposed||!IsHandleCreated)return;
         var view=Rectangle.Inflate(ContentViewport,Cell.Width,Cell.Height);
-        var nearby=Enumerable.Range(0,tiles.Length).Where(i=>BoundsFor(i).IntersectsWith(view)).Take(64).ToArray();
+        var nearby=VisibleTileIndices(view).Take(64).ToArray();
         var keep=nearby.ToHashSet();
-        for(int i=0;i<tiles.Length;i++)
-            if(!keep.Contains(i)&&imagesLoaded.Remove(tiles[i].Game.Id))
-            {var old=tiles[i];tiles[i]=old with{Cover=null,Icon=null};old.Dispose();}
+        foreach(int i in loadedImageIndices.ToArray())
+            if(!keep.Contains(i))
+            {loadedImageIndices.Remove(i);imagesLoaded.Remove(tiles[i].Game.Id);var old=tiles[i];tiles[i]=old with{Cover=null,Icon=null};old.Dispose();}
         var work=nearby.Where(i=>!imagesLoaded.Contains(tiles[i].Game.Id)).Select(i=>(Index:i,Tile:tiles[i])).ToArray();
         if(work.Length==0)return;
         int epoch=imageEpoch;var loader=imageLoader;imagesLoading=true;
@@ -49,7 +51,7 @@ internal sealed partial class GameLibraryGrid
                 catch{return (item.Index,item.Tile);}
             }).ToArray());
             if(IsDisposed||epoch!=imageEpoch){foreach(var item in ready)item.Tile.Dispose();return;}
-            foreach(var item in ready){tiles[item.Index]=item.Tile;imagesLoaded.Add(item.Tile.Game.Id);}
+            foreach(var item in ready){tiles[item.Index]=item.Tile;imagesLoaded.Add(item.Tile.Game.Id);loadedImageIndices.Add(item.Index);}
             Invalidate();
         }
         finally{if(epoch==imageEpoch)imagesLoading=false;}

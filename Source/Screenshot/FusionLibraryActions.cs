@@ -124,7 +124,7 @@ public sealed partial class MainForm
                     await RunGameActionAsync(action);break;
                 case "return":await ReturnToSelectedGameAsync();break;
                 case "note":case "name":await EditLibraryNoteAsync();break;
-                case "folder":_folderButton.PerformClick();break;
+                case "folder":await OpenSelectedGameFolderAsync();break;
                 case "cover":await EditGameArtworkAsync();break;
                 case "remove":await RemoveSelectedLibraryGameAsync();break;
             }

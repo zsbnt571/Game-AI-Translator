@@ -48,5 +48,34 @@ static class TransferredInstallTests
             check(scenario,"Unverifiable state reports failure rather than silent success",refused,null);
             check(scenario,"Unverifiable game files remain unchanged",File.ReadAllText(manifest)==before&&(File.Exists(component)?File.ReadAllText(component):"")==script,null);
         }
+        foreach(string scenario in new[]{"legacy-moved","legacy-restore","legacy-corrupt-backup","legacy-wrong-record","legacy-changed-manifest"})
+        {
+            string old=Fixture(scenario+"-source"),oldFolder=Path.GetDirectoryName(old)!;
+            RpgMakerDataAdapter.Restore(old);RpgMakerDataAdapter.Install(old);
+            string oldManifest=Path.Combine(oldFolder,"package.json"),oldScript=Path.Combine(oldFolder,RpgMakerDataAdapter.ScriptName);
+            // Simulate a previously journalled payload, never execute fixture JS.
+            File.AppendAllText(oldScript,"\n// Prior journalled build fixture: "+scenario);
+            string recordPath=Path.Combine(RpgMakerDataAdapter.Storage(old),"install.json");
+            var record=JsonNode.Parse(File.ReadAllText(recordPath))!.AsObject();record["ScriptHash"]=RpgMakerDataAdapter.Hash(File.ReadAllBytes(oldScript));
+            if(scenario=="legacy-wrong-record")record["Exe"]=Path.Combine(oldFolder,"Different.exe");
+            File.WriteAllText(recordPath,record.ToJsonString());
+            string original=File.ReadAllText(Path.Combine(RpgMakerDataAdapter.Storage(old),"package.original.json"));
+            if(scenario=="legacy-corrupt-backup")File.AppendAllText(Path.Combine(RpgMakerDataAdapter.Storage(old),"package.original.json"),"changed");
+            string moved=Fixture(scenario+"-destination"),folder=Path.GetDirectoryName(moved)!,manifest=Path.Combine(folder,"package.json"),script=Path.Combine(folder,RpgMakerDataAdapter.ScriptName);
+            File.Copy(oldManifest,manifest,true);File.Copy(oldScript,script,true);
+            if(scenario=="legacy-changed-manifest")File.AppendAllText(manifest," ");
+            string before=File.ReadAllText(manifest),payload=File.ReadAllText(script);bool failed=false;
+            try{if(scenario=="legacy-restore")RpgMakerDataAdapter.Restore(moved);else RpgMakerDataAdapter.Install(moved);}catch(Exception ex)when(ex is IOException or InvalidOperationException){failed=true;}
+            bool accepted=scenario is "legacy-moved" or "legacy-restore";
+            check(scenario,"Only a complete matching local journal authorizes legacy recovery",failed!=accepted,null);
+            if(accepted)
+            {
+                if(scenario=="legacy-moved")check(scenario,"Moved legacy component upgraded to current payload",File.ReadAllText(script)==RpgMakerDataAdapter.Payload()&&RpgMakerDataAdapter.Installed(moved),null);
+                RpgMakerDataAdapter.Restore(moved);
+                check(scenario,"Verified original bytes restored",File.ReadAllText(manifest)==original&&!File.Exists(script),null);
+                check(scenario,"Source installation and destination save retained",File.ReadAllText(oldManifest)==before&&File.ReadAllText(oldScript)==payload&&File.Exists(recordPath)&&File.ReadAllText(Path.Combine(folder,"save","file1.rmmzsave"))=="User save must survive",null);
+            }
+            else check(scenario,"Rejected legacy recovery leaves game untouched",File.ReadAllText(manifest)==before&&File.ReadAllText(script)==payload&&!RpgMakerDataAdapter.Installed(moved),null);
+        }
     }
 }

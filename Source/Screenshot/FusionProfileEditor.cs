@@ -231,6 +231,7 @@ public sealed partial class MainForm
         if(_settingsTabs.SelectedTab is { } current)RestorePosition(current);
         if(_settingsSaveFooter is not null)_settingsSaveFooter.Visible=true;UpdateSettingsSaveState();
         ValidateSettingsHost("FusionSettingsNavigation");RecordPageLocation();
+        _wpfWindow?.RefreshWorkspace();
     }
     private void SaveFusionState()
     {

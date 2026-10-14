@@ -27,7 +27,7 @@ public sealed partial class MainForm
     internal bool ScreenshotResizeUsesRedrawBatchForSmoke => UseWorkspaceResizeRedrawBatch;
     private bool UseWorkspaceResizeRedrawBatch => ScreenshotRebuildSelfTests.IsActive
         ? ScreenshotResizeRedrawBatchOverrideForSmoke ?? (!ScreenshotResizeSkipRedrawBatchForSmoke && !_workspaceScreenshotRendering)
-        : !_workspaceScreenshotRendering;
+        : !WpfWorkspace.Enabled && !_workspaceScreenshotRendering;
 
     private void ConfigureWorkspaceRenderingForPage(string name)
     {
@@ -35,7 +35,7 @@ public sealed partial class MainForm
         // and settings retain their original resize path as soon as they show.
         _workspaceScreenshotRendering = name == "主页";
         if (_mainContentHost is WorkspacePageHost host)
-            host.CompositeChildren = !_workspaceScreenshotRendering;
+            host.CompositeChildren = !WpfWorkspace.Enabled && !_workspaceScreenshotRendering;
     }
 
     protected override void OnResize(EventArgs e)
@@ -93,6 +93,7 @@ public sealed partial class MainForm
     }
     private void PaintWorkspaceBorder(Graphics graphics)
     {
+        if(_wpfWindow is not null)return;
         var color=UiTheme.Current.Main.GetBrightness()>.5f?Color.FromArgb(139,159,184):Color.FromArgb(89,111,140);
         using var pen=new Pen(color,Math.Max(1,DeviceDpi/96f));
         int right=Math.Max(0,ClientSize.Width-1),bottom=Math.Max(0,ClientSize.Height-1);
@@ -135,6 +136,7 @@ public sealed partial class MainForm
         get
         {
             var cp=base.CreateParams;
+            if(_wpfWindow is not null)return cp;
             cp.Style|=0x40000|0x20000|0x10000|0x80000;cp.Style&=~0xC00000;
             // The whole-form WS_EX_COMPOSITED surface can retain unpainted parent
             // regions after restore/show: children appear over the desktop. Keep
@@ -146,6 +148,7 @@ public sealed partial class MainForm
 
     private bool HandleWorkspaceFrame(ref Message message)
     {
+        if(_wpfWindow is not null)return false;
         // Keep the client origin stable. Locally composed workspace children
         // repaint their changed bounds; invalidating the entire native frame
         // on every sizing message needlessly erases unchanged controls.

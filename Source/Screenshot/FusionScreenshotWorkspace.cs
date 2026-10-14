@@ -148,7 +148,7 @@ public sealed partial class MainForm
         _shotDate.SelectedIndexChanged += (_, _) => { _shotPageIndex = 0; RefreshHistory(); };
         _shotSearchTimer.Tick += (_, _) => { _shotSearchTimer.Stop(); RefreshHistory(); };
         _shotLayoutTimer.Tick += (_, _) => { _shotLayoutTimer.Stop(); SaveShotLayout(); };
-        _shotSplit.SplitChanged += (_, _) => ScheduleShotLayout();
+        _shotSplit.SplitChanged += (_, _) => { ScheduleShotLayout(); WpfShotSplitChanged?.Invoke(); };
         _session.HistoryChanged += ShotHistoryChanged;
         _shotPage.SizeChanged += (_, _) => ArrangeShotWorkspace();
         DpiChanged += (_, _) => ArrangeShotWorkspace();
@@ -213,7 +213,7 @@ public sealed partial class MainForm
                 _shotHistoryFixedLayout = historyLayout;
             }
             int footerHeight = _shotPrevious!.Visible ? S(64) : S(35);
-            _shotHistory.SetBounds(S(12), S(132), w - S(24), Math.Max(0, _shotHistoryHost.Height - S(132) - footerHeight));
+            if(WpfScreenshotView is null)_shotHistory.SetBounds(S(12), S(132), w - S(24), Math.Max(0, _shotHistoryHost.Height - S(132) - footerHeight));
             _shotHistoryFooter!.SetBounds(0, _shotHistoryHost.Height - footerHeight, w, footerHeight);
             _shotHistoryNote!.SetBounds(S(8), footerHeight - S(30), w - S(16), S(25));
         }
@@ -269,6 +269,7 @@ public sealed partial class MainForm
         if (_shotExpanded is not null) _shotExpanded.Visible = visible;
         _shotRail.Visible = !visible;
         ArrangeShotWorkspace(); ScheduleShotLayout();
+        WpfScreenshotView?.Refresh();
     }
     private void SwapShotPanes()
     {
@@ -281,6 +282,7 @@ public sealed partial class MainForm
         _shotSplit.MaximizedPane = _shotSplit.MaximizedPane == index ? -1 : index;
         _shotLeft.Maximized = _shotSplit.MaximizedPane == 0; _shotRight.Maximized = _shotSplit.MaximizedPane == 1;
         if (_shotSplit.MaximizedPane >= 0) _shotActive = index == 0 ? _shotLeft : _shotRight;
+        WpfScreenshotView?.Refresh();
     }
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
@@ -296,7 +298,7 @@ public sealed partial class MainForm
         _shotOverflowMenu?.Dispose(); _shotOverflowMenu = new LocalizedContextMenuStrip();
         void Add(ScreenshotRebuildButton button, string title, Action action)
         {
-            if (button.Visible) return;
+            if (WpfScreenshotView is not null ? WpfSettingsModel.LocallyVisible(button) : button.Visible) return;
             _shotOverflowMenu.Items.Add(title, null, (_, _) => action()).Enabled = button.Enabled;
         }
         Add(_shotEditProfile!, "编辑当前方案", () => EditModeProfile(false));
@@ -520,6 +522,7 @@ public sealed partial class MainForm
         if (_shotPage is null) return;
         _shotRetranslate!.Enabled = _shotSelected is { OriginalPng.Length: > 0 };
         _shotEditRecord!.Enabled = _shotSelected is not null;
+        WpfScreenshotView?.Refresh();
         // Global theme application can replace local screenshot colors even
         // when the palette itself is unchanged. Detect that before skipping.
         if (_shotAppliedPalette == p && _shotPage.BackColor == p.Main

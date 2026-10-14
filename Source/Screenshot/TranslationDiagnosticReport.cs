@@ -38,6 +38,7 @@ internal sealed record TranslationDiagnosticReport(DateTimeOffset CapturedAt,str
         object? counters=s is null?null:new
         {
             s.DirectoryTexts,s.DirectoryCachedTexts,s.RuntimeCapturedTexts,s.RuntimeEligibleTexts,s.RuntimeCachedTexts,
+            s.CatalogDiscoveredTexts,s.CatalogDeferredTexts,s.CatalogLocaleUnconfirmed,
             s.RuntimeOutsideDirectory,s.RuntimeOutsideDirectoryCached,s.RuntimeExcludedTexts,s.RuntimeNonTextTexts,
             s.CatalogExcludedTexts,s.ReadOnlyTexts,s.ActiveRequests,s.RetryScheduledTexts,s.RetryStoppedTexts,
             s.BridgeStoredTexts,s.PendingBridgeEntries,s.ActiveRenderedBindings,s.ActiveCachedWaitingBindings,

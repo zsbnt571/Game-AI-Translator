@@ -4,20 +4,22 @@
 
 A Windows game translation tool combining in-game translation, screenshot OCR translation and a game library. Bring your own API provider, share translation preferences across workflows, and control which languages are translated in actually encountered content.
 
-**Current preview: 0.6.0.178 Preview 1.** This is a public Windows x64 portable preview. Engine detection, text extraction, translation generation and successful in-game display are separate stages.
+**Current preview: 0.6.0.179 Preview 1.** This is a public Windows x64 portable preview. Engine detection, text extraction, translation generation and successful in-game display are separate stages.
+
+This preview moves the main window, library, game details, settings and screenshot workspace to WPF while retaining the established layout and services. Specialized editors, some game tools and dialogs keep their existing controls. Fresh installs default to Simplified Chinese; saved language choices are preserved. Ren’Py/Godot source-provenance fixes restore eligible pretranslation. See [179 validation](docs/VALIDATION-179.md) for scope and performance measurements.
 
 ## Download and start
 
-Open the [0.6.0.178 Preview 1 release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.178-preview.1) and download its assets:
+Open the [0.6.0.179 Preview 1 release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.179-preview.1) and download its assets:
 
 | Asset | Purpose |
 | --- | --- |
-| `Fusion-0.6.0.178.zip` | Complete application with the default CPU dependency set |
-| `Fusion-0.6.0.178-GPU.zip` | Optional NVIDIA background-processing dependencies; not standalone |
-| `Fusion-0.6.0.178-Source.zip` | Version-specific developer source/build materials |
+| `Fusion-0.6.0.179.zip` | Complete application with the default CPU dependency set |
+| [Fusion-0.6.0.178-GPU.zip](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.178-preview.1/Fusion-0.6.0.178-GPU.zip) | Optional NVIDIA background-processing dependencies; not standalone |
+| `Fusion-0.6.0.179-Source.zip` | Version-specific developer source/build materials |
 | `SHA256SUMS.txt` | Download integrity checks |
 
-Fully extract the main ZIP and run `Fusion-0.6.0.178/GameTranslator.exe`. Keep its companion files. GitHub's automatic **Source code** downloads are not executable packages.
+Fully extract the main ZIP and run `Fusion-0.6.0.179/GameTranslator.exe`. Keep its companion files. GitHub's automatic **Source code** downloads are not executable packages.
 
 1. **Settings > Translation profiles**: configure your endpoint, API key and model, test, then save.
 2. Scroll to **Translation preferences on the same page**: set target, source scope, style and instructions, then **Save preferences**.
@@ -60,7 +62,7 @@ Unity IL2CPP, Unreal and engines not retested here retain compatibility limits. 
 
 ## Upgrade and privacy
 
-Back up the actual old data directory after closing Fusion and affected games, then copy data into the new `Fusion-0.6.0.178/data`. Check the old Storage setting if customized. Keep the old application and pre-upgrade backup; do not share one writable directory between versions.
+Back up the actual old data directory after closing Fusion and affected games, then copy data into the new `Fusion-0.6.0.179/data`. Check the old Storage setting if customized. Keep the old application and pre-upgrade backup; do not share one writable directory between versions.
 
 Verify library, target/source choices and API connectivity after migration. Encrypted keys may require re-entry on a different Windows account/device. Style changes do not clear previous translations.
 
@@ -68,7 +70,7 @@ The public package has no personal keys, game library/history, games or saves. S
 
 ## Development and licenses
 
-The main branch's [Source/](Source) contains the current **0.6.0.178 Preview 1** product code. [tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) is its build entry point. Each tracked product source file matches the published source asset; see the [source checksum index](git-source-index.json).
+The main branch's [Source/](Source) contains the current **0.6.0.179 Preview 1** product code. [tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) is its build entry point. Each tracked product source file matches the published source asset; see the [source checksum index](git-source-index.json).
 
 | Directory | Contents |
 | --- | --- |
@@ -78,7 +80,7 @@ The main branch's [Source/](Source) contains the current **0.6.0.178 Preview 1**
 | [licenses/](licenses/README.md) | Third-party licenses and component inventories |
 | [third-party-source/](third-party-source/README.md) | Index of third-party sources shipped in the source asset |
 
-Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `Fusion-0.6.0.178-Source.zip` and follow [Build instructions](docs/BUILD-176.md). End users should download Fusion-0.6.0.178.zip above.
+Runtime ZIPs, DLLs and generated font resources are release assets, not Git files. For development, download the complete matching `Fusion-0.6.0.179-Source.zip` and follow [Build instructions](docs/BUILD-176.md). End users should download Fusion-0.6.0.179.zip above.
 
 The historical Alpha source and documentation remain available through their original tag, commits and release. See [Version history](docs/HISTORY.md).
 

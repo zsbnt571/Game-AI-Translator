@@ -37,7 +37,7 @@ internal sealed class TemporaryWindowCaptureExclusion : IDisposable
                 return false;
             }
 
-            var handle = form.Handle;
+            var handle = ((IWin32Window)form).Handle;
             if (!NativeMethods.GetWindowDisplayAffinity(handle, out var oldAffinity))
             {
                 var win32 = Marshal.GetLastWin32Error();
@@ -129,7 +129,7 @@ internal sealed class TemporaryWindowCaptureAllowance : IDisposable
             return false;
         }
 
-        var handle = window.Handle;
+        var handle = ((IWin32Window)window).Handle;
         if (!NativeMethods.GetWindowDisplayAffinity(handle, out var oldAffinity))
         {
             var win32 = Marshal.GetLastWin32Error();
@@ -189,8 +189,8 @@ public sealed class TemporaryCaptureVisibility : IDisposable
         {
             TranslationService.DiagnosticLog($"capture visibility begin hideMain={hideMain} hidePreviews={hidePreviews} previewCount={previews.Count}");
             var excludedWindows = new List<Form>();
-            if (hideMain && main.Visible) excludedWindows.Add(main);
-            else if (main.Visible)
+            if (hideMain && main.DesktopVisible) excludedWindows.Add(main);
+            else if (main.DesktopVisible)
             {
                 if (!TemporaryWindowCaptureAllowance.TryBegin(main, out var mainAllowance, out error))
                 { scope.Dispose(); scope = null; return false; }

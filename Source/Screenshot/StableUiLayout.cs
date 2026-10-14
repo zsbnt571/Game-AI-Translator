@@ -29,7 +29,7 @@ internal sealed class SettingsPage : BufferedPage
 // The screenshot workspace owns local buffering and selects its own policy.
 internal sealed class WorkspacePageHost : BufferedPage
 {
-    private bool compositeChildren = true;
+    private bool compositeChildren = !WpfWorkspace.Enabled;
     internal bool CompositeChildren
     {
         get => compositeChildren;

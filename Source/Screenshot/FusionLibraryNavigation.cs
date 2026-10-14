@@ -3,7 +3,7 @@ namespace ScreenshotTranslationUiTester;
 internal sealed record LibraryNavigationTarget(string Kind,string Value="");
 // The TreeView below is a data model only: no native window or native scrollbars.
 // All visible rows are composed in one double-buffered paint pass.
-internal sealed class LibraryNavigationTree:Control
+internal sealed partial class LibraryNavigationTree:Control
 {
     private readonly TreeView model=new();
     private readonly ToolTip tips=new();

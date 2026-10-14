@@ -165,4 +165,9 @@ internal static class UiLanguage
 internal sealed class LocalizedContextMenuStrip : ContextMenuStrip
 {
     internal LocalizedContextMenuStrip(){UiLanguage.BindMenu(this);}
+    public new void Show(Control control,Point position)
+    {
+        if(WpfControlCoordinates.HasView(control))base.Show(WpfControlCoordinates.ToScreen(control,position));
+        else base.Show(control,position);
+    }
 }

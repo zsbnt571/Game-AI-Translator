@@ -20,9 +20,12 @@ public static class WindowStateGuard
 {
     public static void ShowPreviewWithoutRestoringMain(Form main, Form preview)
     {
-        var minimized = main.WindowState == FormWindowState.Minimized;
+        var minimized = (main is MainForm desktop ? desktop.WindowState : main.WindowState) == FormWindowState.Minimized;
         preview.Show();
-        if (minimized && main.WindowState != FormWindowState.Minimized)
-            main.WindowState = FormWindowState.Minimized;
+        if (minimized)
+        {
+            if (main is MainForm fusion) fusion.WindowState = FormWindowState.Minimized;
+            else if (main.WindowState != FormWindowState.Minimized) main.WindowState = FormWindowState.Minimized;
+        }
     }
 }

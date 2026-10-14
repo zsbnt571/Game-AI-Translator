@@ -1,11 +1,11 @@
 {
-  "version": "0.6.0.178-preview.1",
-  "releaseTag": "v0.6.0.178-preview.1",
+  "version": "0.6.0.179-preview.1",
+  "releaseTag": "v0.6.0.179-preview.1",
   "sourceRoot": "Source",
-  "fullSourceAsset": "Fusion-0.6.0.178-Source.zip",
-  "fullSourceAssetSha256": "ea4fa503986576bad41dda590c996a2518a915151bc42c9407b9607149048565",
-  "mainAssemblySha256": "f239161d1e9bb1e5817b0f3a856f8669fdc1d6622457ea405f30e5d11e874050",
-  "productSourceEdited": false,
+  "fullSourceAsset": "Fusion-0.6.0.179-Source.zip",
+  "fullSourceAssetSha256": "56bb5ed2fd8ae441a693098540bfddb7c27500452f17b682b568117e9277bf56",
+  "mainAssemblySha256": "9e0c293f11923d257253cda0e8fa9fddbb8a3effdc42f3e66ae012e8dcf0fcdb",
+  "productSourceEdited": true,
   "files": [
     {
       "path": "Source/CoverCapture/FusionCoverCapture.csproj",
@@ -792,8 +792,16 @@
       "sha256": "9d60bdc554383a2208855e4b0ed93b0a24963aebdaa29a67f4be202593dc6813"
     },
     {
+      "path": "Source/Screenshot/DesktopGlobalUsings.cs",
+      "sha256": "526d6d033ac0840d5020a7805791fe398c3848a2e2f09d7e429aa5f703bd5eb4"
+    },
+    {
       "path": "Source/Screenshot/DesktopInputRuntime.cs",
       "sha256": "8c91231e5eb66d0e92ef2fbe995d93fd911b8d9b64073a05f925ce319078f9cc"
+    },
+    {
+      "path": "Source/Screenshot/DesktopRenderMetrics.cs",
+      "sha256": "bd68201a7fb4c4b78515e852cd9e3f8d3e2fc61acceb5b38c84dc757ac0cec36"
     },
     {
       "path": "Source/Screenshot/DialogLayout.cs",
@@ -821,7 +829,7 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedGameAdapters.cs",
-      "sha256": "aa5f9f048f2e3cd1fea6b712071eb9b6f8db8f4dc97b7211d3362abfff82fec0"
+      "sha256": "1db09fe3a1c36d16a655bdc3bcab11ac4461fcb30b3e5ecd4e50832533c862a2"
     },
     {
       "path": "Source/Screenshot/EmbeddedLaunchWait.cs",
@@ -837,7 +845,7 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationOptions.cs",
-      "sha256": "40b4c29319ee7fbee95b5732ca06187387e56521c0ac457012ec862d282cb0cb"
+      "sha256": "c872383fffcdc2039b12258b3aef4984d8b46caaa3692405fe4c5d41cf738acf"
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationQueueSnapshot.cs",
@@ -961,7 +969,7 @@
     },
     {
       "path": "Source/Screenshot/FusionGameLibraryWorkspace.cs",
-      "sha256": "fc5e4072338f2142b2b4395a75ae09581a9b257291b23076389e9ea9718b46b1"
+      "sha256": "0bb51c61f99e71fc5223b9aaca1d44361dcb6643aa78478d803bd41025115e37"
     },
     {
       "path": "Source/Screenshot/FusionGameLifecycle.cs",
@@ -985,7 +993,7 @@
     },
     {
       "path": "Source/Screenshot/FusionGameSessionWorkspace.cs",
-      "sha256": "fb04394695bc5caafa6981fb2f4430037887734c4fd0d5d395bc8edbbbdeb1e3"
+      "sha256": "46410eb30516743aae27bb51849a389b1247ecd361e493ff632ede6a8813204e"
     },
     {
       "path": "Source/Screenshot/FusionGameSessions.cs",
@@ -997,7 +1005,7 @@
     },
     {
       "path": "Source/Screenshot/FusionLibraryActions.cs",
-      "sha256": "1490427156d66dfced24645fd843563d4221d1f6a684fa608ea4de4626c39042"
+      "sha256": "a859d164307e5bc7f3e208f205d571d6906d71d9f28d77b52d1a0861d96a7e67"
     },
     {
       "path": "Source/Screenshot/FusionLibraryCategories.cs",
@@ -1013,7 +1021,7 @@
     },
     {
       "path": "Source/Screenshot/FusionLibraryNavigation.cs",
-      "sha256": "d471b5907759c808066931100f6b5ecf8eae74a8391c72033b8613fcbd40a5ec"
+      "sha256": "f1b25373d2e47a109b5501e0c54065498117342739022b9f7538c1980a32f74e"
     },
     {
       "path": "Source/Screenshot/FusionLibraryOrganizing.cs",
@@ -1021,7 +1029,7 @@
     },
     {
       "path": "Source/Screenshot/FusionLibrarySections.cs",
-      "sha256": "686fd03a9eda62d8758fb484908e6354f9d1db7c28ef77e7b34bd82c88a360ea"
+      "sha256": "86aebaa2b82d52ef8d003ac8b64cbdb09cf9433759d39330b270dfa7f15d5390"
     },
     {
       "path": "Source/Screenshot/FusionLibrarySettings.cs",
@@ -1029,7 +1037,7 @@
     },
     {
       "path": "Source/Screenshot/FusionMainForm.cs",
-      "sha256": "052074ea6c177da72387469bcd6729626b4c094429c88a787399350a02bf984a"
+      "sha256": "03bf5d568d50300991b5c6c93edcae6cd921d3d1a58e07e05ccc5d1df4eb03a4"
     },
     {
       "path": "Source/Screenshot/FusionManualScreenTranslationWorkspace.cs",
@@ -1061,7 +1069,7 @@
     },
     {
       "path": "Source/Screenshot/FusionProfileEditor.cs",
-      "sha256": "8d8f577aed478d38acef47903c653d7d70fe7bbaa82add89413ad562e04b9b9d"
+      "sha256": "e094fa05e8f7469165a5faa19c1be44621427b1c8fce5dd394f79eee53d5b7a6"
     },
     {
       "path": "Source/Screenshot/FusionProfileVerification.cs",
@@ -1077,7 +1085,7 @@
     },
     {
       "path": "Source/Screenshot/FusionRecentGamesUi.cs",
-      "sha256": "47e11bb665ee944cb3b8c472f3327e0eabba8b7cae683e3e6950e7ed2b46018c"
+      "sha256": "73f58b0c1bd8c135960ab60752aeaf53df5bb3d0925515ad9dc52888007fa60a"
     },
     {
       "path": "Source/Screenshot/FusionRenpyDataNames.cs",
@@ -1105,7 +1113,7 @@
     },
     {
       "path": "Source/Screenshot/FusionScreenshotWorkspace.cs",
-      "sha256": "159d8ad8a9a038816c0004a1c44dc4918f9f3df25c9eb72f3159e2349710d160"
+      "sha256": "5ba1bb7d2ba517c1320a9cb3ce26027e387e9feb968da18e9e300e42005cafa1"
     },
     {
       "path": "Source/Screenshot/FusionSettingsDesign.cs",
@@ -1137,15 +1145,15 @@
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceControls.cs",
-      "sha256": "8e4d4cb3ea946448663e001c128a71e8367112ed581474dd5e85da7d9d8007f8"
+      "sha256": "0196ffe40bb3236d829053d6b1522967407b8c2b96442e6ac5d5a92c11bdcc43"
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceFrame.cs",
-      "sha256": "e8f21e0d65789b51ac1a718a975f813cb3cc41cee5ed91f6c5819c59b63e9ebe"
+      "sha256": "59e535e8a9c09d18fc9e1247cdefafa03ce37185966f0afbc23c993723f6bf5f"
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceMenu.cs",
-      "sha256": "915eeb91fe2191027e642990f352d1ea533e40a08a45d4279f1214e6d264be1b"
+      "sha256": "6315e97acb6ae1d563209a32e3427b5f6cc6b1d8588b93c2936fcd75fd23e187"
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceSkin.cs",
@@ -1185,7 +1193,7 @@
     },
     {
       "path": "Source/Screenshot/GameLibraryImages.cs",
-      "sha256": "faedd91adee65e4d278ae8ed284ba4f43b8248cd150c0eb4180c96d4d578bf25"
+      "sha256": "3a3b9ecfd1c903a9efda9bb77a60d5c5cc06e951c7b48282d4239dca1840e756"
     },
     {
       "path": "Source/Screenshot/GameLibraryScrolling.cs",
@@ -1198,6 +1206,10 @@
     {
       "path": "Source/Screenshot/GameLibraryWindowIdentity.cs",
       "sha256": "f82f984e08d0756d714ff847cd555c5e87af83030da9cd11e3429a0fe278f168"
+    },
+    {
+      "path": "Source/Screenshot/GameMakerErrorDialogCapture.cs",
+      "sha256": "74ba8e7b96bcb28ec3258c9e9a3ccdc8f375aad5ba7b7ebf8ff6041dd82e5481"
     },
     {
       "path": "Source/Screenshot/GameMakerGameAdapter.cs",
@@ -1261,7 +1273,7 @@
     },
     {
       "path": "Source/Screenshot/Godot4TranslationBridge.gd",
-      "sha256": "b0ef89d02acf5a1a1bbba6fd819c780822956dcfdea00fbc3af8f9dbfa4f518a"
+      "sha256": "f49fc7d49fdf1e19c8900fe9f3444db765eeb641a6f67984e7264e5c2b4103ef"
     },
     {
       "path": "Source/Screenshot/GodotGameAdapter.cs",
@@ -1277,7 +1289,7 @@
     },
     {
       "path": "Source/Screenshot/GodotTranslationBridge.gd",
-      "sha256": "31641f118d1c5a5ebec01b867192f55ed04035277f5c6eec36266a63ae347ae4"
+      "sha256": "ce8b9f7df1467cdecd4430deb80fc2cc91226c9a753a49aa1365318c8b7a9075"
     },
     {
       "path": "Source/Screenshot/HOLDOUT-AUDIT.md",
@@ -1373,7 +1385,7 @@
     },
     {
       "path": "Source/Screenshot/MainForm.cs",
-      "sha256": "fd53717e68fb20070f4fa6ed6ba6716c4afab10611e628ad029d04713b4a994d"
+      "sha256": "4c662cf498f0779229d547731f31a6d4dda35cc66b00dc256d4c8296f35c9e2a"
     },
     {
       "path": "Source/Screenshot/MajorReworkFinalSelfTests.cs",
@@ -1685,7 +1697,7 @@
     },
     {
       "path": "Source/Screenshot/Program.cs",
-      "sha256": "790ced819cc4bbb3ab055c66f293c58e6bffca3753ecbc42f33ad0a3465f2ada"
+      "sha256": "9468a919469f6b60c2130e8912956733d2bf02b09bb8fb7c2e680fa9a2416479"
     },
     {
       "path": "Source/Screenshot/RC1-TEST-REPORT.md",
@@ -1876,6 +1888,10 @@
       "sha256": "b476905ef026e0f8314a6ffae59778b5804920b5087211fe74e179a1a82f2fc4"
     },
     {
+      "path": "Source/Screenshot/RemoteSourceCatalog.cs",
+      "sha256": "fcd314bee61b3b5ebc19d849f9c1fd642bb53659913bc7b1d7c63357a3875a3c"
+    },
+    {
       "path": "Source/Screenshot/RenderCoverageAudit.cs",
       "sha256": "9d699a4f503d43758fbde5442d23a00b4d2310da3222b7d6d5a09f1f294ac866"
     },
@@ -1929,7 +1945,7 @@
     },
     {
       "path": "Source/Screenshot/RenpyTranslationBridge.rpy",
-      "sha256": "3da8c345591103d772b9da73588ef280c93f32e5b63c95313dd7420cb8131f44"
+      "sha256": "1f6fab8af4aac3b53ed49bf13150f8653d97837c38e209fff5944a916d49a979"
     },
     {
       "path": "Source/Screenshot/RenpyTranslationText.cs",
@@ -2041,7 +2057,7 @@
     },
     {
       "path": "Source/Screenshot/RpgMakerDataAdapter.cs",
-      "sha256": "1488210ba83902af5d6cfd0db8cca60ad4e0c489dd9e02d518ad5af3470ed864"
+      "sha256": "ec4cd277492a27862329e74e82813f0d917cc6026b412e3ffd23b0ef1c42b47a"
     },
     {
       "path": "Source/Screenshot/RpgMakerDataBridge.js",
@@ -2073,7 +2089,7 @@
     },
     {
       "path": "Source/Screenshot/RpgTranslationQueue.cs",
-      "sha256": "8571ad32f0265010f6a5f6031e6ee4600d0c33e9f92ff7cfdee0076d45c96e4b"
+      "sha256": "a16f1970d6f42788754f6783c61a4e8f4f4c22e757319d9a985780d0aad641eb"
     },
     {
       "path": "Source/Screenshot/RpgTranslationSession.cs",
@@ -2173,7 +2189,7 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
-      "sha256": "c6b4b99af17e0446e01c11d852209094754cf65d58284c2e90243a74096e959c"
+      "sha256": "84369f2209e394749b0b6436a53dbcdb8c36d8733899a9c59024fce5521c6d5c"
     },
     {
       "path": "Source/Screenshot/SecondaryMaterialRejectionRecovery.cs",
@@ -2205,7 +2221,7 @@
     },
     {
       "path": "Source/Screenshot/SettingsDesignControls.cs",
-      "sha256": "61138c2980a61206ecc690db0ab27f9debb53a8aadf708f0812dccb03b210ccc"
+      "sha256": "4c903934be689081e54727a474c9b0d740892001176f45536aaba9ab20785940"
     },
     {
       "path": "Source/Screenshot/SettingsNativeTheme.cs",
@@ -2214,6 +2230,10 @@
     {
       "path": "Source/Screenshot/SingleInstanceCoordinator.cs",
       "sha256": "12361e56ee804a8c9efb693d244acac10ca8652853a87bb53dc6fbec72539fd2"
+    },
+    {
+      "path": "Source/Screenshot/SingleLanguageScriptCatalog.cs",
+      "sha256": "a949e25ed24a51e47369641bf38b258c41357e7154e270b84d01d048a83aeb2d"
     },
     {
       "path": "Source/Screenshot/SnapshotOwnershipFixSelfTests.cs",
@@ -2333,7 +2353,7 @@
     },
     {
       "path": "Source/Screenshot/StableUiLayout.cs",
-      "sha256": "6e74bb17af4442abb5c89dd1a6c8535d6cc385f341a46ebb78a5bb8f6b648c9d"
+      "sha256": "921802eafcf1a512745a6bf4372e28bd15660611ea98a75e1de1f1bfa6b38069"
     },
     {
       "path": "Source/Screenshot/StartupHealthSelfTests.cs",
@@ -2421,7 +2441,7 @@
     },
     {
       "path": "Source/Screenshot/TranslationDiagnosticReport.cs",
-      "sha256": "2a4348a84c3603dc735c8bb58c673262f2dd94bbb5ed68e5aff73938d0cd3cce"
+      "sha256": "933a1aedd7d931630c1408e6b44a7ad889a11910034da53cf74d75b8026566fb"
     },
     {
       "path": "Source/Screenshot/TranslationFlightPool.cs",
@@ -2557,7 +2577,7 @@
     },
     {
       "path": "Source/Screenshot/UiLanguage.cs",
-      "sha256": "c24ca763a097ef620180036924e14bfcc823d6ef6b3d4ac6889f496a03d926e8"
+      "sha256": "79c8823817075f2b9f22212b59ae076bab4e6850f147656b9cf851119a6e6b61"
     },
     {
       "path": "Source/Screenshot/UiPerformanceTrace.cs",
@@ -2729,11 +2749,11 @@
     },
     {
       "path": "Source/Screenshot/WindowCaptureExclusion.cs",
-      "sha256": "d4be7d49fce49aab4aaece6997e1325790386c4de5eb5a4d5a3f2659b77d414c"
+      "sha256": "e8a5a842115011836bc63de54dfe164342d05cd16d6c565b1f9ea08ee5f10e45"
     },
     {
       "path": "Source/Screenshot/WindowStatePolicy.cs",
-      "sha256": "1184dfb49a93a03da6cbdf04a311120f03015851ca5fc242f7c881e8f9c9735c"
+      "sha256": "ebfa5349538cba004a628bf01328d409024bfedfbde1d9c7b0828c1e65bfc17a"
     },
     {
       "path": "Source/Screenshot/WolfGameAdapter.cs",
@@ -2777,7 +2797,7 @@
     },
     {
       "path": "Source/Screenshot/WorkspacePaintBatch.cs",
-      "sha256": "07235c9887acaaca29ced386a9f4a5afde705f6afee24f90a32d470435ca5a75"
+      "sha256": "4d096c5ee32d866664dc934aee717eaa8d7ac91d2e3f527e7594ac248b3c5bef"
     },
     {
       "path": "Source/Screenshot/WorkspaceRepaint.cs",
@@ -2794,6 +2814,46 @@
     {
       "path": "Source/Screenshot/WorkspaceWheelGuard.cs",
       "sha256": "c5ec730934406d518854daffbb2d5352577c3a4a9ce4ae56f793ed7af5348a05"
+    },
+    {
+      "path": "Source/Screenshot/WpfControlCoordinates.cs",
+      "sha256": "ef70427802628cf274366c2ecc1e528836cf2e0fc4d11377c901cb7a31941edb"
+    },
+    {
+      "path": "Source/Screenshot/WpfGameLibraryCanvas.cs",
+      "sha256": "eefef66ce771ee9f9b41555340432927add43fb4828722d4ee7fba6b329e48cd"
+    },
+    {
+      "path": "Source/Screenshot/WpfGameSessionWorkspace.cs",
+      "sha256": "d616fb46ef27c5e5a8afa20389f8064aa48b7346c57e3cb57117df8aba32e65f"
+    },
+    {
+      "path": "Source/Screenshot/WpfLibraryNavigation.cs",
+      "sha256": "57a46337928bd1c3da6d3ded75fa9c4e95ada4a3c2d66d226f9c2aded51372d9"
+    },
+    {
+      "path": "Source/Screenshot/WpfLibraryWorkspace.cs",
+      "sha256": "dced2234a502fc26166ba93a440f7d4ce4c7af2d40a89e4f4df2a553a0ed898b"
+    },
+    {
+      "path": "Source/Screenshot/WpfScreenshotWorkspace.cs",
+      "sha256": "c39f1e334c1b8211bec9e93947396b0535774465b1d81c02c5192a0ce63a215f"
+    },
+    {
+      "path": "Source/Screenshot/WpfSettingsFields.cs",
+      "sha256": "fe353fefb864dbefa30fc8ac80da8883eb083d6b1b2789cd5c3be8db2bfed6e1"
+    },
+    {
+      "path": "Source/Screenshot/WpfSettingsWorkspace.cs",
+      "sha256": "cf0f369fcf05d00790c0cd9b191625e644329d21d3bf920f85247c4e38166f1e"
+    },
+    {
+      "path": "Source/Screenshot/WpfThemeResources.cs",
+      "sha256": "1165317997763be2108c550a1d63502818016fc1ceaf632228151d5cbe13de27"
+    },
+    {
+      "path": "Source/Screenshot/WpfWorkspaceWindow.cs",
+      "sha256": "a2756190636dc4ff30705ad9232276ce0da3e16364ab92d6801900e8da69d3ee"
     },
     {
       "path": "Source/Screenshot/XmlDisplayText.cs",
@@ -3134,116 +3194,6 @@
     {
       "path": "Source/YukarBridge/TextCodes.cs",
       "sha256": "7c79f44beedf9eed2719f47c8897554cf101e3827195220dabd57d2f5ecade8b"
-    },
-    {
-      "path": "Source/Screenshot/GameMakerErrorDialogCapture.cs",
-      "sha256": "74ba8e7b96bcb28ec3258c9e9a3ccdc8f375aad5ba7b7ebf8ff6041dd82e5481"
-    },
-    {
-      "path": "Source/Screenshot/SingleLanguageScriptCatalog.cs",
-      "sha256": "a949e25ed24a51e47369641bf38b258c41357e7154e270b84d01d048a83aeb2d"
     }
-  ],
-  "binaryPayloadsOnlyInReleaseAssets": [
-    "Source/Embedded/Manager/payloads/UnityMono.zip",
-    "Source/NativeBridge/Payload/FusionUnityNative.dll",
-    "Source/Plugin/CloudMeadow/FontAssets/page-00.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-01.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-02.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-03.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-04.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-05.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-06.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-07.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-08.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-09.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-10.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-11.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-12.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-13.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-14.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-15.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-16.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-17.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-18.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-19.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-20.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-21.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-22.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-23.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-24.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-25.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-26.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-27.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-28.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-29.sdf.gz",
-    "Source/Plugin/CloudMeadow/FontAssets/page-30.sdf.gz",
-    "Source/Plugin/CloudMeadow/References/0Harmony.dll",
-    "Source/Plugin/CloudMeadow/References/BepInEx.dll",
-    "Source/Plugin/Payload/CloudMeadow.zip",
-    "Source/Plugin/Payload/UnityMono.zip",
-    "Source/Plugin/References/BepInEx.dll",
-    "Source/Plugin/References/System.Core.dll",
-    "Source/Plugin/References/System.dll",
-    "Source/Plugin/References/mscorlib.dll",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-00.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-01.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-02.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-03.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-04.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-05.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-06.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-07.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-08.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-09.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-10.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-11.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-12.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-13.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-14.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-15.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-16.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-17.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-18.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-19.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-20.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-21.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-22.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-23.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-24.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-25.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-26.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-27.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-28.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-29.sdf.gz",
-    "Source/Plugin/UnityEmbedded/FontAssets/page-30.sdf.gz",
-    "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedIl2Cpp64.zip",
-    "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono32.zip",
-    "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono6.zip",
-    "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono64.zip",
-    "Source/Plugin/UnityEmbedded/Resources/classdata.tpk",
-    "Source/Plugin/UnityEmbedded/Tests/CommonRuntime/References/0Harmony.dll",
-    "Source/Plugin/UnityEmbedded/Tests/CommonRuntime/References/Mono.Cecil.dll",
-    "Source/Plugin/UnityEmbedded/Tests/CommonRuntime/References/MonoMod.RuntimeDetour.dll",
-    "Source/Plugin/UnityEmbedded/Tests/CommonRuntime/References/MonoMod.Utils.dll",
-    "Source/Plugin/VerifiedBinary/MGITranslator.dll",
-    "Source/RgssBridge/Payload/FusionRgss.dll",
-    "Source/UnitySchema/References/AsmResolver.DotNet.dll",
-    "Source/UnitySchema/References/AsmResolver.PE.File.dll",
-    "Source/UnitySchema/References/AsmResolver.PE.dll",
-    "Source/UnitySchema/References/AsmResolver.dll",
-    "Source/UnitySchema/References/AssetRipper.CIL.dll",
-    "Source/UnitySchema/References/AssetRipper.Primitives.dll",
-    "Source/UnitySchema/References/Cpp2IL.Core.dll",
-    "Source/UnitySchema/References/Disarm.dll",
-    "Source/UnitySchema/References/Gee.External.Capstone.dll",
-    "Source/UnitySchema/References/Iced.dll",
-    "Source/UnitySchema/References/LibCpp2IL.dll",
-    "Source/UnitySchema/References/StableNameDotNet.dll",
-    "Source/UnitySchema/References/WasmDisassembler.dll",
-    "Source/UnrealBridge/UnrealRuntime.zip",
-    "Source/WolfBridge/Payload/FusionWolf.dll",
-    "Source/WolfBridge/Payload/FusionWolfLaunch.exe",
-    "Source/WolfBridge/Payload/bridge-font.otf"
   ]
 }

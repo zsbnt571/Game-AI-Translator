@@ -16,6 +16,7 @@ internal sealed record EmbeddedTranslationOptions(
 {
     internal TranslationCacheScope CacheScope { get; init; } = TranslationCacheScope.Native;
     internal bool DisplayBoundaryWhitespace { get; init; }
+    internal bool RemoteActiveSources { get; init; }
     internal static EmbeddedTranslationOptions ForLegacy(string exe)
         => RenpyGameAdapter.Detect(exe) is not null
             ? new(EmbeddedTextSyntax.Renpy,true,StartupCache:true)

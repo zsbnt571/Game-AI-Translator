@@ -4,20 +4,22 @@
 
 面向 Windows 的游戏翻译工具，结合游戏内翻译、截图 OCR 翻译与游戏库管理。支持自选 API 服务、共享翻译偏好和按实际内容处理混合语言。
 
-**当前测试版：0.6.0.178 Preview 1，公开测试版。** 这是独立的 Windows x64 便携包；不同引擎和游戏的适配程度不同。识别出引擎、提取出文字、生成译文和游戏内成功显示是不同阶段。
+**当前测试版：0.6.0.179 Preview 1，公开测试版。** 这是独立的 Windows x64 便携包；不同引擎和游戏的适配程度不同。识别出引擎、提取出文字、生成译文和游戏内成功显示是不同阶段。
+
+本版将主窗口、游戏库、游戏详情、设置和截图工作区迁移到 WPF，沿用现有布局与业务功能；专业图片编辑器、部分游戏工具和弹窗保留成熟控件。首次使用默认简体中文，已保存的语言选择继续保留。修复了 Ren’Py / Godot 的两处预译来源识别问题；具体范围和性能测量见 [179 验证说明](docs/VALIDATION-179.md)。
 
 ## 下载与开始使用
 
-前往 [0.6.0.178 Preview 1 发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.178-preview.1) 下载附件：
+前往 [0.6.0.179 Preview 1 发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v0.6.0.179-preview.1) 下载附件：
 
 | 文件 | 用途 |
 | --- | --- |
-| `Fusion-0.6.0.178.zip` | 普通用户使用的完整主包，含默认 CPU 路径的本地运行依赖 |
-| `Fusion-0.6.0.178-GPU.zip` | 可选 NVIDIA 背景处理加速依赖，不能独立运行 |
-| `Fusion-0.6.0.178-Source.zip` | 本版本源码与构建材料，供开发者使用 |
+| `Fusion-0.6.0.179.zip` | 普通用户使用的完整主包，含默认 CPU 路径的本地运行依赖 |
+| [Fusion-0.6.0.178-GPU.zip](https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.178-preview.1/Fusion-0.6.0.178-GPU.zip) | 可选 NVIDIA 背景处理加速依赖，不能独立运行 |
+| `Fusion-0.6.0.179-Source.zip` | 本版本源码与构建材料，供开发者使用 |
 | `SHA256SUMS.txt` | 下载完整性校验 |
 
-完整解压主包，运行 `Fusion-0.6.0.178/GameTranslator.exe`。不要在 ZIP 里运行，也不要只复制 exe。GitHub 自动生成的 **Source code** 附件不是可执行版本。
+完整解压主包，运行 `Fusion-0.6.0.179/GameTranslator.exe`。不要在 ZIP 里运行，也不要只复制 exe。GitHub 自动生成的 **Source code** 附件不是可执行版本。
 
 1. **设置 → 翻译方案**：配置 API 地址、密钥与模型，测试连接并保存。
 2. 同页下方 **翻译内容**：选择目标语言、原文范围、风格和提示词，点击 **保存翻译内容**。
@@ -60,7 +62,7 @@ Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod
 
 ## 升级与数据
 
-默认数据位于 `Fusion-0.6.0.178/data`。关闭 Fusion 与相关游戏，备份旧版实际数据目录，再复制到新版本目录。自定义过存储位置的用户先在旧版核对实际路径。
+默认数据位于 `Fusion-0.6.0.179/data`。关闭 Fusion 与相关游戏，备份旧版实际数据目录，再复制到新版本目录。自定义过存储位置的用户先在旧版核对实际路径。
 
 保留旧版和升级前备份，不让两个版本共用同一可写数据目录。迁移后核对目标语言、组合、库与 API；跨 Windows 账号/设备时密钥可能需重填。已生成译文不会因换风格自动清空。
 
@@ -68,7 +70,7 @@ Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod
 
 ## 开发与许可
 
-主分支的 [Source/](Source) 是当前 **0.6.0.178 Preview 1** 产品源码，[tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) 是对应构建入口。源码文件与已发布源码附件逐文件对应，见 [源码校验清单](git-source-index.json)。
+主分支的 [Source/](Source) 是当前 **0.6.0.179 Preview 1** 产品源码，[tools/Build-Desktop.ps1](tools/Build-Desktop.ps1) 是对应构建入口。源码文件与已发布源码附件逐文件对应，见 [源码校验清单](git-source-index.json)。
 
 | 目录 | 内容 |
 | --- | --- |
@@ -78,7 +80,7 @@ Unity IL2CPP、Unreal 及本轮未覆盖的引擎保留兼容限制；已有 Mod
 | [licenses/](licenses/README.md) | 第三方许可证与组件清单 |
 | [third-party-source/](third-party-source/README.md) | 随源码附件提供的第三方源码索引 |
 
-Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `Fusion-0.6.0.178-Source.zip`，按 [构建说明](docs/BUILD-176.md) 操作。普通用户直接下载上方 Fusion-0.6.0.178.zip 主包。
+Git 仓库不存放运行时 ZIP、DLL 和生成字体资源。构建请下载本版完整 `Fusion-0.6.0.179-Source.zip`，按 [构建说明](docs/BUILD-176.md) 操作。普通用户直接下载上方 Fusion-0.6.0.179.zip 主包。
 
 旧 Alpha 的源码和说明保存在原标签、历史提交与旧发布页中，入口见 [版本历史](docs/HISTORY.md)。
 

@@ -97,6 +97,12 @@ internal static class RpgMakerDataAdapter
             // A game copied from another computer carries our script and launch
             // entries, but not that computer's local installation journal.
             AdoptTransferred(exe,manifest,script,storage);
+            if(Hash(File.ReadAllBytes(script))!=Hash(Encoding.UTF8.GetBytes(Payload())))
+            {
+                // A verified older local journal can follow a moved game. Release
+                // the adoption lock before the normal restore-and-upgrade path.
+                gate.Dispose();Install(exe);
+            }
             return;
         }
         var original=File.ReadAllBytes(manifest);var doc=JsonNode.Parse(original) as JsonObject??throw new InvalidDataException("游戏启动配置无效。");
@@ -149,10 +155,15 @@ internal static class RpgMakerDataAdapter
     private static void AdoptTransferred(string exe,string manifest,string script,string storage)
     {
         byte[] expected=Encoding.UTF8.GetBytes(Payload());
-        if(new FileInfo(script).Length!=expected.Length)throw new InvalidOperationException("游戏中已有同名组件，但内容无法确认为此版本的 Fusion 组件，未覆盖或删除。");
+        if(new FileInfo(script).Length>2*1024*1024)throw new InvalidOperationException("游戏中已有同名组件，但内容无法确认，未覆盖或删除。");
         byte[] payload=File.ReadAllBytes(script);
-        if(!payload.AsSpan().SequenceEqual(expected))throw new InvalidOperationException("游戏中已有同名组件，但内容无法确认为此版本的 Fusion 组件，未覆盖或删除。");
         byte[] current=File.ReadAllBytes(manifest);
+        byte[]? verifiedOriginal=null;
+        if(!payload.AsSpan().SequenceEqual(expected))
+        {
+            verifiedOriginal=FindMovedInstallationBackup(payload,current,storage);
+            if(verifiedOriginal is null)throw new InvalidOperationException("游戏中已有同名组件，但内容无法确认为此版本的 Fusion 组件，也没有匹配的本机安装备份，未覆盖或删除。");
+        }
         var document=JsonNode.Parse(current) as JsonObject??throw new InvalidDataException("游戏启动配置无效。");
         var keys=new[]{"inject_js_end","inject-js-end"};int matched=0;
         foreach(string key in keys)
@@ -165,7 +176,9 @@ internal static class RpgMakerDataAdapter
         if(matched==0)throw new InvalidOperationException("发现 Fusion 组件文件，但启动记录不匹配，未改动游戏。");
         // This is a reconstruction of launch settings, not a claimed byte-for-byte
         // original. Preserve the transferred files separately before journalling it.
-        byte[] restored=Encoding.UTF8.GetBytes(document.ToJsonString(new JsonSerializerOptions{WriteIndented=true}));
+        byte[] restored=verifiedOriginal??Encoding.UTF8.GetBytes(document.ToJsonString(new JsonSerializerOptions{WriteIndented=true}));
+        if(verifiedOriginal is not null&&!JsonNode.DeepEquals(JsonNode.Parse(verifiedOriginal),document))
+            throw new IOException("旧安装备份与游戏当前启动配置不一致，未接管组件。");
         string backup=Path.Combine(storage,"package.original.json");
         if(File.Exists(backup))
         {
@@ -179,6 +192,31 @@ internal static class RpgMakerDataAdapter
             throw new IOException("游戏文件在接管过程中改变，已停止。");
         File.WriteAllBytes(backup,restored);
         PortableDataStorage.WriteJson(Path.Combine(storage,"install.json"),new Journal(Path.GetFullPath(exe),manifest,Hash(restored),Hash(current),Hash(payload)));
+    }
+    private static byte[]? FindMovedInstallationBackup(byte[] payload,byte[] manifest,string destination)
+    {
+        string root=Path.Combine(AppDataPaths.Root,"game-data-adapters");if(!Directory.Exists(root))return null;
+        string scriptHash=Hash(payload),manifestHash=Hash(manifest);byte[]? found=null;int examined=0;
+        foreach(string folder in Directory.EnumerateDirectories(root).OrderBy(x=>x,StringComparer.OrdinalIgnoreCase))
+        {
+            if(++examined>4096)break;
+            if(folder.Equals(destination,StringComparison.OrdinalIgnoreCase)||(File.GetAttributes(folder)&FileAttributes.ReparsePoint)!=0)continue;
+            string name=Path.GetFileName(folder);if(name.Length!=64||!name.All(Uri.IsHexDigit))continue;
+            string recordPath=Path.Combine(folder,"install.json"),backupPath=Path.Combine(folder,"package.original.json");
+            if(!File.Exists(recordPath)||!File.Exists(backupPath)||new FileInfo(recordPath).Length>16384||new FileInfo(backupPath).Length>131072)continue;
+            if((File.GetAttributes(recordPath)&FileAttributes.ReparsePoint)!=0||(File.GetAttributes(backupPath)&FileAttributes.ReparsePoint)!=0)continue;
+            try
+            {
+                var record=JsonSerializer.Deserialize<Journal>(File.ReadAllText(recordPath));
+                if(record is null||!Path.IsPathFullyQualified(record.Exe)||!Storage(record.Exe).Equals(folder,StringComparison.OrdinalIgnoreCase)||record.ScriptHash!=scriptHash||record.After!=manifestHash)continue;
+                byte[] backup=File.ReadAllBytes(backupPath);if(Hash(backup)!=record.Before)continue;
+                var original=JsonNode.Parse(backup) as JsonObject;if(original is null||original.ContainsKey("inject_js_end")||original.ContainsKey("inject-js-end"))continue;
+                if(found is not null&&!JsonNode.DeepEquals(JsonNode.Parse(found),original))throw new IOException("找到不一致的旧安装备份，未自动接管。");
+                found??=backup;
+            }
+            catch(Exception ex)when(ex is JsonException or ArgumentException or UnauthorizedAccessException){continue;}
+        }
+        return found;
     }
     private static void RequireStopped(string exe)
     {
@@ -265,6 +303,7 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
         {info.Environment["FUSION_RENPY_RECONNECT"]=RenpyReconnect.PathFor(exe);info.Environment["FUSION_RENPY_CURSOR_LOG"]=Path.Combine(RenpyGameAdapter.Storage(exe),"cursor-state.json");info.Environment["FUSION_RENPY_PIPE"]=PipeName;info.Environment["FUSION_RENPY_SECRET"]=secret;info.Environment["FUSION_RENPY_TRANSLATION_START"]=translationAtStartup?"1":"0";if(startupFile is not null)info.Environment["FUSION_RENPY_STARTUP_FILE"]=startupFile;info.Environment["FUSION_RENPY_DATA_LOG"]=Path.Combine(RenpyGameAdapter.Storage(exe),"modifications");GameTestCopyEnvironment.Apply(info,true);return info;}
         info.Environment["FUSION_RPG_DATA_ROOT"]=(RpgMakerDataAdapter.Detect(exe)??throw new IOException("未识别 RPG 游戏数据目录。")).DataRoot;
         info.Environment["FUSION_RPG_PIPE"]=PipeName;info.Environment["FUSION_RPG_SECRET"]=secret;
+        GameTestCopyEnvironment.Apply(info);
         Directory.CreateDirectory(RpgMakerDataAdapter.Storage(exe));info.Environment["FUSION_RPG_LOG"]=Path.Combine(RpgMakerDataAdapter.Storage(exe),"bridge.log");return info;
     }
     [DllImport("kernel32.dll",SetLastError=true)]private static extern bool GetNamedPipeClientProcessId(Microsoft.Win32.SafeHandles.SafePipeHandle pipe,out uint pid);

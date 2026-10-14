@@ -13,6 +13,11 @@ internal sealed class WorkspaceMenu : ContextMenuStrip
         ShowImageMargin=false;ShowCheckMargin=false;
         DropShadowEnabled=true;AutoSize=false;
     }
+    public new void Show(Control control,Point position)
+    {
+        if(WpfControlCoordinates.HasView(control))base.Show(WpfControlCoordinates.ToScreen(control,position));
+        else base.Show(control,position);
+    }
 
     internal ToolStripMenuItem AddAction(string text,string icon,EventHandler action,bool enabled=true)
     {

@@ -65,7 +65,7 @@ public sealed partial class MainForm
             var games=await Task.Run(store.SnapshotAll);if(IsDisposed)return;
             ConfigureLibrarySectionMenu(upper,games);
             var anchor=upper?_recentSectionHeading:_mainSectionHeading;
-            if(anchor.Visible)_sectionMenu.Show(anchor,new Point(0,anchor.Height));
+            if(anchor.Visible||WpfControlCoordinates.HasView(anchor))_sectionMenu.Show(anchor,new Point(0,anchor.Height));
         }
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
     }

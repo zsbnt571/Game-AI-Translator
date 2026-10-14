@@ -30,6 +30,6 @@ internal static class EmbeddedGameAdapters
         CatalogBoundOnly:game.AdapterId=="unreal",
         ConfiguredDesktopCatalog:Godot(game)||game.AdapterId=="unreal"?null:
             (settings,token)=>Task.Run(()=>UnityEmbeddedCatalog.Read(game.ExePath,token,settings.SourceLanguage,preferredLanguage:settings.CatalogLanguageHint),token),
-        StartupCache:true);
+        StartupCache:true){RemoteActiveSources=Godot(game)};
 }
 

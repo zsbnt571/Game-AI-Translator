@@ -149,7 +149,7 @@ public sealed partial class MainForm
         var files=IconButton("游戏文件与存档","folder",(_,_)=>{},false,180);files.NavigationStyle=true;
         files.Click+=(_,_)=>{details.Visible=!details.Visible;files.Text=details.Visible?"收起游戏文件与存档":"游戏文件与存档";};_sessionFilesRow=WorkspaceRow(files);WorkspaceAdd(content,_sessionFilesRow);WorkspaceAdd(content,details);
         _gamePath.BorderStyle=BorderStyle.None;_gamePath.AccessibleName="游戏程序路径";var path=SearchField(_gamePath,"folder");
-        _sessionFolderOpen=IconButton("打开游戏文件夹","folder",(_,_)=>_folderButton.PerformClick(),false,148);
+        _sessionFolderOpen=IconButton("打开游戏文件夹","folder",async(_,_)=>await OpenSelectedGameFolderAsync(),false,148);
         var pathRow=new WorkspaceAlignedRow(path,_sessionFolderOpen){Name="SessionGamePath",Margin=Padding.Empty};pathRow.FlexibleColumn(0,4096);WorkspaceAdd(content,pathRow,SizeType.Absolute,44);
         _sessionPathField=pathRow;
         _gameSessionPage.Controls.Add(content);page.Controls.Add(_gameSessionPage);_sessionTranslationPanel.Visible=true;_sessionModificationPanel.Visible=false;
@@ -193,6 +193,7 @@ public sealed partial class MainForm
         // Navigation never resets another game or implies a launch/activation.
         _sessionGamePath=game.ExePath;
         WorkspacePages.Show(_gameSessionPage.Parent!,_gameSessionPage);ScheduleLibraryRefresh();
+        _wpfDetails=true;_wpfWindow?.RefreshWorkspace();
         if(withTranslation)session.Section=1;
         SelectGameSessionSection(session.Section);RecordPageLocation();
     }
@@ -200,6 +201,7 @@ public sealed partial class MainForm
     private static bool SameGame(string? a,string? b)=>a is not null&&b is not null&&StringComparer.OrdinalIgnoreCase.Equals(a,b);
     private void ShowLibraryHome()
     {
+        _wpfDetails=false;_wpfWindow?.RefreshWorkspace();
         if(_gameSessionPage is null)return;
         if(_libraryBody!.Visible&&!_gameSessionPage.Visible)return;
         WorkspacePages.Show(_gameSessionPage.Parent!,_libraryBody!);ScheduleLibraryRefresh();RecordPageLocation();
@@ -360,6 +362,7 @@ public sealed partial class MainForm
         RenderNovelModificationState();
         RenderRenpyModificationState();
         RenderGameDiagnosticState();
+        WpfGameSessionView?.Refresh();
     }
 
     private async Task RefreshOtherGameSessionsAsync()

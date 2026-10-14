@@ -54,7 +54,7 @@ public sealed partial class MainForm
         foreach(var pair in new[]{("内嵌翻译","游戏库"),("主页","截图翻译"),("设置","设置")})
         {
             var key=pair.Item1;var button=new WorkspaceTab(pair.Item2){Width=88,Height=40,Margin=Padding.Empty};
-            button.Click+=(_,_)=>{ShowPage(key);if(_currentMainPage==key&&key!="设置")ClearProfileReturn();if(key=="内嵌翻译"&&_currentMainPage==key)ShowLibraryHome();};
+            button.Click+=(_,_)=>NavigateWorkspace(key);
             _navigationButtons[key]=button;
             var page=new BufferedPage{Dock=DockStyle.Fill,AutoScroll=true,Visible=true,Margin=Padding.Empty};_pages[key]=page;content.Controls.Add(page);AttachHostDiagnostics(page,"MainPage:"+key);
         }
@@ -94,7 +94,7 @@ public sealed partial class MainForm
         var frame=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,Margin=Padding.Empty};frame.ColumnStyles.Add(new(SizeType.Percent,100));frame.RowStyles.Add(new(SizeType.Absolute,40));frame.RowStyles.Add(new(SizeType.Percent,100));
         frame.Controls.Add(_workspaceCaption,0,0);frame.Controls.Add(root,0,1);Controls.Add(frame);ShowPage("内嵌翻译");PlaceStatus();
         _trayIcon.Text="游戏翻译 · Fusion R1";ConfigureFusionInputs(this);
-        _gameStateTimer.Tick+=(_,_)=>{UpdateGameDiagnosticSnapshots();if(Visible&&!_workspaceResizing&&_currentMainPage=="内嵌翻译"){RefreshGameState();_=RefreshOtherGameSessionsAsync();_=RefreshLibraryWindowNamesAsync();_=RefreshGameDataStatusAsync();}};
+        _gameStateTimer.Tick+=(_,_)=>{UpdateGameDiagnosticSnapshots();if(DesktopVisible&&!_workspaceResizing&&_currentMainPage=="内嵌翻译"){RefreshGameState();_=RefreshOtherGameSessionsAsync();_=RefreshLibraryWindowNamesAsync();_=RefreshGameDataStatusAsync();}};
         _gameStateTimer.Start();FormClosed+=(_,_)=>_gameStateTimer.Dispose();Activated+=(_,_)=>{_gameForceQuery=true;RefreshGameState();};
     }
 
@@ -167,7 +167,7 @@ public sealed partial class MainForm
         _embeddedProfile.FontChanged+=(_,_)=>AlignPlan();_embeddedProfile.SizeChanged+=(_,_)=>{if(edit.Height!=_embeddedProfile.Height)edit.Height=_embeddedProfile.Height;};profileRow.Layout+=(_,_)=>AlignPlan();
         _embeddedEffective.Font=new Font("Microsoft YaHei UI",9);Row(_embeddedEffective);
         _installGameButton=Small("安装翻译");_launchGameButton=Small("启动游戏");_restoreGameButton=Small("恢复安装前状态");
-        
+
         _installGameButton.Click+=async(_,_)=>await RunGameActionAsync("install");
         _launchGameButton.Click+=async(_,_)=>await RunGameActionAsync("launch");
         _restoreGameButton.Click+=async(_,_)=>await RunGameActionAsync("restore");
@@ -243,6 +243,7 @@ public sealed partial class MainForm
     }
     private void RefreshFusionChrome()
     {
+        _wpfWindow?.RefreshChrome();
         if(_fusion is null)return;
         var day=UiTheme.Current!=ThemePalette.Night;
         _themeIcon.ShowMoon=day;_themeIcon.AccessibleName=day?"切换到夜间模式":"切换到日间模式";_fusionTips.SetToolTip(_themeIcon,_themeIcon.AccessibleName);

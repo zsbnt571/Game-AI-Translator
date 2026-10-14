@@ -36,13 +36,15 @@ public sealed partial class MainForm
                 if(!IsDisposed&&epoch==_gameSelectionEpoch){_currentRecent=store.Find(game.ExePath);UpdateSavedButton();}
             }catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,SafeDiagnosticOutput.ExceptionSummary(ex));}
         };
-        _folderButton.Click+=async(_,_)=>{
-            var path=_selectedGame?.ExePath;if(path is null)return;
-            try{var folder=Path.GetDirectoryName(path)!;if(!await Task.Run(()=>Directory.Exists(folder)))throw new IOException("游戏目录不可访问，请重新定位。");
-                if(!IsDisposed)System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder){UseShellExecute=true});}
-            catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,SafeDiagnosticOutput.ExceptionSummary(ex));}
-        };
+        _folderButton.Click+=async(_,_)=>await OpenSelectedGameFolderAsync();
         FormClosed+=(_,_)=>{_desktopLifetime.Cancel();_mediaSelectionCancellation?.Cancel();_coverCancellation?.Cancel();ReplaceGameIcon(null);};
+    }
+    private async Task OpenSelectedGameFolderAsync()
+    {
+        var path=_selectedGame?.ExePath;if(path is null)return;
+        try{var folder=Path.GetDirectoryName(path)!;if(!await Task.Run(()=>Directory.Exists(folder)))throw new IOException("游戏目录不可访问，请重新定位。");
+            if(!IsDisposed)System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder){UseShellExecute=true});}
+        catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,SafeDiagnosticOutput.ExceptionSummary(ex));}
     }
     private void UpdateSavedButton()=>_saveGameButton.Text=_currentRecent?.Saved==true?"已保存 · 取消":"保存游戏";
     private void CancelSelectedMedia()

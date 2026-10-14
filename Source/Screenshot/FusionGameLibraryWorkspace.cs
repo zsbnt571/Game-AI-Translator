@@ -172,6 +172,7 @@ public sealed partial class MainForm
                 if(_libraryHeading is not null)_libraryHeading.Text=_libraryCollection.Length>0?LibrarySections.Title("collection:"+_libraryCollection,_libraryPreferences):_libraryTag.Length>0?_libraryTag:_libraryEngine.SelectedIndex>0?_libraryEngine.Text:_libraryFolder.SelectedIndex>0?Path.GetFileName(_libraryFolder.Text):_libraryScope switch{"recent"=>"最近使用","running"=>"正在运行","favorite"=>"收藏",_=>"游戏库"};
                 _libraryCount.Text=$"{found.Length} 款游戏";if(_libraryPager is not null)_libraryPager.Visible=_libraryFilter.SelectedIndex==2;
             }
+            _wpfWindow?.RefreshWorkspace();
             if(_libraryMetadata.Notice.Length>0)_statusLabel.Text=_libraryMetadata.Notice;
             if(_selectedGame is { } game&&store.Find(game.ExePath) is { } record)await RefreshLibraryDetailAsync(store,record);
             if(!IsDisposed){_=IdentifyLibraryEnginesAsync(all);_=FillLibraryChineseNamesAsync(all);}

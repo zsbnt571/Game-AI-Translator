@@ -41,7 +41,7 @@ internal sealed partial class GameLibraryGrid:Control
     internal event Action<RecentGame>? GameActivated;
     internal event Action<RecentGame,Point>? ContextRequested;
     internal string EmptyText {get;set;}="把游戏拖到这里\n或点击右上角“导入游戏”";
-    internal GameLibraryGrid(){TabStop=true;AccessibleName="游戏库";AccessibleRole=AccessibleRole.List;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable|ControlStyles.StandardClick|ControlStyles.StandardDoubleClick,true);}
+    internal GameLibraryGrid(){TabStop=true;AccessibleName="游戏库";AccessibleRole=AccessibleRole.List;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable|ControlStyles.StandardClick|ControlStyles.StandardDoubleClick,true);InitializeWpfCanvas();}
     internal void SetTiles(LibraryTile[] next,string? selectedPath,Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader=null){var old=tiles;RetainTileImages(next,loader);tiles=next;selected=selectedPath;selection.IntersectWith(next.Select(t=>t.Game.Id));if(!selecting&&old.Length==0&&selection.Count==0&&next.FirstOrDefault(t=>SamePath(t.Game.ExePath,selectedPath)) is {} chosen)selection.Add(chosen.Game.Id);foreach(var tile in old)tile.Dispose();Reflow();Invalidate();}
     internal void SelectPath(string? path){if(SamePath(selected,path))return;selected=path;if(tiles.FirstOrDefault(t=>SamePath(t.Game.ExePath,path)) is {} tile&&!selection.Contains(tile.Game.Id)){selection.Clear();selection.Add(tile.Game.Id);}Invalidate();}
     private int S(int n)=>(int)Math.Round(n*DeviceDpi/96f);
@@ -64,11 +64,13 @@ internal sealed partial class GameLibraryGrid:Control
     protected override void OnFontChanged(EventArgs e){base.OnFontChanged(e);Reflow();}
     protected override void OnPaint(PaintEventArgs e)
     {
+        if(NativeViewVisible)return;
+        using var timing=DesktopRenderMetrics.Measure("library-winforms");
         var g=e.Graphics;var p=UiTheme.Current;g.Clear(p.Main);g.SmoothingMode=SmoothingMode.AntiAlias;
         if(tiles.Length==0){WorkspaceDrawing.Text(g,UiLanguage.Text(EmptyText),Font,ClientRectangle,p.SecondaryText,TextFormatFlags.HorizontalCenter|TextFormatFlags.VerticalCenter|TextFormatFlags.WordBreak);return;}
         var contentClip=g.Save();g.SetClip(ContentViewport,System.Drawing.Drawing2D.CombineMode.Intersect);
         using var bold=new Font(Font,FontStyle.Bold);
-        for(int i=0;i<tiles.Length;i++)
+        foreach(int i in VisibleTileIndices(e.ClipRectangle))
         {
             var t=tiles[i];var r=BoundsFor(i);if(!r.IntersectsWith(e.ClipRectangle))continue;
             bool active=selection.Contains(t.Game.Id);

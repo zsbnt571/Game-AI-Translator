@@ -215,6 +215,15 @@ func _catalog_page(cursor):
         row.locale = active_locale
         row.language = _locale_language(active_locale)
         texts[i] = localized
+    # Shared serialized display fields are original content, while language
+    # files and arbitrary script/data literals remain unproven.
+    var active_sources = []
+    for row in metadata:
+        var base_field = row.kind in ["scene", "scene_binary", "resource_text"] and row.locale == "" and _path_language(row.path) == ""
+        if (base_field or row.get("resolvedBy", "") == "TranslationServer") and not active_sources.has(row.source):
+            active_sources.append(row.source)
+    result["activeSourceTexts"] = active_sources
+    result["epoch"] = epoch
     return result
 
 func _locale_language(value):
@@ -1674,13 +1683,13 @@ func _binary_scene(bundle, path):
 
 # Copyright (c) 2006-2009, Salvatore Sanfilippo
 # All rights reserved.
-# 
+#
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-# 
+#
 #     * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 #     * Neither the name of Smaz nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 const SMAZ = [
 " ", "the", "e", "t", "a", "of", "o", "and", "i", "n", "s", "e ", "r", " th",

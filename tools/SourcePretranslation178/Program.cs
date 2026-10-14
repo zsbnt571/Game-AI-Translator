@@ -95,6 +95,31 @@ static class Program
         await session.StopAsync();
     }
     static int Property(object value,string name)=>(int)(value.GetType().GetProperty(name,BindingFlags.Instance|BindingFlags.Public|BindingFlags.NonPublic)?.GetValue(value)??0);
+    static async Task RenpyQueue(string target,bool mixed,bool generic=false)
+    {
+        string id=(generic?"godot":"renpy")+"-"+target+"-"+(mixed?"en-ja":"auto"),exe=Game(id);
+        var settings=Settings(target,mixed);var sent=new ConcurrentQueue<string>();
+        var sources=Base.Values.Append("You can keep {b}this name{/b}, [player].").ToArray();
+        var bridge=new Bridge{Catalog=sources.Concat(Packs.Values).ToArray(),ActiveSources=sources};
+        using var session=new RpgTranslationSession(bridge,exe,settings,(text,s,ct)=>Respond(text,s,sent),new(generic?EmbeddedTextSyntax.Generic:EmbeddedTextSyntax.Renpy,true){RemoteActiveSources=generic});
+        await session.StartAsync();await Settle(bridge,9);
+        foreach(var row in Base)
+            Check(id,"Unseen selected AST "+row.Key+" obeys source and target policy",sent.Contains(row.Value)==TranslationLanguagePolicy.ShouldTranslate(row.Value,settings));
+        Check(id,"Unproven resource rows stay deferred",!sent.Intersect(Packs.Values).Any());
+        Check(id,"Original-language AST pretranslates without an ISO locale",session.Snapshot.DirectoryTexts>0&&session.Snapshot.RuntimeCapturedTexts==0);
+        int before=sent.Count;bridge.Texts=[sources.First(s=>TranslationLanguagePolicy.ShouldTranslate(s,settings))];await Settle(bridge,bridge.Polls+5);
+        Check(id,"First displayed dialogue reuses the pretranslated cache",sent.Count==before&&bridge.Applied.ContainsKey(bridge.Texts[0]));
+        await session.StopAsync();
+    }
+    static void RemoteProvenance()
+    {
+        const string id="remote-provenance";
+        var rows=JsonSerializer.SerializeToElement(new[]{"One","Two"});
+        Check(id,"Missing provenance remains untrusted",RemoteSourceCatalog.ActiveSources(JsonSerializer.SerializeToElement(new{}),rows,1).Length==0);
+        Check(id,"Exact current page subset accepted",RemoteSourceCatalog.ActiveSources(JsonSerializer.SerializeToElement(new{epoch=1,activeSourceTexts=new[]{"One"}}),rows,1).SequenceEqual(new[]{"One"}));
+        foreach(var (name,page) in new[]{("stale generation",new{epoch=0,activeSourceTexts=new[]{"One"}}),("foreign row",new{epoch=1,activeSourceTexts=new[]{"Three"}}),("duplicate row",new{epoch=1,activeSourceTexts=new[]{"One","One"}})})
+        {bool rejected=false;try{RemoteSourceCatalog.ActiveSources(JsonSerializer.SerializeToElement(page),rows,1);}catch(IOException){rejected=true;}Check(id,name+" rejected",rejected);}
+    }
     static Task<string> Respond(string text,ApiSettings settings,ConcurrentQueue<string> sent)
     {
         string Reply(string source)
@@ -112,11 +137,13 @@ static class Program
     sealed class Bridge:IGameDataConnection
     {
         internal string[] Texts=[];int polls;public int Polls=>Volatile.Read(ref polls);public bool Connected=>true;
+        internal string[] Catalog=[],ActiveSources=[];
         internal readonly ConcurrentDictionary<string,string> Applied=new();
         public Task<JsonElement> RequestAsync(JsonObject request,CancellationToken token=default)
         {
             string op=request["op"]!.GetValue<string>();
             if(op=="translationPoll"){Interlocked.Increment(ref polls);return Task.FromResult(JsonSerializer.SerializeToElement(new{epoch=1,texts=Texts}));}
+            if(op=="translationCatalog")return Task.FromResult(JsonSerializer.SerializeToElement(new{epoch=1,texts=Catalog,activeSourceTexts=ActiveSources,next=Catalog.Length,total=Catalog.Length,skipped=0}));
             int stored=0;
             if(op=="translationApply"&&request["entries"] is JsonArray entries)foreach(var item in entries)
             {Applied[item!["source"]!.GetValue<string>()]=item["text"]!.GetValue<string>();stored++;}
@@ -133,9 +160,12 @@ static class Program
         if(args.Contains("--install-only"))TransferredInstallTests.Run(Path.Combine(output,"install-fixtures"),Check);
         else
         {
+            RemoteProvenance();
             using var slots=new SemaphoreSlim(3);
             var matrix=from engine in new[]{"rpg","unity"} from target in new[]{"zh-CN","en","ja"} from mixed in new[]{false,true} select (engine,target,mixed);
             await Task.WhenAll(matrix.Select(async v=>{await slots.WaitAsync();try{await Queue(v.engine,v.target,v.mixed);}catch(Exception ex){Check(v.engine+v.target+v.mixed,"Harness completed",false,ex.ToString());}finally{slots.Release();}}));
+            foreach(var target in new[]{"zh-CN","en","ja"})foreach(bool mixed in new[]{false,true})await RenpyQueue(target,mixed);
+            foreach(var target in new[]{"zh-CN","en","ja"})foreach(bool mixed in new[]{false,true})await RenpyQueue(target,mixed,true);
         }
         var summary=new{passed=failures==0,checks=checks.Count,failures,realApiCalls=0,commercialGamesRun=0,assemblyVersion=typeof(MainForm).Assembly.GetName().Version?.ToString(),assemblySha256=Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(typeof(MainForm).Assembly.Location))),cases=cases.ToArray(),results=checks.ToArray()};
         File.WriteAllText(Path.Combine(output,"results.json"),JsonSerializer.Serialize(summary,new JsonSerializerOptions{WriteIndented=true,Encoder=System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping}));

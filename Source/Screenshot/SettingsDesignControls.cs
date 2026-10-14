@@ -48,6 +48,8 @@ internal sealed class SettingsSection : Panel
 {
     private readonly Label heading;
     private readonly List<(Label label,Control value)> fields=[];
+    internal Label Heading => heading;
+    internal IReadOnlyList<(Label label,Control value)> Fields => fields;
     private bool arranging;
     private int preferredWidth=-1,preferredHeight;
     internal SettingsSection(string title)

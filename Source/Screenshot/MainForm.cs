@@ -3,8 +3,9 @@ using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
 
-public sealed partial class MainForm : Form, IMessageFilter
+public sealed partial class MainForm : Form, IMessageFilter, IWin32Window
 {
+    IntPtr IWin32Window.Handle => _wpfWindow is { } window && new System.Windows.Interop.WindowInteropHelper(window).Handle is var handle && handle != IntPtr.Zero ? handle : Handle;
     private enum BindingCaptureState { Idle, Arming, Capturing }
     private const int HotKeyId = 0x4741;
     private readonly ComboBox _modifierBox = new GamePlanBox();
@@ -281,7 +282,7 @@ public sealed partial class MainForm : Form, IMessageFilter
         _lastNavigationEvent=$"{DateTimeOffset.Now:O} NavigationClick:{name}";
         if(!_pages.ContainsKey(name))throw new ArgumentOutOfRangeException(nameof(name),name,"Unknown main page");
         var current=_pages[name];
-        if(_currentMainPage==name&&!current.IsDisposed&&current.Visible&&current.Parent==_mainContentHost&&current.Controls.Count>0&&_mainContentHost.Controls.GetChildIndex(current)==0)return;
+        if(_currentMainPage==name&&!current.IsDisposed&&(_wpfWindow is not null?WpfSettingsModel.LocallyVisible(current):current.Visible)&&current.Parent==_mainContentHost&&current.Controls.Count>0&&_mainContentHost.Controls.GetChildIndex(current)==0)return;
         using var repaint=new WorkspacePaintBatch(_mainContentHost);
         ConfigureWorkspaceRenderingForPage(name);
         if(_pages.TryGetValue(_currentMainPage,out var previousPage))RememberPosition(previousPage);
@@ -301,7 +302,7 @@ public sealed partial class MainForm : Form, IMessageFilter
 
     private bool ValidatePageHost(string expected,string trigger="Manual")
     {
-        var ok=_pages.TryGetValue(expected,out var page)&&!page.IsDisposed&&page.Parent==_mainContentHost&&_mainContentHost.Controls.Contains(page)&&page.Controls.Count>0&&page.Visible&&_mainContentHost.Controls.GetChildIndex(page)==0;
+        var ok=_pages.TryGetValue(expected,out var page)&&!page.IsDisposed&&page.Parent==_mainContentHost&&_mainContentHost.Controls.Contains(page)&&page.Controls.Count>0&&(_wpfWindow is not null?WpfSettingsModel.LocallyVisible(page):page.Visible)&&_mainContentHost.Controls.GetChildIndex(page)==0;
         if(!ok){WriteHostDiagnostic("PageHostInvariantViolation",trigger,expected,page);RecoverMainPage(expected,trigger);page=_pages.GetValueOrDefault(expected);if(page is not null&&!page.IsDisposed&&page.Parent==_mainContentHost)page.BringToFront();ok=page is not null&&!page.IsDisposed&&page.Parent==_mainContentHost&&page.Controls.Count>0&&_mainContentHost.Controls.GetChildIndex(page)==0;}
         return ok;
     }
@@ -466,7 +467,7 @@ public sealed partial class MainForm : Form, IMessageFilter
         _previewSizingBox.Items.AddRange(Enum.GetValues<PreviewWindowSizingMode>().Select(UiStrings.PreviewSizeModeName).ToArray());_uiFontModeBox.Items.AddRange(["产品默认","自定义字体"]);_previewFontModeBox.Items.AddRange(["产品默认","跟随软件界面字体","自定义字体"]);_overlayFontModeBox.Items.AddRange(["产品默认","自定义字体"]);_overlayBackgroundBox.Items.AddRange(Enum.GetValues<TranslationOverlayBackgroundStyle>().Select(UiStrings.BackgroundStyleName).ToArray());PrepareFontChoices();
         foreach(var box in new[]{_previewSizingBox,_uiFontModeBox,_previewFontModeBox,_overlayFontModeBox,_overlayBackgroundBox})box.SelectedIndexChanged+=(_,_)=>UpdateAppearanceEnabled();
         // Values and handlers are initialized before reading settings; layout is prepared separately.
-        
+
         _configPathLabel.AutoSize=true;_configPathLabel.MaximumSize=new(600,0);_keyStatusLabel.AutoSize=true;
 
     }
@@ -566,7 +567,7 @@ public sealed partial class MainForm : Form, IMessageFilter
         if(_captureOpen)return InputContextKind.ScreenshotSelection;
         if(OwnedForms.Any(x=>x.Visible&&x.Modal&&x.ContainsFocus))return InputContextKind.ModalProtected;
         if(_previews.Any(x=>!x.IsDisposed&&x.ContainsFocus))return InputContextKind.Preview;
-        return ContainsFocus?InputContextKind.MainWindow:InputContextKind.Idle;
+        return DesktopContainsFocus?InputContextKind.MainWindow:InputContextKind.Idle;
     }
     private bool IsProtectedMouseContext(InputBinding binding){if(_captureOpen||_previews.Any(x=>!x.IsDisposed&&x.ContainsFocus&&x.Bounds.Contains(Cursor.Position)))return true;if(binding.Kind==InputBindingKind.MouseButton&&binding.MouseButton is InputMouseButton.Left or InputMouseButton.Right&&Bounds.Contains(Cursor.Position))return true;return false;}
     public bool PreFilterMessage(ref Message m)
@@ -575,7 +576,7 @@ public sealed partial class MainForm : Form, IMessageFilter
         // UI-thread fallback only. Never capture messages belonging to another
         // foreground window or commit an outside click before its cancel is queued.
         if(_activeBindingCapture is not { } editor||_bindingCaptureState==BindingCaptureState.Idle
-            ||DesktopInputRuntime.GetForegroundWindow()!=Handle)return false;
+            ||DesktopInputRuntime.GetForegroundWindow()!=((IWin32Window)this).Handle)return false;
         var keyMessage=m.Msg is 0x100 or 0x104;
         if(keyMessage&&(Keys)m.WParam.ToInt32()==Keys.Escape){CancelBindingCapture("Escape");return true;}
         if(_bindingCaptureState!=BindingCaptureState.Capturing)return false;
@@ -1084,7 +1085,7 @@ public sealed partial class MainForm : Form, IMessageFilter
     private void PublishBindingInputLease()
     {
         if(_activeBindingCapture is not { } editor||_bindingCaptureState!=BindingCaptureState.Capturing||!IsHandleCreated)return;
-        _inputRuntime.BeginLease(Handle,true,editor.RectangleToScreen(editor.ClientRectangle),
+        _inputRuntime.BeginLease(((IWin32Window)this).Handle,true,editor.RectangleToScreen(editor.ClientRectangle),
             binding=>{if(ReferenceEquals(_activeBindingCapture,editor)&&_bindingCaptureState==BindingCaptureState.Capturing)CommitBindingCapture(binding);},
             ()=>{if(ReferenceEquals(_activeBindingCapture,editor))CancelBindingCapture("InputLeaseCancelled");});
     }

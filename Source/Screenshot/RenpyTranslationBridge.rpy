@@ -367,6 +367,7 @@ init 999 python hide:
             def collect_catalog(self):
                 self.catalog = []
                 self.catalog_set = set()
+                self.catalog_active_sources = set()
                 self.catalog_skipped = 0
                 self.language_excluded = set()
                 self.nonoriginal_nodes = set()
@@ -374,13 +375,15 @@ init 999 python hide:
                 self.catalog_iter = self.catalog_steps()
 
             def catalog_steps(self):
-                def add(text):
+                def add(text, active_source=False):
                     if not isinstance(text, string_type): return
                     if len(text) > 6000:
                         self.catalog_skipped += 1
-                    elif self.valid(re.sub(r'\[[^\]]*\]|\{[^}]*\}', '', text)) and text not in self.catalog_set:
-                        self.catalog_set.add(text)
-                        self.catalog.append(text)
+                    elif self.valid(re.sub(r'\[[^\]]*\]|\{[^}]*\}', '', text)):
+                        if active_source: self.catalog_active_sources.add(text)
+                        if text not in self.catalog_set:
+                            self.catalog_set.add(text)
+                            self.catalog.append(text)
                 script = renpy.game.script
                 nodes = list(getattr(script, 'all_stmts', None) or script.namemap.values())
                 translated_types = tuple(t for t in (getattr(renpy.ast, name, None) for name in ('Translate','TranslateSay','TranslateBlock','TranslateEarlyBlock','TranslatePython')) if t is not None)
@@ -420,8 +423,14 @@ init 999 python hide:
                     filename = getattr(node, 'filename', '').replace('\\', '/')
                     if active_language is not None and id(node) not in active_nodes: continue
                     if '/tl/' in '/' + filename and id(node) not in active_nodes: continue
+                    # These are actual Say/Menu statements in the selected AST
+                    # view. The engine's default language is None, not an ISO
+                    # code; that does not make its original story an unused pack.
+                    # Arbitrary Python/screen data and interpolation arguments
+                    # remain unproven and wait for their own runtime evidence.
+                    active_source = isinstance(node, (renpy.ast.Say, renpy.ast.Menu))
                     for text in self.node_texts(node):
-                        add(text)
+                        add(text, active_source)
                         for fragment in self.inline_literals(text): add(fragment)
                         yield None
                     extras.append(node)
@@ -974,7 +983,7 @@ init 999 python hide:
                             if texts and size + cost > 42000: break
                             texts.append(text)
                             size += cost
-                        return {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded)}
+                        return {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded), 'epoch': self.epoch, 'activeSourceTexts': [text for text in texts if text in self.catalog_active_sources]}
                     if op == 'translationPoll':
                         texts = list(self.pending.keys())[:128]
                         for text in texts:

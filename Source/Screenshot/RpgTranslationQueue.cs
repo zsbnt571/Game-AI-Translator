@@ -431,6 +431,7 @@ internal sealed class RpgTranslationSession : IDisposable
             var catalog=new HashSet<string>(StringComparer.Ordinal);
             var discoveredCatalog=new HashSet<string>(StringComparer.Ordinal);
             var deferredCatalog=new HashSet<string>(StringComparer.Ordinal);
+            var remoteActiveSources=new HashSet<string>(StringComparer.Ordinal);
             var backlog=new Queue<string>();
             var visible=new ForegroundQueue();var active=new HashSet<string>(StringComparer.Ordinal);
             var observed=new HashSet<string>(StringComparer.Ordinal);
@@ -462,6 +463,7 @@ internal sealed class RpgTranslationSession : IDisposable
             }
             void AddCatalog(string text,bool trusted=false,bool unlocalizedSource=false)
             {
+                unlocalizedSource |= remoteActiveSources.Contains(text);
                 discoveredCatalog.Add(text);
                 if(!RpgTranslationText.HasTranslatableText(text,options.Syntax))return;
                 bool scriptAlreadyTarget=language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage)&&
@@ -510,7 +512,7 @@ internal sealed class RpgTranslationSession : IDisposable
                 // any old catalogue backlog can dispatch another provider call.
                 foreach(var job in jobs.Where(j=>!j.Foreground&&!j.Sources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
                 catalog.Clear();selectedCatalogueSources.Clear();backlog.Clear();cachedCatalogUpdates.Clear();waitingCatalog.Clear();
-                discoveredCatalog.Clear();deferredCatalog.Clear();
+                discoveredCatalog.Clear();deferredCatalog.Clear();remoteActiveSources.Clear();
                 completed=0;declaredLanguageSkipped=0;languageExcluded.Clear();pendingWritebacks.Clear();
                 language.ResetCatalogEvidence();coverage.ResetCatalog();
                 if(hasDesktopCatalog)extractionLoaded=false;
@@ -639,7 +641,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     {
                         foreach(var job in jobs.Where(j=>!j.Foreground&&!j.Sources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
                         catalog.Clear();selectedCatalogueSources.Clear();backlog.Clear();waitingCatalog.Clear();cachedCatalogUpdates.Clear();completed=0;
-                        discoveredCatalog.Clear();deferredCatalog.Clear();
+                        discoveredCatalog.Clear();deferredCatalog.Clear();remoteActiveSources.Clear();
                         declaredLanguageSkipped=0;languageExcluded.Clear();language.ResetCatalogEvidence();coverage.ResetCatalog();
                     }
                     // Readback belongs to one bridge generation. An older
@@ -877,6 +879,11 @@ internal sealed class RpgTranslationSession : IDisposable
                         ||rows.ValueKind!=JsonValueKind.Array||rows.GetArrayLength()>2048
                         ||rows.EnumerateArray().Any(item=>item.ValueKind!=JsonValueKind.String))
                         throw new IOException("游戏文本目录没有正确继续返回数据。");
+                    // Only opted-in bridges publish selected-source provenance.
+                    // Require the matching generation and an exact subset of
+                    // this page; neither language inference nor a source label
+                    // alone authorizes translating unused language resources.
+                    var activeSources=renpy||options.RemoteActiveSources?RemoteSourceCatalog.ActiveSources(page,rows,epoch):[];
                     // Validate a whole page before letting it affect language,
                     // translation scheduling or native writeback eligibility.
                     catalogTotal=total;catalogSkipped=skipped;
@@ -888,6 +895,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     // A mixed-origin catalogue can filter identified locale
                     // branches without assigning one locale to every source.
                     if(page.TryGetProperty("skippedByLanguage",out var filteredValue)&&filteredValue.TryGetInt32(out int filtered))declaredLanguageSkipped=Math.Max(declaredLanguageSkipped,filtered);
+                    remoteActiveSources.UnionWith(activeSources);
                     foreach(var item in rows.EnumerateArray())
                     {
                         var text=item.GetString()!;

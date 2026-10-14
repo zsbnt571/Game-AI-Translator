@@ -399,12 +399,13 @@ internal static class Program
         var singleHarness=ArgumentValue(args,"--0503-single-instance-harness=");
         using var instance=new SingleInstanceCoordinator();
         if(!instance.IsPrimary){instance.NotifyPrimary();return;}
+        WpfWorkspace.Enabled=!args.Contains("--legacy-ui",StringComparer.OrdinalIgnoreCase);
         using var main=new MainForm(null,diagnostics);
         main.Shown+=(_,_)=>mainWindowShown=true;
         var uiChecks=ArgumentValue(args,"--ui-repair-checks=");if(uiChecks is not null)main.Shown+=async(_,_)=>await main.RunUiRepairChecksAsync(uiChecks);
         instance.Start(()=>{if(!main.IsDisposed)main.BeginInvoke(new Action(()=>{main.RestoreFromExternalLaunch();if(!string.IsNullOrWhiteSpace(singleHarness)){File.WriteAllText(singleHarness,"ACTIVATED");main.ExitForSmoke();}}));});
         if(!string.IsNullOrWhiteSpace(singleHarness))main.Shown+=(_,_)=>{main.TrayHideForSmoke();File.WriteAllText(singleHarness+".ready","READY");};
-        Application.Run(main);
+        if(WpfWorkspace.Enabled)WpfWorkspace.Run(main);else Application.Run(main);
     }
 
     private static void Run0501ExitHarness(string scenario)

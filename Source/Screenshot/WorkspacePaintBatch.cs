@@ -7,6 +7,9 @@ internal sealed class WorkspacePaintBatch : IDisposable
     private readonly Control? root;
     internal WorkspacePaintBatch(Control control)
     {
+        // WPF compositor descendants own their presentation surfaces. Freezing
+        // their HWND ancestor can retain black/stale surfaces after navigation.
+        if(WpfWorkspace.Enabled)return;
         if(control.IsHandleCreated&&control.Visible&&!control.IsDisposed)
         {root=control;WorkspaceRepaint.SetRedraw(control,false);}
     }
