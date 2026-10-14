@@ -1,7 +1,8 @@
 {
-  "version": "0.6.0.178-preview.1",
-  "mainAssemblySha256": "f239161d1e9bb1e5817b0f3a856f8669fdc1d6622457ea405f30e5d11e874050",
+  "version": "0.6.0.178-russian-preview.1",
+  "mainAssemblySha256": "b15b2a02b6d322feed116d7842acfd4172c2eece7df071587d5cd708ab5cf84f",
   "productSourceEditedForPackaging": false,
+  "baseline": "0.6.0.178-preview.1",
   "excluded": [
     {
       "path": "Source/Plugin/References/UnityEngine.dll",
@@ -20,7 +21,1188 @@
       "reason": "private local codec provenance; codec is excluded"
     }
   ],
+  "changedProductSource": [
+    "Source/Screenshot/FusionProfileEditor.cs",
+    "Source/Screenshot/FusionSettingsDesign.cs",
+    "Source/Screenshot/ScreenshotRebuildControls.cs",
+    "Source/Screenshot/ScreenshotRebuildPane.cs",
+    "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
+    "Source/Screenshot/TargetLanguageDisplay.cs",
+    "Source/Screenshot/TranslationSettingsFoundation.cs",
+    "Source/Screenshot/UiLanguage.cs",
+    "Source/Screenshot/UiRussian.json"
+  ],
   "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "fab9d694c565e03b7f911a9fd2a225234eb23b0eff7b5887dec8ea6fccca8bc4",
+      "bytes": 165
+    },
+    {
+      "path": "Dependencies/GameMakerFont/LICENSE.txt",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "bytes": 4301
+    },
+    {
+      "path": "Dependencies/GameMakerFont/bridge-font.otf",
+      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
+      "bytes": 16437364
+    },
+    {
+      "path": "Dependencies/GameMakerTool/ICSharpCode.SharpZipLib.dll",
+      "sha256": "32ea2d0ce3512e74f1c7ad82591fe67e6b8939d76a8a4ff9c93ead030131e71c",
+      "bytes": 258048
+    },
+    {
+      "path": "Dependencies/GameMakerTool/LICENSE.txt",
+      "sha256": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
+      "bytes": 35821
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Magick.NET-Q8-AnyCPU.dll",
+      "sha256": "de4dff7053a433f493797a08904f1f5db418f2a5233ef362767e1cfd56199b03",
+      "bytes": 1156784
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Magick.NET.Core.dll",
+      "sha256": "126233abe368695a3b7fd9381cba9cbb7b02f0b107e5183bc2a4b45aefcfd0e3",
+      "bytes": 1538736
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Magick.Native-Q8-x64.dll",
+      "sha256": "56539d5f601fcb487190e1c030e3e6de97591d5524d892e634d247152c63eba0",
+      "bytes": 23918768
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.CSharp.dll",
+      "sha256": "2d073ff1f059dda2814c320ac5782536dc268b335e23e8e8b4d0d3b0833b617f",
+      "bytes": 980816
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.CSharp.Scripting.dll",
+      "sha256": "a7b578bc4df597964be5dc786e4f456ed68c6adb204bc78d5b7ed141029c922c",
+      "bytes": 34600
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.CSharp.dll",
+      "sha256": "fc571a6647ac45b0b0dc1866b795529bb2eeb93adf9be97fcd5903cf482f700a",
+      "bytes": 7079208
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.Scripting.dll",
+      "sha256": "7e96a8c0bb8f63cafd54ee274d1c638ec609834207fef35469c01a2e4ef065d1",
+      "bytes": 137512
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.dll",
+      "sha256": "55618d457128eec582017545b8929ebf195669003b6ec737110f9519e1711d28",
+      "bytes": 3103056
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.DiaSymReader.Native.amd64.dll",
+      "sha256": "315a61c47c41b8d4c815f4274bb6584c1d24b4640c7eedc354ed5b03a9a1361e",
+      "bytes": 2195504
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.VisualBasic.Core.dll",
+      "sha256": "6c267acb79006291cda2484bd9d39f289419b7d3448e1a1f30ef7c2ad7dce82c",
+      "bytes": 1193808
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.VisualBasic.dll",
+      "sha256": "6adcdd16418823c4d27bc65c9ef07df2eac26215fafc3d27eda58ae44a4787b3",
+      "bytes": 17232
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.Win32.Primitives.dll",
+      "sha256": "07ee7d2780a74c523af5ca4babdc63d006fa896b3a1463c2e638c5bb2843f9b9",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Microsoft.Win32.Registry.dll",
+      "sha256": "5f7623b92c1ef07c98546f63c83613f5f5f7af6513dc52e2e9e11447b6c1c7f6",
+      "bytes": 116520
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Newtonsoft.Json.dll",
+      "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
+      "bytes": 723368
+    },
+    {
+      "path": "Dependencies/GameMakerTool/README.md",
+      "sha256": "86456ca03fdd613b1116e3ffdb6578e652fda7cf694d016d3f85503bfc0c1e9a",
+      "bytes": 8503
+    },
+    {
+      "path": "Dependencies/GameMakerTool/SCRIPTS.md",
+      "sha256": "07e49f0267459a1d4d378d29f9cd55ac125957fac4bdf4f82841bf1305d600f1",
+      "bytes": 13683
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.AppContext.dll",
+      "sha256": "36447d0e4c9c86352905726eaf37292c55caed5b87c74c22836ae8b0334395c3",
+      "bytes": 15184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Buffers.dll",
+      "sha256": "7efc8dfef9548771ec328610de7b8e5c4308a8ea6b1ca73021f336fc00653176",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Collections.Concurrent.dll",
+      "sha256": "569667e92dda0af323a9f289c6bbe7a046bab7354f9fa0d37fc97404a0499ed3",
+      "bytes": 231208
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Collections.Immutable.dll",
+      "sha256": "623ad5fa5ac38c460df0073f37fbb649e219ac486c926b822f77ebf02676d56c",
+      "bytes": 976680
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Collections.NonGeneric.dll",
+      "sha256": "8cf296b4868c0dea441c452c50ed5c322837bf736a7c173f46dda4ebdfeb4c0b",
+      "bytes": 104232
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Collections.Specialized.dll",
+      "sha256": "61702e1173c49f32e7b1804667a249f8709680f01859d46cf30e74197fedc1c5",
+      "bytes": 104232
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Collections.dll",
+      "sha256": "5aea9c285f011d1e83f05834e12632ee5ebf65da1d546e696f525af47101a3b0",
+      "bytes": 296744
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.CommandLine.dll",
+      "sha256": "467d0cc5e0242bac33733d94fc8842114ef861537780acdd5f1abeff1f5c7bc7",
+      "bytes": 151352
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ComponentModel.Annotations.dll",
+      "sha256": "be6047dc8b7d2545c2dd099c6868d3736ecd81ea053c6714e9a6f92ff547358e",
+      "bytes": 198440
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ComponentModel.DataAnnotations.dll",
+      "sha256": "c4ad5b72e9461f82b6f5346af3b2f4f46d76763daaf51586943f99f1cc7d5afb",
+      "bytes": 16720
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ComponentModel.EventBasedAsync.dll",
+      "sha256": "704d58b299577d640f365a4541089d99d8187b3071ff680599d3640251e470da",
+      "bytes": 46928
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ComponentModel.Primitives.dll",
+      "sha256": "b671ae0e9463f65d2ad08366c890043fd570f7d3149bb57bc16b8d427d9684f5",
+      "bytes": 79696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ComponentModel.TypeConverter.dll",
+      "sha256": "d24ca7be9b39ff4117edb0d207ff5ab1a0e1587557a3daaa44391f0b04d93816",
+      "bytes": 767824
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ComponentModel.dll",
+      "sha256": "615f1d4f821d25f46e61bc70dd879b4129daa754f42f427a23fa68c4dc74f09a",
+      "bytes": 30544
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Configuration.dll",
+      "sha256": "495b65cd3c8488fa39a4905f072d14b336a5851c87f1b70d3b57afc565025a9f",
+      "bytes": 19240
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Console.dll",
+      "sha256": "a50d6f54e509342c49b6b7c8d72684f68701fc97fade19956d4618a4a30e84fa",
+      "bytes": 169768
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Core.dll",
+      "sha256": "c4908dd3c89942880310cd1c19cc2dca2c8ce3d564be04be80897cb7f5b9d351",
+      "bytes": 23336
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Data.Common.dll",
+      "sha256": "951bc9ff57eea7c382eb75cc595a9598afde341db853291b937be37da6ca3e81",
+      "bytes": 2770728
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Data.DataSetExtensions.dll",
+      "sha256": "abd30bf053ce162967b8ee2b95e4a4a60ddf288bb959cd64dfc107bc6c7d762e",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Data.dll",
+      "sha256": "ef6e30cc3aa9c93ca43f58f3cdc763ed31614b35ce835be57cb7da57358d2734",
+      "bytes": 25384
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.Contracts.dll",
+      "sha256": "764267aee046b300a4598eea0fa328348ec496c01281b31d00573a25ad8bd58f",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.Debug.dll",
+      "sha256": "44b71cb2bc82e2e93c99c095a0e493f3c4afc0e50aafe8e91849629da295e6dc",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.DiagnosticSource.dll",
+      "sha256": "3e8ff9bb002715f5ab50263f6fe7c340355a5a963c03821c3a240ffa36b9f223",
+      "bytes": 501544
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.FileVersionInfo.dll",
+      "sha256": "cbf1da7048153697f1c47175b61579e5f8e79e178d62b04787d626055ed9792e",
+      "bytes": 46888
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.Process.dll",
+      "sha256": "2b4871e02b366113c6ccf3b1436fadde5e69fc0a3e3ac421e2fa0f7af8c2bc3b",
+      "bytes": 329512
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.StackTrace.dll",
+      "sha256": "6578cef25cba5dcd0f7c34f2bbe6fad5c2cb59b601ab708c5f3e8d1dbfc60a95",
+      "bytes": 46888
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.TextWriterTraceListener.dll",
+      "sha256": "65fbeb64bd73d658860c4a65799c1e57edc2d985e73fec1fe585b1dc660b1c91",
+      "bytes": 67368
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.Tools.dll",
+      "sha256": "4bfc11bebae21c6a604f090f8ec94ce2d76d57fcfeafd8ffc9beb139af2a086e",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.TraceSource.dll",
+      "sha256": "63e22e512f3db18ab51d57663364479ce56fcd924085fd0d6bd136f299106fa6",
+      "bytes": 141136
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Diagnostics.Tracing.dll",
+      "sha256": "3275b203f9ec3d62c6a6c57b0771513f99f5c3d81cb4505b77ee679165fed800",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Drawing.Primitives.dll",
+      "sha256": "e8c09040a03d506e08e8165cba4e80cd2d69fb26629d7df65b0d72c1a290c216",
+      "bytes": 132904
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Drawing.dll",
+      "sha256": "9f68761f68125e3596c7af69d56799cf3e08dc2947661069b433d3043feed7da",
+      "bytes": 20264
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Dynamic.Runtime.dll",
+      "sha256": "00b37b775253d8011e0220bacadda3566224272ea787cb0c4cc24fa6b70643ff",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Formats.Asn1.dll",
+      "sha256": "ae3627515191e83d6ea062d3566af536a587d8f04ca6cce8aa71599b092d4a25",
+      "bytes": 239440
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Formats.Tar.dll",
+      "sha256": "d630c4db760a4a793f7ff3df0a3f6edeec40bcb94307e92ac493ad2d3eda1eaa",
+      "bytes": 272208
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Globalization.Calendars.dll",
+      "sha256": "885967adb01ef10e764ef54a0f6d646fd41deab81bd80908407d0ba8f834dcac",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Globalization.Extensions.dll",
+      "sha256": "5dc6a7838a0b2f472fdc093fd1206c61df3494c66d1e5bfb1081ee00a372f50b",
+      "bytes": 15184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Globalization.dll",
+      "sha256": "28db274e2cbb417c61c346d437a0c8265fc0b3bb93cba7330e5ef75cb4d16226",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Compression.Brotli.dll",
+      "sha256": "f6ac00e499ec8f6cd60e092c83391ea9bc176baabed66e9479ddcea796de3448",
+      "bytes": 83752
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Compression.FileSystem.dll",
+      "sha256": "aa87020c837176940637a4c672b2f2b33fd2517506fa12cae1f655ff1e515cc6",
+      "bytes": 15184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Compression.Native.dll",
+      "sha256": "5869c7b088d1886f19f91b8be0d4b6db89ddb07dcfb02fb7dd759c92ef722919",
+      "bytes": 937296
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Compression.ZipFile.dll",
+      "sha256": "88d270860e5c00343057793d6a9b63b7e4cfdf847e62d8161a6ac8d1aa4bffb8",
+      "bytes": 100136
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Compression.dll",
+      "sha256": "99fc38bd6a7defd709b7459ff7e454543c15442d1c295238094504b6301a1050",
+      "bytes": 419624
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.AccessControl.dll",
+      "sha256": "1d5f0b64af1920709aa26d5b38991787b458eaa6da8bb8d86b4bb46ca0434026",
+      "bytes": 104272
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.DriveInfo.dll",
+      "sha256": "9a7268c66cc9a63128c2d23c4abb0eec155e59f352f5a6859eecff62912dafbf",
+      "bytes": 55120
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.Primitives.dll",
+      "sha256": "6bf2b62e83f43b9e2a679abdcab875f37280a36e4c6e9feab99a410ab43f846c",
+      "bytes": 15184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.Watcher.dll",
+      "sha256": "a03f59c4562fe7c1e8f768765b1637239f145c37d4805c8c693ae48f426828eb",
+      "bytes": 87888
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.dll",
+      "sha256": "1d619955d7495e7e040c446fb1a24fa4ff4b9145f9a7d39dd90e92c59666930c",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.IsolatedStorage.dll",
+      "sha256": "66e5ef5d0e23b4edd96f6d19b32d3e0a04ce57270d5ac55acced2bf177bbf68d",
+      "bytes": 87848
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.MemoryMappedFiles.dll",
+      "sha256": "21b24bb967a254328e2644e2dbfe00e1205463663504819bbfcae6f6b43d426d",
+      "bytes": 83792
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Pipelines.dll",
+      "sha256": "93ce5ddafb25ba6aeae208ffc750da0f243f25e89fe7dbc5287e1d8b4f26a2e0",
+      "bytes": 190248
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Pipes.AccessControl.dll",
+      "sha256": "d7c4e7f1a4cbada634b82e5939de9d9b3c87cc44ba8d4c1319bae0a796083e3c",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.Pipes.dll",
+      "sha256": "244167c32b3db092253e21a2301afa1e763fc861ca8a2304cb29feb773b85322",
+      "bytes": 165712
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.UnmanagedMemoryStream.dll",
+      "sha256": "a988846408abf1513ac7ab81a9f72218ffcab410b2a06caf3844677604032075",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.IO.dll",
+      "sha256": "7a820716ee9ab010ea624b9448ea1acb4c78b0f79dfc9d98db01b7f99c610b6a",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Linq.AsyncEnumerable.dll",
+      "sha256": "0009a3da0de5b968f777f715103c873a5de5f1840b870c95f6b7c11ac05246c4",
+      "bytes": 1292072
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Linq.Expressions.dll",
+      "sha256": "f5d05f16c2f31ae822bca8db63019067c8d83b09376b0a60c38b9c98fa0e088f",
+      "bytes": 3639080
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Linq.Parallel.dll",
+      "sha256": "d8cdfa91b3cedc1d928848a2724f230b130ee549e8b9008ad38e3ed10e8e9af6",
+      "bytes": 776016
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Linq.Queryable.dll",
+      "sha256": "eddadcb60dd56a06eb83f6f1284f9ae42c181af3cde4b19350938b1930d6f531",
+      "bytes": 182056
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Linq.dll",
+      "sha256": "139264775432faf15a813e607e1919ea869d3321079ba134ffa36b350577c271",
+      "bytes": 698152
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Memory.dll",
+      "sha256": "58a4dc8a9efac1fe0ee67138b0dda35b2b812addc14c5d8251cc222b278a5c2d",
+      "bytes": 161576
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Http.Json.dll",
+      "sha256": "552422be522e40937de77bdcaee0575282d2f2d449b19dd81f1a3ef23e85b73f",
+      "bytes": 128808
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Http.dll",
+      "sha256": "8ae9f649d43f1f3fb635170784bcb753d305bc36a42703b4b0bedb15a29729f0",
+      "bytes": 1746728
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.HttpListener.dll",
+      "sha256": "c3bbbb42561e9de67da6accd846fa710944d38b4bde88ee111943ea4afb5b82f",
+      "bytes": 534312
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Mail.dll",
+      "sha256": "5e053f23212c0f0eb0ee1a17a94ced79afd7d8d2175b35f2750b85eb570b5db0",
+      "bytes": 481064
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.NameResolution.dll",
+      "sha256": "1003e24eaf96e8aa019b188fefabab4a6ca488d5c51e70600140bfa4dabe3bda",
+      "bytes": 124752
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.NetworkInformation.dll",
+      "sha256": "47b220c9a183125c8cf9e2a7b21b45947b3b1951412d719d7c5f047277c4927e",
+      "bytes": 157480
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Ping.dll",
+      "sha256": "c337caf03b0d50c7cf4a4822872bd34603d11e7f689d211ecaea3ee74f65518a",
+      "bytes": 91944
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Primitives.dll",
+      "sha256": "e678e0129a87751c624cbe2e3ab83d55055a091a5b77d8138f02255deda4b6c4",
+      "bytes": 210728
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Quic.dll",
+      "sha256": "a02b202989ff28adee64fae1c9cc7290057ca2f234ed7a05c647617399e6d4c7",
+      "bytes": 358184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Requests.dll",
+      "sha256": "f2735dd7adbc04c505805e9f069f9d545f34f1ff689e2a9d6bcda1a2480d3da7",
+      "bytes": 374568
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Security.dll",
+      "sha256": "1605bb05b7cd623dc79c8f4ec2e10ea5779b5bd343f909a9c0dece472ee2a8f2",
+      "bytes": 665384
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.ServerSentEvents.dll",
+      "sha256": "792c085fff01183ac597f69bf33db289d7301aabde1cc388904621a47efe719c",
+      "bytes": 83752
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.ServicePoint.dll",
+      "sha256": "9645242a547b02bc0cbfa78c365fe8cbf02869c182debe4ce37bac32be1ca42b",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.Sockets.dll",
+      "sha256": "b4bf19b0c8e412b9d0f479fc5268bf44e04ca656cd121044ca51f2652595af6c",
+      "bytes": 530256
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.WebClient.dll",
+      "sha256": "ab06cb5eaff5ca00045dd847e167f0107a53114aca47d26ed3500adf38bd142b",
+      "bytes": 165712
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.WebHeaderCollection.dll",
+      "sha256": "7abfc26269a95cec0d93ca2a6b8148aa45d504c8f50a62fbbbad72408966d45a",
+      "bytes": 63272
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.WebProxy.dll",
+      "sha256": "d6f5fbc775d7b1639c1740e3e10834f6fb729fc5fe7619b972df79d528abaf18",
+      "bytes": 42832
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.WebSockets.Client.dll",
+      "sha256": "ff5d42603b662a634857dcc6e1239547025d03794aea4f84d624579765c23ba9",
+      "bytes": 104272
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.WebSockets.dll",
+      "sha256": "36fefd219495298b0b28a6bbf1d99fb9b2471467f5a0d382af9730f0a32fc8f1",
+      "bytes": 243496
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Net.dll",
+      "sha256": "d7a4c693b1922e0e69aee3597ac72c25e0a5e1d3ac2d1072d7d8dc854d27e488",
+      "bytes": 17232
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Numerics.Vectors.dll",
+      "sha256": "6beaf983fa8c33d25160c7a77e185967e8f113a5c02e6dc27f05f26e1b34763c",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Numerics.dll",
+      "sha256": "fd4f0bc0541231fc01c21cab517a948019d4c9adbf66f81b65b276298e6ab922",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ObjectModel.dll",
+      "sha256": "16d9a18630f1d33ec7a709ab2f31652c91ebdfbc7a5a481378aebe2e1102ffc2",
+      "bytes": 79656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Private.CoreLib.dll",
+      "sha256": "ed80a1a5dd066c0407ad59686f9af90a4f3e55dbf3e4c973b53cc8c9d0706f82",
+      "bytes": 16033616
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Private.DataContractSerialization.dll",
+      "sha256": "631a7719e6e67e4f86e553031c56038eafca2ab5fa161c8cff786a92838a0255",
+      "bytes": 2062120
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Private.Uri.dll",
+      "sha256": "0546093ec627bf832c244be56d9acca471778385c534e0107f2a6dc6a78f93d2",
+      "bytes": 255824
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Private.Xml.Linq.dll",
+      "sha256": "0f4d2be70f3715853dca3bd6c9b67de7738a5f4ec6e9959f526ef1dbf1f7fa8e",
+      "bytes": 390992
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Private.Xml.dll",
+      "sha256": "d570b8cb9507f2fcac88f80a2fe7597d3e2331a84f337820a7d794632a67ed5d",
+      "bytes": 7788328
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.DispatchProxy.dll",
+      "sha256": "a08a235c45e6944b3a086f3df03e55b38a5958e7126948847eb33261fe1ca10b",
+      "bytes": 75560
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.Emit.ILGeneration.dll",
+      "sha256": "5e38d9d71ce8fbab210a590f20543b19a2bf0cf1265f3ed78d63519e3b73b979",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.Emit.Lightweight.dll",
+      "sha256": "c15be07e2131fdc8806d47e222b58e545981c2a3e7dc9c069a6c6076271a291f",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.Emit.dll",
+      "sha256": "b4208981583d74994aa4d855e12788676fdebce63ba848be63a6e0a7fbe2cb3d",
+      "bytes": 309072
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.Extensions.dll",
+      "sha256": "4e6967d52cbc95ae9eda01b8d8705f59c2c56f8b69471efaa6eca8f0e22a9a6a",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.Metadata.dll",
+      "sha256": "97152d5c07e1e5d7f080f871eff211ccdbecb2496e4eb1b086005cbd3656d431",
+      "bytes": 1156904
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.Primitives.dll",
+      "sha256": "d1ba728fab43e22821a1b19c508667995c0df10ee98d1f19e63aac94098ca8f5",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.TypeExtensions.dll",
+      "sha256": "fbf5445d2a288ddce3bf163a6b692dbf97a10f6a17bb9de7c0d2d71387c6e440",
+      "bytes": 42792
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Reflection.dll",
+      "sha256": "80fb9e206044c6f1c02bcc6895e2ce432119c670ea12248a6cba112afa78a9b6",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Resources.Reader.dll",
+      "sha256": "ae5e53448adf49f3bb0e6fcc4df836bcd413ce0eeeaad0b94f7363ad238d71dd",
+      "bytes": 15184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Resources.ResourceManager.dll",
+      "sha256": "c3456835cfbd88d081a3ee4030ce533cb6fbb27ad0f60f954a5ae7d45b1422cd",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Resources.Writer.dll",
+      "sha256": "a478bbfeac355e728d914f6f5e1e893ab1454c6f92d28da84ff0a75f04476277",
+      "bytes": 50984
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.CompilerServices.Unsafe.dll",
+      "sha256": "6f396205abe594c9c72e618f4278657b4ff9da9cd2bc17d8083481b287838ecc",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.CompilerServices.VisualC.dll",
+      "sha256": "67483e224e8019d1d725876485a6fca81dd977d5254cf26d79a26f2a73207fa9",
+      "bytes": 30504
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Extensions.dll",
+      "sha256": "633f210388e326f0a2fba3148312fb2900a9e0ba32f08015bb606abc44a3d634",
+      "bytes": 17744
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Handles.dll",
+      "sha256": "834ed37905ecafb69c3d33d1b659e5f8216cef9995cbfcc7b2cf858752add880",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.JavaScript.dll",
+      "sha256": "6fedecfa2fb691e50175dccf64860da8dd147b9d64d942997259a79a7edb77d5",
+      "bytes": 51024
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.RuntimeInformation.dll",
+      "sha256": "506dc257f2f039746172057cf574992d4db07e31f9338b0ab2d90e88d385c472",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.dll",
+      "sha256": "9d0621f1e573bd20525287533bea24ec7824813eada7820a0c82252ede072ab9",
+      "bytes": 112424
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Intrinsics.dll",
+      "sha256": "c44fc7c6f2aff4a9c8b9a0b6abfd2c1b65a762b69fa982fcfca28c6001d022e3",
+      "bytes": 17192
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Loader.dll",
+      "sha256": "c858230d105ec1225cd58ec22623bf59bddee9dfc7077d7f93957d3321ec55f7",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Numerics.dll",
+      "sha256": "cadca5367aec4fb54df4a81cd033c62228f3e100736ef9701aafcd13123a5ef4",
+      "bytes": 354128
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Formatters.dll",
+      "sha256": "ae2d71a1c6231a7e4c9f0264666acf90f743460ae7983d5331e9ad0271e7ad88",
+      "bytes": 124752
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Json.dll",
+      "sha256": "7e44e9979e6c539e7ad22846ac9c6f250e888d28411ba88761122095dfed9727",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Primitives.dll",
+      "sha256": "e15940836e5b22e89a0b7febfa0de2f158855563d9cca0ac36a84e4be9e3e683",
+      "bytes": 38736
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Xml.dll",
+      "sha256": "286bbafd589189f1d684831c33dd81a4650e12b73db70920ba5d4e0a477fd33a",
+      "bytes": 16680
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.dll",
+      "sha256": "2092ad8e233c2a01a8dcc640ab218c1eabc059f6bebaaa8f81d1ce8225a939a0",
+      "bytes": 17192
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Runtime.dll",
+      "sha256": "ef6d37d9334fcdf7c7e4b9590b730eb5ba623192d47f0cbe4ec478962625e586",
+      "bytes": 44840
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.AccessControl.dll",
+      "sha256": "5fda871ac0ab09ba62884ba4160b5c84f8d9513d16c773b7d01e3b82dae905b4",
+      "bytes": 227152
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Claims.dll",
+      "sha256": "ca5a036a17ed63c6f90d92570c657bcec451dc2c894b1ffff0688855b61e455c",
+      "bytes": 100136
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Algorithms.dll",
+      "sha256": "35677214a8b8388d82ff5bf45789790fa048612f6aca8b8f71efb3aa93ef70b1",
+      "bytes": 17192
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Cng.dll",
+      "sha256": "328a4ea1c05177e97f65a24d68268c96674bbfbcfb5bc3906229eea2c46ac6d2",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Csp.dll",
+      "sha256": "0be1ded6ac6b8bdc53d0d49bb01292770f9a022fe7d2d2f1a480223eca5ca6ba",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Encoding.dll",
+      "sha256": "09fbbd2934040ba1260775f34a8b901f5f9edec9bd1a2203b3726686006b7829",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.OpenSsl.dll",
+      "sha256": "695ebdf0901afd27b7504dd4fdbc504a5aae8ea87d3b342da800789a6a94a732",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Primitives.dll",
+      "sha256": "c4d76a73f7147df7999b371adbc091850984a40cd45f4d0464e85424de412e30",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.X509Certificates.dll",
+      "sha256": "bcbcd0c436bfd24052ae4f7a3785b434436cbc18e6465f0be19437a453872cf3",
+      "bytes": 16720
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.dll",
+      "sha256": "bee61e6bdeff9fb0c4f3cbf9d48e9d1d97d12a8bb85d1eeab9178e818b582eee",
+      "bytes": 2549584
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Principal.Windows.dll",
+      "sha256": "ed56739aabc1fb6f81e8f71db89531beea985550f654d4d0e6c9a64c67e4e349",
+      "bytes": 178000
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.Principal.dll",
+      "sha256": "f4e101d9d1b328868cd91199ca441e4ee273047fe96dd6ec34a1e889e523da21",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.SecureString.dll",
+      "sha256": "f371fb101973637a772e44f75b48d66540466a914f61e4b1f4ae7eb01dad1b62",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Security.dll",
+      "sha256": "2a0ee1358a507f20bb9099afb2c79745212bca44c1102e580c20742ecca560d5",
+      "bytes": 18256
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ServiceModel.Web.dll",
+      "sha256": "948e182337526b0decaab7a9274c1bde5be3e419b076cfe0161a335e22643ac3",
+      "bytes": 16720
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ServiceProcess.dll",
+      "sha256": "04e5ca5a4df4d31e8e6b527ce5a16b6f150a256384b2cbdabeeba1f6974cfa99",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Text.Encoding.CodePages.dll",
+      "sha256": "56582910b3c0d17f10dc2eafc8e5746c6f23b57af56d7f0d4cd208f06ece1e28",
+      "bytes": 862032
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Text.Encoding.Extensions.dll",
+      "sha256": "2b63801416706c7817193a742fc8648c4afd6697ca342d4a2deb30450b99218d",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Text.Encoding.dll",
+      "sha256": "4c140de2fdd2c673ece196892e28786b85200b8f315fc9bb2de7aeb862372d9d",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Text.Encodings.Web.dll",
+      "sha256": "2c459f175331339b8580dec1842879b3f0532100fa426b97a1b74e1b5dee95d7",
+      "bytes": 124712
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Text.Json.dll",
+      "sha256": "ed5f0f3773c89948471e3691f31963ea00d3577e17296ac4dfb97772e78b6fa3",
+      "bytes": 1890088
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Text.RegularExpressions.dll",
+      "sha256": "b8494ba41da52018409cccd851753717c6bd035fccdf5e4d5ac83e420d4678f4",
+      "bytes": 1034064
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.AccessControl.dll",
+      "sha256": "eec9d6f83ec123602039ec449b402c1bcb74ff00518eb87f8d007558e48c2b89",
+      "bytes": 75560
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Channels.dll",
+      "sha256": "ff8dcb281d2d35f01dbdf72e766e431c397f9db063f22f61a9a85f7bd173f5e8",
+      "bytes": 157480
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Overlapped.dll",
+      "sha256": "a0ef0237e67a16a347a8ed9b9286e3acef358aeb4a23463323c2efdf646fc0f5",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Dataflow.dll",
+      "sha256": "83a9b71c298ba233393eb1cdbda26380cb2d50cefd2fd645b0ba1c34c7aeca9f",
+      "bytes": 472912
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Extensions.dll",
+      "sha256": "6ec70446f8faefaa167a0e3360468203cb03ffab90369644e92c22dc650a9cd5",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Parallel.dll",
+      "sha256": "ff17dd0ddd3f2debdaced18f39b9f8a205630baeb3de20bbf0630935a8605aa6",
+      "bytes": 132904
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.dll",
+      "sha256": "d95cee14d0dbb97d8f8a8f4dcc5eefa35f394f9d94b0fa0bf29068786aee6a06",
+      "bytes": 16680
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Thread.dll",
+      "sha256": "7b451de5e88adfdb49765bc0745a12e377318534d02e6bf81660c285a7aa6664",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.ThreadPool.dll",
+      "sha256": "9e3bf9838ff48525e4f2fd1c7646956ba00183977c7e4762d999670aa901e101",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.Timer.dll",
+      "sha256": "5b21f38133328e8017bb7a4651007738ce76fcfa673af267b4c8b5e857d572d7",
+      "bytes": 15144
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Threading.dll",
+      "sha256": "cadf13029ac996abaceccfd7c242e55888b669246163342a3b335eee9851b531",
+      "bytes": 83752
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Transactions.Local.dll",
+      "sha256": "cb3d436592fe994ba8f570cc7cb021ef347730e96e52e3b8695b7c7bd79a3967",
+      "bytes": 640808
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Transactions.dll",
+      "sha256": "9ba6785faf04de3b018a7e6bdb349c538ca861add4a3558c693fe4c9ef905335",
+      "bytes": 16680
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.ValueTuple.dll",
+      "sha256": "63e0eac320a2eac02f418e186232405427e036d9ce9dd80951923280308cfe59",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Web.HttpUtility.dll",
+      "sha256": "03841ee0b42c5ed0d4b58c185e9cfa57a939c479256943644062b918cf595a08",
+      "bytes": 63272
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Web.dll",
+      "sha256": "45b1d8e331aeb3d4006afe64cde59eddac958968d6c432df3f869982d94996f0",
+      "bytes": 15184
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Windows.dll",
+      "sha256": "5898d03d2707c44b55883bc475f8c3aa779738a439db6ec2abbf9e0fac82e6d5",
+      "bytes": 15696
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.Linq.dll",
+      "sha256": "06be8d12ab41b70960703ec77899da99e0a93a6d125e77e7f8154ab071220d54",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.ReaderWriter.dll",
+      "sha256": "9ed86fcb4a068f56c61ce4d595d91b57df12999820bb11659e9a4b45103305ed",
+      "bytes": 21800
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.Serialization.dll",
+      "sha256": "868e566390c0a0800253511b757644433c512989a213f32153464a4611667d8b",
+      "bytes": 16168
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.XDocument.dll",
+      "sha256": "58cf36935545fdf661b64dc2f8c57b7066d2a380252d194edb6708895a50e6a7",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.XPath.XDocument.dll",
+      "sha256": "75b319f01c19a9c1c8b08b6a26bb44e3329da177d974ba90d1a4a40bba3e7d3b",
+      "bytes": 30504
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.XPath.dll",
+      "sha256": "8e21c30f514e711d8446c4eec9fe92cb8156efeaa476e67a26f17ba0a21e593f",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.XmlDocument.dll",
+      "sha256": "e6d348ce2e40d5f8e767f3863f3217f6075f3e4e331270be1d13e45430f87811",
+      "bytes": 15656
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.XmlSerializer.dll",
+      "sha256": "96d2ef2d9503bcb06d4aa9f8e15efdf3ae94c30b9db4211da75020d0690238d2",
+      "bytes": 17744
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.Xml.dll",
+      "sha256": "3bf8cf7c17a8ec51ef64a48707dbcbb0359e466a7903bb564a4c74228d895e32",
+      "bytes": 23376
+    },
+    {
+      "path": "Dependencies/GameMakerTool/System.dll",
+      "sha256": "72f6fa05b4c1696d7d50f8a93086165980276ce6661f0f8a77fe426028309720",
+      "bytes": 50512
+    },
+    {
+      "path": "Dependencies/GameMakerTool/Underanalyzer.dll",
+      "sha256": "13866effb6db10aa0c7fea1b9f017bb362e8b9e1266295896bebcd920c3571fa",
+      "bytes": 470528
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModCli.deps.json",
+      "sha256": "5c64cfe59210affee9e848d187e2904c36f8894567be41d68189edb2dadaafdd",
+      "bytes": 35855
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModCli.dll",
+      "sha256": "3960a1d33360bd7c46668bdc354a915601496a7aecdee5107c63fdde4d2fbfc6",
+      "bytes": 61952
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModCli.exe",
+      "sha256": "6d13bd017e7d6527a1e2ca676ddc9826388ab335e45374751a3dafe18bd1ab9d",
+      "bytes": 162816
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModCli.runtimeconfig.json",
+      "sha256": "d44456e801512388fbfee409aeb60e9021a568881d941bdec4038ef9045e5bc1",
+      "bytes": 374
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModCli.xml",
+      "sha256": "0698093462f42b6b3e7c196abb7f9b2231ec554f2d76a38a0943139859091520",
+      "bytes": 27682
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModLib.dll",
+      "sha256": "bb12b0e22b46be6a8e6e498767ca61e8974e5acac6df46e66000afe1dd35fbf5",
+      "bytes": 1108992
+    },
+    {
+      "path": "Dependencies/GameMakerTool/UndertaleModLib.xml",
+      "sha256": "4674e0c3ffed997e4140e9feda2bcd163cce530e5e3d2d4c3920150be9ccb17d",
+      "bytes": 723684
+    },
+    {
+      "path": "Dependencies/GameMakerTool/WindowsBase.dll",
+      "sha256": "2586159b2c347d39a93bebcbd8811a6dc05d0252202b24cebf2e28188f8ce7ab",
+      "bytes": 16208
+    },
+    {
+      "path": "Dependencies/GameMakerTool/clretwrc.dll",
+      "sha256": "e9f9ccaa20a91570e6e505fd85197b86e8e6582b67864a8630c1a82afb9866a7",
+      "bytes": 317736
+    },
+    {
+      "path": "Dependencies/GameMakerTool/clrgc.dll",
+      "sha256": "83a829823c333bfbcf0bd82bc015a61af10ce136d8eb7933b28d97c9193c578b",
+      "bytes": 673064
+    },
+    {
+      "path": "Dependencies/GameMakerTool/clrgcexp.dll",
+      "sha256": "d006be1e64e796161c8f3abb462c23753d86103a82282013b1c5309c76613f1f",
+      "bytes": 710952
+    },
+    {
+      "path": "Dependencies/GameMakerTool/clrjit.dll",
+      "sha256": "e7bf743e7bf9a01c8c2bcdc0d828212fd8dfc285be9d4ec21962becf456df648",
+      "bytes": 2092328
+    },
+    {
+      "path": "Dependencies/GameMakerTool/coreclr.dll",
+      "sha256": "c98c3078a4f2495dd7d3ced967c7a6981545194ed163454703580b740f435521",
+      "bytes": 4614440
+    },
+    {
+      "path": "Dependencies/GameMakerTool/createdump.exe",
+      "sha256": "d34b488bd20b87aaa8f1739aa834b877f76b22ff9ef1bdec7d0386a307f42a89",
+      "bytes": 71512
+    },
+    {
+      "path": "Dependencies/GameMakerTool/hostfxr.dll",
+      "sha256": "44f97e946b36415176dbc56a4426565a5e9b3e722c0ad579e20a749e3c0c7bcd",
+      "bytes": 379728
+    },
+    {
+      "path": "Dependencies/GameMakerTool/hostpolicy.dll",
+      "sha256": "ded1d42c38688a1cacd20026b1f981c22fd583f621b7123296ef0f2af9cd656d",
+      "bytes": 378664
+    },
+    {
+      "path": "Dependencies/GameMakerTool/mscordaccore.dll",
+      "sha256": "c1b92da5356bb36f4ab55aa54b2d25a8a27518cf7a456eb4957ddfe94e2d428c",
+      "bytes": 1356632
+    },
+    {
+      "path": "Dependencies/GameMakerTool/mscordaccore_amd64_amd64_10.0.1126.37416.dll",
+      "sha256": "c1b92da5356bb36f4ab55aa54b2d25a8a27518cf7a456eb4957ddfe94e2d428c",
+      "bytes": 1356632
+    },
+    {
+      "path": "Dependencies/GameMakerTool/mscordbi.dll",
+      "sha256": "f3553412af82ab90180a0d412dd87b7bfc087043484a572dc2dce07eca9906fa",
+      "bytes": 1237856
+    },
+    {
+      "path": "Dependencies/GameMakerTool/mscorlib.dll",
+      "sha256": "a2c8875b7823b631ae669c6e78dc4b58bb577ce30206ccc03dbbc56981e1714e",
+      "bytes": 59688
+    },
+    {
+      "path": "Dependencies/GameMakerTool/mscorrc.dll",
+      "sha256": "0c5efacadabaf31e07e131fe7e9150454fb1dd148222a053a2f743551d42184c",
+      "bytes": 133968
+    },
+    {
+      "path": "Dependencies/GameMakerTool/msquic.dll",
+      "sha256": "24da0bf4d7b7e0adb598297d170fa547f94f398bd6f2b515ae87f0a207c999c7",
+      "bytes": 536376
+    },
+    {
+      "path": "Dependencies/GameMakerTool/netstandard.dll",
+      "sha256": "ce09cef0d758196f2467f320d840c03202453efe9fb1920dddd24ea8277bbbb3",
+      "bytes": 100648
+    },
+    {
+      "path": "Dependencies/GameMakerTool/runtime.osx.10.10-x64.CoreCompat.System.Drawing.dll",
+      "sha256": "68e3ed455b1074cc0f7f6ccede5ca37e7d7d1b1b2dfe1556b916bc3034064f71",
+      "bytes": 4608
+    },
+    {
+      "path": "Dependencies/GameMakerTool/runtimeconfig.json",
+      "sha256": "c5646835cd69fca5c94cb15367996e22ebd8e44804dab297306eb82330d19bf6",
+      "bytes": 80
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/INSTALLER",
+      "sha256": "ceebae7b8927a3227e5303cf5e0f1f7b34bb542ad7250ac03fbcde36ec2f1508",
+      "bytes": 4
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/METADATA",
+      "sha256": "bb325d0e13b5184239672ad5f5cdba5fb6555d5fb2e04365a87983e4cd8e6771",
+      "bytes": 62134
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/RECORD",
+      "sha256": "1658c79334edbbc2be20a2d77919cbacab6f4a7376056e43150d8da0a3b4b35b",
+      "bytes": 1416
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/REQUESTED",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/WHEEL",
+      "sha256": "ad1e507ec59c665de6adae409920fb15dd1dcd0c59de51c2a43a3bd0891f0cae",
+      "bytes": 101
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/licenses/LICENSE.txt",
+      "sha256": "be85bf5e0a2dea5b91e5f34a55c0e43aec8ec29f4fa5b5858e6727b60a00f22c",
+      "bytes": 2281
+    },
+    {
+      "path": "Dependencies/Python/lupa-2.8.dist-info/top_level.txt",
+      "sha256": "cc18eafce130565281513db92f610d70c3bef5777055048ded7e951f21fb3dc8",
+      "bytes": 5
+    },
+    {
+      "path": "Dependencies/Python/lupa/__init__.py",
+      "sha256": "d1f7d659bbbb804e58cf8eadb6480609858db8680177f4bee81992fa55a6eb8d",
+      "bytes": 3067
+    },
+    {
+      "path": "Dependencies/Python/lupa/lua51.cp312-win_amd64.pyd",
+      "sha256": "29bc76a1cd9d2ac799edd84f0e6061f25324713228da9ffe9e4727570ac7f9e9",
+      "bytes": 476160
+    },
+    {
+      "path": "Dependencies/Python/lupa/lua52.cp312-win_amd64.pyd",
+      "sha256": "788f11c3b01a1ab22e7ac4705b66a1bf4e0a4a6c845f030cd358d805089dd9e0",
+      "bytes": 490496
+    },
+    {
+      "path": "Dependencies/Python/lupa/lua53.cp312-win_amd64.pyd",
+      "sha256": "0d83d8125cf1679fa4d3f0be17474df5d4967860abd7e55272f4f72f540dcbde",
+      "bytes": 516096
+    },
+    {
+      "path": "Dependencies/Python/lupa/lua54.cp312-win_amd64.pyd",
+      "sha256": "2d9ba19524d979a641eefba073607b5b87628f9a3bf2e208c4f1aeeb08163800",
+      "bytes": 555520
+    },
+    {
+      "path": "Dependencies/Python/lupa/lua55.cp312-win_amd64.pyd",
+      "sha256": "1821e585e2f19befc5f0f089a7a1ab223c8ebb7656083b74966ab9bd23cfb895",
+      "bytes": 565248
+    },
+    {
+      "path": "Dependencies/Python/lupa/luajit20.cp312-win_amd64.pyd",
+      "sha256": "158e6b4d5d61e2c0fdad063d51449bf678e686784f2b00d3fa40bc5df29194b0",
+      "bytes": 714240
+    },
+    {
+      "path": "Dependencies/Python/lupa/luajit21.cp312-win_amd64.pyd",
+      "sha256": "f2cd8493c23581d63e87fb15446094038f834302c274484616ac549c74feb1e4",
+      "bytes": 797696
+    },
+    {
+      "path": "Dependencies/Python/lupa/version.py",
+      "sha256": "c1341db41cf80de5e73a37271d9923e5c4afb6e4da1b30ff4044ac5404f6dc8c",
+      "bytes": 21
+    },
+    {
+      "path": "GitHub-About.txt",
+      "sha256": "835d64fb6ec5ce4a1f70d4a1110a6523be883a993eede183cd7381c126bcad76",
+      "bytes": 504
+    },
+    {
+      "path": "LICENSE",
+      "sha256": "e57f1c320b8cf8798a7d2ff83a6f9e06a33a03585f6e065fea97f1d86db84052",
+      "bytes": 35150
+    },
+    {
+      "path": "README.en.md",
+      "sha256": "e0ab79dfc5c7712b62442f8b3cb096a130c55b93404f65c96265b3c66d42e748",
+      "bytes": 1722
+    },
+    {
+      "path": "README.md",
+      "sha256": "80ed41ced685b6a4b69c77ea0046872c7f2508caa6ab7d0ee8f2b713583eb956",
+      "bytes": 1101
+    },
+    {
+      "path": "RUSSIAN-PREVIEW.txt",
+      "sha256": "738b59794b1fccc2eb24c6d12bce6083414eb78d2849ade568915db99b42f180",
+      "bytes": 3442
+    },
     {
       "path": "Source/CoverCapture/FusionCoverCapture.csproj",
       "sha256": "6ea13bdb356e291a65a73636d5c6faa0f8d0277dd2d1503bed712e4986f845eb",
@@ -42,19 +1224,9 @@
       "bytes": 387
     },
     {
-      "path": "Source/Embedded/Manager/build-payload.ps1",
-      "sha256": "4df8b3335aaa560076a8f0f537483a4dc7f3054c2e4bd60b58347b6193c86d0b",
-      "bytes": 2148
-    },
-    {
       "path": "Source/Embedded/Manager/GameTranslatorManager033.csproj",
       "sha256": "8210362c3cd9655f96fa716376108ab393e5fb04319f7e4e4f468315eeaa9ae9",
       "bytes": 805
-    },
-    {
-      "path": "Source/Embedded/Manager/global.json",
-      "sha256": "3baca9888fc8043d0890b06b6dfbf2fce4f5f564588884701da2c25e4ee21ef5",
-      "bytes": 74
     },
     {
       "path": "Source/Embedded/Manager/Manager.cs",
@@ -67,14 +1239,19 @@
       "bytes": 125
     },
     {
+      "path": "Source/Embedded/Manager/build-payload.ps1",
+      "sha256": "4df8b3335aaa560076a8f0f537483a4dc7f3054c2e4bd60b58347b6193c86d0b",
+      "bytes": 2148
+    },
+    {
+      "path": "Source/Embedded/Manager/global.json",
+      "sha256": "3baca9888fc8043d0890b06b6dfbf2fce4f5f564588884701da2c25e4ee21ef5",
+      "bytes": 74
+    },
+    {
       "path": "Source/Embedded/Manager/payloads/UnityMono.zip",
       "sha256": "31865728073e090ff17f7000a04d524e50b3dd9a01b5e12a26343d930f887c78",
       "bytes": 650419
-    },
-    {
-      "path": "Source/Embedded/Manager/tests/UpdatePathTest/global.json",
-      "sha256": "3baca9888fc8043d0890b06b6dfbf2fce4f5f564588884701da2c25e4ee21ef5",
-      "bytes": 74
     },
     {
       "path": "Source/Embedded/Manager/tests/UpdatePathTest/NuGet.Config",
@@ -90,6 +1267,11 @@
       "path": "Source/Embedded/Manager/tests/UpdatePathTest/UpdatePathTest.csproj",
       "sha256": "6ce8e48306889291bf3c9ac233fb75766c3612d863d2420824ab117c4d7d6e80",
       "bytes": 297
+    },
+    {
+      "path": "Source/Embedded/Manager/tests/UpdatePathTest/global.json",
+      "sha256": "3baca9888fc8043d0890b06b6dfbf2fce4f5f564588884701da2c25e4ee21ef5",
+      "bytes": 74
     },
     {
       "path": "Source/NativeBridge/Licenses/MinHook.txt",
@@ -180,21 +1362,6 @@
       "path": "Source/Plugin/BASELINE.md",
       "sha256": "3ac976eae85e5573171dca45c929308efddedaba669ed9c95cd46420afe9453c",
       "bytes": 394
-    },
-    {
-      "path": "Source/Plugin/build.ps1",
-      "sha256": "f73979dc821524a0ef84b7adbebc8e01f5fe42c88b3584e2018821fd40e96996",
-      "bytes": 1464
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/build-fonts.py",
-      "sha256": "eb47a3e1898d3d7a9a581de341e7fc16a3217d31776cb3bc2a6de3cc899a7345",
-      "bytes": 2970
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/build.ps1",
-      "sha256": "6718584d158f34f00e1255a38015dc4f916fc015f9c1a3c0cc9d2e856dd0c0f4",
-      "bytes": 1378
     },
     {
       "path": "Source/Plugin/CloudMeadow/CloudBubbleLifecycle.cs",
@@ -297,14 +1464,19 @@
       "bytes": 4929
     },
     {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/font-index.json",
-      "sha256": "a4ddce9383fad4674afce4382752d505536e5ba0ecc2802338fd0e79bd7766fd",
-      "bytes": 1404244
-    },
-    {
       "path": "Source/Plugin/CloudMeadow/FontAssets/OFL.txt",
       "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
       "bytes": 4301
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/SOURCE.txt",
+      "sha256": "dec57a9ab20952c8cc8a4a377cd0c4904fe2c1fd35d6ce42fa3e320c49e6939a",
+      "bytes": 300
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/FontAssets/font-index.json",
+      "sha256": "a4ddce9383fad4674afce4382752d505536e5ba0ecc2802338fd0e79bd7766fd",
+      "bytes": 1404244
     },
     {
       "path": "Source/Plugin/CloudMeadow/FontAssets/page-00.sdf.gz",
@@ -462,19 +1634,9 @@
       "bytes": 106145
     },
     {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/SOURCE.txt",
-      "sha256": "dec57a9ab20952c8cc8a4a377cd0c4904fe2c1fd35d6ce42fa3e320c49e6939a",
-      "bytes": 300
-    },
-    {
       "path": "Source/Plugin/CloudMeadow/GameScanShortcut.cs",
       "sha256": "63ef8c3d2ee3622077fd437c81c596232b2a709805cbe8c194a98ba2dfd96795",
       "bytes": 1623
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/package-payload.py",
-      "sha256": "a7a3d66846261b6f5a2e9b4b66c4a06111ab8d4fb71d651b0b00bd56157cfa1f",
-      "bytes": 2725
     },
     {
       "path": "Source/Plugin/CloudMeadow/References/0Harmony.dll",
@@ -487,6 +1649,21 @@
       "bytes": 128512
     },
     {
+      "path": "Source/Plugin/CloudMeadow/build-fonts.py",
+      "sha256": "eb47a3e1898d3d7a9a581de341e7fc16a3217d31776cb3bc2a6de3cc899a7345",
+      "bytes": 2970
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/build.ps1",
+      "sha256": "6718584d158f34f00e1255a38015dc4f916fc015f9c1a3c0cc9d2e856dd0c0f4",
+      "bytes": 1378
+    },
+    {
+      "path": "Source/Plugin/CloudMeadow/package-payload.py",
+      "sha256": "a7a3d66846261b6f5a2e9b4b66c4a06111ab8d4fb71d651b0b00bd56157cfa1f",
+      "bytes": 2725
+    },
+    {
       "path": "Source/Plugin/FungusDialogueNormalizer.cs",
       "sha256": "2d0df758ba24f3628941c0b6778768756b55aee414150b0af67d363b5b90847b",
       "bytes": 836
@@ -495,11 +1672,6 @@
       "path": "Source/Plugin/GameScanShortcut.cs",
       "sha256": "63ef8c3d2ee3622077fd437c81c596232b2a709805cbe8c194a98ba2dfd96795",
       "bytes": 1623
-    },
-    {
-      "path": "Source/Plugin/global.json",
-      "sha256": "c1e935ab01433f7a6d66fb02ebbb5f3b0a009a628c78889178d725bc30cd9a9a",
-      "bytes": 75
     },
     {
       "path": "Source/Plugin/MGITranslator.cs",
@@ -522,11 +1694,6 @@
       "bytes": 128512
     },
     {
-      "path": "Source/Plugin/References/mscorlib.dll",
-      "sha256": "57e3a820a75c409fa1965a550d8f0d74eb4e1364d98afd0424a7f617c7b4487f",
-      "bytes": 2590208
-    },
-    {
       "path": "Source/Plugin/References/System.Core.dll",
       "sha256": "bee0286ae2fd663a44ace8c89380dd7d3d41c8a40a4f782eff3c4b4bd36ca398",
       "bytes": 297472
@@ -537,24 +1704,9 @@
       "bytes": 1679360
     },
     {
-      "path": "Source/Plugin/tests/FungusDialogueTests/FungusDialogueTests.csproj",
-      "sha256": "a7b91833f5d1cf79fed6ed01ca6a45db21c53136ec4690b8ce341d9ca2a4feac",
-      "bytes": 363
-    },
-    {
-      "path": "Source/Plugin/tests/FungusDialogueTests/global.json",
-      "sha256": "3baca9888fc8043d0890b06b6dfbf2fce4f5f564588884701da2c25e4ee21ef5",
-      "bytes": 74
-    },
-    {
-      "path": "Source/Plugin/tests/FungusDialogueTests/NuGet.Config",
-      "sha256": "5256a7e3e07d2c5c94f7a1e6c45f39aab011c659c5e2d53e452dea525ce04575",
-      "bytes": 125
-    },
-    {
-      "path": "Source/Plugin/tests/FungusDialogueTests/Program.cs",
-      "sha256": "e4f48b4d087ffbb88562fad70229ad78d276859ee3877391dd6befd288ba4e8b",
-      "bytes": 3297
+      "path": "Source/Plugin/References/mscorlib.dll",
+      "sha256": "57e3a820a75c409fa1965a550d8f0d74eb4e1364d98afd0424a7f617c7b4487f",
+      "bytes": 2590208
     },
     {
       "path": "Source/Plugin/UnityEmbedded/BridgeJson.cs",
@@ -567,16 +1719,6 @@
       "bytes": 1395
     },
     {
-      "path": "Source/Plugin/UnityEmbedded/build-mono.ps1",
-      "sha256": "a6de186a1ca400d35924afa81f84fcd71c99c964a49e89e98587e7743dc5282a",
-      "bytes": 1749
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/build-payloads.ps1",
-      "sha256": "27dad4096423d52263f0f19e9bce95446984afdccdcf2ec286707b7228a38081",
-      "bytes": 3841
-    },
-    {
       "path": "Source/Plugin/UnityEmbedded/CjkTextLayout.cs",
       "sha256": "416aeeb34049ee4d36fd33c33f8c8bd4cc8febe96da0dfaa2d60ef6221de3045",
       "bytes": 24383
@@ -587,14 +1729,19 @@
       "bytes": 23311
     },
     {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/font-index.json",
-      "sha256": "a4ddce9383fad4674afce4382752d505536e5ba0ecc2802338fd0e79bd7766fd",
-      "bytes": 1404244
-    },
-    {
       "path": "Source/Plugin/UnityEmbedded/FontAssets/OFL.txt",
       "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
       "bytes": 4301
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/FontAssets/SOURCE.txt",
+      "sha256": "dec57a9ab20952c8cc8a4a377cd0c4904fe2c1fd35d6ce42fa3e320c49e6939a",
+      "bytes": 300
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/FontAssets/font-index.json",
+      "sha256": "a4ddce9383fad4674afce4382752d505536e5ba0ecc2802338fd0e79bd7766fd",
+      "bytes": 1404244
     },
     {
       "path": "Source/Plugin/UnityEmbedded/FontAssets/page-00.sdf.gz",
@@ -752,11 +1899,6 @@
       "bytes": 106145
     },
     {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/SOURCE.txt",
-      "sha256": "dec57a9ab20952c8cc8a4a377cd0c4904fe2c1fd35d6ce42fa3e320c49e6939a",
-      "bytes": 300
-    },
-    {
       "path": "Source/Plugin/UnityEmbedded/FusionUnityIL2CPP.csproj",
       "sha256": "a38d6639ab12bd3b7f2a75209ba877a12c77ea2a097ab4c31a78207194cc268a",
       "bytes": 1534
@@ -837,16 +1979,6 @@
       "bytes": 11356
     },
     {
-      "path": "Source/Plugin/UnityEmbedded/Licenses/dotnet-runtime-third-party.txt",
-      "sha256": "55ff71c32f96483c2f4e061eb78ee9bf3d8d562d00143c67b361bb4ce989fe44",
-      "bytes": 46771
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/Licenses/dotnet-runtime.txt",
-      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
-      "bytes": 1116
-    },
-    {
       "path": "Source/Plugin/UnityEmbedded/Licenses/HarmonyX-5.txt",
       "sha256": "7e54ab4766ef78637a05fb3454663a66de6bb960dbd4c7088890ed76b0844f36",
       "bytes": 1063
@@ -917,11 +2049,6 @@
       "bytes": 1054
     },
     {
-      "path": "Source/Plugin/UnityEmbedded/Licenses/sources.json",
-      "sha256": "cb03e3b80180a664518fdc7020138a2da6dba77423af5e4a4c25af505d0ecc2a",
-      "bytes": 11407
-    },
-    {
       "path": "Source/Plugin/UnityEmbedded/Licenses/UnityDoorstop-5.txt",
       "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331",
       "bytes": 26526
@@ -930,6 +2057,21 @@
       "path": "Source/Plugin/UnityEmbedded/Licenses/UnityDoorstop-6.txt",
       "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331",
       "bytes": 26526
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Licenses/dotnet-runtime-third-party.txt",
+      "sha256": "55ff71c32f96483c2f4e061eb78ee9bf3d8d562d00143c67b361bb4ce989fe44",
+      "bytes": 46771
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Licenses/dotnet-runtime.txt",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
+      "bytes": 1116
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Licenses/sources.json",
+      "sha256": "cb03e3b80180a664518fdc7020138a2da6dba77423af5e4a4c25af505d0ecc2a",
+      "bytes": 11407
     },
     {
       "path": "Source/Plugin/UnityEmbedded/Mono6Plugin.cs",
@@ -957,11 +2099,6 @@
       "bytes": 6272
     },
     {
-      "path": "Source/Plugin/UnityEmbedded/Resources/classdata.tpk",
-      "sha256": "129e1f80f930415db6779fe6089afa75280cb51462bcee812beab6cd81a764c6",
-      "bytes": 289605
-    },
-    {
       "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedIl2Cpp64.zip",
       "sha256": "89e6d0a35b15bc0a61df4911b81f0c991d5db5835c5ebc9645bd9e97cc7afd3c",
       "bytes": 45944425
@@ -980,6 +2117,11 @@
       "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono64.zip",
       "sha256": "2023fdb73890f9d62f38ac6b4a10be63f130ded8af17850c9982b9ec4eca36a6",
       "bytes": 12246247
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/Resources/classdata.tpk",
+      "sha256": "129e1f80f930415db6779fe6089afa75280cb51462bcee812beab6cd81a764c6",
+      "bytes": 289605
     },
     {
       "path": "Source/Plugin/UnityEmbedded/StaticTmpFonts.cs",
@@ -1097,9 +2239,49 @@
       "bytes": 8614
     },
     {
+      "path": "Source/Plugin/UnityEmbedded/build-mono.ps1",
+      "sha256": "a6de186a1ca400d35924afa81f84fcd71c99c964a49e89e98587e7743dc5282a",
+      "bytes": 1749
+    },
+    {
+      "path": "Source/Plugin/UnityEmbedded/build-payloads.ps1",
+      "sha256": "27dad4096423d52263f0f19e9bce95446984afdccdcf2ec286707b7228a38081",
+      "bytes": 3841
+    },
+    {
       "path": "Source/Plugin/VerifiedBinary/MGITranslator.dll",
       "sha256": "d5c1547cec6374c0fa875563aac43ea2c6fe2d043f54d46621567cc14c795edc",
       "bytes": 19456
+    },
+    {
+      "path": "Source/Plugin/build.ps1",
+      "sha256": "f73979dc821524a0ef84b7adbebc8e01f5fe42c88b3584e2018821fd40e96996",
+      "bytes": 1464
+    },
+    {
+      "path": "Source/Plugin/global.json",
+      "sha256": "c1e935ab01433f7a6d66fb02ebbb5f3b0a009a628c78889178d725bc30cd9a9a",
+      "bytes": 75
+    },
+    {
+      "path": "Source/Plugin/tests/FungusDialogueTests/FungusDialogueTests.csproj",
+      "sha256": "a7b91833f5d1cf79fed6ed01ca6a45db21c53136ec4690b8ce341d9ca2a4feac",
+      "bytes": 363
+    },
+    {
+      "path": "Source/Plugin/tests/FungusDialogueTests/NuGet.Config",
+      "sha256": "5256a7e3e07d2c5c94f7a1e6c45f39aab011c659c5e2d53e452dea525ce04575",
+      "bytes": 125
+    },
+    {
+      "path": "Source/Plugin/tests/FungusDialogueTests/Program.cs",
+      "sha256": "e4f48b4d087ffbb88562fad70229ad78d276859ee3877391dd6befd288ba4e8b",
+      "bytes": 3297
+    },
+    {
+      "path": "Source/Plugin/tests/FungusDialogueTests/global.json",
+      "sha256": "3baca9888fc8043d0890b06b6dfbf2fce4f5f564588884701da2c25e4ee21ef5",
+      "bytes": 74
     },
     {
       "path": "Source/RgssBridge/Build.ps1",
@@ -1147,6 +2329,11 @@
       "bytes": 4624
     },
     {
+      "path": "Source/Screenshot/AppLog.cs",
+      "sha256": "7f3dd96a8731633a53c7a2c0060ca9a759cdd94b84ac4f13cadec2cf4de752fa",
+      "bytes": 1257
+    },
+    {
       "path": "Source/Screenshot/AppearanceSettings.cs",
       "sha256": "13b6a16e0cb7b656fd4300c19343dec1cbe7f0d15f8c8b798606e7af90fe4c73",
       "bytes": 2191
@@ -1155,11 +2342,6 @@
       "path": "Source/Screenshot/AppearanceSettingsDialog.cs",
       "sha256": "3b70acdfbfe41e63cf25e242ba4b65272485bb9535367b1de319c6d3869af655",
       "bytes": 7358
-    },
-    {
-      "path": "Source/Screenshot/AppLog.cs",
-      "sha256": "7f3dd96a8731633a53c7a2c0060ca9a759cdd94b84ac4f13cadec2cf4de752fa",
-      "bytes": 1257
     },
     {
       "path": "Source/Screenshot/AutomaticTranslationQuality.cs",
@@ -1207,31 +2389,6 @@
       "bytes": 2449
     },
     {
-      "path": "Source/Screenshot/CaptureFlashDiagnostics.cs",
-      "sha256": "35c6045631956e62feefd12cde182feb35944c5865d693755c904dd70472096c",
-      "bytes": 3462
-    },
-    {
-      "path": "Source/Screenshot/CaptureOverlay.cs",
-      "sha256": "28cd99425726459ed9d8418beb6c0625b973ab6242f9cdc6c1821e1b8513f10e",
-      "bytes": 54903
-    },
-    {
-      "path": "Source/Screenshot/CatalogCoverage.cs",
-      "sha256": "867198747c9af05f2bfb314eb47f13350353bdf6b5f6059148d0d25bbf48f2cb",
-      "bytes": 1930
-    },
-    {
-      "path": "Source/Screenshot/CatalogReadReport.cs",
-      "sha256": "75be4712537863d8ad98f53f9c95cdf085dadc3f0f2160902ca11f49c988b17a",
-      "bytes": 1530
-    },
-    {
-      "path": "Source/Screenshot/CatalogTranslationPreparation.cs",
-      "sha256": "dabef895d4e288dc968d11623f239dad492b8e70305a4038acd92c3652ff38ff",
-      "bytes": 11667
-    },
-    {
       "path": "Source/Screenshot/CHECKPOINT-0.md",
       "sha256": "3ff0842832ff88fcbff7b5ba37173aeb1e064a1e9f62c20ccb82e279cc91a219",
       "bytes": 1590
@@ -1265,6 +2422,31 @@
       "path": "Source/Screenshot/CHECKPOINT-6.md",
       "sha256": "6bd7dcd14bca1c0d4d8db0f81f43003448e2b9291e92274e7622c05f366b05a7",
       "bytes": 423
+    },
+    {
+      "path": "Source/Screenshot/CaptureFlashDiagnostics.cs",
+      "sha256": "35c6045631956e62feefd12cde182feb35944c5865d693755c904dd70472096c",
+      "bytes": 3462
+    },
+    {
+      "path": "Source/Screenshot/CaptureOverlay.cs",
+      "sha256": "28cd99425726459ed9d8418beb6c0625b973ab6242f9cdc6c1821e1b8513f10e",
+      "bytes": 54903
+    },
+    {
+      "path": "Source/Screenshot/CatalogCoverage.cs",
+      "sha256": "867198747c9af05f2bfb314eb47f13350353bdf6b5f6059148d0d25bbf48f2cb",
+      "bytes": 1930
+    },
+    {
+      "path": "Source/Screenshot/CatalogReadReport.cs",
+      "sha256": "75be4712537863d8ad98f53f9c95cdf085dadc3f0f2160902ca11f49c988b17a",
+      "bytes": 1530
+    },
+    {
+      "path": "Source/Screenshot/CatalogTranslationPreparation.cs",
+      "sha256": "dabef895d4e288dc968d11623f239dad492b8e70305a4038acd92c3652ff38ff",
+      "bytes": 11667
     },
     {
       "path": "Source/Screenshot/CleanupMaskGeometryAudit.cs",
@@ -1657,14 +2839,14 @@
       "bytes": 34651
     },
     {
-      "path": "Source/Screenshot/FusionGameSessions.cs",
-      "sha256": "9d40580adf45ff35e81ec88687dbfa546257d98fd60d7f4f61d07c5cec278823",
-      "bytes": 5191
-    },
-    {
       "path": "Source/Screenshot/FusionGameSessionWorkspace.cs",
       "sha256": "fb04394695bc5caafa6981fb2f4430037887734c4fd0d5d395bc8edbbbdeb1e3",
       "bytes": 35378
+    },
+    {
+      "path": "Source/Screenshot/FusionGameSessions.cs",
+      "sha256": "9d40580adf45ff35e81ec88687dbfa546257d98fd60d7f4f61d07c5cec278823",
+      "bytes": 5191
     },
     {
       "path": "Source/Screenshot/FusionGameWindowCover.cs",
@@ -1753,18 +2935,18 @@
     },
     {
       "path": "Source/Screenshot/FusionProfileEditor.cs",
-      "sha256": "8d8f577aed478d38acef47903c653d7d70fe7bbaa82add89413ad562e04b9b9d",
-      "bytes": 20333
-    },
-    {
-      "path": "Source/Screenshot/FusionProfiles.cs",
-      "sha256": "627a3dec1721a512dea4e85f69ab4af2ef52bd344fdc38cdcacaf580b5ff139e",
-      "bytes": 8587
+      "sha256": "677cd63c4a3f038e240ac03c1822564815a696eb1fd0cca484d00aaf3521fbc3",
+      "bytes": 20171
     },
     {
       "path": "Source/Screenshot/FusionProfileVerification.cs",
       "sha256": "42866387d7ccc434bb1e1016afa147240ac1e0bf07c99848ee93f1219663088f",
       "bytes": 9015
+    },
+    {
+      "path": "Source/Screenshot/FusionProfiles.cs",
+      "sha256": "627a3dec1721a512dea4e85f69ab4af2ef52bd344fdc38cdcacaf580b5ff139e",
+      "bytes": 8587
     },
     {
       "path": "Source/Screenshot/FusionRecentGames.cs",
@@ -1813,8 +2995,8 @@
     },
     {
       "path": "Source/Screenshot/FusionSettingsDesign.cs",
-      "sha256": "4befa0f315f5cf005542cbb8ab60139a7f3816e30c946627c135b7c0d02f1813",
-      "bytes": 12780
+      "sha256": "9cb630ce021ab8525d1d1f32697f4f5d116d764cfae3844539f1f1aa5c8b2d27",
+      "bytes": 12603
     },
     {
       "path": "Source/Screenshot/FusionTestSurface.cs",
@@ -1982,11 +3164,6 @@
       "bytes": 13900
     },
     {
-      "path": "Source/Screenshot/global.json",
-      "sha256": "8cbe44966667c8f140b589c2335951f25d4e8ce174cb59d1cdcf83710c42c775",
-      "bytes": 78
-    },
-    {
       "path": "Source/Screenshot/GlobalHotKeyHost.cs",
       "sha256": "33609d04e120e876a2385b050af0f22f2e10c1e84a7d51c2cce5853cb3a9e944",
       "bytes": 1911
@@ -2037,6 +3214,11 @@
       "bytes": 70284
     },
     {
+      "path": "Source/Screenshot/HOLDOUT-AUDIT.md",
+      "sha256": "b7568910c9db0c4b85a58e9eaa56f4e093ca708b78252d767ec3d616763ec5b8",
+      "bytes": 670
+    },
+    {
       "path": "Source/Screenshot/HistoryGrid.cs",
       "sha256": "a8fd71e4f9b10ad7da834c92a1a388d0cdb825f77e6581975e4077e4b2728700",
       "bytes": 12484
@@ -2055,11 +3237,6 @@
       "path": "Source/Screenshot/HistoryVisualReplayHarness.cs",
       "sha256": "bd87ac6fa97df5155d9a67a5a279887e15043dfd9f05743a64a7453cb4a902c9",
       "bytes": 6647
-    },
-    {
-      "path": "Source/Screenshot/HOLDOUT-AUDIT.md",
-      "sha256": "b7568910c9db0c4b85a58e9eaa56f4e093ca708b78252d767ec3d616763ec5b8",
-      "bytes": 670
     },
     {
       "path": "Source/Screenshot/HoldoutGeneralization0610.cs",
@@ -2342,11 +3519,6 @@
       "bytes": 3151
     },
     {
-      "path": "Source/Screenshot/ObservedRegionRecovery.cs",
-      "sha256": "635c1cb5a41f28a4c4181bf07e58db999868ecf1891177874274ce08a3347360",
-      "bytes": 22553
-    },
-    {
       "path": "Source/Screenshot/OCR-PHASE1-REAL-RESULTS-RC3.md",
       "sha256": "cb3e1917a504eb5a36f7872d64aab6c12212f41cd8dfe4dcb9e1b6ecffa78f21",
       "bytes": 815
@@ -2365,6 +3537,26 @@
       "path": "Source/Screenshot/OCR-RUNTIME-MANIFEST.md",
       "sha256": "13b83777da2402e50e1c5c9da837180924a59a7c7a883d277585ca995ba52acd",
       "bytes": 1006
+    },
+    {
+      "path": "Source/Screenshot/OPEN-ME-0.5.0.6.10.txt",
+      "sha256": "2833dca4a67d9c8b69305060f12b88969435faf0c74f8e6ed3f4bf888df7b6ee",
+      "bytes": 806
+    },
+    {
+      "path": "Source/Screenshot/OPEN-ME-0.5.0.6.9.txt",
+      "sha256": "3a0b3a4fe53d3e08264706867fdbf295867d13f84c2932a0b9f54e3f7fe8a91e",
+      "bytes": 583
+    },
+    {
+      "path": "Source/Screenshot/OPEN-ME.txt",
+      "sha256": "0e91b75057590f6a54f45511407fe1588162e67dcd94696d3fdbffc3ba16cd49",
+      "bytes": 321
+    },
+    {
+      "path": "Source/Screenshot/ObservedRegionRecovery.cs",
+      "sha256": "635c1cb5a41f28a4c4181bf07e58db999868ecf1891177874274ce08a3347360",
+      "bytes": 22553
     },
     {
       "path": "Source/Screenshot/OcrAlternativeEvidence.cs",
@@ -2407,21 +3599,6 @@
       "bytes": 7420
     },
     {
-      "path": "Source/Screenshot/OPEN-ME-0.5.0.6.10.txt",
-      "sha256": "2833dca4a67d9c8b69305060f12b88969435faf0c74f8e6ed3f4bf888df7b6ee",
-      "bytes": 806
-    },
-    {
-      "path": "Source/Screenshot/OPEN-ME-0.5.0.6.9.txt",
-      "sha256": "3a0b3a4fe53d3e08264706867fdbf295867d13f84c2932a0b9f54e3f7fe8a91e",
-      "bytes": 583
-    },
-    {
-      "path": "Source/Screenshot/OPEN-ME.txt",
-      "sha256": "0e91b75057590f6a54f45511407fe1588162e67dcd94696d3fdbffc3ba16cd49",
-      "bytes": 321
-    },
-    {
       "path": "Source/Screenshot/OwnedGameFiles.cs",
       "sha256": "025b3422346357ed1537571a7087bc0a5e8398f7fec6f4b8cbb08e3e4868f0b0",
       "bytes": 6717
@@ -2437,14 +3614,24 @@
       "bytes": 15228
     },
     {
-      "path": "Source/Screenshot/ParagraphAlignmentEvidence.cs",
-      "sha256": "e46512fc7014246ab318600fdafbe8a82449702e6ba5ce6ed6c9f9d903f3d242",
-      "bytes": 6730
-    },
-    {
       "path": "Source/Screenshot/PERFORMANCE-REPORT.md",
       "sha256": "95480658e9acb8a56e58b0b75851496c351d16ad2df16379dd4c7ca7e8019405",
       "bytes": 596
+    },
+    {
+      "path": "Source/Screenshot/PROMPT-BUILDER-REPORT.md",
+      "sha256": "2b2f7c1768e9e9d147b26a5a56ca37cfd4aac4ddf84878d8d33f59e1dabd70d5",
+      "bytes": 907
+    },
+    {
+      "path": "Source/Screenshot/PROVIDER-FOUNDATION-REPORT.md",
+      "sha256": "20ca4e5785284eb8da1f58d04a4093d127e19d4be34286db1af211395c8c661a",
+      "bytes": 892
+    },
+    {
+      "path": "Source/Screenshot/ParagraphAlignmentEvidence.cs",
+      "sha256": "e46512fc7014246ab318600fdafbe8a82449702e6ba5ce6ed6c9f9d903f3d242",
+      "bytes": 6730
     },
     {
       "path": "Source/Screenshot/PersistentHistoryStore.cs",
@@ -2482,14 +3669,14 @@
       "bytes": 4992
     },
     {
-      "path": "Source/Screenshot/PreviewForm.cs",
-      "sha256": "c8fa44c7d2abdee71041bdb49c62e46794cfe5bef41a591ae06635dc8386e920",
-      "bytes": 191384
-    },
-    {
       "path": "Source/Screenshot/PreviewForm.RenderCommit.cs",
       "sha256": "c3c4abc6a422cf4727d4f954d0b34b1729f157eea0bd1c35c99d8b0cfa8dc415",
       "bytes": 7765
+    },
+    {
+      "path": "Source/Screenshot/PreviewForm.cs",
+      "sha256": "c8fa44c7d2abdee71041bdb49c62e46794cfe5bef41a591ae06635dc8386e920",
+      "bytes": 191384
     },
     {
       "path": "Source/Screenshot/PreviewRenderCancellationSelfTests.cs",
@@ -2535,16 +3722,6 @@
       "path": "Source/Screenshot/Program.cs",
       "sha256": "790ced819cc4bbb3ab055c66f293c58e6bffca3753ecbc42f33ad0a3465f2ada",
       "bytes": 77097
-    },
-    {
-      "path": "Source/Screenshot/PROMPT-BUILDER-REPORT.md",
-      "sha256": "2b2f7c1768e9e9d147b26a5a56ca37cfd4aac4ddf84878d8d33f59e1dabd70d5",
-      "bytes": 907
-    },
-    {
-      "path": "Source/Screenshot/PROVIDER-FOUNDATION-REPORT.md",
-      "sha256": "20ca4e5785284eb8da1f58d04a4093d127e19d4be34286db1af211395c8c661a",
-      "bytes": 892
     },
     {
       "path": "Source/Screenshot/RC1-TEST-REPORT.md",
@@ -2595,6 +3772,96 @@
       "path": "Source/Screenshot/README.md",
       "sha256": "551a0b571ff8a905b509f97208f89e941d56634c9706188e5fa6f3b70557c75a",
       "bytes": 1230
+    },
+    {
+      "path": "Source/Screenshot/REMOVE-OCR-RUNTIME.ps1",
+      "sha256": "bdd7dde55dd7af02f033fe3462be9db4af1590efdb75ed9ca55505a20a5bbd5f",
+      "bytes": 1190
+    },
+    {
+      "path": "Source/Screenshot/REPAIR4.1-CONFIDENCE-CAPABILITY.md",
+      "sha256": "89a8d5fc939c3fca0fb992d7476ed79820f5a39b2f23ca939ae1bb7d95c1ae1d",
+      "bytes": 1406
+    },
+    {
+      "path": "Source/Screenshot/REPAIR4.1-FILE-HASHES.txt",
+      "sha256": "aa4c050a56995ddf61c5fa1adfbd9f7ccf4ada3189f6f17844d251be4dfd709e",
+      "bytes": 1817
+    },
+    {
+      "path": "Source/Screenshot/REPAIR4.1-OCR-QUALITY-FIX-REPORT.md",
+      "sha256": "49f579166c213424c231e25d141eddc5f3d8c24fbf7fe27551aa3192a0242d0e",
+      "bytes": 2555
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.3.0-RC2-INITIAL-HOVER-READY.md",
+      "sha256": "80e70537f756864a793a9329e07d4307506d60c4519d50ebb447c3f99a7995a9",
+      "bytes": 2271
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.4.2.6.md",
+      "sha256": "1a3dccd46ce6dca43e3e663ec813147dfe33b7691cf75542a36490bfe80394c6",
+      "bytes": 3683
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.4.2.7.md",
+      "sha256": "da77eda896ccfd1c9d2e3d0c63cc403f19013925a718b0ad9f68eb036fae6e17",
+      "bytes": 2958
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.10.md",
+      "sha256": "eb28b9cdc7f392766ae21677504d4fa5e9e1246e57be4ef8a015de1cb60a3afd",
+      "bytes": 4690
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.11.md",
+      "sha256": "9c6fe3d1f3b704ff6a4c3ac7f6b54b7e86ca9125f87894d28e5e17153fc62698",
+      "bytes": 3156
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.12.md",
+      "sha256": "a8c4c6592f0920bfb32ca23b6bef7e79de267d22a9141544a875db50c2988483",
+      "bytes": 4159
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.13.2-CURSOR-CORRECTED.md",
+      "sha256": "b00b1ac1f0a0f6d2c65a4f66618b5d321da0738fb2d5d1b01a2f98ad4729c7e9",
+      "bytes": 1824
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.13.2.md",
+      "sha256": "447d2fe9240a3038303f0fcce7fae53318d8b8d13d31766a3fbfe34d986173af",
+      "bytes": 8288
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.13.3-SNAPSHOT-OWNERSHIP-FROZEN.md",
+      "sha256": "db62660e05a2be2c14fad7744c8a60ab932046f8509d71133d6c51e706d30b91",
+      "bytes": 5065
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.6.md",
+      "sha256": "8dac8b5eb45f8088ab4f98acb3b2119f602b53a3f1e823ee7b810f277085a1e4",
+      "bytes": 1825
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.7.md",
+      "sha256": "71537bd4c581b30c36a3646b0d2bc5cba7bf269d6a8478c3033564a6265efab3",
+      "bytes": 2179
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.8.md",
+      "sha256": "695de1fcb78d815aeb0d36c49af79153be6bd29f6355b6fd61adaf3b628ad57c",
+      "bytes": 5419
+    },
+    {
+      "path": "Source/Screenshot/REPORT-0.5.0.6.9.md",
+      "sha256": "c2642c2af44da752321ce3eb365b3c9d8b6ab0c97c37f8feed79e2afdf55b4cf",
+      "bytes": 2834
+    },
+    {
+      "path": "Source/Screenshot/REPORT-VISION-REGION-V2.md",
+      "sha256": "41084e56574d1eb46d755b57ca25fa4147fcf34c6eed355d504d367f9d6ed2c0",
+      "bytes": 5615
     },
     {
       "path": "Source/Screenshot/ReadOnlyBitmapPixelBuffer.cs",
@@ -2692,19 +3959,14 @@
       "bytes": 1430
     },
     {
-      "path": "Source/Screenshot/regression-results-translation-settings1.txt",
-      "sha256": "0141bcfcd2a5b55ac5f34e1af0093fdaa2c1f3c02d09cd71c4e5d6cf79e9122c",
-      "bytes": 27024
-    },
-    {
-      "path": "Source/Screenshot/REMOVE-OCR-RUNTIME.ps1",
-      "sha256": "bdd7dde55dd7af02f033fe3462be9db4af1590efdb75ed9ca55505a20a5bbd5f",
-      "bytes": 1190
-    },
-    {
       "path": "Source/Screenshot/RenderCoverageAudit.cs",
       "sha256": "9d699a4f503d43758fbde5442d23a00b4d2310da3222b7d6d5a09f1f294ac866",
       "bytes": 7112
+    },
+    {
+      "path": "Source/Screenshot/RenderResourceProbe.cs",
+      "sha256": "60eeaf6726b8899977f53121ce904990bb49d076f9c57b030c83368538bd24ff",
+      "bytes": 1783
     },
     {
       "path": "Source/Screenshot/Renderer2Engine.cs",
@@ -2730,11 +3992,6 @@
       "path": "Source/Screenshot/RendererResourceBudget.cs",
       "sha256": "39b4411fb993aee1e7f41f7ba9ed0c28543f95e952ce2be96055d52845d34977",
       "bytes": 2999
-    },
-    {
-      "path": "Source/Screenshot/RenderResourceProbe.cs",
-      "sha256": "60eeaf6726b8899977f53121ce904990bb49d076f9c57b030c83368538bd24ff",
-      "bytes": 1783
     },
     {
       "path": "Source/Screenshot/RenpyDataPresentation.cs",
@@ -2852,91 +4109,6 @@
       "bytes": 240
     },
     {
-      "path": "Source/Screenshot/REPAIR4.1-CONFIDENCE-CAPABILITY.md",
-      "sha256": "89a8d5fc939c3fca0fb992d7476ed79820f5a39b2f23ca939ae1bb7d95c1ae1d",
-      "bytes": 1406
-    },
-    {
-      "path": "Source/Screenshot/REPAIR4.1-FILE-HASHES.txt",
-      "sha256": "aa4c050a56995ddf61c5fa1adfbd9f7ccf4ada3189f6f17844d251be4dfd709e",
-      "bytes": 1817
-    },
-    {
-      "path": "Source/Screenshot/REPAIR4.1-OCR-QUALITY-FIX-REPORT.md",
-      "sha256": "49f579166c213424c231e25d141eddc5f3d8c24fbf7fe27551aa3192a0242d0e",
-      "bytes": 2555
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.3.0-RC2-INITIAL-HOVER-READY.md",
-      "sha256": "80e70537f756864a793a9329e07d4307506d60c4519d50ebb447c3f99a7995a9",
-      "bytes": 2271
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.4.2.6.md",
-      "sha256": "1a3dccd46ce6dca43e3e663ec813147dfe33b7691cf75542a36490bfe80394c6",
-      "bytes": 3683
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.4.2.7.md",
-      "sha256": "da77eda896ccfd1c9d2e3d0c63cc403f19013925a718b0ad9f68eb036fae6e17",
-      "bytes": 2958
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.10.md",
-      "sha256": "eb28b9cdc7f392766ae21677504d4fa5e9e1246e57be4ef8a015de1cb60a3afd",
-      "bytes": 4690
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.11.md",
-      "sha256": "9c6fe3d1f3b704ff6a4c3ac7f6b54b7e86ca9125f87894d28e5e17153fc62698",
-      "bytes": 3156
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.12.md",
-      "sha256": "a8c4c6592f0920bfb32ca23b6bef7e79de267d22a9141544a875db50c2988483",
-      "bytes": 4159
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.13.2-CURSOR-CORRECTED.md",
-      "sha256": "b00b1ac1f0a0f6d2c65a4f66618b5d321da0738fb2d5d1b01a2f98ad4729c7e9",
-      "bytes": 1824
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.13.2.md",
-      "sha256": "447d2fe9240a3038303f0fcce7fae53318d8b8d13d31766a3fbfe34d986173af",
-      "bytes": 8288
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.13.3-SNAPSHOT-OWNERSHIP-FROZEN.md",
-      "sha256": "db62660e05a2be2c14fad7744c8a60ab932046f8509d71133d6c51e706d30b91",
-      "bytes": 5065
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.6.md",
-      "sha256": "8dac8b5eb45f8088ab4f98acb3b2119f602b53a3f1e823ee7b810f277085a1e4",
-      "bytes": 1825
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.7.md",
-      "sha256": "71537bd4c581b30c36a3646b0d2bc5cba7bf269d6a8478c3033564a6265efab3",
-      "bytes": 2179
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.8.md",
-      "sha256": "695de1fcb78d815aeb0d36c49af79153be6bd29f6355b6fd61adaf3b628ad57c",
-      "bytes": 5419
-    },
-    {
-      "path": "Source/Screenshot/REPORT-0.5.0.6.9.md",
-      "sha256": "c2642c2af44da752321ce3eb365b3c9d8b6ab0c97c37f8feed79e2afdf55b4cf",
-      "bytes": 2834
-    },
-    {
-      "path": "Source/Screenshot/REPORT-VISION-REGION-V2.md",
-      "sha256": "41084e56574d1eb46d755b57ca25fa4147fcf34c6eed355d504d367f9d6ed2c0",
-      "bytes": 5615
-    },
-    {
       "path": "Source/Screenshot/RestorationStageDiagnostics.cs",
       "sha256": "ae71424de0c8c03c6f0b1160c6ef80e58d5837607030902a522e848f2b12857e",
       "bytes": 10564
@@ -3052,6 +4224,26 @@
       "bytes": 3409
     },
     {
+      "path": "Source/Screenshot/SETTINGS-MIGRATION-REPORT.md",
+      "sha256": "8b9895eb07ef7493f4e78e73c416d31bd2790e69036abf032dbf662ffb463848",
+      "bytes": 1880
+    },
+    {
+      "path": "Source/Screenshot/SETTINGS-SAFETY-REPORT.md",
+      "sha256": "23c37f5c6596286a88734b6a27227f4a65ce18dcdf9213747334f9cf5a99577d",
+      "bytes": 640
+    },
+    {
+      "path": "Source/Screenshot/SETUP-OCR-RUNTIME-README.md",
+      "sha256": "6a175c78a10f5fd68817e5a4078df0c9f8406358aabd83e3c4bed07f962ae879",
+      "bytes": 1939
+    },
+    {
+      "path": "Source/Screenshot/SETUP-OCR-RUNTIME.ps1",
+      "sha256": "193ea4e54568dd898b89190bb7ea69681d32003838d46afea299acb16b38c215",
+      "bytes": 15274
+    },
+    {
       "path": "Source/Screenshot/SafeDiagnosticOutput.cs",
       "sha256": "46291272cc2bea084408afd831bef514c6c4d3aad7602456f8ab4fb2545c0e7e",
       "bytes": 3960
@@ -3082,6 +4274,11 @@
       "bytes": 16750
     },
     {
+      "path": "Source/Screenshot/ScreenTranslationConnection.cs",
+      "sha256": "0c262c961922fa086fd2e8178983a08b16082fbea566a28b038ebc8dad6de90e",
+      "bytes": 14156
+    },
+    {
       "path": "Source/Screenshot/ScreenshotImageInteractionSelfTests.cs",
       "sha256": "0d6d8e954dc3c1e40acacac23e490953b7ec0ea75a430afd1085b84e2de591e1",
       "bytes": 23927
@@ -3093,8 +4290,8 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildControls.cs",
-      "sha256": "06867b0d43dcad884ae3803260dbf73c8a5897d06ea13a2fefe64c87d97fc6dc",
-      "bytes": 10614
+      "sha256": "c2b38cdc936ebcfa8adfc6eca90a6de5ba5e9bd7f9b3218cc0318cdf969efcbe",
+      "bytes": 10832
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildHistory.cs",
@@ -3108,8 +4305,8 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildPane.cs",
-      "sha256": "0d668821334220a5802df76a1925b7028dcb03545bb706a917c32d208e78190c",
-      "bytes": 42239
+      "sha256": "432666140cf82ede33806578b8e7a3a9cf7eb980f0a34493e214fd902632167f",
+      "bytes": 41559
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildSelfTests.cs",
@@ -3133,13 +4330,8 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
-      "sha256": "c6b4b99af17e0446e01c11d852209094754cf65d58284c2e90243a74096e959c",
-      "bytes": 12109
-    },
-    {
-      "path": "Source/Screenshot/ScreenTranslationConnection.cs",
-      "sha256": "0c262c961922fa086fd2e8178983a08b16082fbea566a28b038ebc8dad6de90e",
-      "bytes": 14156
+      "sha256": "573e04cb24306613a35bb9d200f821c09332cb3869ceb09b4506d6237c4425fd",
+      "bytes": 12056
     },
     {
       "path": "Source/Screenshot/SecondaryMaterialRejectionRecovery.cs",
@@ -3177,16 +4369,6 @@
       "bytes": 9714
     },
     {
-      "path": "Source/Screenshot/SETTINGS-MIGRATION-REPORT.md",
-      "sha256": "8b9895eb07ef7493f4e78e73c416d31bd2790e69036abf032dbf662ffb463848",
-      "bytes": 1880
-    },
-    {
-      "path": "Source/Screenshot/SETTINGS-SAFETY-REPORT.md",
-      "sha256": "23c37f5c6596286a88734b6a27227f4a65ce18dcdf9213747334f9cf5a99577d",
-      "bytes": 640
-    },
-    {
       "path": "Source/Screenshot/SettingsDesignControls.cs",
       "sha256": "61138c2980a61206ecc690db0ab27f9debb53a8aadf708f0812dccb03b210ccc",
       "bytes": 13724
@@ -3195,16 +4377,6 @@
       "path": "Source/Screenshot/SettingsNativeTheme.cs",
       "sha256": "6ea1473eee2414891417173ce137caec6dc5167e2ee2201e8a432e626c9c4cf8",
       "bytes": 5246
-    },
-    {
-      "path": "Source/Screenshot/SETUP-OCR-RUNTIME-README.md",
-      "sha256": "6a175c78a10f5fd68817e5a4078df0c9f8406358aabd83e3c4bed07f962ae879",
-      "bytes": 1939
-    },
-    {
-      "path": "Source/Screenshot/SETUP-OCR-RUNTIME.ps1",
-      "sha256": "193ea4e54568dd898b89190bb7ea69681d32003838d46afea299acb16b38c215",
-      "bytes": 15274
     },
     {
       "path": "Source/Screenshot/SingleInstanceCoordinator.cs",
@@ -3382,9 +4554,24 @@
       "bytes": 2956
     },
     {
+      "path": "Source/Screenshot/THINKING-MODE-REPORT.md",
+      "sha256": "fdecac28b092f0ac876382c92f65ee6d469f0944692eca415f1d3bf508c4e5ac",
+      "bytes": 1199
+    },
+    {
+      "path": "Source/Screenshot/TRANSLATION-CACHE-KEY-AUDIT.md",
+      "sha256": "3907e0eb81b8c8f6af2e6b86efb9c808bd632e9deb9d7e8fba34bf403300bf8b",
+      "bytes": 676
+    },
+    {
+      "path": "Source/Screenshot/TRANSLATION-SETTINGS1-REPORT.md",
+      "sha256": "00251bb2f4f0b341e2b5e1894d8ee14d2b34f1e3295d6a753b081c6707781daa",
+      "bytes": 1198
+    },
+    {
       "path": "Source/Screenshot/TargetLanguageDisplay.cs",
-      "sha256": "d42e4bb03ecff232861dfa752f86cb88596735098a006f2ea2a7df4782f4b7b0",
-      "bytes": 2896
+      "sha256": "6a0e5cd0482d4631d09c9777d26ea6f19c0e0b7cf1c1179debd038bfe1eef7ba",
+      "bytes": 3172
     },
     {
       "path": "Source/Screenshot/Task4LayoutProductE2EHarness.cs",
@@ -3397,11 +4584,6 @@
       "bytes": 25209
     },
     {
-      "path": "Source/Screenshot/test-results-065c-vision.txt",
-      "sha256": "f4a2b9ed5ea75f1ad2d8329380d1da77afbf526851071e33ba7836cf3e2e1b29",
-      "bytes": 7065
-    },
-    {
       "path": "Source/Screenshot/TextColorPhase3Diagnostics.cs",
       "sha256": "45355981b216f26ff9253cf598ee555aa3c97611381971745a964eac3fda03b0",
       "bytes": 19947
@@ -3412,11 +4594,6 @@
       "bytes": 11647
     },
     {
-      "path": "Source/Screenshot/THINKING-MODE-REPORT.md",
-      "sha256": "fdecac28b092f0ac876382c92f65ee6d469f0944692eca415f1d3bf508c4e5ac",
-      "bytes": 1199
-    },
-    {
       "path": "Source/Screenshot/ToastNotifier.cs",
       "sha256": "0786c872abbc352878630fdaff29e8ae40a4c51c7e42a787233f2a15483fdf13",
       "bytes": 1353
@@ -3425,16 +4602,6 @@
       "path": "Source/Screenshot/ToolStructureDetection.cs",
       "sha256": "9b70dbb74208e50e961681a574053cdb7df6b64af34676535cd3aad68fdd4d1f",
       "bytes": 2374
-    },
-    {
-      "path": "Source/Screenshot/TRANSLATION-CACHE-KEY-AUDIT.md",
-      "sha256": "3907e0eb81b8c8f6af2e6b86efb9c808bd632e9deb9d7e8fba34bf403300bf8b",
-      "bytes": 676
-    },
-    {
-      "path": "Source/Screenshot/TRANSLATION-SETTINGS1-REPORT.md",
-      "sha256": "00251bb2f4f0b341e2b5e1894d8ee14d2b34f1e3295d6a753b081c6707781daa",
-      "bytes": 1198
     },
     {
       "path": "Source/Screenshot/TranslationAllocationContractV1.cs",
@@ -3563,8 +4730,8 @@
     },
     {
       "path": "Source/Screenshot/TranslationSettingsFoundation.cs",
-      "sha256": "87f3d755afb03020b88751a96cd6a3881322dddacca87dacd1df3bcbf11c9b92",
-      "bytes": 18281
+      "sha256": "84739ab923af643175488e1953658ad7b378110294d4c3314d5eec5fbf49d18c",
+      "bytes": 18190
     },
     {
       "path": "Source/Screenshot/TranslationStylePolicy.cs",
@@ -3648,8 +4815,8 @@
     },
     {
       "path": "Source/Screenshot/UiLanguage.cs",
-      "sha256": "c24ca763a097ef620180036924e14bfcc823d6ef6b3d4ac6889f496a03d926e8",
-      "bytes": 11154
+      "sha256": "d771ff77c05f18cc634097519a7511a0e256fac0acd05f3f175f8eb755b6cff4",
+      "bytes": 14008
     },
     {
       "path": "Source/Screenshot/UiPerformanceTrace.cs",
@@ -3660,6 +4827,11 @@
       "path": "Source/Screenshot/UiRepairVerification.cs",
       "sha256": "6d40f0f48d8102feed228bd50e9048600a1101155f9f347fada3175f38f9d22a",
       "bytes": 4664
+    },
+    {
+      "path": "Source/Screenshot/UiRussian.json",
+      "sha256": "ee28c71565fecca4999dc6f44b5692b23f9962f61d8029079e8641abe705dd44",
+      "bytes": 214693
     },
     {
       "path": "Source/Screenshot/UiStrings.cs",
@@ -3782,14 +4954,14 @@
       "bytes": 14436
     },
     {
-      "path": "Source/Screenshot/VerifiedContainerSurface.cs",
-      "sha256": "4310e8ea00b4ae96ac15228dfbf51636e4f15c6d899358863db958e1d8e3ea1a",
-      "bytes": 36710
-    },
-    {
       "path": "Source/Screenshot/VERSION-STATUS.md",
       "sha256": "769efb4ee53f5cebfea9e322b13326aab0e7e9818017f24ab7490240baf8ce46",
       "bytes": 363
+    },
+    {
+      "path": "Source/Screenshot/VerifiedContainerSurface.cs",
+      "sha256": "4310e8ea00b4ae96ac15228dfbf51636e4f15c6d899358863db958e1d8e3ea1a",
+      "bytes": 36710
     },
     {
       "path": "Source/Screenshot/VisionDefaultOffGateSelfTests.cs",
@@ -3877,19 +5049,104 @@
       "bytes": 10635
     },
     {
-      "path": "Source/Screenshot/WolfTextCatalog.cs",
-      "sha256": "f1d9ef5891c3ae3b61058a4e35239b2508b1da65027891f737f80c1b654f070c",
-      "bytes": 7418
-    },
-    {
       "path": "Source/Screenshot/WolfTextCatalog.LICENSE.txt",
       "sha256": "5f9ff25e055ab30cb17529d9d872172f26c83ae3c7ff9d3560afa08dea033a67",
       "bytes": 1087
     },
     {
+      "path": "Source/Screenshot/WolfTextCatalog.cs",
+      "sha256": "f1d9ef5891c3ae3b61058a4e35239b2508b1da65027891f737f80c1b654f070c",
+      "bytes": 7418
+    },
+    {
       "path": "Source/Screenshot/WolfTranslationConnection.cs",
       "sha256": "0d5d91bd8b0fa5188caf9749f7a985531ac1878902205771388231c7fda31e77",
       "bytes": 7095
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceAdaptiveGridColumn.cs",
+      "sha256": "c9e5585024cde377f6e07990c6349f8ebe2576a7cf0d08e7a8a565a0e8172390",
+      "bytes": 5030
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceAlignedRow.cs",
+      "sha256": "450c2485d52073e96a256c776168d51154aa51afc5bf0bcf2e478ab04bda43c6",
+      "bytes": 2380
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceContentColumn.cs",
+      "sha256": "19c2739bbeeabb2f93f9937292243ac517a4565821a49dd666d4db2f5e9e1e8a",
+      "bytes": 4397
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceControlRow.cs",
+      "sha256": "a10f04fefbd5d5a57d6bad1e99b136c6fac677f621dfddc28c9d68ebb776f7ff",
+      "bytes": 1556
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceDataGrid.cs",
+      "sha256": "b43e36789ccfd974018b3aef6111b9ab62a824925f415c4050e35dd3ea1c61e3",
+      "bytes": 6688
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceLibrarySplit.cs",
+      "sha256": "6a6f8bcb40a46174e0278d7ea1a96fa3551186b8a8ef24a37aeaa1e02049fcd7",
+      "bytes": 4886
+    },
+    {
+      "path": "Source/Screenshot/WorkspacePaintBatch.cs",
+      "sha256": "07235c9887acaaca29ced386a9f4a5afde705f6afee24f90a32d470435ca5a75",
+      "bytes": 681
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceRepaint.cs",
+      "sha256": "03219338f941b00398f0bb1878e5f5e85f37a189922954197e9a29b1bc76b48f",
+      "bytes": 1849
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceScrollView.cs",
+      "sha256": "8ba5c894082432c91fc3089570660bfc1baf2b6823bf057050dfd704133069d8",
+      "bytes": 5601
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceThemeButton.cs",
+      "sha256": "6c7abc245b210834e6e27d7a0007bdd266403aa888b5c976910a7a22623d0b3b",
+      "bytes": 1793
+    },
+    {
+      "path": "Source/Screenshot/WorkspaceWheelGuard.cs",
+      "sha256": "c5ec730934406d518854daffbb2d5352577c3a4a9ce4ae56f793ed7af5348a05",
+      "bytes": 2497
+    },
+    {
+      "path": "Source/Screenshot/XmlDisplayText.cs",
+      "sha256": "e37fdf8fbd7d844a625168db6d3b55bc58b20ae16ba9c03b9484ac94d52332a3",
+      "bytes": 2938
+    },
+    {
+      "path": "Source/Screenshot/YukarGameAdapter.cs",
+      "sha256": "1163ab42dab31a415eb7345bd1565ed62ee850b267239aa73fae3e8d13492b22",
+      "bytes": 5619
+    },
+    {
+      "path": "Source/Screenshot/YukarTranslationConnection.cs",
+      "sha256": "5ff0ba38b9cffe22c1525d4b671fe1b7bbac18a8ba73bc4a4fdfeda053a2ed23",
+      "bytes": 6113
+    },
+    {
+      "path": "Source/Screenshot/global.json",
+      "sha256": "8cbe44966667c8f140b589c2335951f25d4e8ce174cb59d1cdcf83710c42c775",
+      "bytes": 78
+    },
+    {
+      "path": "Source/Screenshot/regression-results-translation-settings1.txt",
+      "sha256": "0141bcfcd2a5b55ac5f34e1af0093fdaa2c1f3c02d09cd71c4e5d6cf79e9122c",
+      "bytes": 27024
+    },
+    {
+      "path": "Source/Screenshot/test-results-065c-vision.txt",
+      "sha256": "f4a2b9ed5ea75f1ad2d8329380d1da77afbf526851071e33ba7836cf3e2e1b29",
+      "bytes": 7065
     },
     {
       "path": "Source/Screenshot/workers/background_worker.py",
@@ -3992,76 +5249,6 @@
       "bytes": 12408
     },
     {
-      "path": "Source/Screenshot/WorkspaceAdaptiveGridColumn.cs",
-      "sha256": "c9e5585024cde377f6e07990c6349f8ebe2576a7cf0d08e7a8a565a0e8172390",
-      "bytes": 5030
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceAlignedRow.cs",
-      "sha256": "450c2485d52073e96a256c776168d51154aa51afc5bf0bcf2e478ab04bda43c6",
-      "bytes": 2380
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceContentColumn.cs",
-      "sha256": "19c2739bbeeabb2f93f9937292243ac517a4565821a49dd666d4db2f5e9e1e8a",
-      "bytes": 4397
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceControlRow.cs",
-      "sha256": "a10f04fefbd5d5a57d6bad1e99b136c6fac677f621dfddc28c9d68ebb776f7ff",
-      "bytes": 1556
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceDataGrid.cs",
-      "sha256": "b43e36789ccfd974018b3aef6111b9ab62a824925f415c4050e35dd3ea1c61e3",
-      "bytes": 6688
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceLibrarySplit.cs",
-      "sha256": "6a6f8bcb40a46174e0278d7ea1a96fa3551186b8a8ef24a37aeaa1e02049fcd7",
-      "bytes": 4886
-    },
-    {
-      "path": "Source/Screenshot/WorkspacePaintBatch.cs",
-      "sha256": "07235c9887acaaca29ced386a9f4a5afde705f6afee24f90a32d470435ca5a75",
-      "bytes": 681
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceRepaint.cs",
-      "sha256": "03219338f941b00398f0bb1878e5f5e85f37a189922954197e9a29b1bc76b48f",
-      "bytes": 1849
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceScrollView.cs",
-      "sha256": "8ba5c894082432c91fc3089570660bfc1baf2b6823bf057050dfd704133069d8",
-      "bytes": 5601
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceThemeButton.cs",
-      "sha256": "6c7abc245b210834e6e27d7a0007bdd266403aa888b5c976910a7a22623d0b3b",
-      "bytes": 1793
-    },
-    {
-      "path": "Source/Screenshot/WorkspaceWheelGuard.cs",
-      "sha256": "c5ec730934406d518854daffbb2d5352577c3a4a9ce4ae56f793ed7af5348a05",
-      "bytes": 2497
-    },
-    {
-      "path": "Source/Screenshot/XmlDisplayText.cs",
-      "sha256": "e37fdf8fbd7d844a625168db6d3b55bc58b20ae16ba9c03b9484ac94d52332a3",
-      "bytes": 2938
-    },
-    {
-      "path": "Source/Screenshot/YukarGameAdapter.cs",
-      "sha256": "1163ab42dab31a415eb7345bd1565ed62ee850b267239aa73fae3e8d13492b22",
-      "bytes": 5619
-    },
-    {
-      "path": "Source/Screenshot/YukarTranslationConnection.cs",
-      "sha256": "5ff0ba38b9cffe22c1525d4b671fe1b7bbac18a8ba73bc4a4fdfeda053a2ed23",
-      "bytes": 6113
-    },
-    {
       "path": "Source/UnitySchema/FusionUnitySchema.csproj",
       "sha256": "b0a8c60e9d31f074471d28bd1b1c0e1de9819e8162c77aa83c79aec4222d5f46",
       "bytes": 352
@@ -4077,14 +5264,14 @@
       "bytes": 2704
     },
     {
-      "path": "Source/UnitySchema/References/AsmResolver.dll",
-      "sha256": "64b50030b34654f12805ec4d2848551e431c5f0bcd65cd70d6fe2845f715fb12",
-      "bytes": 67584
-    },
-    {
       "path": "Source/UnitySchema/References/AsmResolver.DotNet.dll",
       "sha256": "045bcdf32427f9bd39bee2620c470372583935c8e89b360931e467dd191d46d1",
       "bytes": 561664
+    },
+    {
+      "path": "Source/UnitySchema/References/AsmResolver.PE.File.dll",
+      "sha256": "8246433a1a6fb4c012c1814acee8a4ff24f3a4fac593569f6a1e343e68c9d8ee",
+      "bytes": 40960
     },
     {
       "path": "Source/UnitySchema/References/AsmResolver.PE.dll",
@@ -4092,9 +5279,9 @@
       "bytes": 397824
     },
     {
-      "path": "Source/UnitySchema/References/AsmResolver.PE.File.dll",
-      "sha256": "8246433a1a6fb4c012c1814acee8a4ff24f3a4fac593569f6a1e343e68c9d8ee",
-      "bytes": 40960
+      "path": "Source/UnitySchema/References/AsmResolver.dll",
+      "sha256": "64b50030b34654f12805ec4d2848551e431c5f0bcd65cd70d6fe2845f715fb12",
+      "bytes": 67584
     },
     {
       "path": "Source/UnitySchema/References/AssetRipper.CIL.dll",
@@ -4147,69 +5334,14 @@
       "bytes": 958
     },
     {
-      "path": "Source/UnrealBridge/fonts.lua",
-      "sha256": "74e4f9786775cd8ce1473ac169c6a842f8445c826fffad17bf91296b6855124b",
-      "bytes": 27881
-    },
-    {
-      "path": "Source/UnrealBridge/json.lua",
-      "sha256": "0eaccda57fabc0330736de25f45cf589821a42b5e0fe02e4e3125f7dc0bf2b7e",
-      "bytes": 9638
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/COMPONENTS.md",
-      "sha256": "80677c943c6036b7f9759e6e06ba7af79181f9fc19c37aedf5fbd51012263905",
-      "bytes": 3826
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/CUE4Parse-Apache-2.0.txt",
-      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
-      "bytes": 11357
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/DotNet-LICENSE.txt",
-      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
-      "bytes": 1139
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/DotNet-THIRD-PARTY-NOTICES.txt",
-      "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
-      "bytes": 78041
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/experimental-provenance.json",
-      "sha256": "495894eedbef6467f6d834594e42228bc299825421804897f078929e1a391472",
-      "bytes": 585
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/rxi-json-MIT.txt",
-      "sha256": "75c4cde427e213b9038cc308272e5cf2a74c6582dd3c2eae7cf799ed23e2bf1b",
-      "bytes": 1082
-    },
-    {
-      "path": "Source/UnrealBridge/licenses/UE4SS-MIT.txt",
-      "sha256": "ddc030e25d0ea87aca4ae84c0ed3f868d69273c00c0c12ea1e26f1c6130f5d2e",
-      "bytes": 1064
-    },
-    {
-      "path": "Source/UnrealBridge/main.lua",
-      "sha256": "d90b0f44bbd261799339f397c8fa29dcc513385f993553f211738ae1b13a9e67",
-      "bytes": 48612
-    },
-    {
-      "path": "Source/UnrealBridge/runtime.lua",
-      "sha256": "a208b0826acd645ddf2443ad95187077569293d2f6b15c931daf9042688d2946",
-      "bytes": 18867
-    },
-    {
-      "path": "Source/UnrealBridge/slate.lua",
-      "sha256": "b82afbd112d7386a7a472f9ec7881d819bf89c9be1863c72a32da2ec02ab947d",
-      "bytes": 2896
-    },
-    {
       "path": "Source/UnrealBridge/SlateBridge.cpp",
       "sha256": "4df890fda5e738e64b0f6cd4f53daf17ff54f44e0fddedc8e059ac1067343605",
       "bytes": 17479
+    },
+    {
+      "path": "Source/UnrealBridge/Tests/README.txt",
+      "sha256": "6cd62b950e6b5cdc3cdec3a5d78014ae1cbdc9ea3ca3b7d98d5e90741f0e9c5b",
+      "bytes": 1102
     },
     {
       "path": "Source/UnrealBridge/Tests/fixture.lua",
@@ -4220,11 +5352,6 @@
       "path": "Source/UnrealBridge/Tests/fonts_fixture.lua",
       "sha256": "2ac67b85ab393b4c5a4234ced3e812fbc9abc47d5d354ddc7042696864cfe5c8",
       "bytes": 19083
-    },
-    {
-      "path": "Source/UnrealBridge/Tests/README.txt",
-      "sha256": "6cd62b950e6b5cdc3cdec3a5d78014ae1cbdc9ea3ca3b7d98d5e90741f0e9c5b",
-      "bytes": 1102
     },
     {
       "path": "Source/UnrealBridge/Tests/run.py",
@@ -4257,6 +5384,71 @@
       "bytes": 15826
     },
     {
+      "path": "Source/UnrealBridge/UnrealRuntime.zip",
+      "sha256": "20073e077462c110c17579325e9f13195b0e422ac437a89b15a43f10de6c13ab",
+      "bytes": 8975382
+    },
+    {
+      "path": "Source/UnrealBridge/fonts.lua",
+      "sha256": "74e4f9786775cd8ce1473ac169c6a842f8445c826fffad17bf91296b6855124b",
+      "bytes": 27881
+    },
+    {
+      "path": "Source/UnrealBridge/json.lua",
+      "sha256": "0eaccda57fabc0330736de25f45cf589821a42b5e0fe02e4e3125f7dc0bf2b7e",
+      "bytes": 9638
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/COMPONENTS.md",
+      "sha256": "80677c943c6036b7f9759e6e06ba7af79181f9fc19c37aedf5fbd51012263905",
+      "bytes": 3826
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/CUE4Parse-Apache-2.0.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/DotNet-LICENSE.txt",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/DotNet-THIRD-PARTY-NOTICES.txt",
+      "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+      "bytes": 78041
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/UE4SS-MIT.txt",
+      "sha256": "ddc030e25d0ea87aca4ae84c0ed3f868d69273c00c0c12ea1e26f1c6130f5d2e",
+      "bytes": 1064
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/experimental-provenance.json",
+      "sha256": "495894eedbef6467f6d834594e42228bc299825421804897f078929e1a391472",
+      "bytes": 585
+    },
+    {
+      "path": "Source/UnrealBridge/licenses/rxi-json-MIT.txt",
+      "sha256": "75c4cde427e213b9038cc308272e5cf2a74c6582dd3c2eae7cf799ed23e2bf1b",
+      "bytes": 1082
+    },
+    {
+      "path": "Source/UnrealBridge/main.lua",
+      "sha256": "d90b0f44bbd261799339f397c8fa29dcc513385f993553f211738ae1b13a9e67",
+      "bytes": 48612
+    },
+    {
+      "path": "Source/UnrealBridge/runtime.lua",
+      "sha256": "a208b0826acd645ddf2443ad95187077569293d2f6b15c931daf9042688d2946",
+      "bytes": 18867
+    },
+    {
+      "path": "Source/UnrealBridge/slate.lua",
+      "sha256": "b82afbd112d7386a7a472f9ec7881d819bf89c9be1863c72a32da2ec02ab947d",
+      "bytes": 2896
+    },
+    {
       "path": "Source/UnrealBridge/text_api.lua",
       "sha256": "3c53d622e95e2e5c539a300e436fbdbff3cb0deb4393b3f0bae5f28af9c2f771",
       "bytes": 6768
@@ -4265,11 +5457,6 @@
       "path": "Source/UnrealBridge/text_stream.lua",
       "sha256": "414c48f3fdeac16d8ed6991eac08d7f8496f63b38137bf84c386351665a6d500",
       "bytes": 3093
-    },
-    {
-      "path": "Source/UnrealBridge/UnrealRuntime.zip",
-      "sha256": "20073e077462c110c17579325e9f13195b0e422ac437a89b15a43f10de6c13ab",
-      "bytes": 8975382
     },
     {
       "path": "Source/UnrealBridge/widget_text.lua",
@@ -4337,11 +5524,6 @@
       "bytes": 1076
     },
     {
-      "path": "Source/WolfBridge/Payload/bridge-font.otf",
-      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
-      "bytes": 16437364
-    },
-    {
       "path": "Source/WolfBridge/Payload/FusionWolf.dll",
       "sha256": "a36c186212c561a17d3051be6c007ad04e5de3df1974cef48770246279a0ebe7",
       "bytes": 444928
@@ -4350,6 +5532,11 @@
       "path": "Source/WolfBridge/Payload/FusionWolfLaunch.exe",
       "sha256": "0c22d8846f0f8b0b0eef9f76822d46a96552c703f164127acb7e692e44ce5543",
       "bytes": 272384
+    },
+    {
+      "path": "Source/WolfBridge/Payload/bridge-font.otf",
+      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
+      "bytes": 16437364
     },
     {
       "path": "Source/WolfBridge/README.txt",
@@ -4442,1144 +5629,1019 @@
       "bytes": 550
     },
     {
-      "path": "Dependencies/GameMakerFont/bridge-font.otf",
-      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
-      "bytes": 16437364
+      "path": "THIRD_PARTY_NOTICES.txt",
+      "sha256": "101aa70b3f62c3be78469aa8ad3a8df8533d2906b41b805b386169754ebcad56",
+      "bytes": 2038
     },
     {
-      "path": "Dependencies/GameMakerFont/LICENSE.txt",
+      "path": "Tests/Program.cs",
+      "sha256": "434e5051e9d3abdae4270e7429606d0e36e99797f607f03ef6456f8e8dd90267",
+      "bytes": 9531
+    },
+    {
+      "path": "Tests/Russian178.csproj",
+      "sha256": "bd126f6ceff695ebdd4df770ed93b9a0a443dd6c0718d7d86e2ad01a3b008337",
+      "bytes": 842
+    },
+    {
+      "path": "docs/BUILD-176.md",
+      "sha256": "eaeb7f5299b925c526770c67e6229530aa8f4900477e44a87f3455705906025a",
+      "bytes": 3186
+    },
+    {
+      "path": "docs/DEPENDENCIES-176.en.md",
+      "sha256": "fbebb14441c144881d899bd87a690478e8fe602e82ec4765743df5827de85d81",
+      "bytes": 2081
+    },
+    {
+      "path": "docs/DEPENDENCIES-176.md",
+      "sha256": "b61a12fe0751b6f0cc29c55e3ffa1b44823e18578f97fbf60bfe3269a5bfed43",
+      "bytes": 2690
+    },
+    {
+      "path": "docs/KNOWN-ISSUES.en.md",
+      "sha256": "9ed6411c99aae8225c9313cf1efc72d8c9489f81e8b40399ff2692a52bae71d0",
+      "bytes": 1957
+    },
+    {
+      "path": "docs/KNOWN-ISSUES.md",
+      "sha256": "c6fdf9540fa00f07aa82e0b5d57cd349ec87255e9a751d26a8de85e265156b8c",
+      "bytes": 1851
+    },
+    {
+      "path": "docs/USAGE-176.en.md",
+      "sha256": "2e4be4bbf681c1afdedc1dc861140844b698ae4b56fbc4e0edf30ffbae9e22a0",
+      "bytes": 6448
+    },
+    {
+      "path": "docs/USAGE-176.md",
+      "sha256": "356e1dc980a705e9f9c18d816530cac2429fdbc942a8542830ca26b9e331ebf0",
+      "bytes": 9057
+    },
+    {
+      "path": "licenses/DefoldCatalogNotice.txt",
+      "sha256": "f50d69558ba6a4453e3052959f2f756ca7d5fd8b352a007add5bc42c3132ad3c",
+      "bytes": 1126
+    },
+    {
+      "path": "licenses/GameMakerFont-OFL.txt",
       "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
       "bytes": 4301
     },
     {
-      "path": "Dependencies/GameMakerTool/clretwrc.dll",
-      "sha256": "e9f9ccaa20a91570e6e505fd85197b86e8e6582b67864a8630c1a82afb9866a7",
-      "bytes": 317736
+      "path": "licenses/GodotSmazNotice.txt",
+      "sha256": "aa91736a893d1ed8957af6f393609152348b2e4b2aba44fc563b7feb054938e4",
+      "bytes": 1485
     },
     {
-      "path": "Dependencies/GameMakerTool/clrgc.dll",
-      "sha256": "83a829823c333bfbcf0bd82bc015a61af10ce136d8eb7933b28d97c9193c578b",
-      "bytes": 673064
+      "path": "licenses/NuGet/AssetsTools.NET.MonoCecil/3.0.4/assetstools.net.monocecil.nuspec",
+      "sha256": "7dcd9c965e1ba7414f95e090c66df6597ff8e3b6559c28225263ca9fde203825",
+      "bytes": 1302
     },
     {
-      "path": "Dependencies/GameMakerTool/clrgcexp.dll",
-      "sha256": "d006be1e64e796161c8f3abb462c23753d86103a82282013b1c5309c76613f1f",
-      "bytes": 710952
+      "path": "licenses/NuGet/AssetsTools.NET/3.0.5/assetstools.net.nuspec",
+      "sha256": "8acdf66713bd9c5acf25da0e64010d893d27e1746cd48294e2d79e909dae1a5b",
+      "bytes": 1355
     },
     {
-      "path": "Dependencies/GameMakerTool/clrjit.dll",
-      "sha256": "e7bf743e7bf9a01c8c2bcdc0d828212fd8dfc285be9d4ec21962becf456df648",
-      "bytes": 2092328
+      "path": "licenses/NuGet/Blake3/3.0.2/blake3.nuspec",
+      "sha256": "69831237fb26dd263a0cb8e29338837e418c4e8834f70a5302b1498f149ab21d",
+      "bytes": 988
     },
     {
-      "path": "Dependencies/GameMakerTool/coreclr.dll",
-      "sha256": "c98c3078a4f2495dd7d3ced967c7a6981545194ed163454703580b740f435521",
-      "bytes": 4614440
+      "path": "licenses/NuGet/BouncyCastle.Cryptography/2.6.2/LICENSE.md",
+      "sha256": "afc1653b666b64a2386b7b9b914406904f45c20b9571765d8c1121b513313179",
+      "bytes": 1133
     },
     {
-      "path": "Dependencies/GameMakerTool/createdump.exe",
-      "sha256": "d34b488bd20b87aaa8f1739aa834b877f76b22ff9ef1bdec7d0386a307f42a89",
-      "bytes": 71512
+      "path": "licenses/NuGet/BouncyCastle.Cryptography/2.6.2/bouncycastle.cryptography.nuspec",
+      "sha256": "27103dc39e0c5625fc165aaaae892afda7a8adf14d697f45d8a37890e4982f3b",
+      "bytes": 1407
     },
     {
-      "path": "Dependencies/GameMakerTool/hostfxr.dll",
-      "sha256": "44f97e946b36415176dbc56a4426565a5e9b3e722c0ad579e20a749e3c0c7bcd",
-      "bytes": 379728
+      "path": "licenses/NuGet/CUE4Parse/1.2.2.202609/cue4parse.nuspec",
+      "sha256": "89c1833b9c85db9943cbc2e30d19032e6b6f85f5baba3da60dcd457dbac7930d",
+      "bytes": 2523
     },
     {
-      "path": "Dependencies/GameMakerTool/hostpolicy.dll",
-      "sha256": "ded1d42c38688a1cacd20026b1f981c22fd583f621b7123296ef0f2af9cd656d",
-      "bytes": 378664
+      "path": "licenses/NuGet/CommunityToolkit.HighPerformance/8.4.2/License.md",
+      "sha256": "651997ef19dbb9ecb8dd660dbc86444a65af21f18cfe08daa69bf201cd5cfdfc",
+      "bytes": 1158
     },
     {
-      "path": "Dependencies/GameMakerTool/ICSharpCode.SharpZipLib.dll",
-      "sha256": "32ea2d0ce3512e74f1c7ad82591fe67e6b8939d76a8a4ff9c93ead030131e71c",
-      "bytes": 258048
+      "path": "licenses/NuGet/CommunityToolkit.HighPerformance/8.4.2/communitytoolkit.highperformance.nuspec",
+      "sha256": "5f9db2207ce1eae03cf50f645c0870e8d777402e6f2f51f14671cf6efc858bfe",
+      "bytes": 3543
     },
     {
-      "path": "Dependencies/GameMakerTool/LICENSE.txt",
-      "sha256": "0b383d5a63da644f628d99c33976ea6487ed89aaa59f0b3257992deac1171e6b",
-      "bytes": 35821
+      "path": "licenses/NuGet/FixedMathSharp/4.0.1/COPYRIGHT",
+      "sha256": "299805421832ccf11ea2c8c8a1357c32dd49672af4aeafff1dbdd55d8824a501",
+      "bytes": 279
     },
     {
-      "path": "Dependencies/GameMakerTool/Magick.Native-Q8-x64.dll",
-      "sha256": "56539d5f601fcb487190e1c030e3e6de97591d5524d892e634d247152c63eba0",
-      "bytes": 23918768
+      "path": "licenses/NuGet/FixedMathSharp/4.0.1/LICENSE",
+      "sha256": "c4f594f22c07d4f15790b7f6b32b41e825272cce9a2c45722c3c027d4399b033",
+      "bytes": 1089
     },
     {
-      "path": "Dependencies/GameMakerTool/Magick.NET-Q8-AnyCPU.dll",
-      "sha256": "de4dff7053a433f493797a08904f1f5db418f2a5233ef362767e1cfd56199b03",
-      "bytes": 1156784
+      "path": "licenses/NuGet/FixedMathSharp/4.0.1/NOTICE",
+      "sha256": "043d4c43c4d8be99bd0cf7099ebdd21e7cbc709f1badd7ca581e29e617e327c1",
+      "bytes": 460
     },
     {
-      "path": "Dependencies/GameMakerTool/Magick.NET.Core.dll",
-      "sha256": "126233abe368695a3b7fd9381cba9cbb7b02f0b107e5183bc2a4b45aefcfd0e3",
-      "bytes": 1538736
+      "path": "licenses/NuGet/FixedMathSharp/4.0.1/fixedmathsharp.nuspec",
+      "sha256": "65db4307ae6707155da872e1eba6659c4cfa1e88167d9b6cb58323986faff8c0",
+      "bytes": 1460
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.CSharp.dll",
-      "sha256": "fc571a6647ac45b0b0dc1866b795529bb2eeb93adf9be97fcd5903cf482f700a",
-      "bytes": 7079208
+      "path": "licenses/NuGet/Fmod5Sharp/3.1.0/fmod5sharp.nuspec",
+      "sha256": "e841dc57fe758cfcb8241e5ad4fb72bf42297e2ac959ed215eaaa59d06507d93",
+      "bytes": 2653
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.CSharp.Scripting.dll",
-      "sha256": "a7b578bc4df597964be5dc786e4f456ed68c6adb204bc78d5b7ed141029c922c",
-      "bytes": 34600
+      "path": "licenses/NuGet/GenericReader/2.3.0/genericreader.nuspec",
+      "sha256": "f20e8487380fabdf16a8cd5f7bb01e6a1bcde5300a8c7ba102f7c6d5fcf2d66e",
+      "bytes": 951
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.dll",
-      "sha256": "55618d457128eec582017545b8929ebf195669003b6ec737110f9519e1711d28",
-      "bytes": 3103056
+      "path": "licenses/NuGet/IndexRange/1.1.0/indexrange.nuspec",
+      "sha256": "1632492b59448ee36690934f901444b8830e4d72f8088772aa0e1b1e3b3298d6",
+      "bytes": 9890
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.Scripting.dll",
-      "sha256": "7e96a8c0bb8f63cafd54ee274d1c638ec609834207fef35469c01a2e4ef065d1",
-      "bytes": 137512
+      "path": "licenses/NuGet/Infrablack.UE4Config/0.7.2.97/infrablack.ue4config.nuspec",
+      "sha256": "bae208b28a9d3f9189352293d24a9f96d5e0e0795dad64e50fa3a8036966e8dc",
+      "bytes": 939
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.CSharp.dll",
-      "sha256": "2d073ff1f059dda2814c320ac5782536dc268b335e23e8e8b4d0d3b0833b617f",
-      "bytes": 980816
+      "path": "licenses/NuGet/K4os.Compression.LZ4.Streams/1.3.8/k4os.compression.lz4.streams.nuspec",
+      "sha256": "60980f784aa06f79f3da0cb29d35f41ff94cca30f6f5a8d1de7bc3cc21032a27",
+      "bytes": 2530
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.DiaSymReader.Native.amd64.dll",
-      "sha256": "315a61c47c41b8d4c815f4274bb6584c1d24b4640c7eedc354ed5b03a9a1361e",
-      "bytes": 2195504
+      "path": "licenses/NuGet/K4os.Compression.LZ4/1.3.8/k4os.compression.lz4.nuspec",
+      "sha256": "8d71ea7ef627f0d3db76d528411cfb4d126dabc2fe4f7e93713068bb40d5c8df",
+      "bytes": 1639
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.VisualBasic.Core.dll",
-      "sha256": "6c267acb79006291cda2484bd9d39f289419b7d3448e1a1f30ef7c2ad7dce82c",
-      "bytes": 1193808
+      "path": "licenses/NuGet/K4os.Hash.xxHash/1.0.8/k4os.hash.xxhash.nuspec",
+      "sha256": "f949a9efc0177e247f7330c33fbde156231d77e799564de49e9940137d5c1564",
+      "bytes": 1499
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.VisualBasic.dll",
-      "sha256": "6adcdd16418823c4d27bc65c9ef07df2eac26215fafc3d27eda58ae44a4787b3",
-      "bytes": 17232
+      "path": "licenses/NuGet/LZMA-SDK/22.1.1/lzma-sdk.nuspec",
+      "sha256": "5b03e61dcfdb5c5076c299934c1996839546f6f16226cf6a05bc0a43fdfd65cb",
+      "bytes": 1098
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.Win32.Primitives.dll",
-      "sha256": "07ee7d2780a74c523af5ca4babdc63d006fa896b3a1463c2e638c5bb2843f9b9",
-      "bytes": 15656
+      "path": "licenses/NuGet/MemoryPack.Core/1.21.4/memorypack.core.nuspec",
+      "sha256": "951cc75a302deaaf4df2c90ec7260158e831eb8f924f5f5558af008d3fdd3528",
+      "bytes": 1111
     },
     {
-      "path": "Dependencies/GameMakerTool/Microsoft.Win32.Registry.dll",
-      "sha256": "5f7623b92c1ef07c98546f63c83613f5f5f7af6513dc52e2e9e11447b6c1c7f6",
-      "bytes": 116520
+      "path": "licenses/NuGet/MemoryPack.Generator/1.21.4/memorypack.generator.nuspec",
+      "sha256": "678744d84bda84e4ab291b92df59d9af38d0020943598102effe623c00b514fa",
+      "bytes": 762
     },
     {
-      "path": "Dependencies/GameMakerTool/mscordaccore.dll",
-      "sha256": "c1b92da5356bb36f4ab55aa54b2d25a8a27518cf7a456eb4957ddfe94e2d428c",
-      "bytes": 1356632
+      "path": "licenses/NuGet/MemoryPack/1.21.4/memorypack.nuspec",
+      "sha256": "d254f0c5d66eb14c0719ba261d84632e9bde9870c838822505405d0c24cccdd6",
+      "bytes": 1472
     },
     {
-      "path": "Dependencies/GameMakerTool/mscordaccore_amd64_amd64_10.0.1126.37416.dll",
-      "sha256": "c1b92da5356bb36f4ab55aa54b2d25a8a27518cf7a456eb4957ddfe94e2d428c",
-      "bytes": 1356632
+      "path": "licenses/NuGet/Microsoft.Bcl.Memory/9.0.14/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
     },
     {
-      "path": "Dependencies/GameMakerTool/mscordbi.dll",
-      "sha256": "f3553412af82ab90180a0d412dd87b7bfc087043484a572dc2dce07eca9906fa",
-      "bytes": 1237856
+      "path": "licenses/NuGet/Microsoft.Bcl.Memory/9.0.14/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
     },
     {
-      "path": "Dependencies/GameMakerTool/mscorlib.dll",
-      "sha256": "a2c8875b7823b631ae669c6e78dc4b58bb577ce30206ccc03dbbc56981e1714e",
-      "bytes": 59688
+      "path": "licenses/NuGet/Microsoft.Bcl.Memory/9.0.14/microsoft.bcl.memory.nuspec",
+      "sha256": "fc97a6d6212224c10751f4cba44188803765180adbcab7ff8a013dbe7fd5b6fd",
+      "bytes": 1819
     },
     {
-      "path": "Dependencies/GameMakerTool/mscorrc.dll",
-      "sha256": "0c5efacadabaf31e07e131fe7e9150454fb1dd148222a053a2f743551d42184c",
-      "bytes": 133968
+      "path": "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/microsoft.netcore.platforms.nuspec",
+      "sha256": "20fa15a4509e2dff05d0bf2fc1f9ec4f59dd948f2c327e7f92d7c12ce3414b88",
+      "bytes": 1070
     },
     {
-      "path": "Dependencies/GameMakerTool/msquic.dll",
-      "sha256": "24da0bf4d7b7e0adb598297d170fa547f94f398bd6f2b515ae87f0a207c999c7",
-      "bytes": 536376
+      "path": "licenses/NuGet/Mono.Cecil/0.11.3/mono.cecil.nuspec",
+      "sha256": "8db87d18d3d3b5b22e855dd3943010ef9b31351a066f81be0e3f49b246c556ec",
+      "bytes": 1329
     },
     {
-      "path": "Dependencies/GameMakerTool/netstandard.dll",
-      "sha256": "ce09cef0d758196f2467f320d840c03202453efe9fb1920dddd24ea8277bbbb3",
-      "bytes": 100648
+      "path": "licenses/NuGet/NAudio.Core/2.2.1/naudio.core.nuspec",
+      "sha256": "19633771b56d63ff45835231c7585ce33de38a41a0dab2dbcf20ae9385884376",
+      "bytes": 742
     },
     {
-      "path": "Dependencies/GameMakerTool/Newtonsoft.Json.dll",
-      "sha256": "a28c251dfe36d881e9e2462e171441b8b0ec156fe3f452602c9149b1b9efe05b",
-      "bytes": 723368
+      "path": "licenses/NuGet/NETStandard.Library/1.6.1/netstandard.library.nuspec",
+      "sha256": "d3f865a3db9194bf2324378b2e26221051e291517758aa5b8d980cc65f08a9b1",
+      "bytes": 10340
     },
     {
-      "path": "Dependencies/GameMakerTool/README.md",
-      "sha256": "86456ca03fdd613b1116e3ffdb6578e652fda7cf694d016d3f85503bfc0c1e9a",
-      "bytes": 8503
+      "path": "licenses/NuGet/Newtonsoft.Json/13.0.4/LICENSE.md",
+      "sha256": "b98a397897ff55f76cddc380041507a95a896b2946e0188703bf0496793d6516",
+      "bytes": 1104
     },
     {
-      "path": "Dependencies/GameMakerTool/runtime.osx.10.10-x64.CoreCompat.System.Drawing.dll",
-      "sha256": "68e3ed455b1074cc0f7f6ccede5ca37e7d7d1b1b2dfe1556b916bc3034064f71",
-      "bytes": 4608
+      "path": "licenses/NuGet/Newtonsoft.Json/13.0.4/newtonsoft.json.nuspec",
+      "sha256": "f4bc224d57a21fb481f1dc655c3fde6f2e5b8ce80a9448e74a5721a51932adf3",
+      "bytes": 2413
     },
     {
-      "path": "Dependencies/GameMakerTool/runtimeconfig.json",
-      "sha256": "c5646835cd69fca5c94cb15367996e22ebd8e44804dab297306eb82330d19bf6",
-      "bytes": 80
+      "path": "licenses/NuGet/OffiUtils/3.2.0/offiutils.nuspec",
+      "sha256": "dee0bb7595bdf5d238ace6c356b583ca587e206b783bd17174723071791d30ed",
+      "bytes": 964
     },
     {
-      "path": "Dependencies/GameMakerTool/SCRIPTS.md",
-      "sha256": "07e49f0267459a1d4d378d29f9cd55ac125957fac4bdf4f82841bf1305d600f1",
-      "bytes": 13683
+      "path": "licenses/NuGet/OggVorbisEncoder/1.2.2/oggvorbisencoder.nuspec",
+      "sha256": "823e392ebbd61b9b702c162d175029e083d289cafa418a9e9f7f56e3785f6487",
+      "bytes": 1619
     },
     {
-      "path": "Dependencies/GameMakerTool/System.AppContext.dll",
-      "sha256": "36447d0e4c9c86352905726eaf37292c55caed5b87c74c22836ae8b0334395c3",
-      "bytes": 15184
+      "path": "licenses/NuGet/Oodle.NET/2.2.0/oodle.net.nuspec",
+      "sha256": "e883001f613e20467bad0761179343dfb11ba540e9f594b4efa41afd2a4c2422",
+      "bytes": 930
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Buffers.dll",
-      "sha256": "7efc8dfef9548771ec328610de7b8e5c4308a8ea6b1ca73021f336fc00653176",
-      "bytes": 15144
+      "path": "licenses/NuGet/OodleSharp/0.0.1/oodlesharp.nuspec",
+      "sha256": "4b893b2895edeceff2c21e15912e6ca3eb7eb7a1e3ddf658474e3bbd607f5ec9",
+      "bytes": 868
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Collections.Concurrent.dll",
-      "sha256": "569667e92dda0af323a9f289c6bbe7a046bab7354f9fa0d37fc97404a0499ed3",
-      "bytes": 231208
+      "path": "licenses/NuGet/Serilog.Sinks.Console/6.1.1/serilog.sinks.console.nuspec",
+      "sha256": "b3f5b2596a6e183b0a653cec1d53273d32fb341f5dab38554976922fea4dcaf7",
+      "bytes": 1971
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Collections.dll",
-      "sha256": "5aea9c285f011d1e83f05834e12632ee5ebf65da1d546e696f525af47101a3b0",
-      "bytes": 296744
+      "path": "licenses/NuGet/Serilog/4.3.1/serilog.nuspec",
+      "sha256": "3ca85254cbbffaf1aca6e303466731dca0b2cb99e92dd4ebb75aefb556ba3fc2",
+      "bytes": 2337
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Collections.Immutable.dll",
-      "sha256": "623ad5fa5ac38c460df0073f37fbb649e219ac486c926b822f77ebf02676d56c",
-      "bytes": 976680
+      "path": "licenses/NuGet/SharpGen.Runtime.COM/2.4.2-beta/sharpgen.runtime.com.nuspec",
+      "sha256": "fd79838f249d7b1de60f87edbe64dc435318e48dc1b912d6c7157f38d3cf01bb",
+      "bytes": 3107
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Collections.NonGeneric.dll",
-      "sha256": "8cf296b4868c0dea441c452c50ed5c322837bf736a7c173f46dda4ebdfeb4c0b",
-      "bytes": 104232
+      "path": "licenses/NuGet/SharpGen.Runtime/2.4.2-beta/sharpgen.runtime.nuspec",
+      "sha256": "f4774be25bdec109703d6ca55e6b1e2ebf613a17aed989cd86dd57fc92c628e8",
+      "bytes": 1821
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Collections.Specialized.dll",
-      "sha256": "61702e1173c49f32e7b1804667a249f8709680f01859d46cf30e74197fedc1c5",
-      "bytes": 104232
+      "path": "licenses/NuGet/SubstreamSharp/1.0.3/substreamsharp.nuspec",
+      "sha256": "c4487a29ae5d2429ae377f769b88446497ba9ab73e41cf0c0bd770564f942ab0",
+      "bytes": 812
     },
     {
-      "path": "Dependencies/GameMakerTool/System.CommandLine.dll",
-      "sha256": "467d0cc5e0242bac33733d94fc8842114ef861537780acdd5f1abeff1f5c7bc7",
-      "bytes": 151352
+      "path": "licenses/NuGet/System.IO.Hashing/10.0.8/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+      "bytes": 78041
     },
     {
-      "path": "Dependencies/GameMakerTool/System.ComponentModel.Annotations.dll",
-      "sha256": "be6047dc8b7d2545c2dd099c6868d3736ecd81ea053c6714e9a6f92ff547358e",
-      "bytes": 198440
+      "path": "licenses/NuGet/System.IO.Hashing/10.0.8/system.io.hashing.nuspec",
+      "sha256": "026a3d478149c4610b41df1dd9b755a2322b8a260359281fa6232d76245cf583",
+      "bytes": 1595
     },
     {
-      "path": "Dependencies/GameMakerTool/System.ComponentModel.DataAnnotations.dll",
-      "sha256": "c4ad5b72e9461f82b6f5346af3b2f4f46d76763daaf51586943f99f1cc7d5afb",
-      "bytes": 16720
+      "path": "licenses/NuGet/System.IO.Pipelines/9.0.1/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
     },
     {
-      "path": "Dependencies/GameMakerTool/System.ComponentModel.dll",
-      "sha256": "615f1d4f821d25f46e61bc70dd879b4129daa754f42f427a23fa68c4dc74f09a",
-      "bytes": 30544
+      "path": "licenses/NuGet/System.IO.Pipelines/9.0.1/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
     },
     {
-      "path": "Dependencies/GameMakerTool/System.ComponentModel.EventBasedAsync.dll",
-      "sha256": "704d58b299577d640f365a4541089d99d8187b3071ff680599d3640251e470da",
-      "bytes": 46928
+      "path": "licenses/NuGet/System.IO.Pipelines/9.0.1/system.io.pipelines.nuspec",
+      "sha256": "4b23a3b38f1ddc5f38ef750a5985154b91fb525e55c406107ad9a00e395a6131",
+      "bytes": 1797
     },
     {
-      "path": "Dependencies/GameMakerTool/System.ComponentModel.Primitives.dll",
-      "sha256": "b671ae0e9463f65d2ad08366c890043fd570f7d3149bb57bc16b8d427d9684f5",
-      "bytes": 79696
+      "path": "licenses/NuGet/System.Numerics.Tensors/10.0.10/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+      "bytes": 78041
     },
     {
-      "path": "Dependencies/GameMakerTool/System.ComponentModel.TypeConverter.dll",
-      "sha256": "d24ca7be9b39ff4117edb0d207ff5ab1a0e1587557a3daaa44391f0b04d93816",
-      "bytes": 767824
+      "path": "licenses/NuGet/System.Numerics.Tensors/10.0.10/system.numerics.tensors.nuspec",
+      "sha256": "3379f747bf236c4800e722679891d7f8e7b74a8e1a1bdce8b621459ad332ed6d",
+      "bytes": 1720
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Configuration.dll",
-      "sha256": "495b65cd3c8488fa39a4905f072d14b336a5851c87f1b70d3b57afc565025a9f",
-      "bytes": 19240
+      "path": "licenses/NuGet/System.Text.Encodings.Web/9.0.1/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Console.dll",
-      "sha256": "a50d6f54e509342c49b6b7c8d72684f68701fc97fade19956d4618a4a30e84fa",
-      "bytes": 169768
+      "path": "licenses/NuGet/System.Text.Encodings.Web/9.0.1/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Core.dll",
-      "sha256": "c4908dd3c89942880310cd1c19cc2dca2c8ce3d564be04be80897cb7f5b9d351",
-      "bytes": 23336
+      "path": "licenses/NuGet/System.Text.Encodings.Web/9.0.1/system.text.encodings.web.nuspec",
+      "sha256": "1ca32082e7eb1a2720f9f4861d42aa2a464e3c65ceed2867daa3407e9e7104f1",
+      "bytes": 1932
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Data.Common.dll",
-      "sha256": "951bc9ff57eea7c382eb75cc595a9598afde341db853291b937be37da6ca3e81",
-      "bytes": 2770728
+      "path": "licenses/NuGet/System.Text.Json/9.0.1/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Data.DataSetExtensions.dll",
-      "sha256": "abd30bf053ce162967b8ee2b95e4a4a60ddf288bb959cd64dfc107bc6c7d762e",
-      "bytes": 15656
+      "path": "licenses/NuGet/System.Text.Json/9.0.1/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Data.dll",
-      "sha256": "ef6e30cc3aa9c93ca43f58f3cdc763ed31614b35ce835be57cb7da57358d2734",
-      "bytes": 25384
+      "path": "licenses/NuGet/System.Text.Json/9.0.1/system.text.json.nuspec",
+      "sha256": "9c3efd2dc97255abc7bad23526584858e668b88519c88791b74ac3fc0e6967b5",
+      "bytes": 3288
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.Contracts.dll",
-      "sha256": "764267aee046b300a4598eea0fa328348ec496c01281b31d00573a25ad8bd58f",
-      "bytes": 16168
+      "path": "licenses/NuGet/VGAudio/2.2.1/vgaudio.nuspec",
+      "sha256": "c5fff7bb6523678bfb3dbb520f29293d6e68c8435121715293d93a8ca3de948d",
+      "bytes": 1172
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.Debug.dll",
-      "sha256": "44b71cb2bc82e2e93c99c095a0e493f3c4afc0e50aafe8e91849629da295e6dc",
-      "bytes": 15656
+      "path": "licenses/NuGet/Vortice.DXGI/3.8.3/vortice.dxgi.nuspec",
+      "sha256": "bba472939b83af8b19bdb6ea843cac47d608f71af6af97846a5fe0096ccebf6c",
+      "bytes": 2362
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.DiagnosticSource.dll",
-      "sha256": "3e8ff9bb002715f5ab50263f6fe7c340355a5a963c03821c3a240ffa36b9f223",
-      "bytes": 501544
+      "path": "licenses/NuGet/Vortice.Direct3D11/3.8.3/vortice.direct3d11.nuspec",
+      "sha256": "1402ca7f4434d3019965a628d8be80f9ae4f3a26d20a82f46cc124eb6ff0a00e",
+      "bytes": 1602
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.FileVersionInfo.dll",
-      "sha256": "cbf1da7048153697f1c47175b61579e5f8e79e178d62b04787d626055ed9792e",
-      "bytes": 46888
+      "path": "licenses/NuGet/Vortice.DirectX/3.8.3/vortice.directx.nuspec",
+      "sha256": "59eb06859ae15762b2d7024b5b5f2cf88fdd01e424e66d59aaf437599b8a41c3",
+      "bytes": 2979
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.Process.dll",
-      "sha256": "2b4871e02b366113c6ccf3b1436fadde5e69fc0a3e3ac421e2fa0f7af8c2bc3b",
-      "bytes": 329512
+      "path": "licenses/NuGet/Vortice.Mathematics/2.1.0/vortice.mathematics.nuspec",
+      "sha256": "e2125fa763fb632951f1e63256e7e24e4a63e8bb2a58cc73376720d7e76efcf9",
+      "bytes": 1268
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.StackTrace.dll",
-      "sha256": "6578cef25cba5dcd0f7c34f2bbe6fad5c2cb59b601ab708c5f3e8d1dbfc60a95",
-      "bytes": 46888
+      "path": "licenses/NuGet/Zlib-ng.NET/1.2.0/zlib-ng.net.nuspec",
+      "sha256": "6d5ae106571990122ed5e40a1a0575c77aff83402e3bd1f79cbeb7b33155bbc9",
+      "bytes": 939
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.TextWriterTraceListener.dll",
-      "sha256": "65fbeb64bd73d658860c4a65799c1e57edc2d985e73fec1fe585b1dc660b1c91",
-      "bytes": 67368
+      "path": "licenses/NuGet/ZstdSharp.Port/0.8.8/zstdsharp.port.nuspec",
+      "sha256": "7198490f9ddfd30966687f33f1213d626de151d02d8d32d86dfd23b5f2c68b77",
+      "bytes": 2104
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.Tools.dll",
-      "sha256": "4bfc11bebae21c6a604f090f8ec94ce2d76d57fcfeafd8ffc9beb139af2a086e",
-      "bytes": 15144
+      "path": "licenses/PreviousDeclaredComponents/Noto-OFL.txt",
+      "sha256": "88f117575237307bdd86a17ef15e21790fc9a662fe4dfb103ca1ca077f0d9982",
+      "bytes": 4393
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.TraceSource.dll",
-      "sha256": "63e22e512f3db18ab51d57663364479ce56fcd924085fd0d6bd136f299106fa6",
-      "bytes": 141136
+      "path": "licenses/PreviousDeclaredComponents/nuget/AssetsTools.NET.MonoCecil/3.0.4/PACKAGE-METADATA.txt",
+      "sha256": "6b94efb1c06f19cb44f6f07125beac6a141e2b32cdb65b3dbbd0d24236d852b4",
+      "bytes": 335
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Diagnostics.Tracing.dll",
-      "sha256": "3275b203f9ec3d62c6a6c57b0771513f99f5c3d81cb4505b77ee679165fed800",
-      "bytes": 16168
+      "path": "licenses/PreviousDeclaredComponents/nuget/AssetsTools.NET/3.0.5/PACKAGE-METADATA.txt",
+      "sha256": "bd2ddecf50a74a9d3baaf6e75f885fe90ffcfecef8c6c85cb78a058964d8fc8c",
+      "bytes": 325
     },
     {
-      "path": "Dependencies/GameMakerTool/System.dll",
-      "sha256": "72f6fa05b4c1696d7d50f8a93086165980276ce6661f0f8a77fe426028309720",
-      "bytes": 50512
+      "path": "licenses/PreviousDeclaredComponents/nuget/Blake3/3.0.2/PACKAGE-METADATA.txt",
+      "sha256": "c19c8a5c3aad32eb1cfc3a2d925748e8c721133d2983466bee2545b1516fa61f",
+      "bytes": 317
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Drawing.dll",
-      "sha256": "9f68761f68125e3596c7af69d56799cf3e08dc2947661069b433d3043feed7da",
-      "bytes": 20264
+      "path": "licenses/PreviousDeclaredComponents/nuget/BouncyCastle.Cryptography/2.6.2/LICENSE.md",
+      "sha256": "eb52875c9b7de8271dd835af14fd598cdaa09e9e061f86e954cda564ef6b06e6",
+      "bytes": 1120
     },
     {
-      "path": "Dependencies/GameMakerTool/System.Drawing.Primitives.dll",
-      "sha256": "e8c09040a03d506e08e8165cba4e80cd2d69fb26629d7df65b0d72c1a290c216",
-      "bytes": 132904
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Dynamic.Runtime.dll",
-      "sha256": "00b37b775253d8011e0220bacadda3566224272ea787cb0c4cc24fa6b70643ff",
-      "bytes": 16168
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Formats.Asn1.dll",
-      "sha256": "ae3627515191e83d6ea062d3566af536a587d8f04ca6cce8aa71599b092d4a25",
-      "bytes": 239440
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Formats.Tar.dll",
-      "sha256": "d630c4db760a4a793f7ff3df0a3f6edeec40bcb94307e92ac493ad2d3eda1eaa",
-      "bytes": 272208
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Globalization.Calendars.dll",
-      "sha256": "885967adb01ef10e764ef54a0f6d646fd41deab81bd80908407d0ba8f834dcac",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Globalization.dll",
-      "sha256": "28db274e2cbb417c61c346d437a0c8265fc0b3bb93cba7330e5ef75cb4d16226",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Globalization.Extensions.dll",
-      "sha256": "5dc6a7838a0b2f472fdc093fd1206c61df3494c66d1e5bfb1081ee00a372f50b",
-      "bytes": 15184
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Compression.Brotli.dll",
-      "sha256": "f6ac00e499ec8f6cd60e092c83391ea9bc176baabed66e9479ddcea796de3448",
-      "bytes": 83752
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Compression.dll",
-      "sha256": "99fc38bd6a7defd709b7459ff7e454543c15442d1c295238094504b6301a1050",
-      "bytes": 419624
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Compression.FileSystem.dll",
-      "sha256": "aa87020c837176940637a4c672b2f2b33fd2517506fa12cae1f655ff1e515cc6",
-      "bytes": 15184
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Compression.Native.dll",
-      "sha256": "5869c7b088d1886f19f91b8be0d4b6db89ddb07dcfb02fb7dd759c92ef722919",
-      "bytes": 937296
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Compression.ZipFile.dll",
-      "sha256": "88d270860e5c00343057793d6a9b63b7e4cfdf847e62d8161a6ac8d1aa4bffb8",
-      "bytes": 100136
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.dll",
-      "sha256": "7a820716ee9ab010ea624b9448ea1acb4c78b0f79dfc9d98db01b7f99c610b6a",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.AccessControl.dll",
-      "sha256": "1d5f0b64af1920709aa26d5b38991787b458eaa6da8bb8d86b4bb46ca0434026",
-      "bytes": 104272
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.dll",
-      "sha256": "1d619955d7495e7e040c446fb1a24fa4ff4b9145f9a7d39dd90e92c59666930c",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.DriveInfo.dll",
-      "sha256": "9a7268c66cc9a63128c2d23c4abb0eec155e59f352f5a6859eecff62912dafbf",
-      "bytes": 55120
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.Primitives.dll",
-      "sha256": "6bf2b62e83f43b9e2a679abdcab875f37280a36e4c6e9feab99a410ab43f846c",
-      "bytes": 15184
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.FileSystem.Watcher.dll",
-      "sha256": "a03f59c4562fe7c1e8f768765b1637239f145c37d4805c8c693ae48f426828eb",
-      "bytes": 87888
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.IsolatedStorage.dll",
-      "sha256": "66e5ef5d0e23b4edd96f6d19b32d3e0a04ce57270d5ac55acced2bf177bbf68d",
-      "bytes": 87848
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.MemoryMappedFiles.dll",
-      "sha256": "21b24bb967a254328e2644e2dbfe00e1205463663504819bbfcae6f6b43d426d",
-      "bytes": 83792
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Pipelines.dll",
-      "sha256": "93ce5ddafb25ba6aeae208ffc750da0f243f25e89fe7dbc5287e1d8b4f26a2e0",
-      "bytes": 190248
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Pipes.AccessControl.dll",
-      "sha256": "d7c4e7f1a4cbada634b82e5939de9d9b3c87cc44ba8d4c1319bae0a796083e3c",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.Pipes.dll",
-      "sha256": "244167c32b3db092253e21a2301afa1e763fc861ca8a2304cb29feb773b85322",
-      "bytes": 165712
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.IO.UnmanagedMemoryStream.dll",
-      "sha256": "a988846408abf1513ac7ab81a9f72218ffcab410b2a06caf3844677604032075",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Linq.AsyncEnumerable.dll",
-      "sha256": "0009a3da0de5b968f777f715103c873a5de5f1840b870c95f6b7c11ac05246c4",
-      "bytes": 1292072
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Linq.dll",
-      "sha256": "139264775432faf15a813e607e1919ea869d3321079ba134ffa36b350577c271",
-      "bytes": 698152
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Linq.Expressions.dll",
-      "sha256": "f5d05f16c2f31ae822bca8db63019067c8d83b09376b0a60c38b9c98fa0e088f",
-      "bytes": 3639080
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Linq.Parallel.dll",
-      "sha256": "d8cdfa91b3cedc1d928848a2724f230b130ee549e8b9008ad38e3ed10e8e9af6",
-      "bytes": 776016
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Linq.Queryable.dll",
-      "sha256": "eddadcb60dd56a06eb83f6f1284f9ae42c181af3cde4b19350938b1930d6f531",
-      "bytes": 182056
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Memory.dll",
-      "sha256": "58a4dc8a9efac1fe0ee67138b0dda35b2b812addc14c5d8251cc222b278a5c2d",
-      "bytes": 161576
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.dll",
-      "sha256": "d7a4c693b1922e0e69aee3597ac72c25e0a5e1d3ac2d1072d7d8dc854d27e488",
-      "bytes": 17232
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Http.dll",
-      "sha256": "8ae9f649d43f1f3fb635170784bcb753d305bc36a42703b4b0bedb15a29729f0",
-      "bytes": 1746728
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Http.Json.dll",
-      "sha256": "552422be522e40937de77bdcaee0575282d2f2d449b19dd81f1a3ef23e85b73f",
-      "bytes": 128808
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.HttpListener.dll",
-      "sha256": "c3bbbb42561e9de67da6accd846fa710944d38b4bde88ee111943ea4afb5b82f",
-      "bytes": 534312
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Mail.dll",
-      "sha256": "5e053f23212c0f0eb0ee1a17a94ced79afd7d8d2175b35f2750b85eb570b5db0",
-      "bytes": 481064
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.NameResolution.dll",
-      "sha256": "1003e24eaf96e8aa019b188fefabab4a6ca488d5c51e70600140bfa4dabe3bda",
-      "bytes": 124752
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.NetworkInformation.dll",
-      "sha256": "47b220c9a183125c8cf9e2a7b21b45947b3b1951412d719d7c5f047277c4927e",
-      "bytes": 157480
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Ping.dll",
-      "sha256": "c337caf03b0d50c7cf4a4822872bd34603d11e7f689d211ecaea3ee74f65518a",
-      "bytes": 91944
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Primitives.dll",
-      "sha256": "e678e0129a87751c624cbe2e3ab83d55055a091a5b77d8138f02255deda4b6c4",
-      "bytes": 210728
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Quic.dll",
-      "sha256": "a02b202989ff28adee64fae1c9cc7290057ca2f234ed7a05c647617399e6d4c7",
-      "bytes": 358184
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Requests.dll",
-      "sha256": "f2735dd7adbc04c505805e9f069f9d545f34f1ff689e2a9d6bcda1a2480d3da7",
-      "bytes": 374568
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Security.dll",
-      "sha256": "1605bb05b7cd623dc79c8f4ec2e10ea5779b5bd343f909a9c0dece472ee2a8f2",
-      "bytes": 665384
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.ServerSentEvents.dll",
-      "sha256": "792c085fff01183ac597f69bf33db289d7301aabde1cc388904621a47efe719c",
-      "bytes": 83752
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.ServicePoint.dll",
-      "sha256": "9645242a547b02bc0cbfa78c365fe8cbf02869c182debe4ce37bac32be1ca42b",
-      "bytes": 15144
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.Sockets.dll",
-      "sha256": "b4bf19b0c8e412b9d0f479fc5268bf44e04ca656cd121044ca51f2652595af6c",
-      "bytes": 530256
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.WebClient.dll",
-      "sha256": "ab06cb5eaff5ca00045dd847e167f0107a53114aca47d26ed3500adf38bd142b",
-      "bytes": 165712
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.WebHeaderCollection.dll",
-      "sha256": "7abfc26269a95cec0d93ca2a6b8148aa45d504c8f50a62fbbbad72408966d45a",
-      "bytes": 63272
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.WebProxy.dll",
-      "sha256": "d6f5fbc775d7b1639c1740e3e10834f6fb729fc5fe7619b972df79d528abaf18",
-      "bytes": 42832
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.WebSockets.Client.dll",
-      "sha256": "ff5d42603b662a634857dcc6e1239547025d03794aea4f84d624579765c23ba9",
-      "bytes": 104272
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Net.WebSockets.dll",
-      "sha256": "36fefd219495298b0b28a6bbf1d99fb9b2471467f5a0d382af9730f0a32fc8f1",
-      "bytes": 243496
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Numerics.dll",
-      "sha256": "fd4f0bc0541231fc01c21cab517a948019d4c9adbf66f81b65b276298e6ab922",
-      "bytes": 15144
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Numerics.Vectors.dll",
-      "sha256": "6beaf983fa8c33d25160c7a77e185967e8f113a5c02e6dc27f05f26e1b34763c",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.ObjectModel.dll",
-      "sha256": "16d9a18630f1d33ec7a709ab2f31652c91ebdfbc7a5a481378aebe2e1102ffc2",
-      "bytes": 79656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Private.CoreLib.dll",
-      "sha256": "ed80a1a5dd066c0407ad59686f9af90a4f3e55dbf3e4c973b53cc8c9d0706f82",
-      "bytes": 16033616
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Private.DataContractSerialization.dll",
-      "sha256": "631a7719e6e67e4f86e553031c56038eafca2ab5fa161c8cff786a92838a0255",
-      "bytes": 2062120
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Private.Uri.dll",
-      "sha256": "0546093ec627bf832c244be56d9acca471778385c534e0107f2a6dc6a78f93d2",
-      "bytes": 255824
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Private.Xml.dll",
-      "sha256": "d570b8cb9507f2fcac88f80a2fe7597d3e2331a84f337820a7d794632a67ed5d",
-      "bytes": 7788328
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Private.Xml.Linq.dll",
-      "sha256": "0f4d2be70f3715853dca3bd6c9b67de7738a5f4ec6e9959f526ef1dbf1f7fa8e",
-      "bytes": 390992
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.DispatchProxy.dll",
-      "sha256": "a08a235c45e6944b3a086f3df03e55b38a5958e7126948847eb33261fe1ca10b",
-      "bytes": 75560
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.dll",
-      "sha256": "80fb9e206044c6f1c02bcc6895e2ce432119c670ea12248a6cba112afa78a9b6",
-      "bytes": 16168
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.Emit.dll",
-      "sha256": "b4208981583d74994aa4d855e12788676fdebce63ba848be63a6e0a7fbe2cb3d",
-      "bytes": 309072
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.Emit.ILGeneration.dll",
-      "sha256": "5e38d9d71ce8fbab210a590f20543b19a2bf0cf1265f3ed78d63519e3b73b979",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.Emit.Lightweight.dll",
-      "sha256": "c15be07e2131fdc8806d47e222b58e545981c2a3e7dc9c069a6c6076271a291f",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.Extensions.dll",
-      "sha256": "4e6967d52cbc95ae9eda01b8d8705f59c2c56f8b69471efaa6eca8f0e22a9a6a",
-      "bytes": 15144
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.Metadata.dll",
-      "sha256": "97152d5c07e1e5d7f080f871eff211ccdbecb2496e4eb1b086005cbd3656d431",
-      "bytes": 1156904
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.Primitives.dll",
-      "sha256": "d1ba728fab43e22821a1b19c508667995c0df10ee98d1f19e63aac94098ca8f5",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Reflection.TypeExtensions.dll",
-      "sha256": "fbf5445d2a288ddce3bf163a6b692dbf97a10f6a17bb9de7c0d2d71387c6e440",
-      "bytes": 42792
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Resources.Reader.dll",
-      "sha256": "ae5e53448adf49f3bb0e6fcc4df836bcd413ce0eeeaad0b94f7363ad238d71dd",
-      "bytes": 15184
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Resources.ResourceManager.dll",
-      "sha256": "c3456835cfbd88d081a3ee4030ce533cb6fbb27ad0f60f954a5ae7d45b1422cd",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Resources.Writer.dll",
-      "sha256": "a478bbfeac355e728d914f6f5e1e893ab1454c6f92d28da84ff0a75f04476277",
-      "bytes": 50984
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.CompilerServices.Unsafe.dll",
-      "sha256": "6f396205abe594c9c72e618f4278657b4ff9da9cd2bc17d8083481b287838ecc",
-      "bytes": 15144
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.CompilerServices.VisualC.dll",
-      "sha256": "67483e224e8019d1d725876485a6fca81dd977d5254cf26d79a26f2a73207fa9",
-      "bytes": 30504
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.dll",
-      "sha256": "ef6d37d9334fcdf7c7e4b9590b730eb5ba623192d47f0cbe4ec478962625e586",
-      "bytes": 44840
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Extensions.dll",
-      "sha256": "633f210388e326f0a2fba3148312fb2900a9e0ba32f08015bb606abc44a3d634",
-      "bytes": 17744
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Handles.dll",
-      "sha256": "834ed37905ecafb69c3d33d1b659e5f8216cef9995cbfcc7b2cf858752add880",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.dll",
-      "sha256": "9d0621f1e573bd20525287533bea24ec7824813eada7820a0c82252ede072ab9",
-      "bytes": 112424
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.JavaScript.dll",
-      "sha256": "6fedecfa2fb691e50175dccf64860da8dd147b9d64d942997259a79a7edb77d5",
-      "bytes": 51024
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.RuntimeInformation.dll",
-      "sha256": "506dc257f2f039746172057cf574992d4db07e31f9338b0ab2d90e88d385c472",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Intrinsics.dll",
-      "sha256": "c44fc7c6f2aff4a9c8b9a0b6abfd2c1b65a762b69fa982fcfca28c6001d022e3",
-      "bytes": 17192
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Loader.dll",
-      "sha256": "c858230d105ec1225cd58ec22623bf59bddee9dfc7077d7f93957d3321ec55f7",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Numerics.dll",
-      "sha256": "cadca5367aec4fb54df4a81cd033c62228f3e100736ef9701aafcd13123a5ef4",
-      "bytes": 354128
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.dll",
-      "sha256": "2092ad8e233c2a01a8dcc640ab218c1eabc059f6bebaaa8f81d1ce8225a939a0",
-      "bytes": 17192
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Formatters.dll",
-      "sha256": "ae2d71a1c6231a7e4c9f0264666acf90f743460ae7983d5331e9ad0271e7ad88",
-      "bytes": 124752
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Json.dll",
-      "sha256": "7e44e9979e6c539e7ad22846ac9c6f250e888d28411ba88761122095dfed9727",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Primitives.dll",
-      "sha256": "e15940836e5b22e89a0b7febfa0de2f158855563d9cca0ac36a84e4be9e3e683",
-      "bytes": 38736
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Xml.dll",
-      "sha256": "286bbafd589189f1d684831c33dd81a4650e12b73db70920ba5d4e0a477fd33a",
-      "bytes": 16680
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.AccessControl.dll",
-      "sha256": "5fda871ac0ab09ba62884ba4160b5c84f8d9513d16c773b7d01e3b82dae905b4",
-      "bytes": 227152
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Claims.dll",
-      "sha256": "ca5a036a17ed63c6f90d92570c657bcec451dc2c894b1ffff0688855b61e455c",
-      "bytes": 100136
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Algorithms.dll",
-      "sha256": "35677214a8b8388d82ff5bf45789790fa048612f6aca8b8f71efb3aa93ef70b1",
-      "bytes": 17192
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Cng.dll",
-      "sha256": "328a4ea1c05177e97f65a24d68268c96674bbfbcfb5bc3906229eea2c46ac6d2",
-      "bytes": 16168
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Csp.dll",
-      "sha256": "0be1ded6ac6b8bdc53d0d49bb01292770f9a022fe7d2d2f1a480223eca5ca6ba",
-      "bytes": 16168
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.dll",
-      "sha256": "bee61e6bdeff9fb0c4f3cbf9d48e9d1d97d12a8bb85d1eeab9178e818b582eee",
-      "bytes": 2549584
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Encoding.dll",
-      "sha256": "09fbbd2934040ba1260775f34a8b901f5f9edec9bd1a2203b3726686006b7829",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.OpenSsl.dll",
-      "sha256": "695ebdf0901afd27b7504dd4fdbc504a5aae8ea87d3b342da800789a6a94a732",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Primitives.dll",
-      "sha256": "c4d76a73f7147df7999b371adbc091850984a40cd45f4d0464e85424de412e30",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Cryptography.X509Certificates.dll",
-      "sha256": "bcbcd0c436bfd24052ae4f7a3785b434436cbc18e6465f0be19437a453872cf3",
-      "bytes": 16720
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.dll",
-      "sha256": "2a0ee1358a507f20bb9099afb2c79745212bca44c1102e580c20742ecca560d5",
-      "bytes": 18256
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Principal.dll",
-      "sha256": "f4e101d9d1b328868cd91199ca441e4ee273047fe96dd6ec34a1e889e523da21",
-      "bytes": 15144
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.Principal.Windows.dll",
-      "sha256": "ed56739aabc1fb6f81e8f71db89531beea985550f654d4d0e6c9a64c67e4e349",
-      "bytes": 178000
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Security.SecureString.dll",
-      "sha256": "f371fb101973637a772e44f75b48d66540466a914f61e4b1f4ae7eb01dad1b62",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.ServiceModel.Web.dll",
-      "sha256": "948e182337526b0decaab7a9274c1bde5be3e419b076cfe0161a335e22643ac3",
-      "bytes": 16720
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.ServiceProcess.dll",
-      "sha256": "04e5ca5a4df4d31e8e6b527ce5a16b6f150a256384b2cbdabeeba1f6974cfa99",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Text.Encoding.CodePages.dll",
-      "sha256": "56582910b3c0d17f10dc2eafc8e5746c6f23b57af56d7f0d4cd208f06ece1e28",
-      "bytes": 862032
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Text.Encoding.dll",
-      "sha256": "4c140de2fdd2c673ece196892e28786b85200b8f315fc9bb2de7aeb862372d9d",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Text.Encoding.Extensions.dll",
-      "sha256": "2b63801416706c7817193a742fc8648c4afd6697ca342d4a2deb30450b99218d",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Text.Encodings.Web.dll",
-      "sha256": "2c459f175331339b8580dec1842879b3f0532100fa426b97a1b74e1b5dee95d7",
-      "bytes": 124712
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Text.Json.dll",
-      "sha256": "ed5f0f3773c89948471e3691f31963ea00d3577e17296ac4dfb97772e78b6fa3",
-      "bytes": 1890088
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Text.RegularExpressions.dll",
-      "sha256": "b8494ba41da52018409cccd851753717c6bd035fccdf5e4d5ac83e420d4678f4",
-      "bytes": 1034064
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.AccessControl.dll",
-      "sha256": "eec9d6f83ec123602039ec449b402c1bcb74ff00518eb87f8d007558e48c2b89",
-      "bytes": 75560
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Channels.dll",
-      "sha256": "ff8dcb281d2d35f01dbdf72e766e431c397f9db063f22f61a9a85f7bd173f5e8",
-      "bytes": 157480
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.dll",
-      "sha256": "cadf13029ac996abaceccfd7c242e55888b669246163342a3b335eee9851b531",
-      "bytes": 83752
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Overlapped.dll",
-      "sha256": "a0ef0237e67a16a347a8ed9b9286e3acef358aeb4a23463323c2efdf646fc0f5",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Dataflow.dll",
-      "sha256": "83a9b71c298ba233393eb1cdbda26380cb2d50cefd2fd645b0ba1c34c7aeca9f",
-      "bytes": 472912
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.dll",
-      "sha256": "d95cee14d0dbb97d8f8a8f4dcc5eefa35f394f9d94b0fa0bf29068786aee6a06",
-      "bytes": 16680
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Extensions.dll",
-      "sha256": "6ec70446f8faefaa167a0e3360468203cb03ffab90369644e92c22dc650a9cd5",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Parallel.dll",
-      "sha256": "ff17dd0ddd3f2debdaced18f39b9f8a205630baeb3de20bbf0630935a8605aa6",
-      "bytes": 132904
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Thread.dll",
-      "sha256": "7b451de5e88adfdb49765bc0745a12e377318534d02e6bf81660c285a7aa6664",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.ThreadPool.dll",
-      "sha256": "9e3bf9838ff48525e4f2fd1c7646956ba00183977c7e4762d999670aa901e101",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Threading.Timer.dll",
-      "sha256": "5b21f38133328e8017bb7a4651007738ce76fcfa673af267b4c8b5e857d572d7",
-      "bytes": 15144
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Transactions.dll",
-      "sha256": "9ba6785faf04de3b018a7e6bdb349c538ca861add4a3558c693fe4c9ef905335",
-      "bytes": 16680
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Transactions.Local.dll",
-      "sha256": "cb3d436592fe994ba8f570cc7cb021ef347730e96e52e3b8695b7c7bd79a3967",
-      "bytes": 640808
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.ValueTuple.dll",
-      "sha256": "63e0eac320a2eac02f418e186232405427e036d9ce9dd80951923280308cfe59",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Web.dll",
-      "sha256": "45b1d8e331aeb3d4006afe64cde59eddac958968d6c432df3f869982d94996f0",
-      "bytes": 15184
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Web.HttpUtility.dll",
-      "sha256": "03841ee0b42c5ed0d4b58c185e9cfa57a939c479256943644062b918cf595a08",
-      "bytes": 63272
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Windows.dll",
-      "sha256": "5898d03d2707c44b55883bc475f8c3aa779738a439db6ec2abbf9e0fac82e6d5",
-      "bytes": 15696
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.dll",
-      "sha256": "3bf8cf7c17a8ec51ef64a48707dbcbb0359e466a7903bb564a4c74228d895e32",
-      "bytes": 23376
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.Linq.dll",
-      "sha256": "06be8d12ab41b70960703ec77899da99e0a93a6d125e77e7f8154ab071220d54",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.ReaderWriter.dll",
-      "sha256": "9ed86fcb4a068f56c61ce4d595d91b57df12999820bb11659e9a4b45103305ed",
-      "bytes": 21800
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.Serialization.dll",
-      "sha256": "868e566390c0a0800253511b757644433c512989a213f32153464a4611667d8b",
-      "bytes": 16168
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.XDocument.dll",
-      "sha256": "58cf36935545fdf661b64dc2f8c57b7066d2a380252d194edb6708895a50e6a7",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.XmlDocument.dll",
-      "sha256": "e6d348ce2e40d5f8e767f3863f3217f6075f3e4e331270be1d13e45430f87811",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.XmlSerializer.dll",
-      "sha256": "96d2ef2d9503bcb06d4aa9f8e15efdf3ae94c30b9db4211da75020d0690238d2",
-      "bytes": 17744
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.XPath.dll",
-      "sha256": "8e21c30f514e711d8446c4eec9fe92cb8156efeaa476e67a26f17ba0a21e593f",
-      "bytes": 15656
-    },
-    {
-      "path": "Dependencies/GameMakerTool/System.Xml.XPath.XDocument.dll",
-      "sha256": "75b319f01c19a9c1c8b08b6a26bb44e3329da177d974ba90d1a4a40bba3e7d3b",
-      "bytes": 30504
-    },
-    {
-      "path": "Dependencies/GameMakerTool/Underanalyzer.dll",
-      "sha256": "13866effb6db10aa0c7fea1b9f017bb362e8b9e1266295896bebcd920c3571fa",
-      "bytes": 470528
-    },
-    {
-      "path": "Dependencies/GameMakerTool/UndertaleModCli.deps.json",
-      "sha256": "5c64cfe59210affee9e848d187e2904c36f8894567be41d68189edb2dadaafdd",
-      "bytes": 35855
-    },
-    {
-      "path": "Dependencies/GameMakerTool/UndertaleModCli.dll",
-      "sha256": "3960a1d33360bd7c46668bdc354a915601496a7aecdee5107c63fdde4d2fbfc6",
-      "bytes": 61952
-    },
-    {
-      "path": "Dependencies/GameMakerTool/UndertaleModCli.exe",
-      "sha256": "6d13bd017e7d6527a1e2ca676ddc9826388ab335e45374751a3dafe18bd1ab9d",
-      "bytes": 162816
-    },
-    {
-      "path": "Dependencies/GameMakerTool/UndertaleModCli.runtimeconfig.json",
-      "sha256": "d44456e801512388fbfee409aeb60e9021a568881d941bdec4038ef9045e5bc1",
+      "path": "licenses/PreviousDeclaredComponents/nuget/BouncyCastle.Cryptography/2.6.2/PACKAGE-METADATA.txt",
+      "sha256": "0e1b5da30dd08e77d80346966c48680b09c4838e132e4f40c04724c166d897fa",
       "bytes": 374
     },
     {
-      "path": "Dependencies/GameMakerTool/UndertaleModCli.xml",
-      "sha256": "0698093462f42b6b3e7c196abb7f9b2231ec554f2d76a38a0943139859091520",
-      "bytes": 27682
+      "path": "licenses/PreviousDeclaredComponents/nuget/CUE4Parse/1.2.2.202609/PACKAGE-METADATA.txt",
+      "sha256": "fd680f7111a92a06c1e21723565c52e55ba767a52f8d9d6a3147fb2039a1c5d0",
+      "bytes": 330
     },
     {
-      "path": "Dependencies/GameMakerTool/UndertaleModLib.dll",
-      "sha256": "bb12b0e22b46be6a8e6e498767ca61e8974e5acac6df46e66000afe1dd35fbf5",
-      "bytes": 1108992
+      "path": "licenses/PreviousDeclaredComponents/nuget/CommunityToolkit.HighPerformance/8.4.2/License.md",
+      "sha256": "1e1101b893f295b4526da2c167e4234610f1078e2fe43a0e814c1a883656877b",
+      "bytes": 1145
     },
     {
-      "path": "Dependencies/GameMakerTool/UndertaleModLib.xml",
-      "sha256": "4674e0c3ffed997e4140e9feda2bcd163cce530e5e3d2d4c3920150be9ccb17d",
-      "bytes": 723684
+      "path": "licenses/PreviousDeclaredComponents/nuget/CommunityToolkit.HighPerformance/8.4.2/PACKAGE-METADATA.txt",
+      "sha256": "188925f0b4a1d8e7f71c38654ff1a332552da896670a2c9de7de16c5bf1557fd",
+      "bytes": 369
     },
     {
-      "path": "Dependencies/GameMakerTool/WindowsBase.dll",
-      "sha256": "2586159b2c347d39a93bebcbd8811a6dc05d0252202b24cebf2e28188f8ce7ab",
-      "bytes": 16208
+      "path": "licenses/PreviousDeclaredComponents/nuget/FixedMathSharp/4.0.1/LICENSE",
+      "sha256": "09d8c88a298eca6592191a6f71219c09fd7a81ab48a99204637338647d470841",
+      "bytes": 1109
     },
     {
-      "path": "Dependencies/Python/lupa/__init__.py",
-      "sha256": "d1f7d659bbbb804e58cf8eadb6480609858db8680177f4bee81992fa55a6eb8d",
-      "bytes": 3067
+      "path": "licenses/PreviousDeclaredComponents/nuget/FixedMathSharp/4.0.1/PACKAGE-METADATA.txt",
+      "sha256": "e64ea1eb9e12a89e017df073ef40485431c0acb4d51458f10b0963efffd4ff44",
+      "bytes": 327
     },
     {
-      "path": "Dependencies/Python/lupa/lua51.cp312-win_amd64.pyd",
-      "sha256": "29bc76a1cd9d2ac799edd84f0e6061f25324713228da9ffe9e4727570ac7f9e9",
-      "bytes": 476160
+      "path": "licenses/PreviousDeclaredComponents/nuget/Fmod5Sharp/3.1.0/PACKAGE-METADATA.txt",
+      "sha256": "6dfb89b3c2ff6a4d7a2bdd6e6e23b58431970581a5adae1b34856cdf45db2cdd",
+      "bytes": 338
     },
     {
-      "path": "Dependencies/Python/lupa/lua52.cp312-win_amd64.pyd",
-      "sha256": "788f11c3b01a1ab22e7ac4705b66a1bf4e0a4a6c845f030cd358d805089dd9e0",
-      "bytes": 490496
+      "path": "licenses/PreviousDeclaredComponents/nuget/GenericReader/2.3.0/PACKAGE-METADATA.txt",
+      "sha256": "08f560d52fcbde06f6eb8bc7b6246d88f483ff2260b83f844d211f887b24d4e8",
+      "bytes": 323
     },
     {
-      "path": "Dependencies/Python/lupa/lua53.cp312-win_amd64.pyd",
-      "sha256": "0d83d8125cf1679fa4d3f0be17474df5d4967860abd7e55272f4f72f540dcbde",
-      "bytes": 516096
+      "path": "licenses/PreviousDeclaredComponents/nuget/IndexRange/1.1.0/PACKAGE-METADATA.txt",
+      "sha256": "5828b937179fa0a802e8bc41505de6f799154d500c49ee9c3e8b1ce0b99f4b1a",
+      "bytes": 335
     },
     {
-      "path": "Dependencies/Python/lupa/lua54.cp312-win_amd64.pyd",
-      "sha256": "2d9ba19524d979a641eefba073607b5b87628f9a3bf2e208c4f1aeeb08163800",
-      "bytes": 555520
+      "path": "licenses/PreviousDeclaredComponents/nuget/Infrablack.UE4Config/0.7.2.97/PACKAGE-METADATA.txt",
+      "sha256": "201842ddb947148a78f9a1b3fce92a9bea4965d58bd58e2373802125d73955a4",
+      "bytes": 337
     },
     {
-      "path": "Dependencies/Python/lupa/lua55.cp312-win_amd64.pyd",
-      "sha256": "1821e585e2f19befc5f0f089a7a1ab223c8ebb7656083b74966ab9bd23cfb895",
-      "bytes": 565248
+      "path": "licenses/PreviousDeclaredComponents/nuget/K4os.Compression.LZ4.Streams/1.3.8/PACKAGE-METADATA.txt",
+      "sha256": "52446cfa5a6314c6738b515c5edab720b2b64b7775425253358ed61c55d46d17",
+      "bytes": 398
     },
     {
-      "path": "Dependencies/Python/lupa/luajit20.cp312-win_amd64.pyd",
-      "sha256": "158e6b4d5d61e2c0fdad063d51449bf678e686784f2b00d3fa40bc5df29194b0",
-      "bytes": 714240
+      "path": "licenses/PreviousDeclaredComponents/nuget/K4os.Compression.LZ4.Streams/1.3.8/UPSTREAM-LICENSE.txt",
+      "sha256": "688a6cd7dedb43fafb272069353c18a3cf94b9c0c1f95f1602bf29706a674eb3",
+      "bytes": 1094
     },
     {
-      "path": "Dependencies/Python/lupa/luajit21.cp312-win_amd64.pyd",
-      "sha256": "f2cd8493c23581d63e87fb15446094038f834302c274484616ac549c74feb1e4",
-      "bytes": 797696
+      "path": "licenses/PreviousDeclaredComponents/nuget/K4os.Compression.LZ4/1.3.8/PACKAGE-METADATA.txt",
+      "sha256": "7ba1146485c31ad0171d006d261dda45577f5bd7ef3ee41dd6c015697bedb8af",
+      "bytes": 390
     },
     {
-      "path": "Dependencies/Python/lupa/version.py",
-      "sha256": "c1341db41cf80de5e73a37271d9923e5c4afb6e4da1b30ff4044ac5404f6dc8c",
-      "bytes": 21
+      "path": "licenses/PreviousDeclaredComponents/nuget/K4os.Compression.LZ4/1.3.8/UPSTREAM-LICENSE.txt",
+      "sha256": "688a6cd7dedb43fafb272069353c18a3cf94b9c0c1f95f1602bf29706a674eb3",
+      "bytes": 1094
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/INSTALLER",
-      "sha256": "ceebae7b8927a3227e5303cf5e0f1f7b34bb542ad7250ac03fbcde36ec2f1508",
-      "bytes": 4
+      "path": "licenses/PreviousDeclaredComponents/nuget/K4os.Hash.xxHash/1.0.8/PACKAGE-METADATA.txt",
+      "sha256": "e3c4fd3edf073eb86c200f04919d6005da880603a2a92a83cc122953bcb95d93",
+      "bytes": 378
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/licenses/LICENSE.txt",
-      "sha256": "be85bf5e0a2dea5b91e5f34a55c0e43aec8ec29f4fa5b5858e6727b60a00f22c",
-      "bytes": 2281
+      "path": "licenses/PreviousDeclaredComponents/nuget/K4os.Hash.xxHash/1.0.8/UPSTREAM-LICENSE.txt",
+      "sha256": "688a6cd7dedb43fafb272069353c18a3cf94b9c0c1f95f1602bf29706a674eb3",
+      "bytes": 1094
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/METADATA",
-      "sha256": "bb325d0e13b5184239672ad5f5cdba5fb6555d5fb2e04365a87983e4cd8e6771",
-      "bytes": 62134
+      "path": "licenses/PreviousDeclaredComponents/nuget/LZMA-SDK/22.1.1/PACKAGE-METADATA.txt",
+      "sha256": "f5b71545a99f599e55889d5448120a211bfa477bc63b23cd5c269c72593fe9fd",
+      "bytes": 303
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/RECORD",
-      "sha256": "1658c79334edbbc2be20a2d77919cbacab6f4a7376056e43150d8da0a3b4b35b",
-      "bytes": 1416
+      "path": "licenses/PreviousDeclaredComponents/nuget/MemoryPack.Core/1.21.4/PACKAGE-METADATA.txt",
+      "sha256": "f640ebbea031effd1f3f48eccdcd6a1d5f5d558408962f3217bef8fa9aa0f4a5",
+      "bytes": 304
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/REQUESTED",
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "bytes": 0
+      "path": "licenses/PreviousDeclaredComponents/nuget/MemoryPack.Generator/1.21.4/PACKAGE-METADATA.txt",
+      "sha256": "9fd1723a6cee26f4d016d1b9fa7fe0208088d9a8f019f33af5202f26a2a1bb50",
+      "bytes": 309
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/top_level.txt",
-      "sha256": "cc18eafce130565281513db92f610d70c3bef5777055048ded7e951f21fb3dc8",
-      "bytes": 5
+      "path": "licenses/PreviousDeclaredComponents/nuget/MemoryPack/1.21.4/PACKAGE-METADATA.txt",
+      "sha256": "78a95469bb47ce448c76a8e48fa9648e082ab950ffb21e244a66ab3be837121b",
+      "bytes": 299
     },
     {
-      "path": "Dependencies/Python/lupa-2.8.dist-info/WHEEL",
-      "sha256": "ad1e507ec59c665de6adae409920fb15dd1dcd0c59de51c2a43a3bd0891f0cae",
-      "bytes": 101
+      "path": "licenses/PreviousDeclaredComponents/nuget/Microsoft.Bcl.Memory/9.0.14/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Microsoft.Bcl.Memory/9.0.14/PACKAGE-METADATA.txt",
+      "sha256": "3a25c8db861c3996e79e0afd38f9b60be1331b11bf2d2fd615b9eabdebe7f1f9",
+      "bytes": 337
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Microsoft.NETCore.App.Host.win-x64/8.0.24/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Microsoft.NETCore.App.Host.win-x64/8.0.24/PACKAGE-METADATA.txt",
+      "sha256": "a504dabd68df3087ac36f921f60697d6a3c98fa922c5bb1bb7bd10863261fe40",
+      "bytes": 542
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Microsoft.NETCore.App.Host.win-x64/8.0.24/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "b60b2912da28eaa6518593c9e2efb5334ee062d3c42e80d8fdfa806b3dc52977",
+      "bytes": 68910
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Microsoft.NETCore.Platforms/1.1.0/PACKAGE-METADATA.txt",
+      "sha256": "5286c3f2bdaebfc9c67080d31bbcd6541be008bedcf46fc0fd945d55f3a2fa35",
+      "bytes": 349
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Mono.Cecil/0.11.3/PACKAGE-METADATA.txt",
+      "sha256": "a03a92a170dd65c98802cea1042f57d3121aa44f636472130a7dea30f8a9f718",
+      "bytes": 348
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Mono.Cecil/0.11.3/UPSTREAM-LICENSE.txt",
+      "sha256": "62dad7936fc1214d0187b1dd27bd68ec055af168b7fd1989cc8e36e0e2b9a990",
+      "bytes": 1119
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/NAudio.Core/2.2.1/PACKAGE-METADATA.txt",
+      "sha256": "8476d1117fdc84bd7c91ea8321391c5b4004b16b36134e3c9e54f71d80f3c973",
+      "bytes": 299
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/NETStandard.Library/1.6.1/PACKAGE-METADATA.txt",
+      "sha256": "c565e9ad1a959f21668998b1a51a7c4c07ad506c56fea90d33b810ab92c4fc40",
+      "bytes": 341
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Newtonsoft.Json/13.0.4/LICENSE.md",
+      "sha256": "d7f83bbea3264a8e23d7739e44d9db1a4994b357274df6f00876eb2e623827ad",
+      "bytes": 1084
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Newtonsoft.Json/13.0.4/PACKAGE-METADATA.txt",
+      "sha256": "6e6a759a0c6cea23a15e52de5b8a3dea0eb5bb65920e3497864af878eaa7c9c7",
+      "bytes": 338
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/OffiUtils/3.2.0/PACKAGE-METADATA.txt",
+      "sha256": "102d765edf2eca5f3e114c9ecb7f817b24443048594d780132f288ae96497bbf",
+      "bytes": 311
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/OggVorbisEncoder/1.2.2/PACKAGE-METADATA.txt",
+      "sha256": "d8ce7772e7b8e2df561fe6f937eb29cd24b8b3924bbdf86510da6ee6eef620a6",
+      "bytes": 343
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Oodle.NET/2.2.0/PACKAGE-METADATA.txt",
+      "sha256": "95ff13c91caac71064f6156728257b67d6fad3bb0937ec425500614bbffc43be",
+      "bytes": 315
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/OodleSharp/0.0.1/PACKAGE-METADATA.txt",
+      "sha256": "c5e214fc269b91bfc40e1b310cb491e1f392a5d25c91641d88c6c89234449561",
+      "bytes": 317
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Serilog.Sinks.Console/6.1.1/PACKAGE-METADATA.txt",
+      "sha256": "52192c2ebe8dea61f6af0dbada625962714f38bdc99fe88c9eeaeea236dde4f1",
+      "bytes": 364
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Serilog/4.3.1/PACKAGE-METADATA.txt",
+      "sha256": "1d18b2018586447b2bc1a796ebc51a73ede4db99bcf44dcb745c76f98148f9e1",
+      "bytes": 336
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/SharpGen.Runtime.COM/2.4.2-beta/PACKAGE-METADATA.txt",
+      "sha256": "1bcb189a4ecba922b237c1b57bd36449c390710be627b368a5da9a7ac6c77e0a",
+      "bytes": 393
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/SharpGen.Runtime.COM/2.4.2-beta/UPSTREAM-LICENSE.txt",
+      "sha256": "f7965d34f5a7fc05cefb8ca146068aa161f547507a2a15f3d8a060eef2934c3a",
+      "bytes": 1121
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/SharpGen.Runtime/2.4.2-beta/PACKAGE-METADATA.txt",
+      "sha256": "9a145f4fb5506359369cb0ec9bbf0840e2162d9e852c3e05a88394aac0b39b0d",
+      "bytes": 389
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/SharpGen.Runtime/2.4.2-beta/UPSTREAM-LICENSE.txt",
+      "sha256": "f7965d34f5a7fc05cefb8ca146068aa161f547507a2a15f3d8a060eef2934c3a",
+      "bytes": 1121
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/SubstreamSharp/1.0.3/PACKAGE-METADATA.txt",
+      "sha256": "f8aaca0dfdaa74762882dfc63c0af9459bf4989ff56477c60bbc224395e69abc",
+      "bytes": 316
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.IO.Hashing/10.0.8/PACKAGE-METADATA.txt",
+      "sha256": "97f5560c40e5efbf4cc1582d7b9b23a651f9bc4c12768cf7e67658fdd9112a62",
+      "bytes": 333
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.IO.Pipelines/9.0.1/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.IO.Pipelines/9.0.1/PACKAGE-METADATA.txt",
+      "sha256": "f46954c465504cf2ab894803b1b520b06f269bd40fc2a0e99827084d7ddc1003",
+      "bytes": 335
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.IO.Pipelines/9.0.1/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.IO.Pipelines/9.0.6/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.IO.Pipelines/9.0.6/PACKAGE-METADATA.txt",
+      "sha256": "e90bc66cc24ab1346da2fadbb8be4b3365a0cde949da772b57e7f612f90eccb4",
+      "bytes": 335
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Numerics.Tensors/10.0.10/PACKAGE-METADATA.txt",
+      "sha256": "f954b3f7ab0cb9db1eb1e8e3fdf8bfd7236d3af1bc1ee020fb26f9f51aa0ee8a",
+      "bytes": 340
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Encodings.Web/9.0.1/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Encodings.Web/9.0.1/PACKAGE-METADATA.txt",
+      "sha256": "c7826d5565894a6f6883453edfd15929d1a39e51525a9bdda157eeee4a671a96",
+      "bytes": 341
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Encodings.Web/9.0.1/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Encodings.Web/9.0.6/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Encodings.Web/9.0.6/PACKAGE-METADATA.txt",
+      "sha256": "1f4436aae9cad91b3141a6af8577063a9cc34d67ac6651bacde38b5a5361e3c3",
+      "bytes": 341
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Json/9.0.1/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Json/9.0.1/PACKAGE-METADATA.txt",
+      "sha256": "a096c2ac8061cb564a0f583c4c085e560219ff6dc6c7a763647202b900efd7b0",
+      "bytes": 332
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Json/9.0.1/THIRD-PARTY-NOTICES.TXT",
+      "sha256": "40686c6447a7d5b5d3693068e4571b5f483d7ed335aeee773ef662440de4c5d5",
+      "bytes": 75640
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Json/9.0.6/LICENSE.TXT",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/System.Text.Json/9.0.6/PACKAGE-METADATA.txt",
+      "sha256": "2ef0d7c1457cfa40b9ca6a42cade2aa7ff9f40971a27e3bc697d85df68f07eaa",
+      "bytes": 332
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/VGAudio/2.2.1/PACKAGE-METADATA.txt",
+      "sha256": "224b86bfd5a0b2e0c9d53c17a9a79b956ae66cde5b5e01cd3ee54396ec731976",
+      "bytes": 355
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/VGAudio/2.2.1/UPSTREAM-LICENSE.txt",
+      "sha256": "b7c02ebd74b762254f563f6a7c17f7a10265e30055633dd850d17e0fd08d5e19",
+      "bytes": 1088
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.DXGI/3.8.3/PACKAGE-METADATA.txt",
+      "sha256": "8c24c27bf34d8842411cc195a8d8b2f04e2c66035f15aa43cfe712c0c1a4f04f",
+      "bytes": 338
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.DXGI/3.8.3/UPSTREAM-LICENSE.txt",
+      "sha256": "dccc37253abc6eda161fadb5c958fbe232d00cc0ccc19b206ff82b72303d3587",
+      "bytes": 1111
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.Direct3D11/3.8.3/PACKAGE-METADATA.txt",
+      "sha256": "573990ca290971f329c58fdd6ce06346c367ed7c9e3653249b4a2af170f006d9",
+      "bytes": 344
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.Direct3D11/3.8.3/UPSTREAM-LICENSE.txt",
+      "sha256": "dccc37253abc6eda161fadb5c958fbe232d00cc0ccc19b206ff82b72303d3587",
+      "bytes": 1111
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.DirectX/3.8.3/PACKAGE-METADATA.txt",
+      "sha256": "c5480ecc978603a7e97b7824b9bae6b111413fa621bef345425eca00135f32a8",
+      "bytes": 341
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.DirectX/3.8.3/UPSTREAM-LICENSE.txt",
+      "sha256": "dccc37253abc6eda161fadb5c958fbe232d00cc0ccc19b206ff82b72303d3587",
+      "bytes": 1111
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.Mathematics/2.1.0/PACKAGE-METADATA.txt",
+      "sha256": "ec22202e3554aac45e9b02f82e4d1870cbdccadc985ab5c4fdc0364a5422f233",
+      "bytes": 349
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Vortice.Mathematics/2.1.0/UPSTREAM-LICENSE.txt",
+      "sha256": "a9d6f254744080a0750810e89225f9000f5ec5f0b0dc8bda031ae907dad0b895",
+      "bytes": 1111
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/Zlib-ng.NET/1.2.0/PACKAGE-METADATA.txt",
+      "sha256": "9aa40906b64d941214c0b73275f039b1ef2dc8f3a14b9849e3c6f9b1cd4ff1f7",
+      "bytes": 319
+    },
+    {
+      "path": "licenses/PreviousDeclaredComponents/nuget/ZstdSharp.Port/0.8.8/PACKAGE-METADATA.txt",
+      "sha256": "eda4e2553c7c69360ee1f70e21b1e07be02e98be406ca02d1f0b3cefefdb11a6",
+      "bytes": 331
+    },
+    {
+      "path": "licenses/RapidOCR-Apache-2.0.txt",
+      "sha256": "3e0af25fdd06aa9586ae97adb00ea927ebe5a3805ac77d2d3a81ce5f55693333",
+      "bytes": 11422
+    },
+    {
+      "path": "licenses/UnityEmbedded/AsmResolver.txt",
+      "sha256": "1c967bb945d9e86f79e49dda29e834d49ff3cb203c9a98878e7661b3de7a5559",
+      "bytes": 1108
+    },
+    {
+      "path": "licenses/UnityEmbedded/AssetRipper.CIL.txt",
+      "sha256": "039cd624a13919c3af1aec3ce2217c3f50d6e3053f6e9ef64d9cf37e12812a76",
+      "bytes": 1062
+    },
+    {
+      "path": "licenses/UnityEmbedded/AssetRipper.Primitives.txt",
+      "sha256": "dae6148ff7ad3331a6380a2ce0cbb87f71b8f177891aba1661b1d3a6fe52d5de",
+      "bytes": 1062
+    },
+    {
+      "path": "licenses/UnityEmbedded/AssetsTools.NET.txt",
+      "sha256": "ab26018f961d37d489bcd0f8277b602d1a41586cda867e59173778c7214ae29f",
+      "bytes": 1083
+    },
+    {
+      "path": "licenses/UnityEmbedded/BepInEx-5.txt",
+      "sha256": "e6e534ef6f4347b6449407ee046a3d09cb0174c6f688c996ad0bed94b74b3933",
+      "bytes": 1062
+    },
+    {
+      "path": "licenses/UnityEmbedded/BepInEx-6.txt",
+      "sha256": "f2ceca48af033d8adf337a8f9453e633cfad10a1f8c9fec2e5ae55a2d8ffe952",
+      "bytes": 25338
+    },
+    {
+      "path": "licenses/UnityEmbedded/Capstone.NET.txt",
+      "sha256": "79463fa3b9facda0f90e33eda09ff57c6c4d5620ba8b01e5c48a68834e20de4e",
+      "bytes": 1062
+    },
+    {
+      "path": "licenses/UnityEmbedded/Cpp2IL.txt",
+      "sha256": "1a80d1b99e958385045da1e383a105895d1c997ef2b36448430dbfe3763fe670",
+      "bytes": 1066
+    },
+    {
+      "path": "licenses/UnityEmbedded/Disarm.txt",
+      "sha256": "dfe5ef7511938e4d23b12c80f38e966a7993aee60744ab72a947bed7b24963b8",
+      "bytes": 1066
+    },
+    {
+      "path": "licenses/UnityEmbedded/Dobby.txt",
+      "sha256": "43070e2d4e532684de521b885f385d0841030efa2b1a20bafb76133a5e1379c1",
+      "bytes": 11356
+    },
+    {
+      "path": "licenses/UnityEmbedded/HarmonyX-5.txt",
+      "sha256": "7e54ab4766ef78637a05fb3454663a66de6bb960dbd4c7088890ed76b0844f36",
+      "bytes": 1063
+    },
+    {
+      "path": "licenses/UnityEmbedded/HarmonyX-6.txt",
+      "sha256": "7e54ab4766ef78637a05fb3454663a66de6bb960dbd4c7088890ed76b0844f36",
+      "bytes": 1063
+    },
+    {
+      "path": "licenses/UnityEmbedded/Iced.txt",
+      "sha256": "93a47598376fd3f276b631e75149340087153c6ff1635a53c5790249e9124e2d",
+      "bytes": 1114
+    },
+    {
+      "path": "licenses/UnityEmbedded/Il2CppInterop-GPL.txt",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "bytes": 35149
+    },
+    {
+      "path": "licenses/UnityEmbedded/Il2CppInterop-LGPL.txt",
+      "sha256": "5eecce16e59e24ddd9d3712012517a033f2cd0459ace22b43d5659d4624abff0",
+      "bytes": 42802
+    },
+    {
+      "path": "licenses/UnityEmbedded/Mono.Cecil-5.txt",
+      "sha256": "13d58ecbed676511c0c4c4009bff107025e50007ff5e7901dc562700ec62509e",
+      "bytes": 1098
+    },
+    {
+      "path": "licenses/UnityEmbedded/Mono.Cecil-6.txt",
+      "sha256": "13d58ecbed676511c0c4c4009bff107025e50007ff5e7901dc562700ec62509e",
+      "bytes": 1098
+    },
+    {
+      "path": "licenses/UnityEmbedded/Mono.Cecil-desktop.txt",
+      "sha256": "13d58ecbed676511c0c4c4009bff107025e50007ff5e7901dc562700ec62509e",
+      "bytes": 1098
+    },
+    {
+      "path": "licenses/UnityEmbedded/MonoMod-5.txt",
+      "sha256": "0b64833222e3c6a426ad29362d26334619fe02eaf2b89ea9c37805521896c920",
+      "bytes": 1080
+    },
+    {
+      "path": "licenses/UnityEmbedded/MonoMod-6.txt",
+      "sha256": "0b64833222e3c6a426ad29362d26334619fe02eaf2b89ea9c37805521896c920",
+      "bytes": 1080
+    },
+    {
+      "path": "licenses/UnityEmbedded/NotoCJK-OFL.txt",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
+      "bytes": 4301
+    },
+    {
+      "path": "licenses/UnityEmbedded/NotoCJK-SOURCE.txt",
+      "sha256": "dec57a9ab20952c8cc8a4a377cd0c4904fe2c1fd35d6ce42fa3e320c49e6939a",
+      "bytes": 300
+    },
+    {
+      "path": "licenses/UnityEmbedded/README.md",
+      "sha256": "04406c822ccb1160d79020b43cf5f819d7e94b95ca32a0d4cd5e7257be9b9059",
+      "bytes": 3117
+    },
+    {
+      "path": "licenses/UnityEmbedded/SemanticVersioning.txt",
+      "sha256": "26a00bad0d14ca2fc93c10398d477fa9609d6fd36068867de53384218c1f64a3",
+      "bytes": 1054
+    },
+    {
+      "path": "licenses/UnityEmbedded/UnityDoorstop-5.txt",
+      "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331",
+      "bytes": 26526
+    },
+    {
+      "path": "licenses/UnityEmbedded/UnityDoorstop-6.txt",
+      "sha256": "20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331",
+      "bytes": 26526
+    },
+    {
+      "path": "licenses/UnityEmbedded/dotnet-runtime-third-party.txt",
+      "sha256": "55ff71c32f96483c2f4e061eb78ee9bf3d8d562d00143c67b361bb4ce989fe44",
+      "bytes": 46771
+    },
+    {
+      "path": "licenses/UnityEmbedded/dotnet-runtime.txt",
+      "sha256": "cfc21f5e8bd655ae997eec916138b707b1d290b83272c02a95c9f821b8c87310",
+      "bytes": 1116
+    },
+    {
+      "path": "licenses/UnityEmbedded/sources.json",
+      "sha256": "cb03e3b80180a664518fdc7020138a2da6dba77423af5e4a4c25af505d0ecc2a",
+      "bytes": 11407
+    },
+    {
+      "path": "licenses/UnityNative/MinHook.txt",
+      "sha256": "4f21f857550d7be854da6ea5f2da4e6775ca4e3fbb535e4f3d961c47d0bf3335",
+      "bytes": 4446
+    },
+    {
+      "path": "licenses/UnityNative/nlohmann-json.txt",
+      "sha256": "46a65cffd1ea955132d95a8dd921640714a8d6b537d2e4e482d31145ae95b603",
+      "bytes": 1076
+    },
+    {
+      "path": "licenses/Unreal/COMPONENTS.md",
+      "sha256": "80677c943c6036b7f9759e6e06ba7af79181f9fc19c37aedf5fbd51012263905",
+      "bytes": 3826
+    },
+    {
+      "path": "licenses/Unreal/CUE4Parse-Apache-2.0.txt",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "bytes": 11357
+    },
+    {
+      "path": "licenses/Unreal/DotNet-LICENSE.txt",
+      "sha256": "d7a68596ab69b06f51ca278a6545148e4269a9381c26d597c13df5d88e08cf5b",
+      "bytes": 1139
+    },
+    {
+      "path": "licenses/Unreal/DotNet-THIRD-PARTY-NOTICES.txt",
+      "sha256": "6d15e10a101c6bfff2ab4429ed061bf76c456fc4b23ad6b03e0d0f8377148a21",
+      "bytes": 78041
+    },
+    {
+      "path": "licenses/Unreal/UE4SS-MIT.txt",
+      "sha256": "ddc030e25d0ea87aca4ae84c0ed3f868d69273c00c0c12ea1e26f1c6130f5d2e",
+      "bytes": 1064
+    },
+    {
+      "path": "licenses/Unreal/experimental-provenance.json",
+      "sha256": "495894eedbef6467f6d834594e42228bc299825421804897f078929e1a391472",
+      "bytes": 585
+    },
+    {
+      "path": "licenses/Unreal/rxi-json-MIT.txt",
+      "sha256": "75c4cde427e213b9038cc308272e5cf2a74c6582dd3c2eae7cf799ed23e2bf1b",
+      "bytes": 1082
+    },
+    {
+      "path": "licenses/WolfNative/MinHook.txt",
+      "sha256": "4f21f857550d7be854da6ea5f2da4e6775ca4e3fbb535e4f3d961c47d0bf3335",
+      "bytes": 4446
+    },
+    {
+      "path": "licenses/WolfNative/nlohmann-json.txt",
+      "sha256": "46a65cffd1ea955132d95a8dd921640714a8d6b537d2e4e482d31145ae95b603",
+      "bytes": 1076
+    },
+    {
+      "path": "licenses/WolfTextCatalog.LICENSE.txt",
+      "sha256": "5f9ff25e055ab30cb17529d9d872172f26c83ae3c7ff9d3560afa08dea033a67",
+      "bytes": 1087
+    },
+    {
+      "path": "licenses/nuget-inventory.json",
+      "sha256": "4ff7de184a7c0034e1344bdc0d3783bc88ce3b45402e0c4ff4352fc4138193d9",
+      "bytes": 7840
+    },
+    {
+      "path": "licenses/python-inventory.json",
+      "sha256": "f79cf40825cb02858420210b28ca0384152e8d8619552342f337a55a940372b1",
+      "bytes": 82873
+    },
+    {
+      "path": "third-party-source/BepInEx-5b766a3-source.zip",
+      "sha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
+      "bytes": 1207906
+    },
+    {
+      "path": "third-party-source/Disarm-8574010-source.zip",
+      "sha256": "9e36d2b36a64c60a1f633b396ac1ebb8d3469dae78a4b83bda799ec74216d4cb",
+      "bytes": 78273
+    },
+    {
+      "path": "third-party-source/Il2CppInterop-1.5.3-source.zip",
+      "sha256": "32c37dc7cbd94aeb97a26bdcf14c551118062633d2e2d5491d258570f8b5dd9a",
+      "bytes": 922434
+    },
+    {
+      "path": "third-party-source/SOURCES.json",
+      "sha256": "f629246cccca9205dafd2ebdfc41fc220a37937dc9a900aa6eed7f03807c56ae",
+      "bytes": 1029
+    },
+    {
+      "path": "third-party-source/Underanalyzer-4ff50a8-source.zip",
+      "sha256": "588bd38ba0f55c3f37e0cbabc71fa6a46669fe4a2dbda4b2895eb374cbe5dab2",
+      "bytes": 476661
+    },
+    {
+      "path": "third-party-source/UndertaleModTool-0.9.2.0-source.zip",
+      "sha256": "330f6ea64d6c399130a15d1ab9024ffe1d35d82563d981b96f0d0f84bbd410f5",
+      "bytes": 13547040
+    },
+    {
+      "path": "third-party-source/UnityDoorstop-4.5.0-source.zip",
+      "sha256": "7f0c963104aa08bf5fefef8ff85e7fecd8306838f5af3101487d9db4e9188d63",
+      "bytes": 109881
+    },
+    {
+      "path": "tools/Build-Desktop.ps1",
+      "sha256": "1348fc191134ea3b2deb5ad144fa9f6d951dd546fe42bae9cae15ce127c526a4",
+      "bytes": 2679
     },
     {
       "path": "tools/SourcePretranslation178/Program.cs",
@@ -5600,12 +6662,11 @@
       "path": "tools/SourcePretranslation178/TransferredInstallTests.cs",
       "sha256": "2fd3b93c557064af6db74b577902bba6b72eb6b96c114b5afc160a2dfc8c6446",
       "bytes": 4718
+    },
+    {
+      "path": "tools/Test-UnicodeOcr.py",
+      "sha256": "dc18c541b637d24e60a26f73b937c91dfd87a3982e0e6081e601125afe8fe371",
+      "bytes": 3811
     }
-  ],
-  "byteReproducibleBuildClaim": false,
-  "fullFreshSourceRebuildTested": false,
-  "packagingDiscoveredFixes": [
-    "Unicode OCR image file I/O"
-  ],
-  "unicodePathChecks": 15
+  ]
 }

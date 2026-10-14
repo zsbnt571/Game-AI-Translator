@@ -1,6 +1,6 @@
 # 当前版本文档 / Current documentation
 
-这些说明适用于 **Fusion R1 0.6.0.178 Preview 1**。
+当前公开下载为 **Fusion R1 0.6.0.178 Russian Preview 1**，通用说明沿用 178。俄语界面与翻译目标的设置及验证范围见 [本次更新 / Russian preview](RELEASE-178-RUSSIAN.md)。
 
 | 内容 / Topic | 中文 | English |
 | --- | --- | --- |
