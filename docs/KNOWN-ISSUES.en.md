@@ -36,7 +36,7 @@
 
 ## This release build
 
-This release build passed **613 of 613 controlled checks**: 342 interface/localization checks and 271 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance.
+This release build passed **615 of 615 controlled checks**: 342 interface/localization checks and 273 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance.
 
 Historical checks do not substitute for validating this release. Controlled tests, resource checks, real-control screenshots and actual game runs are recorded separately. See the [three-language release notes](RELEASE-NOTES-1.0.0.md).
 

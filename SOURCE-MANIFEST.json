@@ -1,6 +1,6 @@
 {
   "version": "1.0.0-preview.1",
-  "mainAssemblySha256": "a368131bbde8d6c0a4d60c9fa819986a5c48c7185e5f720ee524919fdb0102ea",
+  "mainAssemblySha256": "465703e301eadb0b81b255e9fe4e967c1b24e934375f71599de52754578ff079",
   "files": [
     {
       "path": ".gitattributes",
@@ -1239,13 +1239,13 @@
     },
     {
       "path": "docs/BUILD.en.md",
-      "sha256": "a3156ef50737f8fe92faf858169daed9de7f02202faad987945f41c5640227aa",
-      "bytes": 4715
+      "sha256": "91888cfd8a287dcb70ed7035ad798378ef8b220fff292e74dcf19be712a4a4f8",
+      "bytes": 4765
     },
     {
       "path": "docs/BUILD.md",
-      "sha256": "bd374bbd3f0aa1e58d3c2855e3fa2511c526eb867f6ce92a7bde01a6a01a1f60",
-      "bytes": 4182
+      "sha256": "df3d87285f6cbe9d24639d433aac5d12bd7a99c4518860099d41e04f763d98e6",
+      "bytes": 4232
     },
     {
       "path": "docs/DEPENDENCIES-176.en.md",
@@ -1264,18 +1264,18 @@
     },
     {
       "path": "docs/KNOWN-ISSUES.en.md",
-      "sha256": "fdbd6c4aacfb0576e74b834d0df68c4b330adaee9e795dcdf1ac4f503912c780",
-      "bytes": 6055
+      "sha256": "f3e49bc3b0656b5116e5d3a4aa8172c8815d6cff31ae95e4f54cda3b82a076b1",
+      "bytes": 6098
     },
     {
       "path": "docs/KNOWN-ISSUES.md",
-      "sha256": "f88719e6a2e078d2650612d9e2c020789256e30dc56ade0916c7e5201a976095",
-      "bytes": 5325
+      "sha256": "3b170786d582e90e4b7371d7dc46a86e6320dac4224828cea8541b007e69f9eb",
+      "bytes": 5368
     },
     {
       "path": "docs/KNOWN-ISSUES.ru.md",
-      "sha256": "67b045774d4d4f6f0df0ce15a14df58d6fdcdcc6fef84809c75371ed5b056634",
-      "bytes": 10936
+      "sha256": "3df74b730081c2fce48573034c4924bfc69fc72d79788b767977317cf3bef247",
+      "bytes": 10979
     },
     {
       "path": "docs/README.md",
@@ -1284,8 +1284,8 @@
     },
     {
       "path": "docs/RELEASE-NOTES-1.0.0.md",
-      "sha256": "0bd945144304b5720dfefc45ec93a693d6051d19f84c164f7b930f7c56beb939",
-      "bytes": 32094
+      "sha256": "bafb3d29bb3a3d02fa6397d9501e0fa2f860455b7c831f9d7f770d46b0f6aa5d",
+      "bytes": 32291
     },
     {
       "path": "docs/THIRD-PARTY.md",
@@ -1304,13 +1304,13 @@
     },
     {
       "path": "docs/VALIDATION-1.0.0.json",
-      "sha256": "93cd85c1485945a84f7eb0f93a3ba7b5c535c11a0837e3e9e913bf226db5a0bd",
+      "sha256": "6d8a6f426a4ac1da226769134c55df2eeafde703a2377821f2af9d7a8a744d05",
       "bytes": 2001
     },
     {
       "path": "docs/VALIDATION-1.0.0.md",
-      "sha256": "8ea5034fa69c51db4d610ef85acdbaa86018cdc99773ab5795ebc21b01a797d7",
-      "bytes": 2246
+      "sha256": "10ab905af762d859472be15203c06c02e0f75fe450a4f394d722fab94a59c43b",
+      "bytes": 2282
     },
     {
       "path": "docs/VALIDATION-179.md",
@@ -2254,18 +2254,18 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "43795c645f9f8902e3f807a7b4d091913ddcd1260043946602c5163929423242",
-      "bytes": 11855
+      "sha256": "56cad62ed2b15e7a39295dbe6061d005e4219d6182727a2cc7451170034e592e",
+      "bytes": 11973
     },
     {
       "path": "README.md",
-      "sha256": "2e4bcf6ead71d036af81bb450546123bfe2441869e416a61999acbaf09b3a866",
-      "bytes": 10460
+      "sha256": "8e1cc174c0d6366c6a64f2e1d0dd8c74ced6fa0ec36907cd64e514025354888d",
+      "bytes": 10578
     },
     {
       "path": "README.ru.md",
-      "sha256": "3d89c3076c4786e01fd6d3cd8fee66bb5554ecdae07e811006b06a5528289d37",
-      "bytes": 20883
+      "sha256": "8d8bb24bef2374628931aeda2612e17d3587c36285ab1ff47ab4cb79c967b3eb",
+      "bytes": 21001
     },
     {
       "path": "Source/CoverCapture/CoverClientArea.cs",
@@ -3154,8 +3154,8 @@
     },
     {
       "path": "Source/Screenshot/BuildIdentity.cs",
-      "sha256": "876ad5ff86a8c056d8d928573a89a88ec843de6148919e0424fa5d577ca23e52",
-      "bytes": 2320
+      "sha256": "ef8b2228c630ce890252183605eb0ab9a73b83c4bf08e08cf052b8f237b60e9b",
+      "bytes": 2862
     },
     {
       "path": "Source/Screenshot/CAPTURE-FLASH-DIAGNOSTICS.md",
@@ -6764,8 +6764,8 @@
     },
     {
       "path": "Source/Screenshot/WpfWorkspaceWindow.cs",
-      "sha256": "901a3af43985660a1825ef3dbebef9f0d81811d13990ab6c6600fe9abd62bbcc",
-      "bytes": 23042
+      "sha256": "324dba4b63568232bc0adc72d5d835f085a499b503fc4c351562fd3c01ecf7a2",
+      "bytes": 23037
     },
     {
       "path": "Source/Screenshot/XmlDisplayText.cs",

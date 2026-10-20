@@ -8,7 +8,17 @@ public static class BuildIdentity
     public const string ProductName="Game Translator";
     public static readonly string BuildVersion=typeof(BuildIdentity).Assembly.GetName().Version?.ToString()??"Unavailable";
     internal static readonly string LocalWpfCandidate=System.Text.RegularExpressions.Regex.Match(typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"",@"wpf\.(\d+)").Groups[1].Value;
-    public static string DisplayVersion=>"Fusion R1 · "+BuildVersion;
+    internal static string VersionLabel
+    {
+        get
+        {
+            var info=typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"";
+            var preview=System.Text.RegularExpressions.Regex.Match(info,@"^(\d+\.\d+\.\d+)-preview\.(\d+)(?:\+.*)?$");
+            if(preview.Success)return preview.Groups[1].Value+" Preview "+preview.Groups[2].Value;
+            return BuildVersion+(LocalWpfCandidate.Length>0?" wpf"+LocalWpfCandidate:"");
+        }
+    }
+    public static string DisplayVersion=>"Fusion R1 · "+VersionLabel;
     public const string StableApplicationId="GameTranslator.Fusion.20260914";
     public static string ProductVersion=>DisplayVersion;
     public static string BuildId=>DisplayVersion;

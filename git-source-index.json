@@ -3,7 +3,7 @@
   "releaseTag": "v1.0.0-preview.1",
   "sourceRoot": "Source",
   "fullSourceAsset": "Fusion-1.0.0-Source.zip",
-  "mainAssemblySha256": "a368131bbde8d6c0a4d60c9fa819986a5c48c7185e5f720ee524919fdb0102ea",
+  "mainAssemblySha256": "465703e301eadb0b81b255e9fe4e967c1b24e934375f71599de52754578ff079",
   "productSourceEdited": true,
   "files": [
     {
@@ -716,7 +716,7 @@
     },
     {
       "path": "Source/Screenshot/BuildIdentity.cs",
-      "sha256": "876ad5ff86a8c056d8d928573a89a88ec843de6148919e0424fa5d577ca23e52"
+      "sha256": "ef8b2228c630ce890252183605eb0ab9a73b83c4bf08e08cf052b8f237b60e9b"
     },
     {
       "path": "Source/Screenshot/CAPTURE-FLASH-DIAGNOSTICS.md",
@@ -3604,7 +3604,7 @@
     },
     {
       "path": "Source/Screenshot/WpfWorkspaceWindow.cs",
-      "sha256": "901a3af43985660a1825ef3dbebef9f0d81811d13990ab6c6600fe9abd62bbcc"
+      "sha256": "324dba4b63568232bc0adc72d5d835f085a499b503fc4c351562fd3c01ecf7a2"
     },
     {
       "path": "Source/Screenshot/XmlDisplayText.cs",

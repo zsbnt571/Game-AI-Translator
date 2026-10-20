@@ -96,7 +96,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
     private readonly Dictionary<string, (WC.Button Button, WC.Border Line)> navigation = [];
     private readonly Dictionary<string, (string Text, Font Font, int Dpi)> navigationMetrics = [];
     private readonly WC.TextBlock product = new() { Text = "FUSION R1", FontFamily = new("Segoe UI"), FontSize = 12, VerticalAlignment = W.VerticalAlignment.Center };
-    private readonly WC.TextBlock version = new() { Text = BuildIdentity.BuildVersion + " wpf" + BuildIdentity.LocalWpfCandidate, FontFamily = new("Segoe UI"), FontSize = 10.667, VerticalAlignment = W.VerticalAlignment.Center };
+    private readonly WC.TextBlock version = new() { Text = BuildIdentity.VersionLabel, FontFamily = new("Segoe UI"), FontSize = 10.667, VerticalAlignment = W.VerticalAlignment.Center };
     private readonly WC.Image brand = new() { Width = 24, Height = 24, VerticalAlignment = W.VerticalAlignment.Center };
     private bool controllerClosed, requestingClose;
     private readonly WpfViewRefresh workspaceRefresh;
@@ -107,7 +107,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
         this.main = main;
         workspaceRefresh = new(Dispatcher, RefreshWorkspaceNow);
         Resources.MergedDictionaries.Add(WpfThemeResources.Create());
-        Title = main.Text + UiLanguage.Format($" · WPF 本地候选{BuildIdentity.LocalWpfCandidate}");
+        Title = main.Text.Replace(BuildIdentity.BuildVersion, BuildIdentity.VersionLabel, StringComparison.Ordinal);
         var workArea = W.SystemParameters.WorkArea;
         Width = Math.Min(1440, workArea.Width); Height = Math.Min(880, workArea.Height);
         MinWidth = Math.Min(900, Width); MinHeight = Math.Min(640, Height);
@@ -167,7 +167,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
         PreviewMouseWheel += (_, e) => { if(main.NativeBindingMouse(null,e.Delta,WI.Keyboard.Modifiers,PointToScreen(e.GetPosition(this))))e.Handled=true; };
         PreviewMouseUp += (_, e) => { if (main.NativeBindingMouseReleased(e.ChangedButton) || main.HandleNativePageMouse(e.ChangedButton, released: true)) e.Handled = true; };
         main.FormClosed += (_, _) => { controllerClosed = true; if (!requestingClose) Close(); };
-        main.TextChanged += (_, _) => Title = main.Text + UiLanguage.Format($" · WPF 本地候选{BuildIdentity.LocalWpfCandidate}");
+        main.TextChanged += (_, _) => Title = main.Text.Replace(BuildIdentity.BuildVersion, BuildIdentity.VersionLabel, StringComparison.Ordinal);
         Loaded += (_, _) => { main.StartWpfServices(); RefreshChrome(); };
         Activated += (_, _) => { if (!main.IsDisposed) main.WpfWindowActivated(); };
         Deactivated += (_, _) => { if (!main.IsDisposed) main.WpfWindowDeactivated(); };
@@ -232,7 +232,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
     internal void RefreshChrome()
     {
         if (main.IsDisposed) return;
-        Title=main.Text+UiLanguage.Format($" · WPF 本地候选{BuildIdentity.LocalWpfCandidate}");
+        Title=main.Text.Replace(BuildIdentity.BuildVersion, BuildIdentity.VersionLabel, StringComparison.Ordinal);
         var p = UiTheme.Current;
         WpfThemeResources.Apply(Resources);
         Background = border.Background = WpfDrawing.Brush(p.Main);

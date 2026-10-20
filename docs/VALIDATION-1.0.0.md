@@ -2,7 +2,7 @@
 
 **Game modification is experimental. 游戏修改处于实验阶段。 Изменение игровых данных — экспериментальная функция.**
 
-The final public application passed **613 controlled checks, 0 failures**, using .NET 8.0.24.
+The final public application passed **615 controlled checks, 0 failures**, using .NET 8.0.24.
 
 | Area | Checks |
 | --- | ---: |
@@ -14,11 +14,11 @@ The final public application passed **613 controlled checks, 0 failures**, using
 | Category switching, concurrent responses and speed limits | 72 |
 | Usable translations first and bounded repair | 57 |
 | Terminology classification and conservative cleanup | 43 |
-| Native startup and shutdown with isolated settings | 16 |
+| Native startup and shutdown with isolated settings and release identity | 18 |
 | Character, common-action and CG layouts | 53 |
 | Embedded RPG Maker MV/MZ speed scripts | 30 |
 
-The category stress fixture contained 21,116 rows. Across 42 warm switches, P95 was 79.16 ms and the maximum was 87.41 ms; 60 overlapping requests also passed. These are controlled classification/UI timings, **not a measurement or promise of physical 60 FPS**.
+The category stress fixture contained 21,116 rows. All 42 warm switches and 60 overlapping requests passed. Measured timings are recorded in the accompanying validation JSON. These are controlled classification/UI timings, **not a measurement or promise of physical 60 FPS**.
 
 The translation tests use controlled responses; they do not establish provider quality or compatibility with every game. The release regression made no real provider calls and performed no real game writes. WOLF speed selection covers 0.25–100×; RPG Maker MV/MZ uses integer 1–100×. Selected speed is not guaranteed actual speed, and other engines do not all have a verified speed interface.
 

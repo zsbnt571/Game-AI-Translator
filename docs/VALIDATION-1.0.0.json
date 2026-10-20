@@ -1,6 +1,6 @@
 {
   "version": "1.0.0-preview.1",
-  "mainAssemblySha256": "a368131bbde8d6c0a4d60c9fa819986a5c48c7185e5f720ee524919fdb0102ea",
+  "mainAssemblySha256": "465703e301eadb0b81b255e9fe4e967c1b24e934375f71599de52754578ff079",
   "controlledChecks": [
     {
       "name": "Localization42-en",
@@ -36,7 +36,7 @@
     },
     {
       "name": "NativeStartup179",
-      "checks": 16
+      "checks": 18
     },
     {
       "name": "CommonBoard41",
@@ -47,7 +47,7 @@
       "checks": 30
     }
   ],
-  "controlledTotal": 613,
+  "controlledTotal": 615,
   "failed": 0,
   "dotnetRuntime": "8.0.24",
   "gameModification": "experimental",
@@ -57,8 +57,8 @@
   "stressTest": {
     "rows": 21116,
     "hotSwitchSamples": 42,
-    "hotSwitchP95Milliseconds": 79.1588,
-    "hotSwitchMaximumMilliseconds": 87.4076,
+    "hotSwitchP95Milliseconds": 75.9334,
+    "hotSwitchMaximumMilliseconds": 85.7587,
     "overlappingRequests": 60
   },
   "boundaries": [

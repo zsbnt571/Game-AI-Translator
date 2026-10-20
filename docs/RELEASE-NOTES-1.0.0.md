@@ -66,7 +66,7 @@ Optional NVIDIA background-processing dependencies: [Fusion-0.6.0.178-GPU.zip](h
 
 ### 验证与仍有限制的范围
 
-本次发布构建完成 **613 / 613 项受控检查，全部通过**，包含 342 项界面与语言检查和 271 项修改/翻译回归检查。这些结果不等于真实游戏长期游玩或物理屏幕帧率验收。受控检查、真实控件截图、引擎/API 样本和实际游戏测试分别说明验证范围，不能推广为全部游戏兼容或屏幕帧率保证。
+本次发布构建完成 **615 / 615 项受控检查，全部通过**，包含 342 项界面与语言检查和 273 项修改/翻译回归检查。这些结果不等于真实游戏长期游玩或物理屏幕帧率验收。受控检查、真实控件截图、引擎/API 样本和实际游戏测试分别说明验证范围，不能推广为全部游戏兼容或屏幕帧率保证。
 
 自动名称、金钱和回想识别仍依赖游戏的数据结构；部分大库首次名称准备可能较慢。图片内文字、自定义绘制、未知封包和动态文本仍可能漏读或漏译。所有引擎、长期游玩、高倍速音画表现和各类显示器组合尚未全面验证。
 
@@ -128,7 +128,7 @@ A slider, preset buttons and minus/plus controls edit the same speed value. Drag
 
 ### Validation and remaining limits
 
-This release build passed **613 of 613 controlled checks**: 342 interface/localization checks and 271 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance. Controlled checks, real-control screenshots, engine/API samples and actual game tests have separate scopes. They do not establish universal game compatibility or a physical display-FPS guarantee.
+This release build passed **615 of 615 controlled checks**: 342 interface/localization checks and 273 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance. Controlled checks, real-control screenshots, engine/API samples and actual game tests have separate scopes. They do not establish universal game compatibility or a physical display-FPS guarantee.
 
 Automatic names, money and replay detection depend on game data. Initial name preparation in some large libraries can remain slow. Image text, custom rendering, unknown archives and runtime text may still be missed. All engines, extended play, high-speed audiovisual behavior and monitor combinations have not been exhaustively tested.
 
@@ -190,7 +190,7 @@ Download and fully extract **Fusion-1.0.0.zip**, then run `GameTranslator.exe`. 
 
 ### Проверки и оставшиеся ограничения
 
-Эта сборка прошла **613 из 613 контролируемых проверок**: 342 проверки интерфейса/локализации и 271 регрессионную проверку изменения данных/перевода. Это не подтверждает длительную игру или фактическую частоту кадров дисплея. Контролируемые проверки, снимки настоящих элементов, примеры движков/API и игровые тесты имеют отдельные границы. Они не устанавливают универсальную совместимость или гарантию фактической частоты кадров дисплея.
+Эта сборка прошла **615 из 615 контролируемых проверок**: 342 проверки интерфейса/локализации и 273 регрессионную проверку изменения данных/перевода. Это не подтверждает длительную игру или фактическую частоту кадров дисплея. Контролируемые проверки, снимки настоящих элементов, примеры движков/API и игровые тесты имеют отдельные границы. Они не устанавливают универсальную совместимость или гарантию фактической частоты кадров дисплея.
 
 Распознавание названий, денег и воспоминаний зависит от структуры данных. Первая подготовка имён в больших наборах может оставаться медленной. Текст внутри изображений, нестандартная отрисовка, неизвестные архивы и динамический текст могут быть пропущены. Все движки, длительная игра, поведение звука/изображения при высоком ускорении и сочетания мониторов не проверены исчерпывающе.
 

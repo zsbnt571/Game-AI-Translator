@@ -87,7 +87,7 @@ Combinations such as English + Japanese limit the languages in collected content
 
 ## Limits and validation
 
-This release build passed **613 of 613 controlled checks**: 342 interface/localization checks and 271 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance.
+This release build passed **615 of 615 controlled checks**: 342 interface/localization checks and 273 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance.
 
 Controlled checks, real-control screenshots, API samples and particular game tests are different evidence. None establishes all-engine extended gameplay, every DPI/monitor setup, all GPU hardware or stable 60 FPS. Unity IL2CPP, Unreal, Godot 3 and some plugins/resource formats retain limits; see [Known issues](docs/KNOWN-ISSUES.en.md).
 

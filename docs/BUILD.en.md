@@ -45,6 +45,6 @@ Some old diagnostic tools retain historical fixture paths; the referenced game m
 
 **Build output is not a complete public distribution.** Packaging still requires verified OCR/image runtimes, models, licenses, component manifests, removal of user data and archive checks. Do not publish the entire Build folder as an application package.
 
-This release build passed **613 of 613 controlled checks**: 342 interface/localization checks and 271 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance. A clean Windows developer machine, every independently rebuilt plugin and byte-for-byte reproducibility are outside the default claim.
+This release build passed **615 of 615 controlled checks**: 342 interface/localization checks and 273 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance. A clean Windows developer machine, every independently rebuilt plugin and byte-for-byte reproducibility are outside the default claim.
 
 Project-owned code uses GPL-3.0-only; third parties retain their own licenses. See [Third-party notices](../THIRD_PARTY_NOTICES.md) and [Known issues](KNOWN-ISSUES.en.md).
