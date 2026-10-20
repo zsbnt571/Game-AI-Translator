@@ -3,6 +3,17 @@ function createFusionRpgTranslation(g) {
     "use strict";
     var enabled=false,cache=Object.create(null),outputs=Object.create(null),pending=Object.create(null),retry=Object.create(null),queue=[],windows=[],hooks=[],epoch=0,hookRevision=0,hookOwner={};
     var drawings=[],drawingBytes=0,replaying=false,rawAllText=null,displayDepth=0;
+    function storedPairsHash(entries){
+        // Identifies accepted pairs, not pixels or resource writes. Old browser
+        // contexts without Node retain their count-only receipt contract.
+        if(typeof fusionSourcePairsHash==="function")return fusionSourcePairsHash(entries);
+        if(typeof require!=="function")return null;
+        var crypto=require("crypto"),Bytes=require("buffer").Buffer,hash=crypto.createHash("sha256");
+        function frame(length){var bytes=Bytes.alloc?Bytes.alloc(4):new Bytes(4);bytes.writeUInt32LE(length,0);hash.update(bytes);}
+        var pairs=entries.slice().sort(function(a,b){return a.source<b.source?-1:a.source>b.source?1:0;});frame(pairs.length);
+        pairs.forEach(function(pair){[pair.source,pair.text].forEach(function(text){var bytes=Bytes.from?Bytes.from(text,"utf8"):new Bytes(text,"utf8");frame(bytes.length);hash.update(bytes);});});
+        return hash.digest("hex");
+    }
     // YEP adds these layout markers at runtime; keep other tags and escape codes exact.
     function key(value){return String(value).replace(/\r\n/g,"\n").replace(/\x1b/g,"\\").replace(/<WordWrap>/gi,"");}
     var templates=Object.create(null),templateBuckets=Object.create(null);
@@ -205,9 +216,10 @@ function createFusionRpgTranslation(g) {
         if(q.op==="translationPoll"){if(enabled){var revision=hookRevision;if(install()&&hookRevision!==revision)refresh(true);}return {enabled:enabled,epoch:epoch,texts:enabled?queue.splice(0,8):[]};}
         if(q.op==="translationRetry") {if(enabled&&q.epoch===epoch&&typeof q.source==="string"){delete pending[q.source];retry[q.source]=Date.now()+30000;}return {accepted:0};}
         if(q.op==="translationApply") {
-            if((!enabled&&!q.prime)||q.epoch!==epoch)return {accepted:0};var count=0,changed=Object.create(null);
-            (Array.isArray(q.entries)?q.entries:[]).slice(0,256).forEach(function(entry){if(entry&&valid(entry.source)&&compatible(entry.source,entry.text)){var normalized=key(entry.source);cache[entry.source]=entry.text;cache[normalized]=key(entry.text);if(/\\[VNP]\[\d+\]|\\G\b/i.test(normalized))registerTemplate(normalized,key(entry.text));changed[entry.source]=changed[normalized]=true;outputs[entry.text]=true;delete pending[entry.source];delete pending[normalized];delete retry[entry.source];count++;}});
-            queue=queue.filter(function(s){return !Object.prototype.hasOwnProperty.call(cache,s);});if(count&&enabled)refresh(false,changed);return {accepted:count};
+            if((!enabled&&!q.prime)||q.epoch!==epoch)return {accepted:0,epoch:epoch,stale:true};var count=0,changed=Object.create(null),acceptedPairs=[];
+            (Array.isArray(q.entries)?q.entries:[]).slice(0,256).forEach(function(entry){if(entry&&valid(entry.source)&&compatible(entry.source,entry.text)){var normalized=key(entry.source);cache[entry.source]=entry.text;cache[normalized]=key(entry.text);if(/\\[VNP]\[\d+\]|\\G\b/i.test(normalized))registerTemplate(normalized,key(entry.text));changed[entry.source]=changed[normalized]=true;outputs[entry.text]=true;delete pending[entry.source];delete pending[normalized];delete retry[entry.source];acceptedPairs.push({source:entry.source,text:entry.text});count++;}});
+            acceptedPairs=acceptedPairs.map(function(pair){return {source:pair.source,text:cache[pair.source]};});
+            queue=queue.filter(function(s){return !Object.prototype.hasOwnProperty.call(cache,s);});if(count&&enabled)refresh(false,changed);var receipt={accepted:count,epoch:epoch},proof=storedPairsHash(acceptedPairs);if(proof!==null)receipt.sourcePairsHash=proof;return receipt;
         }
         throw new Error("未知翻译操作。");
     }

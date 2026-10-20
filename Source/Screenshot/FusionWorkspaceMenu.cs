@@ -15,9 +15,12 @@ internal sealed class WorkspaceMenu : ContextMenuStrip
     }
     public new void Show(Control control,Point position)
     {
+        if (WpfNativeMenus.Show(this, control, position)) return;
         if(WpfControlCoordinates.HasView(control))base.Show(WpfControlCoordinates.ToScreen(control,position));
         else base.Show(control,position);
     }
+    public new void Close() { if (!WpfNativeMenus.Close(this)) base.Close(); }
+    protected override void OnClosed(ToolStripDropDownClosedEventArgs e) { WpfNativeMenus.Close(this); base.OnClosed(e); }
 
     internal ToolStripMenuItem AddAction(string text,string icon,EventHandler action,bool enabled=true)
     {
@@ -41,6 +44,7 @@ internal sealed class WorkspaceMenu : ContextMenuStrip
 
     protected override void OnOpening(CancelEventArgs e)
     {
+        if (WpfNativeMenus.InterceptOpening(this, e)) return;
         float scale=DeviceDpi/96f;int S(int value)=>(int)Math.Ceiling(value*scale);
         Padding=new(S(6),S(6),S(6),S(6));
         var area=Screen.FromControl(SourceControl??this).WorkingArea;

@@ -1,4 +1,4 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 internal static class LibrarySections
 {
@@ -52,18 +52,19 @@ internal sealed class LibrarySectionHeader:Button
 
 public sealed partial class MainForm
 {
-    private readonly LibrarySectionHeader _recentSectionHeading=new("最近使用");
-    private readonly LibrarySectionHeader _mainSectionHeading=new("我的游戏");
+    private readonly LibrarySectionHeader _recentSectionHeading=WpfWorkspace.Enabled ? null! : new("最近使用");
+    private readonly LibrarySectionHeader _mainSectionHeading=WpfWorkspace.Enabled ? null! : new("我的游戏");
     private readonly WorkspaceMenu _sectionMenu=new();
     private int _recentSectionTotal;
 
-    private async void ShowLibrarySectionMenu(bool upper)
+    private async void ShowLibrarySectionMenu(bool upper,System.Windows.FrameworkElement? nativeAnchor=null)
     {
         try
         {
             var store=await RecentStore();_libraryMetadata=await(_libraryMetadataTask??=Task.Run(()=>new LibraryMetadata()));
             var games=await Task.Run(store.SnapshotAll);if(IsDisposed)return;
             ConfigureLibrarySectionMenu(upper,games);
+            if(nativeAnchor is not null){WpfNativeMenus.Show(_sectionMenu,nativeAnchor:nativeAnchor);return;}
             var anchor=upper?_recentSectionHeading:_mainSectionHeading;
             if(anchor.Visible||WpfControlCoordinates.HasView(anchor))_sectionMenu.Show(anchor,new Point(0,anchor.Height));
         }
@@ -110,7 +111,7 @@ public sealed partial class MainForm
             if(!upper)
             {
                 _libraryFiltersLoading=true;
-                try{_libraryCollection="";_libraryScope="home";_libraryTag="";_libraryEngine.SelectedIndex=0;_libraryFolder.SelectedIndex=0;_libraryFilter.SelectedIndex=0;_librarySearch.Clear();}
+                try{_libraryCollection="";_libraryScope="home";_libraryTag="";LibraryEngineIndex=0;LibraryFolderIndex=0;LibraryFilterIndex=0;LibrarySearchText="";}
                 finally{_libraryFiltersLoading=false;}
             }
             ScheduleLibraryRefresh();

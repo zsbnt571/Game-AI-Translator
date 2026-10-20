@@ -3,6 +3,7 @@
 namespace ScreenshotTranslationUiTester;
 
 public enum PreviewMode { OcrOnly, OcrAndTranslate, OcrCompare }
+public enum CaptureToolbarPlacement { SelectionEdge, NearPointer }
 public enum PreviewWindowSizingMode { CurrentAuto, FollowPrevious, Fixed }
 public enum UiFontMode { CurrentDefault, Custom }
 public enum PreviewTextFontMode { CurrentDefault, FollowUiFont, Custom }
@@ -52,6 +53,7 @@ public sealed class ApiSettings
     public string ApiKey { get; set; } = "";
     public bool AllowEmptyApiKey { get; set; }
     public string Model { get; set; } = "deepseek-v4-flash";
+    public string AdvancedApiParameters { get; set; } = "";
     public string TargetLanguage { get; set; } = "Simplified Chinese";
     public string OcrLanguage { get; set; } = "自动";
     public int FirstByteTimeoutSeconds { get; set; } = 30;
@@ -90,6 +92,9 @@ public sealed class ApiSettings
     // Per-request transport contract, never serialized into a user's profile.
     internal TranslationRequestKind RequestKind { get; set; }
     internal string CatalogLanguageHint { get; set; } = "";
+    // Immutable per-request evidence, never another persisted copy of user terms.
+    [JsonIgnore] internal IReadOnlyDictionary<string,string>? RequestTerms { get; set; }
+    [JsonIgnore] internal string RequestTermsGuidance { get; set; } = "";
     public bool PreserveIdentifiers { get; set; } = true;
     public bool PreserveNumbers { get; set; } = true;
     public bool PreserveVariables { get; set; } = true;
@@ -106,6 +111,7 @@ public sealed class ApiSettings
     public bool PreviewAlwaysOnTop { get; set; }
     public bool HideMainWindowDuringCapture { get; set; } = true;
     public bool HidePreviewWindowsDuringCapture { get; set; } = true;
+    public CaptureToolbarPlacement CaptureToolbarPlacement { get; set; } = CaptureToolbarPlacement.NearPointer;
     public bool HasPreviewWindowPlacement { get; set; }
     public int PreviewWindowX { get; set; }
     public int PreviewWindowY { get; set; }

@@ -167,7 +167,10 @@ internal static class Program
                         if(!CoverWindowIdentity.Matches(target))return new("window-changed","游戏窗口已退出或改变");
                         return ocrReply with{CapturedUtc=capturedUtc};
                     }
-                    using var small=CoverQuality.VisibleThumbnail(bitmap);
+                    if(!CoverClientArea.TryGet(target.Window,bitmap.Size,out var clientArea))
+                        return new("size-changed","游戏窗口正在调整，请稍后重新截取",actual.Width,actual.Height);
+                    using var clientBitmap=bitmap.Clone(clientArea,PixelFormat.Format32bppPArgb);
+                    using var small=CoverQuality.VisibleThumbnail(clientBitmap);
                     using var bytes=new MemoryStream();small.Save(bytes,ImageFormat.Jpeg);
                     bytes.Position=0;
                     using var encoded=Image.FromStream(bytes);
@@ -179,7 +182,7 @@ internal static class Program
                         // Keep one bounded session for subsequent frames, not one process per frame.
                         Thread.Sleep(350);continue;
                     }
-                    return new("frame-ready","已取得窗口帧",actual.Width,actual.Height,Image:Convert.ToBase64String(bytes.ToArray()),Quality:lastQuality.Diagnostic,RejectedFrames:rejected);
+                    return new("frame-ready","已取得游戏内容画面",clientArea.Width,clientArea.Height,Image:Convert.ToBase64String(bytes.ToArray()),Quality:lastQuality.Diagnostic+";client-area",RejectedFrames:rejected,CapturedUtc:capturedUtc);
                 }
                 if(lastQuality is not null)return new("invalid-frame","尚未取得有效画面，请在游戏画面可用时更新",size.Width,size.Height,Quality:lastQuality.Diagnostic,RejectedFrames:rejected);
                 return new("first-frame-timeout","等待游戏窗口首帧超时，请在窗口可用时更新",size.Width,size.Height);

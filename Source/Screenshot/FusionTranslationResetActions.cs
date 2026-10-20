@@ -1,4 +1,4 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {

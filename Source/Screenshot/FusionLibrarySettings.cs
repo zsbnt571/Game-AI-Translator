@@ -34,7 +34,7 @@ public sealed partial class MainForm
         AddSettingRow(form,"封面样式",mode);
         var size=new GamePlanBox{Name="LibraryCoverSize",Width=190};size.Items.AddRange(LibraryCoverSizes.Labels);size.SelectedIndex=LibraryCoverSizes.IndexFor(_libraryPreferences.CoverWidth);
         size.SelectedIndexChanged+=(_,_)=>{if(size.SelectedIndex>=0)SaveLibraryPreferences(_libraryPreferences with{CoverWidth=LibraryCoverSizes.Widths[size.SelectedIndex]});};
-        AddSettingRow(form,"封面大小",size);AddSettingRow(form,"",Info("按窗口宽度自动排满每行，选择后立即保存。列表和首页最近使用保持原大小。"));
+        AddSettingRow(form,"封面大小",size);AddSettingRow(form,"",Info("封面视图按窗口宽度自动排满每行；列表缩略图、行高和首页最近使用也跟随大小设置，选择后立即保存。"));
         var advanced=new TableLayoutPanel{AutoSize=true,Dock=DockStyle.Top,ColumnCount=1,Visible=false};advanced.Controls.Add(_themeModeBox);advanced.Controls.Add(BuildCustomThemeEditor());
         Label? advancedLabel=null;var custom=WorkspaceButton("自定义主题",(_,_)=>{advanced.Visible=!advanced.Visible;if(advancedLabel is not null)advancedLabel.Visible=advanced.Visible;});AddSettingRow(form,"",Stack(custom));AddSettingRow(form,"",advanced);advancedLabel=form.GetControlFromPosition(0,form.RowCount-1) as Label;if(advancedLabel is not null)advancedLabel.Visible=false;
         var reset=WorkspaceButton("恢复默认外观",(_,_)=>{_themeModeBox.SelectedIndex=(int)ApplicationThemeMode.Day;_uiFontModeBox.SelectedIndex=0;_uiFontSizeBox.Value=10;_settingsDirty=true;SaveSettings(false);SaveLibraryPreferences(_libraryPreferences with{Portrait=true,CoverWidth=158});mode.SelectedIndex=0;size.SelectedIndex=1;});
@@ -42,7 +42,7 @@ public sealed partial class MainForm
     }
     private void SaveLibraryPreferences(LibraryPreferences value)
     {
-        try{LibraryPreferencesStore.Save(value);if(value.IconSource!=_libraryPreferences.IconSource||value.CoverSource!=_libraryPreferences.CoverSource)_artworkAttempted.Clear();_libraryPreferences=value;_libraryGrid.Portrait=value.Portrait;_libraryGrid.CoverWidth=value.CoverWidth;_libraryGrid.SetListMode(_libraryGrid.ListMode);ScheduleLibraryRefresh();_statusLabel.Text="游戏库设置已保存。";UpdateSettingsSaveState("游戏库设置已保存。");}
+        try{LibraryPreferencesStore.Save(value);if(value.IconSource!=_libraryPreferences.IconSource||value.CoverSource!=_libraryPreferences.CoverSource)_artworkAttempted.Clear();_libraryPreferences=value;_libraryGrid.Portrait=value.Portrait;_libraryGrid.CoverWidth=_recentShelf.CoverWidth=value.CoverWidth;_libraryGrid.SetListMode(_libraryGrid.ListMode);_recentShelf.SetListMode(false);SizeRecentShelf();ScheduleLibraryRefresh();DesktopStatus="游戏库设置已保存。";UpdateSettingsSaveState("游戏库设置已保存。");}
         catch(Exception ex){ShowFusionError(ex);}
     }
     private TableLayoutPanel BuildArtworkSettings()
@@ -56,11 +56,11 @@ public sealed partial class MainForm
         AddSettingRow(table,"",Info("网上匹配使用游戏名称查找 Steam 图片；名称不唯一时请手动选择。\n本地模式提取程序图标，并在游戏启动后尝试截图。手动图片不会被自动覆盖。"));
         AddSettingRow(table,"已有游戏",WorkspaceButton("补齐默认图片",async(_,_)=>{_artworkAttempted.Clear();var store=await RecentStore();await FillDefaultArtworkAsync(store.SnapshotAll().Select(x=>x.ExePath));if(!IsDisposed)ScheduleLibraryRefresh();}));
         AddSettingRow(table,"最近记录",WorkspaceButton("设置保留数量",async(_,_)=>await EditLibraryRetentionAsync()));
-        var names=new CheckBox{Text="自动补齐中文名称",AutoSize=true,Checked=_libraryPreferences.AutomaticChineseNames};
+        var names=new CheckBox{Text="自动补齐本地化名称",AutoSize=true,Checked=_libraryPreferences.AutomaticChineseNames};
         names.CheckedChanged+=(_,_)=>SaveLibraryPreferences(_libraryPreferences with{AutomaticChineseNames=names.Checked});
         AddSettingRow(table,"游戏名称",names);
-        AddSettingRow(table,"",Info("使用各游戏选择的翻译方案，在后台补齐中文名，只发送游戏名称。保存后不重复翻译；已有或手动编辑的中文名会保留。\n未配置方案时保留原名。右键“标签与便签”可编辑名字或重新生成译名。"));
-        AddSettingRow(table,"",WorkspaceButton("重试补齐中文名",async(_,_)=>{_libraryNameAttempts.Clear();var store=await RecentStore();await FillLibraryChineseNamesAsync(store.SnapshotAll(),true);}));return table;
+        AddSettingRow(table,"",Info("使用各游戏选择的翻译方案，按当前界面语言在后台补齐译名，只发送游戏名称。不同语言的译名分别保存，手动名称会保留。\n未配置方案时保留原名。右键“标签与便签”可编辑名字或重新生成译名。"));
+        AddSettingRow(table,"",WorkspaceButton("重试补齐译名",async(_,_)=>{_libraryNameAttempts.Clear();var store=await RecentStore();await FillLibraryChineseNamesAsync(store.SnapshotAll(),true);}));return table;
     }
     private TableLayoutPanel BuildStorageSettings()
     {

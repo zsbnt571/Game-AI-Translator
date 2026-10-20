@@ -1,11 +1,11 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
     private TableLayoutPanel? _novelStatePanel;
     private static bool NovelSnapshots(GameInfo? game)=>game?.AdapterId is "web-tyrano" or "web-vnmaker";
-    private readonly ComboBox _novelSnapshots=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=330,AccessibleName="状态快照"};
-    private readonly Label _novelSnapshotFeedback=WorkspaceLabel("刷新列表后可查看此游戏的快照。"),_novelSnapshotNote=WorkspaceLabel("保存当前状态的独立副本；载入前会自动备份当前状态。此功能仍需实机验证，重要进度请同时使用游戏自己的存档。");
+    private readonly ComboBox _novelSnapshots=WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=330,AccessibleName="状态快照"};
+    private readonly Label _novelSnapshotFeedback=WpfWorkspace.Enabled ? null! : WorkspaceLabel("刷新列表后可查看此游戏的快照。"),_novelSnapshotNote=WpfWorkspace.Enabled ? null! : WorkspaceLabel("保存当前状态的独立副本；载入前会自动备份当前状态。此功能仍需实机验证，重要进度请同时使用游戏自己的存档。");
     private Button? _novelSnapshotRefresh,_novelSnapshotCapture,_novelSnapshotLoad;
     private void BuildNovelStateWorkspace(TableLayoutPanel parent)
     {
@@ -22,7 +22,7 @@ public sealed partial class MainForm
     {
         if(_novelSnapshotRefresh is null)return;
         _novelStatePanel!.Visible=NovelSnapshots(_selectedGame);
-        if(changed){_novelSnapshots.Items.Clear();_novelSnapshotFeedback.Text="刷新列表后可查看此游戏的快照。";}
+        if(changed){_novelSnapshots.Items.Clear();NovelSnapshotFeedback="刷新列表后可查看此游戏的快照。";}
         bool ready=NovelSnapshots(_selectedGame)&&!_novelBusy&&!_gameActionRunning;
         _novelSnapshotRefresh.Enabled=ready;_novelSnapshots.Enabled=ready;
         _novelSnapshotCapture!.Enabled=ready&&connected;
@@ -31,10 +31,10 @@ public sealed partial class MainForm
     private async Task NovelSnapshotAsync(string operation)
     {
         if(_novelBusy||_selectedGame is not {} game||!NovelSnapshots(game))return;
-        var session=NovelSession();var selected=_novelSnapshots.SelectedItem as NovelStateRecord;
-        if(operation=="load"&&(selected is null||MessageBox.Show(this,UiLanguage.Text("载入所选快照会改变当前游戏进度。继续前将自动保存一份当前状态，变量锁定和撤销记录会清除。是否继续？"),UiLanguage.Text("载入状态快照"),MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes))return;
+        var session=NovelSession();var selected=NovelSelectedSnapshot;
+        if(operation=="load"&&(selected is null||AppDialog.Show(this,"载入状态快照","载入所选快照会改变当前游戏进度。继续前将自动保存一份当前状态，变量锁定和撤销记录会清除。是否继续？",AppDialogKind.Confirmation)!=DialogResult.Yes))return;
         bool Current()=>!IsDisposed&&!Disposing&&SameGame(_selectedGame?.ExePath,game.ExePath)&&ReferenceEquals(session,NovelSession());
-        _novelBusy=true;RenderNovelModificationState();_novelSnapshotFeedback.Text=operation=="load"?"正在校验快照并备份当前状态…":operation=="capture"?"正在读取并保存当前状态…":"正在读取快照列表…";
+        _novelBusy=true;RenderNovelModificationState();NovelSnapshotFeedback=operation=="load"?"正在校验快照并备份当前状态…":operation=="capture"?"正在读取并保存当前状态…":"正在读取快照列表…";
         NovelStateRecord? backup=null;
         try
         {
@@ -47,7 +47,7 @@ public sealed partial class MainForm
                 if(operation=="load")
                 {
                     await NovelStateSnapshots.RestoreAsync(game.ExePath,selected!,session.Connection,Current,saved=>{
-                        backup=saved;if(Current()){_novelRows=[];_novelDataGrid.Rows.Clear();_novelDataFeedback.Text="状态载入后，请重新刷新变量。";}
+                        backup=saved;if(Current()){_novelRows=[];ClearNovelGrid();NovelDataFeedback="状态载入后，请重新刷新变量。";}
                     });
                 }
                 else
@@ -59,13 +59,12 @@ public sealed partial class MainForm
             }
             var records=await Task.Run(()=>NovelStateSnapshots.List(game.ExePath));
             if(!Current())return;
-            _novelSnapshots.Items.Clear();foreach(var r in records)_novelSnapshots.Items.Add(r);
-            if(records.Count>0)_novelSnapshots.SelectedIndex=0;
-            _novelSnapshotFeedback.Text=operation=="load"?"游戏已接收载入请求，实际恢复请以游戏画面为准。载入前备份已保存。":operation=="capture"?"当前状态快照已保存。":$"找到 {records.Count} 份可读取的快照；载入时会核对游戏和版本。";
+            SetNovelSnapshots(records);
+            NovelSnapshotFeedback=operation=="load"?"游戏已接收载入请求，实际恢复请以游戏画面为准。载入前备份已保存。":operation=="capture"?"当前状态快照已保存。":$"找到 {records.Count} 份可读取的快照；载入时会核对游戏和版本。";
         }
         catch(Exception ex)
         {
-            if(Current())_novelSnapshotFeedback.Text=(ex is OperationCanceledException?"等待游戏响应超时，结果未确认。请先检查游戏画面，不要立即重复载入。":SafeDiagnosticOutput.ExceptionSummary(ex))+(operation=="load"&&backup is not null?" 载入前备份已保存，可刷新列表查看。":"");
+            if(Current())NovelSnapshotFeedback=(ex is OperationCanceledException?"等待游戏响应超时，结果未确认。请先检查游戏画面，不要立即重复载入。":SafeDiagnosticOutput.ExceptionSummary(ex))+(operation=="load"&&backup is not null?" 载入前备份已保存，可刷新列表查看。":"");
         }
         finally{_novelBusy=false;if(!IsDisposed)RenderNovelModificationState();}
     }

@@ -3,11 +3,11 @@ namespace ScreenshotTranslationUiTester;
 public sealed partial class MainForm
 {
     private readonly List<GameActionButton> _dataTabs=[];
-    private readonly Label _dataSelectedName=WorkspaceLabel("选择一项数据"),_dataOriginalName=WorkspaceLabel(""),_dataCurrentLabel=WorkspaceLabel(""),_dataKeyLabel=WorkspaceLabel("");
-    private readonly Label _dataDescription=WorkspaceLabel("在左侧选择项目，查看详情并修改。"),_dataSectionHint=WorkspaceLabel("常用操作");
-    private readonly TextBox _dataTextValue=new(){Width=190,MaxLength=2000};
-    private readonly GamePlanBox _dataMapChoice=new(){Width=260,DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly GamePlanBox _dataEventKind=new(){Width=260,DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly Label _dataSelectedName=WpfWorkspace.Enabled ? null! : WorkspaceLabel("选择一项数据"),_dataOriginalName=WpfWorkspace.Enabled ? null! : WorkspaceLabel(""),_dataCurrentLabel=WpfWorkspace.Enabled ? null! : WorkspaceLabel(""),_dataKeyLabel=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
+    private readonly Label _dataDescription=WpfWorkspace.Enabled ? null! : WorkspaceLabel("在左侧选择项目，查看详情并修改。"),_dataSectionHint=WpfWorkspace.Enabled ? null! : WorkspaceLabel("常用操作");
+    private readonly TextBox _dataTextValue=WpfWorkspace.Enabled ? null! : new(){Width=190,MaxLength=2000};
+    private readonly GamePlanBox _dataMapChoice=WpfWorkspace.Enabled ? null! : new(){Width=260,DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly GamePlanBox _dataEventKind=WpfWorkspace.Enabled ? null! : new(){Width=260,DropDownStyle=ComboBoxStyle.DropDownList};
     private GameActionButton? _dataLockButton;
     private bool _dataRefreshPending,_dataSizing,_dataMapChoosing,_dataSizePending;
     private TableLayoutPanel? _dataLayout,_dataColumns,_dataScalarEditor,_dataObjectEditor;
@@ -15,7 +15,7 @@ public sealed partial class MainForm
     private GameCommonBoard? _dataCommonBoard;
     private GameActionButton? _dataApplyButton;
     private bool _dataScalarUpdating;
-    private readonly GameDataIcon _dataSelectedIcon=new(){Size=new(64,64),Margin=new(0,0,12,0),Visible=false};
+    private readonly GameDataIcon _dataSelectedIcon=WpfWorkspace.Enabled ? null! : new(){Size=new(64,64),Margin=new(0,0,12,0),Visible=false};
     private Control? _dataSteps,_dataMapToolbar,_dataContextActions,_dataLockActions,_dataBattleActions;
     private Control? _dataMapLabel,_dataReturnMap;
     private WorkspaceScrollView? _dataDetailScroll;
@@ -48,7 +48,7 @@ public sealed partial class MainForm
     {
         var page=ModificationColumn();page.Name="ModificationWorkspace";page.AutoSize=true;page.Dock=DockStyle.Top;_dataLayout=page;
         _dataMapTimer.Tick+=async(_,_)=>await SyncGameMapAsync();_dataMapTimer.Start();FormClosed+=(_,_)=>_dataMapTimer.Dispose();
-        page.Layout+=(_,_)=>QueueModificationSize();page.VisibleChanged+=(_,_)=>QueueModificationSize();_gameSessionPage!.SizeChanged+=(_,_)=>QueueModificationSize();
+        page.Layout+=(_,_)=>QueueModificationSize();page.VisibleChanged+=(_,_)=>QueueModificationSize();if(_gameSessionPage is not null)_gameSessionPage.SizeChanged+=(_,_)=>QueueModificationSize();
         _dataLaunch=IconButton("修改并启动","play",async(_,_)=>await LaunchGameDataAsync(false),true,116);
         _dataToggle=WorkspaceButton("开启修改",async(_,_)=>await ToggleGameDataAsync());
         _dataRestore=WorkspaceButton("移除连接组件",async(_,_)=>await LaunchGameDataAsync(true));
@@ -95,7 +95,7 @@ public sealed partial class MainForm
         search.VisibleChanged+=(_,_)=>{list.RowStyles[0].Height=search.Visible?36*DeviceDpi/96:0;};
         _dataSearch.KeyDown+=async(_,e)=>{if(e.KeyCode==Keys.Enter){e.SuppressKeyPress=true;_dataRevision++;_dataLimit=160;ResetDataDetails();await RefreshGameDataAsync();}};
         _dataGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="Original",HeaderText="名称 / Name",FillWeight=70});
-        _dataGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="Chinese",HeaderText="中文名",Visible=false});
+        _dataGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="Chinese",HeaderText="译名",Visible=false});
         _dataGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="Value",HeaderText="当前值",FillWeight=18});
         _dataGrid.Columns.Add(new DataGridViewTextBoxColumn{Name="Lock",HeaderText="锁定",FillWeight=12});
         _dataGrid.SelectionChanged+=(_,_)=>SelectGameDataRow();
@@ -129,8 +129,8 @@ public sealed partial class MainForm
         Button Step(string text,int delta)=>IconButton(text,"",async(_,_)=>await AdjustGameDataValueAsync(delta),false,60);
         _dataSteps=ModificationRow(Step("− 10",-10),Step("− 1",-1),Step("+ 1",1),Step("+ 10",10));WorkspaceAdd(_dataScalarEditor,_dataSteps);WorkspaceAdd(_dataScalarEditor,ModificationRow(_dataLockButton));
         _dataChinese.Width=150;var aliases=ModificationColumn();aliases.AutoSize=true;aliases.Visible=false;
-        WorkspaceAdd(aliases,SearchField(_dataChinese,"edit"));WorkspaceAdd(aliases,WorkspaceButton("保存中文名",(_,_)=>SaveGameDataAlias()));
-        WorkspaceAdd(_dataScalarEditor,ModificationRow(IconButton("恢复输入","",(_,_)=>ShowGameDataScalar(_dataSelected),false,86),IconButton("编辑中文名","edit",(_,_)=>aliases.Visible=!aliases.Visible,false,110)));
+        WorkspaceAdd(aliases,SearchField(_dataChinese,"edit"));WorkspaceAdd(aliases,WorkspaceButton("保存译名",(_,_)=>SaveGameDataAlias()));
+        WorkspaceAdd(_dataScalarEditor,ModificationRow(IconButton("恢复输入","",(_,_)=>ShowGameDataScalar(_dataSelected),false,86),IconButton("编辑译名","edit",(_,_)=>aliases.Visible=!aliases.Visible,false,110)));
         WorkspaceAdd(_dataScalarEditor,aliases);WorkspaceAdd(detail,_dataScalarEditor);
         _dataObjectEditor=ModificationColumn();_dataObjectEditor.AutoSize=true;WorkspaceAdd(detail,_dataObjectEditor);
         _dataDetailScroll=new WorkspaceScrollView{Dock=DockStyle.Fill};_dataDetailScroll.Controls.Add(detail);

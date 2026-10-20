@@ -19,9 +19,12 @@ internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Un
     // pretranslated without a locale-reporting bridge. This does not authorize
     // an inactive language pack or prove that every row will be displayed.
     internal IReadOnlySet<string>? UnlocalizedSourceTexts {get;init;}
+    internal IReadOnlySet<string>? PrioritySourceTexts {get;init;}
     // Optional static extraction provenance. This never grants runtime writeback
     // or full-buffer authority on its own; older adapters may leave it empty.
     internal IReadOnlyList<EmbeddedCatalogSource> Sources {get;init;}=[];
+    internal IReadOnlyList<CatalogTextOrigin> Origins {get;init;}=[];
+    internal bool OriginsTruncated {get;init;}
     internal CatalogReadReport? Report {get;init;}
 }
 internal static class RpgTextCatalog
@@ -64,10 +67,12 @@ internal static class RpgTextCatalog
             if(texts.Count>=limits.Texts){Issue(CatalogIssueKind.Limited,"达到本次文本条数上限，已提取文字保留");throw new ScanLimit();}
             texts.Add(value);
         }
+        var origins=new CatalogOrigins();
         var scriptText=new RpgScriptCatalog(()=>Check(false),()=>{Issue(CatalogIssueKind.Limited,"脚本文字关系达到本次读取上限，动态文字由实时接入继续补充");throw new ScanLimit();});
         RpgTextCatalogResult Finish()=>new(texts.ToArray(),files,issues.Select(i=>i.Source+"："+i.Reason).ToArray()){
             SelectedLanguage=preferredLanguage.Length>0?preferredLanguage:selectedLanguages.Count==1?selectedLanguages.Single():"",
-            TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized,SkippedByLanguage=excluded.Except(texts).Count(),Report=new(issues.Count==0,issues.ToArray())};
+            TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized,SkippedByLanguage=excluded.Except(texts).Count(),
+            Origins=origins.Items.Where(o=>texts.Contains(o.Text)).ToArray(),OriginsTruncated=origins.Truncated,Report=new(issues.Count==0,issues.ToArray())};
         RpgMakerInstallation? install;
         try{install=archive is null?RpgMakerDataAdapter.Detect(exe):new("","",prefix,"packaged");}
         catch(Exception ex)when(ex is IOException or JsonException or UnauthorizedAccessException){Issue(CatalogIssueKind.Failed,"游戏入口资料未能读取");return Finish();}
@@ -162,7 +167,7 @@ internal static class RpgTextCatalog
         try
         {
             var paths=new List<string>();
-            foreach(var path in archive is null?Directory.EnumerateFiles(Path.Combine(install.DataRoot,"data"),"*.json",SearchOption.TopDirectoryOnly):archive.Names.Where(n=>n.StartsWith(prefix+"data/",StringComparison.Ordinal)&&n.EndsWith(".json",StringComparison.OrdinalIgnoreCase)&&!n[(prefix.Length+5)..].Contains('/')))
+            foreach(var path in archive is null?Directory.EnumerateFiles(Path.Combine(install.DataRoot,"data"),"*.json",SearchOption.TopDirectoryOnly):archive.Names.Where(n=>n.StartsWith(prefix+"data/",archive.PathComparison)&&n.EndsWith(".json",StringComparison.OrdinalIgnoreCase)&&!n[(prefix.Length+5)..].Contains('/')))
             {
                 Check();if(paths.Count>=limits.Files){Issue(CatalogIssueKind.Limited,"数据文件数量达到本次上限");break;}paths.Add(path);
             }
@@ -172,7 +177,9 @@ internal static class RpgTextCatalog
                 try
                 {
                     if((archive?.Size(file)??new FileInfo(file).Length)>limits.JsonBytes){Issue(CatalogIssueKind.Limited,"文件超过本次大小上限");continue;}
-                    using var json=JsonDocument.Parse(archive?.Text(file,limits.JsonBytes)??File.ReadAllText(file));files++;
+                    byte[] image=archive?.Read(file,limits.JsonBytes)??File.ReadAllBytes(file);
+                    using var reader=new StreamReader(new MemoryStream(image,false),System.Text.Encoding.UTF8,true);
+                    using var json=JsonDocument.Parse(reader.ReadToEnd());files++;
                     string? fileLocale=UnityTextResourceLanguageSelection.ResourceLocale(current);
                     if(fileLocale is not null&&preferredLanguage.Length>0&&fileLocale!=preferredLanguage){Exclude(json.RootElement);continue;}
                     trustedSource=fileLocale is not null;
@@ -180,7 +187,8 @@ internal static class RpgTextCatalog
                     // base-content provenance; arbitrary plugin/locale files do not.
                     unlocalizedSource=fileLocale is null&&Regex.IsMatch(current,@"^(?:Actors|Classes|Skills|Items|Weapons|Armors|Enemies|Troops|States|System|CommonEvents|Map\d+)\.json$",RegexOptions.IgnoreCase);
                     if(fileLocale is not null)selectedLanguages.Add(fileLocale);
-                    try{Walk(json.RootElement);}finally{trustedSource=false;unlocalizedSource=false;}
+                    try{Walk(json.RootElement);origins.Json(json.RootElement,current,CatalogOrigins.Hash(image),archive is null?"":"web-package");}
+                    finally{trustedSource=false;unlocalizedSource=false;}
                 }
                 catch(Exception ex)when(ex is IOException or JsonException or UnauthorizedAccessException){Issue(CatalogIssueKind.Failed,ex is JsonException?"JSON 解析失败":"文件未能读取");}
             }

@@ -5,15 +5,16 @@ internal sealed partial class GameLibraryGrid
     private Point scrollOffset;
     private int scrollMaximum,scrollGrab;
     private bool scrollDragging,scrollHover;
+    private (int Index,double Fraction)? resizeAnchor;
     internal bool HasScrollBar=>scrollMaximum>0;
     internal Point ScrollOffset=>scrollOffset;
     internal int ScrollMaximum=>scrollMaximum;
-    internal void ScrollToStart()=>SetScrollValue(0);
+    public void ScrollToStart()=>SetScrollValue(0);
     private int ScrollValue=>ShelfMode?scrollOffset.X:scrollOffset.Y;
-    private Rectangle ContentViewport=>new(0,0,Math.Max(0,ClientSize.Width-(!ShelfMode&&HasScrollBar?S(12):0)),Math.Max(0,ClientSize.Height-(ShelfMode&&HasScrollBar?S(12):0)));
+    private Rectangle ContentViewport=>new(0,0,Math.Max(0,ViewportSize.Width-(!ShelfMode&&HasScrollBar?S(12):0)),Math.Max(0,ViewportSize.Height-(ShelfMode&&HasScrollBar?S(12):0)));
     private Rectangle ScrollTrack=>!HasScrollBar?Rectangle.Empty:ShelfMode?
-        new(S(4),ClientSize.Height-S(12),Math.Max(0,ClientSize.Width-S(8)),S(12)):
-        new(ClientSize.Width-S(12),S(4),S(12),Math.Max(0,ClientSize.Height-S(8)));
+        new(S(4),ViewportSize.Height-S(12),Math.Max(0,ViewportSize.Width-S(8)),S(12)):
+        new(ViewportSize.Width-S(12),S(4),S(12),Math.Max(0,ViewportSize.Height-S(8)));
     private Rectangle ScrollThumb
     {
         get
@@ -29,13 +30,33 @@ internal sealed partial class GameLibraryGrid
     {
         int rows=(int)Math.Ceiling((double)tiles.Length/Columns);
         int total=ShelfMode?ShelfContentWidth:S(6)+rows*Cell.Height+Math.Max(0,rows-1)*S(12);
-        scrollMaximum=tiles.Length==0?0:Math.Max(0,total-(ShelfMode?ClientSize.Width:ClientSize.Height));
+        scrollMaximum=tiles.Length==0?0:Math.Max(0,total-(ShelfMode?ViewportSize.Width:ViewportSize.Height));
         int value=Math.Clamp(ScrollValue,0,scrollMaximum);scrollOffset=ShelfMode?new(value,0):new(0,value);
     }
-    private void SetScrollValue(int value)
+    private void SetScrollValue(int value, bool animated = false)
     {
+        resizeAnchor=null;
+        if (!animated) wpfCanvas?.StopWheelMotion();
         value=Math.Clamp(value,0,scrollMaximum);var next=ShelfMode?new Point(value,0):new Point(0,value);
         if(next==scrollOffset)return;scrollOffset=next;hover=-1;Invalidate();
+    }
+    private void CaptureResizeAnchor()
+    {
+        if(resizeAnchor is not null||tiles.Length==0)return;
+        int stride=Math.Max(1,(ShelfMode?Cell.Width:Cell.Height)+S(12));
+        int row=ScrollValue/stride;
+        int index=ShelfMode?row:row*Columns;
+        resizeAnchor=(Math.Min(tiles.Length-1,index),(ScrollValue-row*stride)/(double)stride);
+    }
+    private void RestoreResizeAnchor()
+    {
+        if(resizeAnchor is not { } anchor||tiles.Length==0)return;
+        int row=ShelfMode?anchor.Index:anchor.Index/Columns;
+        int stride=Math.Max(1,(ShelfMode?Cell.Width:Cell.Height)+S(12));
+        int value=Math.Clamp((int)Math.Round((row+anchor.Fraction)*stride),0,scrollMaximum);
+        // Keep the original game across every intermediate resize. Recapturing
+        // the new first column would drift backwards as the column count flips.
+        scrollOffset=ShelfMode?new(value,0):new(0,value);
     }
     private void PaintScrollBar(Graphics graphics)
     {
@@ -91,11 +112,15 @@ internal sealed partial class GameLibraryGrid
     protected override void OnMouseWheel(MouseEventArgs e)
     {
         if(e is HandledMouseEventArgs h)h.Handled=true;if(!HasScrollBar)return;
-        int lines=SystemInformation.MouseWheelScrollLines;
-        if(lines==0)return;
-        int step=lines<0?(ShelfMode?ContentViewport.Width:ContentViewport.Height):Math.Max(S(24),Font.Height)*lines;
-        SetScrollValue(ScrollValue-(int)Math.Round((double)e.Delta/120*step));
+        SetScrollValue(WheelTarget(e.Delta, ScrollValue));
         if(e is HandledMouseEventArgs handled)handled.Handled=true;
+    }
+    private int WheelTarget(int delta, int current)
+    {
+        int lines=SystemInformation.MouseWheelScrollLines;
+        if(lines==0)return current;
+        int step=lines<0?(ShelfMode?ContentViewport.Width:ContentViewport.Height):Math.Max(S(24),Font.Height)*lines;
+        return Math.Clamp(current-(int)Math.Round((double)delta/120*step),0,scrollMaximum);
     }
     protected override void WndProc(ref Message message)
     {

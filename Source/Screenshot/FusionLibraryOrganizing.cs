@@ -2,11 +2,11 @@ namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
-    private GameLibraryGrid? _libraryContextSource;
+    private ILibraryGridSession? _libraryContextSource;
     private static string[] CategoryTokens(string value)=>value.Split([',','，',';','；'],StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries);
     private void UpdateLibraryAnnotations(RecentGame[] games,Func<LibraryAnnotation,LibraryAnnotation> update,string message)
     {
-        try{_libraryMetadata!.UpdateMany(games.Select(g=>g.Id),update);ScheduleLibraryRefresh();_statusLabel.Text=message;}
+        try{_libraryMetadata!.UpdateMany(games.Select(g=>g.Id),update);ScheduleLibraryRefresh();DesktopStatus=message;}
         catch(Exception ex){ShowFusionError(ex);}
     }
     private void SetLibraryMembership(RecentGame[] games,string id,bool member)
@@ -23,7 +23,7 @@ public sealed partial class MainForm
         }).ToArray();
         var next=latest with{Folders=folders};LibraryPreferencesStore.Save(next);_libraryPreferences=next;ScheduleLibraryRefresh();
     }
-    private void AddLibraryOrganizingMenu(WorkspaceMenu menu,RecentGame[] games,GameLibraryGrid source)
+    private void AddLibraryOrganizingMenu(WorkspaceMenu menu,RecentGame[] games,ILibraryGridSession source)
     {
         bool allFavorite=games.All(g=>_libraryMetadata!.Get(g.Id).Bookmark);
         menu.AddAction(allFavorite?"取消收藏":"收藏","tag",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Bookmark=!allFavorite},allFavorite?"已取消收藏。":"已收藏所选游戏。"));
@@ -48,7 +48,7 @@ public sealed partial class MainForm
             string tag=scope[4..];menu.AddAction("移出当前分类","minus",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Tags=string.Join(", ",CategoryTokens(a.Tags).Where(t=>t!=tag))},$"已移出“{tag}”，游戏仍在库中。"));
         }
         else if(scope.StartsWith("collection:"))
-            menu.AddAction("移出当前文件夹","minus",(_,_)=>{try{SetLibraryMembership(games,scope[11..],false);_statusLabel.Text="已移出当前文件夹，游戏仍在库中。";}catch(Exception ex){ShowFusionError(ex);}});
+            menu.AddAction("移出当前文件夹","minus",(_,_)=>{try{SetLibraryMembership(games,scope[11..],false);DesktopStatus="已移出当前文件夹，游戏仍在库中。";}catch(Exception ex){ShowFusionError(ex);}});
     }
     private async Task RemoveLibraryGamesAsync(RecentGame[] games)
     {
@@ -59,9 +59,9 @@ public sealed partial class MainForm
             if(_selectedGame is {} selected&&games.Any(g=>SameGame(g.ExePath,selected.ExePath)))
             {
                 _gameSelectionEpoch++;_gameQueryEpoch++;CancelSelectedMedia();_selectedGame=null;_desktopGameState=null;_sessionGamePath=null;
-                _fusion?.Change(next=>next.LastGame="");_gamePath.Text="";_gameTitle.Text="选择一个游戏";_gameOperationResult="";ShowLibraryHome();RenderGameState();
+                _fusion?.Change(next=>next.LastGame="");GamePathText="";GameTitleText="选择一个游戏";_gameOperationResult="";ShowLibraryHome();RenderGameState();
             }
-            ScheduleLibraryRefresh();_statusLabel.Text=$"已从游戏库移除 {games.Length} 个游戏，磁盘文件和运行中的游戏保留。";
+            ScheduleLibraryRefresh();DesktopStatus=$"已从游戏库移除 {games.Length} 个游戏，磁盘文件和运行中的游戏保留。";
         }
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
     }

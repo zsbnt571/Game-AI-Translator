@@ -14,64 +14,108 @@ internal static class WpfSettingsModel
     private static readonly MethodInfo State = typeof(Control).GetMethod("GetState", BindingFlags.Instance | BindingFlags.NonPublic)!;
     private static readonly object VisibleState = Enum.Parse(State.GetParameters()[0].ParameterType, "Visible");
     private static readonly object EnabledState = Enum.Parse(State.GetParameters()[0].ParameterType, "Enabled");
+    private static readonly MethodInfo SetState = typeof(Control).GetMethod("SetState", BindingFlags.Instance | BindingFlags.NonPublic)!;
+    internal static void SetLogicalVisibility(Control model, bool visible) => SetState.Invoke(model, [VisibleState, visible]);
     internal static bool LocallyVisible(Control model) => (bool)State.Invoke(model, [VisibleState])!;
     internal static bool LocallyEnabled(Control model) => (bool)State.Invoke(model, [EnabledState])!;
+    internal static bool CanDispatch(Control model) => !model.IsDisposed && !model.Disposing && model.FindForm() is not { IsDisposed: true } and not { Disposing: true };
     internal static void Raise(Control model, string name)
     {
+        if (!CanDispatch(model)) return;
         var method = model.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(EventArgs)], null);
         try { method?.Invoke(model, [EventArgs.Empty]); }
         catch (TargetInvocationException e) when (e.InnerException is { } cause) { ExceptionDispatchInfo.Capture(cause).Throw(); }
     }
 }
 
-internal sealed class WpfSettingsFields : IDisposable
+internal sealed partial class WpfSettingsFields : IDisposable
 {
     private readonly List<Action> refreshers = [];
     private readonly List<Action> unsubscribe = [];
-    private readonly List<System.Windows.Forms.Integration.WindowsFormsHost> hosted = [];
+    private readonly HashSet<(Control Model,W.FrameworkElement View)> inputBindings = [];
     internal int NativeFields { get; private set; }
     internal bool UseModelDimensions { get; init; }
-    internal IReadOnlyList<string> HostedTypes => hosted.Select(h => h.Child?.GetType().Name ?? "").ToArray();
+    internal bool RetainLayout { get; init; }
+    internal IReadOnlyList<string> HostedTypes => [];
     internal void Refresh() { foreach (var refresh in refreshers.ToArray()) refresh(); }
     private void Watch(Control source, Action refresh)
     {
         EventHandler handler = (_, _) => refresh();
+        bool queued = false;
+        InvalidateEventHandler invalidated = (_, _) =>
+        {
+            if (queued || W.Application.Current is not { } application) return;
+            queued = true;
+            application.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, (Action)(() => { queued = false; if (!source.IsDisposed && refreshers.Contains(refresh)) refresh(); }));
+        };
         source.TextChanged += handler; source.EnabledChanged += handler; source.VisibleChanged += handler; source.FontChanged += handler;
-        unsubscribe.Add(() => { source.TextChanged -= handler; source.EnabledChanged -= handler; source.VisibleChanged -= handler; source.FontChanged -= handler; });
+        source.Invalidated += invalidated;
+        unsubscribe.Add(() => { source.TextChanged -= handler; source.EnabledChanged -= handler; source.VisibleChanged -= handler; source.FontChanged -= handler; source.Invalidated -= invalidated; });
         refreshers.Add(refresh); refresh();
     }
-    internal void Bind(Control model, W.FrameworkElement view, bool visibility = true)
+    internal void Bind(Control model, W.FrameworkElement view, bool visibility = true, bool interactions = true)
     {
-        Watch(model, () =>
+        // Numeric wrappers deliberately hide their retained native spinner;
+        // only a text area's own visibility controls this disclosure row.
+        Control? field = model is SettingsTextArea area ? area.Field : null;
+        void RefreshBinding()
         {
             view.IsEnabled = WpfSettingsModel.LocallyEnabled(model);
-            if (visibility) view.Visibility = WpfSettingsModel.LocallyVisible(model) ? W.Visibility.Visible : W.Visibility.Collapsed;
-            if (view is WC.Control control) { control.FontFamily = new(model.Font.FontFamily.Name); control.FontSize = model.Font.SizeInPoints * 96 / 72; }
+            // A styled input wrapper must not make a hidden field (and its
+            // settings row) visible again during a later binding refresh.
+            if (visibility) view.Visibility = WpfSettingsModel.LocallyVisible(model) && (field is null || WpfSettingsModel.LocallyVisible(field)) ? W.Visibility.Visible : W.Visibility.Collapsed;
+            if (view is WC.Control control) { control.FontFamily = WpfDrawing.FontFamily(model.Font.FontFamily.Name); control.FontSize = model.Font.SizeInPoints * 96 / 72; }
             // Editable values, especially API secrets, are never control names.
             string name = model.AccessibleName ?? (model is TextBoxBase or NumericUpDown ? model.Name : model.Text);
             if (name.Length > 0) W.Automation.AutomationProperties.SetName(view, name);
-        });
+        }
+        Watch(model, RefreshBinding);
+        if (field is not null) Watch(field, RefreshBinding);
+        if (!interactions || !inputBindings.Add((model,view))) return;
         if (model.Name.Length > 0) W.Automation.AutomationProperties.SetAutomationId(view, model.Name);
+        WI.KeyboardNavigation.SetTabIndex(view, model.TabIndex);
+        WI.KeyboardNavigation.SetIsTabStop(view, model.TabStop);
+        if (!string.IsNullOrWhiteSpace(model.AccessibleDescription)) W.Automation.AutomationProperties.SetHelpText(view, model.AccessibleDescription);
+        view.IsKeyboardFocusWithinChanged += (_, e) =>
+        {
+            if ((bool)e.NewValue) { WpfSettingsModel.Raise(model, "OnEnter"); WpfSettingsModel.Raise(model, "OnGotFocus"); }
+            else
+            {
+                var validation=new System.ComponentModel.CancelEventArgs(); Raise(model,"OnValidating",validation);
+                if (!validation.Cancel) WpfSettingsModel.Raise(model,"OnValidated");
+                WpfSettingsModel.Raise(model,"OnLeave"); WpfSettingsModel.Raise(model,"OnLostFocus");
+            }
+        };
         WpfControlCoordinates.Register(model, view);
+        if (model.ContextMenuStrip is not null)
+        {
+            view.ContextMenu = new WC.ContextMenu();
+            view.ContextMenuOpening += (_, e) => { if (model.ContextMenuStrip is { } menu) { e.Handled = WpfNativeMenus.Show(menu); } };
+        }
     }
     internal W.FrameworkElement Create(Control model)
     {
         W.FrameworkElement view;
+        if (RetainLayout && model is Panel and not ScreenshotRebuildPane) return NativeLayout(model);
         switch (model)
         {
+            case WorkspaceTextField frame:
+                // This is one input, not a vertical content section. Mapping it
+                // through Children adds 8 DIP below the editor; horizontal rows
+                // then stretch neighboring buttons to that padded height.
+                view = Text(frame.Field); Bind(frame.Field, view, visibility: false); break;
             case SettingsInputFrame frame:
                 view = Create(frame.Field); Bind(frame, view); return view;
             case SettingsTextArea area:
                 view = Create(area.Field); Bind(area, view); return view;
             case InputBindingCaptureButton or GameShortcutButton:
-                // These editors use the existing keyboard capture/message filter.
-                // One leaf host avoids nested WPF/WinForms interoperation.
-                view = Host(model); break;
+                view = Shortcut((Button)model); break;
             case CheckBox check: view = Check(check); break;
             case Button button: view = Button(button); break;
             case ComboBox combo: view = Combo(combo); break;
             case TextBox text: view = Text(text); break;
             case NumericUpDown number: view = Number(number); break;
+            case LinkLabel link: view = Native(link); break;
             case Label label: view = Label(label); break;
             case FlowLayoutPanel flow:
                 view = Children(flow, flow.FlowDirection is FlowDirection.TopDown or FlowDirection.BottomUp); break;
@@ -82,7 +126,7 @@ internal sealed class WpfSettingsFields : IDisposable
                 view.SetResourceReference(WC.Border.BorderBrushProperty, "Fusion.Border"); break;
             case TableLayoutPanel table: view = Table(table); break;
             case Panel panel: view = Children(panel, true); break;
-            default: view = Host(model); break;
+            default: view = Native(model); break;
         }
         Bind(model, view, model is not NumericUpDown);
         return view;
@@ -91,7 +135,7 @@ internal sealed class WpfSettingsFields : IDisposable
     {
         NativeFields++;
         var view = new WC.TextBlock { TextWrapping = W.TextWrapping.Wrap, VerticalAlignment = W.VerticalAlignment.Center };
-        Watch(model, () => { view.Text = model.Text; view.FontFamily = new(model.Font.FontFamily.Name); view.FontSize = model.Font.SizeInPoints * 96 / 72;
+        Watch(model, () => { view.Text = model.Text; view.FontFamily = WpfDrawing.FontFamily(model.Font.FontFamily.Name); view.FontSize = model.Font.SizeInPoints * 96 / 72;
             view.FontWeight = model.Font.Bold ? W.FontWeights.Bold : W.FontWeights.Normal;
             view.Foreground = WpfDrawing.Brush(model is SettingsNote || model.Name is "SettingsHelp" or "SettingsNote" ? SettingsColors.Muted : UiTheme.Current.Text); });
         return view;
@@ -103,19 +147,20 @@ internal sealed class WpfSettingsFields : IDisposable
         view.Click += (_, _) => { if (view.IsEnabled) WpfSettingsModel.Raise(model, "OnClick"); Refresh(); };
         Watch(model, () =>
         {
-            bool primary = model is GameActionButton { Primary: true } or ScreenshotRebuildButton { Primary: true } || Equals(model.Tag, "settings-primary");
+            bool primary = model is GameActionButton { Primary: true, TabStyle: false, NavigationStyle: false } or ScreenshotRebuildButton { Primary: true } || Equals(model.Tag, "settings-primary");
             string? icon = model switch { GameActionButton a => a.IconKey, ScreenshotRebuildButton s => s.IconKey, _ => null };
             if (string.IsNullOrWhiteSpace(icon)) icon = null;
-            WpfThemeResources.SetButton(view, model.Text, icon, primary, compact: model is ScreenshotRebuildButton);
-            if (model is ScreenshotRebuildButton shot) { view.MinHeight = shot.LogicalHeight; view.Padding = new(6, 2, 6, 2); }
+            WpfThemeResources.SetButton(view, model.Text, icon, primary, compact: model is ScreenshotRebuildButton { LogicalHeight: < 36 }, coverOverlay: model is GameActionButton { CoverOverlay: true });
+            if (model is ScreenshotRebuildButton shot) { view.MinHeight = shot.LogicalHeight; view.Padding = shot.LogicalHeight >= 36 ? new(10, 5, 10, 5) : new(6, 2, 6, 2); }
             if (UseModelDimensions && model is GameActionButton action) view.MinHeight = action.LogicalHeight;
             if (primary) view.Background = WpfDrawing.Brush(SettingsColors.PrimaryFill);
             if (model is GameActionButton { TabStyle: true } tab)
             {
+                view.SetResourceReference(WC.Control.StyleProperty, "Fusion.TabButton");
                 view.Background = WpfDrawing.Brush(UiTheme.Current.Main); view.Foreground = WpfDrawing.Brush(tab.Primary ? UiTheme.Current.Accent : UiTheme.Current.Text);
                 view.BorderThickness = new(0, 0, 0, 2); view.BorderBrush = tab.Primary ? WpfDrawing.Brush(UiTheme.Current.Accent) : System.Windows.Media.Brushes.Transparent;
             }
-            else if (model is GameActionButton { NavigationStyle: true }) { view.BorderThickness = new(0); view.Background = WpfDrawing.Brush(UiTheme.Current.Main); }
+            else if (model is GameActionButton { NavigationStyle: true }) { view.SetResourceReference(WC.Control.StyleProperty, "Fusion.NavButton"); view.BorderThickness = new(0); view.Background = WpfDrawing.Brush(UiTheme.Current.Main); }
             if (model is ThemeChoiceButton choice)
             {
                 bool selected = ReferenceEquals(UiTheme.Current, choice.Mode == ApplicationThemeMode.Night ? ThemePalette.Night : ThemePalette.Day);
@@ -123,6 +168,7 @@ internal sealed class WpfSettingsFields : IDisposable
                 view.BorderBrush = WpfDrawing.Brush(selected ? UiTheme.Current.Accent : UiTheme.Current.Border);
                 view.BorderThickness = new(selected ? 2 : 1);
             }
+            if (RetainLayout) view.Padding = new(4, 2, 4, 2);
         });
         return view;
     }
@@ -156,7 +202,7 @@ internal sealed class WpfSettingsFields : IDisposable
             }
             finally { updating = false; }
         }
-        view.SelectionChanged += (_, _) => { if (!updating) { model.SelectedIndex = view.SelectedIndex; Refresh(); } };
+        view.SelectionChanged += (_, _) => { if (!updating) { model.SelectedIndex = view.SelectedIndex; WpfSettingsModel.Raise(model, "OnSelectionChangeCommitted"); Refresh(); } };
         view.AddHandler(WC.Primitives.TextBoxBase.TextChangedEvent, new WC.TextChangedEventHandler((_, _) => { if (!updating && view.IsEditable) model.Text = view.Text; }));
         view.DropDownOpened += (_, _) => { WpfSettingsModel.Raise(model, "OnDropDown"); Sync(); };
         view.DropDownClosed += (_, _) => { WpfSettingsModel.Raise(model, "OnDropDownClosed"); Refresh(); };
@@ -166,14 +212,27 @@ internal sealed class WpfSettingsFields : IDisposable
     }
     private static WC.ScrollViewer? FindScroll(W.DependencyObject child)
     { for (var p = System.Windows.Media.VisualTreeHelper.GetParent(child); p is not null; p = System.Windows.Media.VisualTreeHelper.GetParent(p)) if (p is WC.ScrollViewer scroll) return scroll; return null; }
+    internal static void ScrollEditor(WC.TextBox view, int delta, bool editing)
+    {
+        if (editing)
+        {
+            double distance = W.SystemParameters.WheelScrollLines < 0 ? view.ViewportHeight : W.SystemParameters.WheelScrollLines * view.FontSize * 1.35;
+            view.ScrollToVerticalOffset(view.VerticalOffset - delta / 120d * distance);
+        }
+        else if (FindScroll(view) is { } page)
+        {
+            double distance = W.SystemParameters.WheelScrollLines < 0 ? page.ViewportHeight : W.SystemParameters.WheelScrollLines * 16d;
+            page.ScrollToVerticalOffset(page.VerticalOffset - delta / 120d * distance);
+        }
+    }
     private W.FrameworkElement Text(TextBox model)
     {
         NativeFields++; bool updating = false;
         if (model.UseSystemPasswordChar || model.PasswordChar != '\0')
         {
             var surface = new WC.Grid();
-            var password = new WC.PasswordBox { MinHeight = 36, MaxWidth = 620, Padding = new(10, 6, 10, 6), HorizontalAlignment = W.HorizontalAlignment.Stretch };
-            var revealed = new WC.TextBox { MinHeight = 36, MaxWidth = 620, Visibility = W.Visibility.Collapsed };
+            var password = new WC.PasswordBox { MinHeight = 36, Padding = new(10, 6, 10, 6), HorizontalAlignment = W.HorizontalAlignment.Stretch };
+            var revealed = new WC.TextBox { MinHeight = 36, Visibility = W.Visibility.Collapsed };
             surface.Children.Add(password); surface.Children.Add(revealed);
             password.PasswordChanged += (_, _) => { if (!updating) model.Text = password.Password; };
             revealed.TextChanged += (_, _) => { if (!updating && revealed.IsVisible) model.Text = revealed.Text; };
@@ -182,15 +241,24 @@ internal sealed class WpfSettingsFields : IDisposable
                 if (password.Password != model.Text) password.Password = model.Text;
                 revealed.Text = masked ? "" : model.Text;
                 password.Visibility = masked ? W.Visibility.Visible : W.Visibility.Collapsed; revealed.Visibility = masked ? W.Visibility.Collapsed : W.Visibility.Visible;
-                password.Foreground = WpfDrawing.Brush(UiTheme.Current.Text); password.Background = WpfDrawing.Brush(UiTheme.Current.Secondary);
             } finally { updating = false; } });
             return surface;
         }
-        var view = new WC.TextBox { MinHeight = 36, MaxWidth = 620, IsReadOnly = model.ReadOnly, AcceptsReturn = model.Multiline, TextWrapping = model.Multiline ? W.TextWrapping.Wrap : W.TextWrapping.NoWrap,
+        var view = new WC.TextBox { MinHeight = 36, IsReadOnly = model.ReadOnly, AcceptsReturn = model.Multiline, TextWrapping = model.Multiline ? W.TextWrapping.Wrap : W.TextWrapping.NoWrap,
             VerticalScrollBarVisibility = model.Multiline ? WC.ScrollBarVisibility.Auto : WC.ScrollBarVisibility.Hidden, HorizontalAlignment = W.HorizontalAlignment.Stretch };
         if (model.Multiline) view.Height = Math.Max(112, model.Height * 96d / model.DeviceDpi);
+        if (model.Multiline)
+        {
+            view.VerticalContentAlignment = W.VerticalAlignment.Top;
+            // Hovering an editor must not interrupt page scrolling. Once it has
+            // keyboard focus, keep wheel input inside, including at either end.
+            view.PreviewMouseWheel += (_, e) =>
+            {
+                ScrollEditor(view, e.Delta, view.IsKeyboardFocusWithin);
+                e.Handled = true;
+            };
+        }
         view.TextChanged += (_, _) => { if (!updating) model.Text = view.Text; };
-        view.LostKeyboardFocus += (_, _) => WpfSettingsModel.Raise(model, "OnValidated");
         Watch(model, () => { updating = true; try { if (view.Text != model.Text) view.Text = model.Text; view.IsReadOnly = model.ReadOnly; } finally { updating = false; } });
         return view;
     }
@@ -200,16 +268,23 @@ internal sealed class WpfSettingsFields : IDisposable
         var row = new WC.Grid { Width = 144, Height = 36, HorizontalAlignment = W.HorizontalAlignment.Left };
         row.ColumnDefinitions.Add(new() { Width = new(30) }); row.ColumnDefinitions.Add(new() { Width = new(1, W.GridUnitType.Star) }); row.ColumnDefinitions.Add(new() { Width = new(30) });
         var edit = new WC.TextBox { TextAlignment = W.TextAlignment.Center, Padding = new(0, 6, 0, 6), BorderThickness = new(0) };
-        var minus = WpfThemeResources.Button("−", null, () => model.Value = Math.Max(model.Minimum, model.Value - model.Increment));
-        var plus = WpfThemeResources.Button("+", null, () => model.Value = Math.Min(model.Maximum, model.Value + model.Increment));
-        minus.Padding = plus.Padding = new(0); minus.BorderThickness = plus.BorderThickness = new(0);
+        var minus = new WC.Button { Content = "−" }; var plus = new WC.Button { Content = "+" };
+        minus.Click += (_, _) => model.Value = Math.Max(model.Minimum, model.Value - model.Increment);
+        plus.Click += (_, _) => model.Value = Math.Min(model.Maximum, model.Value + model.Increment);
+        foreach (var step in new[] { minus, plus }) step.SetResourceReference(WC.Control.StyleProperty, "Fusion.StepperButton");
+        edit.Background = System.Windows.Media.Brushes.Transparent;
+        W.Automation.AutomationProperties.SetName(minus, UiLanguage.Choose("减小", "Decrease"));
+        W.Automation.AutomationProperties.SetName(plus, UiLanguage.Choose("增大", "Increase"));
         row.Children.Add(minus); WC.Grid.SetColumn(edit, 1); row.Children.Add(edit); WC.Grid.SetColumn(plus, 2); row.Children.Add(plus);
         void Sync() { updating = true; try { edit.Text = model.Value.ToString("F" + model.DecimalPlaces, System.Globalization.CultureInfo.CurrentCulture); minus.IsEnabled = model.Value > model.Minimum; plus.IsEnabled = model.Value < model.Maximum; } finally { updating = false; } }
         edit.TextChanged += (_, _) => { if (!updating && decimal.TryParse(edit.Text, out var value) && value >= model.Minimum && value <= model.Maximum) model.Value = value; };
         edit.LostKeyboardFocus += (_, _) => Sync();
         edit.PreviewKeyDown += (_, e) => { if (e.Key is WI.Key.Up or WI.Key.Down) { model.Value = Math.Clamp(model.Value + (e.Key == WI.Key.Up ? model.Increment : -model.Increment), model.Minimum, model.Maximum); e.Handled = true; } };
         EventHandler handler = (_, _) => Sync(); model.ValueChanged += handler; unsubscribe.Add(() => model.ValueChanged -= handler); Watch(model, Sync);
-        return new WC.Border { Child = row, CornerRadius = new(5), BorderThickness = new(1), BorderBrush = WpfDrawing.Brush(UiTheme.Current.Border), HorizontalAlignment = W.HorizontalAlignment.Left };
+        var outline = new WC.Border { Child = row, CornerRadius = new(5), BorderThickness = new(1), HorizontalAlignment = W.HorizontalAlignment.Left };
+        outline.SetResourceReference(WC.Border.BorderBrushProperty, "Fusion.Border");
+        outline.SetResourceReference(WC.Border.BackgroundProperty, "Fusion.Main");
+        return outline;
     }
     private W.FrameworkElement Children(Control model, bool vertical)
     {
@@ -234,15 +309,5 @@ internal sealed class WpfSettingsFields : IDisposable
         }
         return grid;
     }
-    private W.FrameworkElement Host(Control model)
-    {
-        // Hidden legacy layout can temporarily compress these editors before
-        // reparenting. Retain their designed width so complete bindings fit.
-        double minimumWidth = model is InputBindingCaptureButton ? 190 : model is GameShortcutButton ? 220 : 100;
-        var host = new System.Windows.Forms.Integration.WindowsFormsHost { MinHeight = 36, Height = Math.Max(36, model.Height * 96d / model.DeviceDpi), Width = Math.Max(minimumWidth, model.Width * 96d / model.DeviceDpi), HorizontalAlignment = W.HorizontalAlignment.Left };
-        model.Parent?.Controls.Remove(model); model.Dock = DockStyle.Fill; host.Child = model; hosted.Add(host);
-        refreshers.Add(() => { if (!model.IsDisposed) { model.BackColor = UiTheme.Current.Secondary; model.ForeColor = UiTheme.Current.Text; model.Invalidate(); } });
-        return host;
-    }
-    public void Dispose() { foreach (var detach in unsubscribe) detach(); foreach (var host in hosted) host.Dispose(); unsubscribe.Clear(); refreshers.Clear(); hosted.Clear(); }
+    public void Dispose() { foreach (var detach in unsubscribe.ToArray()) detach(); unsubscribe.Clear(); refreshers.Clear(); inputBindings.Clear(); }
 }

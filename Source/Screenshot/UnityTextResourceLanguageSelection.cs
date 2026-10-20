@@ -13,6 +13,8 @@ internal sealed class UnityTextResourceLanguageSelection
     private string? Requested=>preferredLanguage.Length>0?preferredLanguage:RequestedLanguage(sourceLanguage);
     private sealed class Family
     {
+        internal string? PossibleLocaleFamily;
+        internal bool HasLocaleEvidence;
         internal readonly HashSet<string> Original=new(StringComparer.Ordinal);
         // Shared fields can coexist with parallel locale columns in one resource.
         // Keep their provenance so an inferred language does not turn them into
@@ -40,7 +42,7 @@ internal sealed class UnityTextResourceLanguageSelection
     private static readonly Regex DisplayField=new(@"(?:^m_?text$|dialog|speech|subtitle|caption|description|display.?name|localized|localised|(?:^|_)message$|^(?:m_?)?(?:desc|helpText|body|prompt|title|label|text|content|sentence|originalText|sourceText)$)",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex IdentifierField=new(@"^(?:m_)?(?:id|key|guid|path|file|fileName|asset|speakerId|lineId|choiceId|identifier|type|command|locale|language|culture|languageCode|sourceLanguage|originalLanguage|baseLanguage|condition|conditions|script|onClick|callback|eventName|targetId|nextId|expression|variable|variables)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex ResourceContext=new(@"dialog|locali[sz]|language|translation|subtitle|story|scenario|conversation|\.(?:ink|yarn)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
-    private static readonly Regex LocaleToken=new(@"(?<![\p{L}\p{N}])(?:en(?:[-_]us|[-_]gb)?|english|ja(?:[-_]jp)?|jp|japanese|zh(?:[-_]cn|[-_]hans|[-_]tw|[-_]hant)?|chinese|ko(?:[-_]kr)?|korean|es(?:[-_]es)?|spanish|ru(?:[-_]ru)?|russian|fr(?:[-_]fr)?|french|de(?:[-_]de)?|german|pt(?:[-_]br|[-_]pt)?|portuguese)(?![\p{L}\p{N}])",RegexOptions.IgnoreCase|RegexOptions.Compiled);
+    private static readonly Regex LocaleToken=new(@"(?<![\p{L}\p{N}])(?:en(?:[-_]us|[-_]gb)?|english|ja(?:[-_]jp)?|jp|japanese|zh(?:(?:[-_](?:hans|hant))(?:[-_](?:[a-z]{2}|[0-9]{3}))?|[-_](?:cn|tw|hk|mo|sg|my))?|chinese|ko(?:[-_]kr)?|korean|es(?:[-_]es)?|spanish|ru(?:[-_]ru)?|russian|fr(?:[-_]fr)?|french|de(?:[-_]de)?|german|pt(?:[-_]br|[-_]pt)?|portuguese)(?![\p{L}\p{N}])",RegexOptions.IgnoreCase|RegexOptions.Compiled);
 
     internal static bool IsTextField(string name)
     {
@@ -51,6 +53,11 @@ internal sealed class UnityTextResourceLanguageSelection
     internal static string? Locale(string name)
     {
         string value=name.Trim().Replace('_','-').ToLowerInvariant();
+        // Keep this field-name recognizer restricted to known languages. The
+        // fuller explicit-metadata parser below must never make id/no fields
+        // into language columns merely because they are valid ISO codes.
+        if(Regex.IsMatch(value,@"^zh-(?:(?:hans|hant)(?:-(?:[a-z]{2}|[0-9]{3}))?|cn|tw|hk|mo|sg|my)$"))
+            return TranslationLanguagePolicy.ChineseTargetScript(value)=="Hant"?"zh-Hant":"zh";
         return value switch
         {
             "en" or "en-us" or "en-gb" or "english"=>"en",
@@ -76,6 +83,7 @@ internal sealed class UnityTextResourceLanguageSelection
         if(!Regex.IsMatch(value,@"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"))return "und-declared";
         string primary=value.Split('-')[0].ToLowerInvariant();
         primary=primary switch {"eng"=>"en","jpn"=>"ja","kor"=>"ko","zho" or "chi"=>"zh",_=>primary};
+        if(primary=="zh")return TranslationLanguagePolicy.ChineseTargetScript(value)=="Hant"?"zh-Hant":"zh";
         return Locale(primary)??primary;
     }
     internal string PreferredLanguage
@@ -86,17 +94,59 @@ internal sealed class UnityTextResourceLanguageSelection
                 .Where(l=>l!="und-declared").ToHashSet(StringComparer.Ordinal);
             // Strong original-language evidence participates across formats; an
             // ordinary untagged Latin name cannot overrule a declared Japanese table.
-            string inferred=OriginalLocale(families.Values.Where(f=>f.OriginalLanguages.Count==0).SelectMany(f=>f.Original),false);
+            string inferred=OriginalLocale(families.Values.Where(f=>f.OriginalLanguages.Count==0&&!HasLocaleSibling(f)).SelectMany(f=>f.Original),false);
             if(inferred is not ("und" or "han"))available.Add(inferred);
             return available.OrderBy(l=>l=="en"?0:l=="ja"?1:2).ThenBy(l=>l,StringComparer.Ordinal).FirstOrDefault()??"";
         }
     }
+    // Resource filenames are a separate authority from JSON field names. Keep
+    // additional ISO language packs (it, vi, ar, ...) out of SharedOriginal,
+    // without treating an arbitrary field named "id" or "no" as a locale.
+    private static readonly HashSet<string> ResourceLanguageCodes = System.Globalization.CultureInfo
+        .GetCultures(System.Globalization.CultureTypes.NeutralCultures)
+        .Select(c=>c.TwoLetterISOLanguageName).Where(c=>c.Length is 2 or 3 && c!="iv")
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    private static readonly Regex ResourceLocaleSuffix = new(@"(?:^|[/_.-])(?<code>[a-z]{2,3}(?:[-_](?:[a-z]{4}|[a-z]{2}|[0-9]{3})){0,2})(?=/|\.[a-z0-9]+$|$)",RegexOptions.IgnoreCase|RegexOptions.Compiled);
+    private static string? AdditionalResourceLocale(string code)
+    {
+        string primary=code.Replace('_','-').Split('-')[0];
+        return ResourceLanguageCodes.Contains(primary)||primary.Equals("zho",StringComparison.OrdinalIgnoreCase)||primary.Equals("chi",StringComparison.OrdinalIgnoreCase)?DeclaredLocale(code):null;
+    }
+    private static bool LocaleResourceContext(string path)=>ResourceContext.IsMatch(path)||
+        Regex.IsMatch(path,@"(?:^|[/_.-])(?:menus?|strings|messages|texts?)(?:[/_.-]|$)",RegexOptions.IgnoreCase);
     internal static string? ResourceLocale(string name)
     {
-        var matches=LocaleToken.Matches(name.Replace('\\','/'));
-        return matches.Count==0?null:Locale(matches[^1].Value);
+        string path=name.Replace('\\','/');
+        var known=LocaleToken.Matches(path);
+        // Limit broader code recognition to dialogue/localization resources;
+        // names elsewhere may use two-letter suffixes for unrelated purposes.
+        var additional=LocaleResourceContext(path)?ResourceLocaleSuffix.Matches(path)
+            .Cast<Match>().Where(m=>AdditionalResourceLocale(m.Groups["code"].Value) is not null).LastOrDefault():null;
+        if(additional is not null&&(known.Count==0||additional.Groups["code"].Index>=known[^1].Index))
+            return AdditionalResourceLocale(additional.Groups["code"].Value);
+        return known.Count==0?null:Locale(known[^1].Value);
     }
-    private static string ResourceFamily(string name)=>LocaleToken.Replace(name.Replace('\\','/'),"{locale}");
+    private static string ResourceFamily(string name)
+    {
+        string path=name.Replace('\\','/');
+        if(LocaleResourceContext(path))path=ResourceLocaleSuffix.Replace(path,m=>
+            AdditionalResourceLocale(m.Groups["code"].Value) is null?m.Value:
+            m.Value[..(m.Groups["code"].Index-m.Index)]+"{locale}");
+        return LocaleToken.Replace(path,"{locale}");
+    }
+    private bool HasLocaleSibling(Family family)=>!family.HasLocaleEvidence&&family.OriginalLanguages.Count==0&&
+        family.PossibleLocaleFamily is {} key&&families.TryGetValue(key,out var sibling)&&sibling.HasLocaleEvidence;
+    private static string? PossibleLocaleFamily(string name)
+    {
+        string path=name.Replace('\\','/');
+        if(!LocaleResourceContext(path))return null;
+        // An unknown two-letter filename suffix alone is not enough to drop a
+        // resource. Require an actual parallel locale family at completion.
+        var match=Regex.Match(path,@"[_.-](?<code>[a-z]{2})(?=\.[^/.]+$|$)",RegexOptions.IgnoreCase);
+        if(!match.Success||match.Groups["code"].Value.Equals("ui",StringComparison.OrdinalIgnoreCase))return null;
+        var code=match.Groups["code"];
+        return ResourceFamily(path[..code.Index]+"{locale}"+path[(code.Index+code.Length)..]);
+    }
     internal static string? RequestedLanguage(SourceLanguageMode mode)=>mode switch
     {SourceLanguageMode.English=>"en",SourceLanguageMode.Japanese=>"ja",SourceLanguageMode.SimplifiedChinese=>"zh",SourceLanguageMode.Korean=>"ko",_=>null};
 
@@ -117,6 +167,9 @@ internal sealed class UnityTextResourceLanguageSelection
         if(candidateIdentities.Count<2_000_000)candidateIdentities.Add(identity);
         else if(!candidateIdentities.Contains(identity)){countLimit=true;return;}
         if(!families.TryGetValue(familyKey,out var family))families[familyKey]=family=new();
+        // Record provenance even when the selected-locale memory filter drops
+        // this row. Otherwise an inactive sibling could authorize an unknown pack.
+        if(locale is not null)family.HasLocaleEvidence=true;
         string? declared=original||locale is null?family.OriginalLanguages.Count==1?family.OriginalLanguages.Single():null:locale;
         string? requested=Requested;
         if(requested is not null&&declared is not null&&declared!=requested)return;
@@ -157,7 +210,7 @@ internal sealed class UnityTextResourceLanguageSelection
             // catalogue language before publishing any family's strings.
             var available=families.Values.SelectMany(f=>f.Localized.Where(p=>p.Value.Count>0).Select(p=>p.Key)).Where(l=>l!="und-declared").ToHashSet(StringComparer.OrdinalIgnoreCase);
             var declaredOriginal=families.Values.Where(f=>f.Original.Count>0).SelectMany(f=>f.OriginalLanguages).Where(l=>l!="und-declared");available.UnionWith(declaredOriginal);
-            var originals=families.Values.Where(f=>f.OriginalLanguages.Count==0).SelectMany(f=>f.Original).ToArray();
+            var originals=families.Values.Where(f=>f.OriginalLanguages.Count==0&&!HasLocaleSibling(f)).SelectMany(f=>f.Original).ToArray();
             if(originals.Length>0)available.Add(OriginalLocale(originals));
             requested=available.Contains("en")?"en":available.Contains("ja")?"ja":available.Order(StringComparer.Ordinal).FirstOrDefault();
         }
@@ -166,6 +219,7 @@ internal sealed class UnityTextResourceLanguageSelection
         UnlocalizedSourceTexts.Clear();
         foreach(var family in families.Values)
         {
+            if(HasLocaleSibling(family))continue;
             // Only shared, untagged display fields qualify. Paired original /
             // translated columns and declared source-language tables still
             // require the active-locale path, even if a default view was selected.
@@ -249,6 +303,16 @@ internal sealed class UnityTextResourceLanguageSelection
         if(body.Length>16*1024*1024){reportIssue?.Invoke(CatalogIssueKind.Limited,"文本资源超过本次大小上限");return;}
         if(body.IndexOf('\0')>=0){reportIssue?.Invoke(CatalogIssueKind.Unsupported,"资源包含二进制内容，未作为普通文字读取");return;}
         string family=ResourceFamily(name);string? resourceLocale=ResourceLocale(name)??inheritedLocale;
+        if(resourceLocale is not null)
+        {
+            if(!families.TryGetValue(family,out var declaredFamily))families[family]=declaredFamily=new();
+            declaredFamily.HasLocaleEvidence=true;
+        }
+        if(resourceLocale is null&&PossibleLocaleFamily(name) is {} possible)
+        {
+            if(!families.TryGetValue(family,out var resourceFamily))families[family]=resourceFamily=new();
+            resourceFamily.PossibleLocaleFamily=possible;
+        }
         if(XmlDisplayText.Read(name,body,(text,locale)=>AddValue(family,locale??resourceLocale,text),cancellation,reportIssue))return;
         if(StructuredStoryText.ReadSource(name,body,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
         if(LabelDialogueResource.TryRead(body,cancellation,out var dialogue,out bool complete))

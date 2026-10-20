@@ -10,7 +10,7 @@ internal sealed partial class GameLibraryGrid
     private Rectangle selectionBox;
     private System.Windows.Forms.Timer? boxScrollTimer;
     private static bool SamePath(string? a,string? b)=>string.Equals(a,b,StringComparison.OrdinalIgnoreCase);
-    internal RecentGame[] SelectedGames=>tiles.Where(t=>selection.Contains(t.Game.Id)).Select(t=>t.Game).ToArray();
+    public RecentGame[] SelectedGames=>tiles.Where(t=>selection.Contains(t.Game.Id)).Select(t=>t.Game).ToArray();
     internal void SelectIndex(int index,Keys modifiers)
     {
         if(index<0||index>=tiles.Length)return;

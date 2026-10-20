@@ -42,7 +42,7 @@ internal sealed partial class TranslationWorkspaceForm
         restore=Button("恢复自动译文",RestoreAsync);retry=Button("重译所选",RetryAsync);
         content.Controls.Add(TranslationWorkspaceUi.Bar(save,restore,retry,Button("重译本页问题",RetryPageAsync),Button("撤销上次译文修改",UndoAsync)),0,5);
         var termLayout=TranslationWorkspaceUi.Column(new(SizeType.AutoSize),new(SizeType.AutoSize),new(SizeType.Percent,100));termTab.Controls.Add(termLayout);
-        var termHelp=TranslationWorkspaceUi.Label("术语用于后续翻译，旧缓存会保留。可重译含该术语的原句（最多 1000 条）；手动更正不受影响。匹配不区分大小写。",true);termLayout.Controls.Add(termHelp,0,0);
+        var termHelp=TranslationWorkspaceUi.Label("明确的人物、地点、技能和物品名称保持统一；普通词按语境翻译。保存后相关自动译文会重新准备；人工更正保留。原词和译名相同表示保留原文。",true);termLayout.Controls.Add(termHelp,0,0);
         termLayout.Controls.Add(TranslationWorkspaceUi.Bar(InlineLabel("原词"),TranslationWorkspaceUi.Field(termSource,180,"tag"),InlineLabel("译名"),TranslationWorkspaceUi.Field(termText,180,"translate"),Button("保存术语",SaveTermAsync,"check"),Button("删除术语",DeleteTermAsync,"trash"),Button("重译相关原句",RetryTermAsync,"refresh")),0,1);
         terms.Columns.Add("source","术语原文");terms.Columns.Add("text","统一译名");termLayout.Controls.Add(terms,0,2);
         terms.SelectionChanged+=(_,_)=>{if(terms.CurrentRow?.Tag is KeyValuePair<string,string> p){termSource.Text=p.Key;termText.Text=p.Value;}};

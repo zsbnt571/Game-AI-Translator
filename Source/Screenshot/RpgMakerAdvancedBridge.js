@@ -7,6 +7,8 @@ function createFusionRpgAdvanced(g,io) {
 
     var maps=Object.create(null),options={speed:1,experience:1,move:0,hpMax:false,mpMax:false,tpMax:false,clickTeleport:false,alwaysSpeed:true},hooks=[],restores=[],changedMaps=Object.create(null),loadingMap=0,interpreterRecords=[],nextInterpreter=1;
     var mapRevision=0,mapSequence=0,mapSyncCache=null;
+    var updateClock=g.performance&&typeof g.performance.now==="function"
+        ?function(){return g.performance.now();}:function(){return Date.now();};
     function fail(t){throw new Error(t);}
     function integer(v,min,max){if(!fusionSafeInteger(v)||v<min||v>max)fail("数值不在允许范围内。");return v;}
     function num(key,name,read,write,min,max,lock){return {key:key,name:name,type:"number",read:read,write:write,min:min,max:max,canLock:lock!==false};}
@@ -17,10 +19,16 @@ function createFusionRpgAdvanced(g,io) {
         if(hooks.length)return;
         ["setup","refresh","changeTileset"].forEach(function(key){wrap(g.Game_Map&&g.Game_Map.prototype,key,function(old){return function(){var result=old.apply(this,arguments);mapRevision++;return result;};});});
         wrap(g.SceneManager,g.SceneManager&&typeof g.SceneManager.updateScene==="function"?"updateScene":"updateMain",function(old){return function(){
-            var scene=this._scene,result=old.apply(this,arguments);
+            var scene=this._scene,started=updateClock(),result=old.apply(this,arguments);
             var accelerate=options.alwaysSpeed||(g.Input&&g.Input.isPressed("ok"));
             var playable=(g.Scene_Map&&scene instanceof g.Scene_Map)||(g.Scene_Battle&&scene instanceof g.Scene_Battle);
-            if(accelerate&&playable)for(var i=1;i<options.speed&&this._scene===scene&&!this._nextScene;i++)result=old.apply(this,arguments);
+            // The requested multiplier is retained, but a slow game must yield
+            // to input/rendering instead of doing 100 expensive updates at once.
+            // Do not accumulate debt: that would starve subsequent frames.
+            if(accelerate&&playable)for(var i=1;i<options.speed&&this._scene===scene&&!this._nextScene;i++){
+                if(updateClock()-started>=8)break;
+                result=old.apply(this,arguments);
+            }
             return result;
         };});
         wrap(g.Game_Actor&&g.Game_Actor.prototype,"gainExp",function(old){return function(exp){return old.call(this,Math.round(exp*options.experience));};});
@@ -125,7 +133,7 @@ function createFusionRpgAdvanced(g,io) {
             var name=p[1];
             if(Object.prototype.hasOwnProperty.call(options,name)){
                 var names={speed:"游戏速度 / Game speed",experience:"经验倍率 / Experience",move:"移动速度加值 / Movement",hpMax:"生命保持最大 / Max HP",mpMax:"魔力保持最大 / Max MP",tpMax:"技能点保持最大 / Max TP",clickTeleport:"点击地图传送 / Click teleport",alwaysSpeed:"持续加速 / Always accelerate (关闭时按住确认键)"};
-                return typeof options[name]==="boolean"?bool(key,names[name],function(){return options[name];},function(v){options[name]=v;},false):num(key,names[name],function(){return options[name];},function(v){options[name]=v;},name==="move"?-2:1,name==="experience"?100:4,false);
+                return typeof options[name]==="boolean"?bool(key,names[name],function(){return options[name];},function(v){options[name]=v;},false):num(key,names[name],function(){return options[name];},function(v){options[name]=v;},name==="move"?-2:1,name==="experience"||name==="speed"?100:4,false);
             }
             if(name==="through")return bool(key,"穿墙 / Walk through",function(){return g.$gamePlayer.isThrough();},function(v){remember(key,function(){return g.$gamePlayer.isThrough();},function(x){g.$gamePlayer.setThrough(x);},v);},false);
             if(["encounter","menu","save"].indexOf(name)>=0){var cap=name[0].toUpperCase()+name.slice(1);return bool(key,{encounter:"随机遇敌 / Encounters",menu:"游戏菜单 / Menu",save:"游戏存档 / Saving"}[name],function(){return g.$gameSystem["is"+cap+"Enabled"]();},function(v){remember(key,function(){return g.$gameSystem["is"+cap+"Enabled"]();},function(x){g.$gameSystem[(x?"enable":"disable")+cap]();},v);},false);}

@@ -1,4 +1,4 @@
-using System.Drawing.Imaging;
+﻿using System.Drawing.Imaging;
 using System.Text;
 
 namespace ScreenshotTranslationUiTester;
@@ -13,23 +13,33 @@ internal sealed record ScreenshotWorkspacePerformanceDiagnostics(int LayoutWrite
 
 public sealed partial class MainForm
 {
-    private readonly ScreenshotRebuildPane _shotLeft = new() { Dock = DockStyle.Fill, PaneTitle = "左侧" };
-    private readonly ScreenshotRebuildPane _shotRight = new() { Dock = DockStyle.Fill, PaneTitle = "右侧" };
-    private readonly ScreenshotRebuildSplit _shotSplit = new() { Dock = DockStyle.Fill };
-    private readonly ScreenshotRebuildHistory _shotHistory = new() { Dock = DockStyle.Fill };
-    private readonly ScreenshotHistoryRail _shotRail = new() { Dock = DockStyle.Fill };
-    private readonly TextBox _shotSearch = new() { Name = "ScreenshotHistorySearch", BorderStyle = BorderStyle.None, PlaceholderText = UiLanguage.Text("搜索原文或译文") };
-    private readonly ComboBox _shotDate = new GamePlanBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 96, LogicalHeight = 26 };
-    private readonly Label _shotCount = new() { TextAlign = ContentAlignment.MiddleLeft };
-    private readonly Label _shotPageNumber = new() { TextAlign = ContentAlignment.MiddleCenter };
+    private ScreenshotRebuildPane? _legacyShotLeft, _legacyShotRight;
+    private ScreenshotRebuildHistory? _legacyShotHistory;
+    private ScreenshotRebuildSplit? _legacyShotSplit;
+    private ScreenshotHistoryRail? _legacyShotRail;
+    private TextBox? _legacyShotSearch;
+    private ComboBox? _legacyShotDate;
+    private Label? _legacyShotCount, _legacyShotPageNumber;
+    private ScreenshotRebuildPane LegacyShotLeft => _legacyShotLeft ??= new() { Dock = DockStyle.Fill, PaneTitle = "左侧" };
+    private ScreenshotRebuildPane LegacyShotRight => _legacyShotRight ??= new() { Dock = DockStyle.Fill, PaneTitle = "右侧" };
+    private ScreenshotRebuildHistory LegacyShotHistory => _legacyShotHistory ??= new() { Dock = DockStyle.Fill };
+    private IScreenshotPaneSession _shotLeft => WpfWorkspace.Enabled ? ScreenshotWorkspace.Left : LegacyShotLeft;
+    private IScreenshotPaneSession _shotRight => WpfWorkspace.Enabled ? ScreenshotWorkspace.Right : LegacyShotRight;
+    private IScreenshotHistorySession _shotHistory => WpfWorkspace.Enabled ? ScreenshotWorkspace.History : LegacyShotHistory;
+    private ScreenshotRebuildSplit _shotSplit => _legacyShotSplit ??= new() { Dock = DockStyle.Fill };
+    private ScreenshotHistoryRail _shotRail => _legacyShotRail ??= new() { Dock = DockStyle.Fill };
+    private TextBox _shotSearch => _legacyShotSearch ??= new() { Name = "ScreenshotHistorySearch", BorderStyle = BorderStyle.None, PlaceholderText = UiLanguage.Text("搜索原文或译文") };
+    private ComboBox _shotDate => _legacyShotDate ??= new GamePlanBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 96, LogicalHeight = 26 };
+    private Label _shotCount => _legacyShotCount ??= new() { TextAlign = ContentAlignment.MiddleLeft };
+    private Label _shotPageNumber => _legacyShotPageNumber ??= new() { TextAlign = ContentAlignment.MiddleCenter };
     private readonly List<Font> _shotFonts = [];
-    private readonly System.Windows.Forms.Timer _shotSearchTimer = new() { Interval = 200 };
-    private readonly System.Windows.Forms.Timer _shotLayoutTimer = new() { Interval = 600 };
+    private readonly DesktopUiTimer _shotSearchTimer = WpfWorkspace.Enabled ? null! : new(false) { Interval = 200 };
+    private readonly DesktopUiTimer _shotLayoutTimer = WpfWorkspace.Enabled ? null! : new(false) { Interval = 600 };
     private Panel? _shotPage, _shotToolbar, _shotBody, _shotHistoryHost, _shotExpanded, _shotContent, _shotSearchBorder, _shotHistoryFooter;
     private Label? _shotHeading, _shotProfileLabel, _shotHistoryHeading, _shotHistoryNote;
     private ScreenshotRebuildButton? _shotCapture, _shotImport, _shotExport, _shotSwap, _shotEditProfile, _shotRetranslate, _shotEditRecord, _shotResetSplit, _shotOverflow, _shotCollapse, _shotPrevious, _shotNext;
     private LocalizedContextMenuStrip? _shotOverflowMenu, _shotExportMenu, _shotRecordMenu;
-    private ScreenshotRebuildPane? _shotActive;
+    private IScreenshotPaneSession? _shotActive;
     private SessionHistoryItem? _shotSelected;
     private Bitmap? _shotOriginal, _shotTranslated;
     private IReadOnlyList<SessionHistoryItem>? _shotSnapshot;
@@ -55,6 +65,8 @@ public sealed partial class MainForm
 
     private void BuildScreenshotWorkspace(Panel page)
     {
+        if (WpfWorkspace.Enabled) { InitializeNativeScreenshotWorkspace(); return; }
+        var _shotLeft = LegacyShotLeft; var _shotRight = LegacyShotRight; var _shotHistory = LegacyShotHistory;
         page.AutoScroll = false; page.Padding = Padding.Empty;
         _shotPage = new BufferedPage { Dock = DockStyle.Fill, AutoScroll = false, Font = ShotFont() };
         // Compact typography is local to this page; library/navigation keep .85 fonts.
@@ -68,7 +80,9 @@ public sealed partial class MainForm
         _shotProfileLabel.Name = "ScreenshotToolbarProfileLabel";
         _shotProfile.Name = "ScreenshotToolbarProfile"; _shotProfile.AccessibleName = "截图翻译方案";
         _shotProfile.Font = ShotFont();
-        if (_shotProfile is GamePlanBox plan) plan.LogicalHeight = 26;
+        if (_shotProfile is GamePlanBox plan) plan.LogicalHeight = 36;
+        _shotProfile.Font = ShotFont(10);
+        _shotProfileLabel.Font = ShotFont(10);
         // The selector is now part of the initial shell. ConfigureFusionInputs(this)
         // will attach its owner drawing and wheel guard once, with no menu host.
         _shotEditProfile = ShotButton("编辑方案", "", 64, () => EditModeProfile(false));
@@ -88,6 +102,8 @@ public sealed partial class MainForm
         _shotCapture.Name = "ScreenshotToolbarCapture"; _shotImport.Name = "ScreenshotToolbarImport";
         _shotExport.Name = "ScreenshotToolbarExport"; _shotSwap.Name = "ScreenshotToolbarSwap";
         _shotToolbar.Controls.AddRange([_shotHeading, _shotProfileLabel, _shotProfile, _shotEditProfile, _shotRetranslate, _shotEditRecord, _shotResetSplit, _shotOverflow, _shotSwap, _shotExport, _shotImport, _shotCapture]);
+        foreach(var button in _shotToolbar.Controls.OfType<ScreenshotRebuildButton>())
+        { button.LogicalHeight = 36; button.Font = ShotFont(10); button.RefreshMetrics(); }
         _fusionTips.SetToolTip(_shotProfile, UiLanguage.Text("选择截图使用的翻译方案"));
         _fusionTips.SetToolTip(_shotEditProfile, UiLanguage.Text("编辑当前截图翻译方案"));
         _fusionTips.SetToolTip(_shotResetSplit, UiLanguage.Text("将左右两栏恢复为相同宽度"));
@@ -171,18 +187,25 @@ public sealed partial class MainForm
 
     private void ArrangeShotWorkspace()
     {
+        if (WpfWorkspace.Enabled) { WpfScreenshotView?.Refresh(); return; }
+        var _shotHistory = LegacyShotHistory;
         if (_shotArranging || _shotPage is null || _shotToolbar is null || _shotBody is null || _shotHistoryHost is null || _shotContent is null) return;
         _shotArranging = true;
         try
         {
             int S(int n) => ShotScale(n);
-            int width = _shotPage.ClientSize.Width, height = _shotPage.ClientSize.Height, toolbarHeight = S(46);
+            var viewport = _shotPage.ClientSize;
+            int width = viewport.Width, height = viewport.Height, toolbarHeight = S(56);
+            int bodyHeight = Math.Max(0, height - toolbarHeight);
             _shotToolbar.SetBounds(0, 0, width, toolbarHeight);
-            _shotBody.SetBounds(0, toolbarHeight, width, Math.Max(0, height - toolbarHeight));
             int historyWidth = S(_shotHistoryVisible ? 262 : 62);
-            _shotHistoryHost.SetBounds(0, 0, historyWidth, _shotBody.Height);
-            _shotContent.SetBounds(historyWidth, 0, Math.Max(0, width - historyWidth), _shotBody.Height);
-            _shotContent.Padding = new(S(12), S(12), S(16), S(18));
+            if (WpfScreenshotView is null)
+            {
+                _shotBody.SetBounds(0, toolbarHeight, width, bodyHeight);
+                _shotHistoryHost.SetBounds(0, 0, historyWidth, bodyHeight);
+                _shotContent.SetBounds(historyWidth, 0, Math.Max(0, width - historyWidth), bodyHeight);
+                _shotContent.Padding = new(S(12), S(12), S(16), S(18));
+            }
             var toolbarLayout = (width, DeviceDpi, _shotProfile.Font, _shotCapture!.Font, UiLanguage.Current);
             if (_shotToolbarLayout != toolbarLayout)
             {
@@ -213,8 +236,8 @@ public sealed partial class MainForm
                 _shotHistoryFixedLayout = historyLayout;
             }
             int footerHeight = _shotPrevious!.Visible ? S(64) : S(35);
-            if(WpfScreenshotView is null)_shotHistory.SetBounds(S(12), S(132), w - S(24), Math.Max(0, _shotHistoryHost.Height - S(132) - footerHeight));
-            _shotHistoryFooter!.SetBounds(0, _shotHistoryHost.Height - footerHeight, w, footerHeight);
+            if(WpfScreenshotView is null)_shotHistory.SetBounds(S(12), S(132), w - S(24), Math.Max(0, bodyHeight - S(132) - footerHeight));
+            _shotHistoryFooter!.SetBounds(0, bodyHeight - footerHeight, w, footerHeight);
             _shotHistoryNote!.SetBounds(S(8), footerHeight - S(30), w - S(16), S(25));
         }
         finally { _shotArranging = false; }
@@ -265,30 +288,33 @@ public sealed partial class MainForm
 
     private void SetShotHistoryVisible(bool visible)
     {
+        if (WpfWorkspace.Enabled) { ScreenshotWorkspace.SetHistoryVisible(visible); return; }
         _shotHistoryVisible = visible;
         if (_shotExpanded is not null) _shotExpanded.Visible = visible;
-        _shotRail.Visible = !visible;
+        if (!WpfWorkspace.Enabled) _shotRail.Visible = !visible;
         ArrangeShotWorkspace(); ScheduleShotLayout();
         WpfScreenshotView?.Refresh();
     }
     private void SwapShotPanes()
     {
+        if (WpfWorkspace.Enabled) { ScreenshotWorkspace.Swap(); return; }
         var left = _shotLeft.CaptureViewState(); var right = _shotRight.CaptureViewState();
         _shotLeft.ApplyViewState(right); _shotRight.ApplyViewState(left);
         ScheduleShotLayout(); UpdateGalleryChrome();
     }
     private void MaximizeShotPane(int index)
     {
-        _shotSplit.MaximizedPane = _shotSplit.MaximizedPane == index ? -1 : index;
-        _shotLeft.Maximized = _shotSplit.MaximizedPane == 0; _shotRight.Maximized = _shotSplit.MaximizedPane == 1;
-        if (_shotSplit.MaximizedPane >= 0) _shotActive = index == 0 ? _shotLeft : _shotRight;
+        if (WpfWorkspace.Enabled) { ScreenshotWorkspace.Maximize(index); return; }
+        ShotMaximizedPane = ShotMaximizedPane == index ? -1 : index;
+        _shotLeft.Maximized = ShotMaximizedPane == 0; _shotRight.Maximized = ShotMaximizedPane == 1;
+        if (ShotMaximizedPane >= 0) _shotActive = index == 0 ? _shotLeft : _shotRight;
         WpfScreenshotView?.Refresh();
     }
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
         if (_currentMainPage == "主页" && keyData == Keys.Escape)
         {
-            if (_shotSplit.MaximizedPane >= 0) { MaximizeShotPane(_shotSplit.MaximizedPane); return true; }
+            if (ShotMaximizedPane >= 0) { MaximizeShotPane(ShotMaximizedPane); return true; }
             if (_shotHistoryVisible) { SetShotHistoryVisible(false); return true; }
         }
         return base.ProcessCmdKey(ref msg, keyData);
@@ -329,38 +355,41 @@ public sealed partial class MainForm
         try { using var image = new Bitmap(dialog.FileName); CreateAndShowPreview(new CaptureResult(new Bitmap(image), PreviewMode.OcrAndTranslate)); }
         catch (Exception ex) { ShowFusionError(ex); }
     }
-    private void OpenShotEditor()
+    private void OpenShotEditor() => OpenShotEditor(WpfWorkspace.Enabled ? ScreenshotWorkspace.Selected : _shotSelected);
+    private void OpenShotEditor(SessionHistoryItem? selected)
     {
         try
         {
-            if (_shotSelected is not { } item) return;
-            if (item.OriginalPng.Length == 0) new SavedHistoryResultForm(item).Show(this);
+            if (selected is not { } item) return;
+            if (item.OriginalPng.Length == 0) {if(WpfWorkspace.Enabled)new NativeSavedHistoryWindow(item).Show(this);else new SavedHistoryResultForm(item).Show(this);}
             else OpenHistoryItem(item);
         }
         catch (Exception ex) { ShowFusionError(ex); }
     }
-    private void RetranslateShot()
+    private void RetranslateShot() => RetranslateShot(WpfWorkspace.Enabled ? ScreenshotWorkspace.Selected : _shotSelected);
+    private void RetranslateShot(SessionHistoryItem? selected)
     {
         try
         {
-            if (_shotSelected is { OriginalPng.Length: > 0 } item) OpenHistoryItem(item).TranslateFromWorkspace();
-            else _statusLabel.Text = "此记录缺少原图，无法重新翻译。";
+            if (selected is { OriginalPng.Length: > 0 } item) OpenHistoryItem(item).TranslateFromWorkspace();
+            else DesktopStatus = "此记录缺少原图，无法重新翻译。";
         }
         catch (Exception ex) { ShowFusionError(ex); }
     }
-    private void CopyShotPane(ScreenshotRebuildPane pane)
+    private void CopyShotPane(IScreenshotPaneSession pane)
     {
         try
         {
             if (pane.IsImageView) { if (pane.CurrentBitmap is not { } image) return; ClipboardHelper.SetImage(image); }
             else { var text = pane.SelectedTextOrAll; if (text.Length == 0) return; ClipboardHelper.SetText(text); }
-            _statusLabel.Text = "已复制。";
+            DesktopStatus = "已复制。";
         }
         catch (Exception ex) { ShowFusionError(ex); }
     }
-    private void ExportShotPane(ScreenshotRebuildPane pane)
+    private void ExportShotPane(IScreenshotPaneSession pane) => ExportShotPane(pane, WpfWorkspace.Enabled ? ScreenshotWorkspace.Selected : _shotSelected);
+    private void ExportShotPane(IScreenshotPaneSession pane, SessionHistoryItem? selected)
     {
-        if (_shotSelected is not { } item || (pane.IsImageView ? pane.CurrentBitmap is null : pane.CurrentText.Length == 0)) return;
+        if (selected is not { } item || (pane.IsImageView ? pane.CurrentBitmap is null : pane.CurrentText.Length == 0)) return;
         try
         {
             bool image = pane.IsImageView;
@@ -369,7 +398,7 @@ public sealed partial class MainForm
             using var dialog = new SaveFileDialog { Filter = UiLanguage.Text(image ? "PNG 图片|*.png" : "文字文件|*.txt"), FileName = ScreenshotRebuildPane.ViewTitle(pane.View) + "-" + item.Timestamp.ToString("yyyyMMdd-HHmmss") + (image ? ".png" : ".txt") };
             if (dialog.ShowDialog(this) != DialogResult.OK) return;
             if (image) snapshot!.Save(dialog.FileName, ImageFormat.Png); else File.WriteAllText(dialog.FileName, text, new UTF8Encoding(false));
-            _statusLabel.Text = "已导出。";
+            DesktopStatus = "已导出。";
         }
         catch (Exception ex) { ShowFusionError(ex); }
     }
@@ -382,6 +411,7 @@ public sealed partial class MainForm
     }
     private async Task RefreshGalleryAsync()
     {
+        if (WpfWorkspace.Enabled) { await ScreenshotWorkspace.RefreshAsync(); _historyThumbnailSide = ResolveHistoryThumbnailSide(); _historyThumbnailDecodeCount = ScreenshotWorkspace.History.DecodeCount; return; }
         if (IsDisposed || _shotClosed) return;
         if (_shotLoading) { _shotRefreshPending = true; return; }
         _shotLoading = true;
@@ -399,25 +429,28 @@ public sealed partial class MainForm
                     if (version != Volatile.Read(ref _shotHistoryVersion)) _shotRefreshPending = true;
                 }
                 IEnumerable<SessionHistoryItem> found = _shotSnapshot;
-                string query = _shotSearch.Text.Trim();
+                string query = ShotQuery.Trim();
                 if (query.Length > 0) found = found.Where(x => (x.SourceText + " " + x.SourceSummary + " " + x.TranslationText + " " + x.TranslationSummary).Contains(query, StringComparison.OrdinalIgnoreCase));
-                if (_shotDate.SelectedIndex == 1) found = found.Where(x => x.Timestamp.LocalDateTime.Date == DateTime.Today);
-                if (_shotDate.SelectedIndex == 2) found = found.Where(x => x.Timestamp >= DateTimeOffset.Now.AddDays(-7));
+                if (ShotDateFilter == 1) found = found.Where(x => x.Timestamp.LocalDateTime.Date == DateTime.Today);
+                if (ShotDateFilter == 2) found = found.Where(x => x.Timestamp >= DateTimeOffset.Now.AddDays(-7));
                 var records = found.OrderByDescending(x => x.Timestamp).ToArray();
                 int pages = Math.Max(1, (records.Length + 29) / 30);
                 int restored = _shotRestore ? Array.FindIndex(records, x => ScreenshotRebuildHistory.Key(x) == _shotSaved.SelectedRecord) : -1;
                 if (restored >= 0) _shotPageIndex = restored / 30;
                 _shotPageIndex = Math.Clamp(_shotPageIndex, 0, pages - 1);
-                _shotHistory.EmptyMessage = query.Length > 0 || _shotDate.SelectedIndex > 0 ? "没有匹配的记录\n试试其他关键词或日期" : "还没有截图记录\n开始截图或导入图片";
+                _shotHistory.EmptyMessage = query.Length > 0 || ShotDateFilter > 0 ? "没有匹配的记录\n试试其他关键词或日期" : "还没有截图记录\n开始截图或导入图片";
                 _shotHistory.SetRecords(records.Skip(_shotPageIndex * 30).Take(30).ToArray());
                 _historyThumbnailSide = ResolveHistoryThumbnailSide();
                 _historyThumbnailDecodeCount = _shotHistory.DecodeCount;
-                _historyUsage.Text = $"{records.Length} 条记录";
+                if(!WpfWorkspace.Enabled)_historyUsage.Text = $"{records.Length} 条记录";
+                if (!WpfWorkspace.Enabled)
+                {
                 _shotCount.Text = $"{records.Length} 条";
                 _shotRail.RecordCount = records.Length;
                 _shotPageNumber.Text = $"{_shotPageIndex + 1} / {pages}";
                 _shotPrevious!.Visible = _shotNext!.Visible = _shotPageNumber.Visible = pages > 1;
                 _shotPrevious.Enabled = _shotPageIndex > 0; _shotNext.Enabled = _shotPageIndex + 1 < pages;
+                }
                 ArrangeShotWorkspace();
                 int selected = restored >= 0 ? restored % 30 : _shotHistory.SelectedIndex < 0 && _shotHistory.Count > 0 ? 0 : _shotHistory.SelectedIndex;
                 if (selected != _shotHistory.SelectedIndex) _shotHistory.SelectedIndex = selected;
@@ -450,7 +483,7 @@ public sealed partial class MainForm
         if (item is not null) _shotLastSelected = ScreenshotRebuildHistory.Key(item);
         _shotApplying = true; ReleaseShotImages(); _shotApplying = false;
         _shotImagesLoading = item is not null;
-        _shotRail.Invalidate();
+        if (!WpfWorkspace.Enabled) _shotRail.Invalidate();
         UpdateGalleryChrome();
         if (item is null) { _shotPendingLeft = _shotPendingRight = null; ScheduleShotLayout(); return; }
         static string Full(string? text, string? summary) => string.IsNullOrWhiteSpace(text) ? summary ?? "" : text;
@@ -479,7 +512,7 @@ public sealed partial class MainForm
             foreach (var pane in new[] { _shotLeft, _shotRight }) pane.SetContent(_shotOriginal, _shotTranslated, sourceText, translatedText, !preserve);
             if (preserve) { _shotLeft.ApplyViewState(left); _shotRight.ApplyViewState(right); }
             _shotApplying = false;
-            if (errors.Count > 0) _statusLabel.Text = "部分图片不可用，文字保留";
+            if (errors.Count > 0) DesktopStatus = "部分图片不可用，文字保留";
             foreach (var error in errors) AppLog.Write("screenshot-history", error);
         }
         finally
@@ -495,12 +528,14 @@ public sealed partial class MainForm
     }
     private void ScheduleShotLayout()
     {
+        if (WpfWorkspace.Enabled) { ScreenshotWorkspace.ScheduleLayout(); return; }
         if (_shotApplying || _shotClosed || IsDisposed || Disposing) return;
         // Persist after the interaction settles, not during every split drag.
         _shotLayoutTimer.Stop(); _shotLayoutTimer.Start();
     }
     private void SaveShotLayout(bool closing = false)
     {
+        if (WpfWorkspace.Enabled) { ScreenshotWorkspace.SaveLayout(closing); return; }
         if (_shotApplying || (_shotImagesLoading && !closing)) return;
         try
         {
@@ -510,7 +545,7 @@ public sealed partial class MainForm
                 ? pendingLeft with { View = _shotLeft.View, FontSize = _shotLeft.FontSize } : _shotLeft.CaptureViewState();
             var right = _shotImagesLoading && _shotPendingRight is { } pendingRight
                 ? pendingRight with { View = _shotRight.View, FontSize = _shotRight.FontSize } : _shotRight.CaptureViewState();
-            var layout = new ScreenshotWorkspaceLayout { HistoryExpanded = _shotHistoryVisible, SplitPercent = _shotSplit.SplitPercent, SelectedRecord = _shotLastSelected, Left = left, Right = right }.Normalize();
+            var layout = new ScreenshotWorkspaceLayout { HistoryExpanded = _shotHistoryVisible, SplitPercent = ShotSplitPercent, SelectedRecord = _shotLastSelected, Left = left, Right = right }.Normalize();
             if (layout == _shotSaved && File.Exists(ShotLayoutPath)) return;
             ScreenshotWorkspaceLayoutStore.Save(ShotLayoutPath, layout); _shotSaved = layout; _shotLayoutWrites++;
         }
@@ -519,6 +554,11 @@ public sealed partial class MainForm
     private void UpdateGalleryChrome()
     {
         var p = ScreenshotRebuildStyle.Palette;
+        if (WpfWorkspace.Enabled)
+        {
+            ScreenshotWorkspace?.RefreshPresentation(); return;
+        }
+        var _shotLeft = LegacyShotLeft; var _shotRight = LegacyShotRight; var _shotHistory = LegacyShotHistory;
         if (_shotPage is null) return;
         _shotRetranslate!.Enabled = _shotSelected is { OriginalPng.Length: > 0 };
         _shotEditRecord!.Enabled = _shotSelected is not null;
@@ -549,25 +589,25 @@ public sealed partial class MainForm
         var text = content.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? "";
         return text.Length == 0 ? "截图翻译" : text.Length > 26 ? text[..26] + "…" : text;
     }
-    internal async Task RefreshScreenshotWorkspaceForSmoke() { while (_shotLoading) await Task.Delay(10); await RefreshGalleryAsync(); await _shotSelectionTask; }
-    internal async Task SelectScreenshotRecordForSmoke(int index) { if (_shotHistory.SelectedIndex != index) _shotHistory.SelectedIndex = index; else _shotSelectionTask = LoadShotSelectionAsync(); await _shotSelectionTask; }
+    internal async Task RefreshScreenshotWorkspaceForSmoke() { if (WpfWorkspace.Enabled) { await RefreshGalleryAsync(); return; } while (_shotLoading) await Task.Delay(10); await RefreshGalleryAsync(); await _shotSelectionTask; }
+    internal async Task SelectScreenshotRecordForSmoke(int index) { if (WpfWorkspace.Enabled) { await ScreenshotWorkspace.SelectAsync(index); return; } if (_shotHistory.SelectedIndex != index) _shotHistory.SelectedIndex = index; else _shotSelectionTask = LoadShotSelectionAsync(); await _shotSelectionTask; }
     internal void SetScreenshotModesForSmoke(int left, int right) { _shotLeft.View = (ScreenshotPaneView)left; _shotRight.View = (ScreenshotPaneView)right; }
-    internal void SetScreenshotSearchForSmoke(string query, int dateIndex = 0) { _shotSearch.Text = query; _shotSearchTimer.Stop(); _shotPageIndex = 0; _shotDate.SelectedIndex = dateIndex; }
-    internal void ToggleScreenshotHistoryForSmoke() => SetShotHistoryVisible(!_shotHistoryVisible);
+    internal void SetScreenshotSearchForSmoke(string query, int dateIndex = 0) { if (WpfWorkspace.Enabled) { ScreenshotWorkspace.SetFilterWithoutDelay(query, dateIndex); return; } _shotSearch.Text = query; _shotSearchTimer.Stop(); _shotPageIndex = 0; _shotDate.SelectedIndex = dateIndex; }
+    internal void ToggleScreenshotHistoryForSmoke() => SetShotHistoryVisible(!WpfShotHistoryVisible);
     internal void SwapScreenshotPanesForSmoke() => SwapShotPanes();
     internal void MaximizeScreenshotPaneForSmoke(int index) => MaximizeShotPane(index);
-    internal void SetScreenshotSplitForSmoke(double ratio) => _shotSplit.SplitPercent = ratio;
-    internal ScreenshotRebuildPane ScreenshotPaneForSmoke(int index) => index == 0 ? _shotLeft : _shotRight;
+    internal void SetScreenshotSplitForSmoke(double ratio) => ShotSplitPercent = ratio;
+    internal ScreenshotRebuildPane ScreenshotPaneForSmoke(int index) => index == 0 ? LegacyShotLeft : LegacyShotRight;
     internal void PrepareScreenshotMoreMenuForSmoke() => ArrangeShotWorkspace();
-    internal IReadOnlyDictionary<string, Rectangle> ScreenshotToolbarBoundsForSmoke() =>
+    internal IReadOnlyDictionary<string, Rectangle> ScreenshotToolbarBoundsForSmoke() => WpfWorkspace.Enabled ? WpfScreenshotView!.ToolbarBounds() :
         _shotToolbar!.Controls.Cast<Control>().Where(control => control.Visible)
             .ToDictionary(control => control.Name, control => control.Bounds);
     internal ScreenshotWorkspacePerformanceDiagnostics ScreenshotWorkspacePerformanceForSmoke() =>
-        new(_shotLayoutWrites, Volatile.Read(ref _shotSelectionDecodes), _shotFullThemeApplies);
-    internal ScreenshotWorkspaceDiagnostics ScreenshotWorkspaceStateForSmoke() => new(
+        WpfWorkspace.Enabled ? new(ScreenshotWorkspace.LayoutWrites, ScreenshotWorkspace.SelectionDecodes, ScreenshotWorkspace.ThemeApplies) : new(_shotLayoutWrites, Volatile.Read(ref _shotSelectionDecodes), _shotFullThemeApplies);
+    internal ScreenshotWorkspaceDiagnostics ScreenshotWorkspaceStateForSmoke() => WpfWorkspace.Enabled ? NativeScreenshotDiagnostics() : new(
         (int)_shotLeft.View, (int)_shotRight.View, _shotHistoryVisible, _shotSplit.MaximizedPane,
         _shotSelected is null ? "" : ScreenshotRebuildHistory.Key(_shotSelected), _shotHistory.Count,
-        _shotSplit.Panel1.Bounds, _shotSplit.Panel2.Bounds, _shotLeft.Visible, _shotRight.Visible, _shotSplit.SplitPercent,
+        _shotSplit.Panel1.Bounds, _shotSplit.Panel2.Bounds, LegacyShotLeft.Visible, LegacyShotRight.Visible, _shotSplit.SplitPercent,
         _shotLoading || _shotImagesLoading, _shotLeft.CaptureViewState(), _shotRight.CaptureViewState(),
         _shotHistoryHost?.Bounds ?? Rectangle.Empty, _shotToolbar?.Height ?? 0, DeviceDpi);
 }

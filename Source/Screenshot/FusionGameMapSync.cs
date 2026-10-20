@@ -4,7 +4,7 @@ namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
-    private readonly System.Windows.Forms.Timer _dataMapTimer=new(){Interval=100};
+    private readonly DesktopUiTimer _dataMapTimer=new(){Interval=100};
     private bool _dataMapSyncing,_dataMapFollowCurrent=true;
     private int _dataMapSyncRevision;
     private string _dataMapDetailSignature="";

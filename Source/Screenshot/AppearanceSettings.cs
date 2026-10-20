@@ -8,6 +8,7 @@ public static class FontSettingsPolicy
     public static Font CreatePixel(string? requested,string baseline,float size,FontStyle style=FontStyle.Regular)=>FontManager.CreatePixel(FontManager.IsInstalled(requested)?requested:baseline,size,style);
     public static string[] Families() => FontManager.InstalledFamilies();
     public static void ApplyUi(Control root, ApiSettings settings) => FontManager.ApplyUi(root, settings);
+    public static void ApplyUi(DesktopApplicationController root, ApiSettings settings) => FontManager.ApplyUi(root, settings);
     public static void ApplyPreviewText(RichTextBox text, ApiSettings settings) => FontManager.ApplyPreviewText(text, settings);
     public static void ApplyOverlay(RenderSettings render, ApiSettings settings)
     {

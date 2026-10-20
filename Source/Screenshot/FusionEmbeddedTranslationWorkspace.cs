@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
@@ -23,7 +23,9 @@ public sealed partial class MainForm
                 if(await Task.Run(()=>_gameLaunchOperations.ProcessState(sibling))!=FusionGameProcessState.Stopped)
                     throw new IOException("此游戏目录中的程序仍在运行，请先退出后再安装或恢复翻译。");
             if(await Task.Run(()=>_gameLaunchOperations.ProcessState(game))!=FusionGameProcessState.Stopped)throw new IOException("请先退出此游戏，再切换启动方式。");
-            if(_embeddedTranslationSessions.Remove(game.ExePath,out var old))old.Dispose();
+            // Static and engine-assisted collection are scheduled by the running
+            // translation session. Preparation details are an optional view.
+            if(_embeddedTranslationSessions.Remove(game.ExePath,out var old)){ResetNovelSpeed(old.Connection);old.Dispose();}
             if(action=="plain-bare")
             {
                 if(EmbeddedGameAdapters.HasRecord(game))await Task.Run(()=>EmbeddedGameAdapters.Restore(game));
@@ -72,7 +74,7 @@ public sealed partial class MainForm
                 session.Feedback="正在准备已有译文…";RenderGameSessionState();
                 await Task.Run(()=>
                 {
-                    var saved=EmbeddedStartupCache.Select(RpgTranslationCache.Effective(game.ExePath,settings!,unreal:game.AdapterId=="unreal",boundaryWhitespace:EmbeddedGameAdapters.Options(game).DisplayBoundaryWhitespace),settings!.SourceLanguage);
+                    var saved=EmbeddedStartupCache.Select(RpgTranslationCache.Effective(game.ExePath,settings!,EmbeddedGameAdapters.Options(game).Syntax,unreal:game.AdapterId=="unreal",boundaryWhitespace:EmbeddedGameAdapters.Options(game).DisplayBoundaryWhitespace),settings!.SourceLanguage);
                     if(connection is UnrealTranslationConnection unreal)
                         unreal.PrimeStartup(saved,EmbeddedStartupCache.Select(RpgTranslationCache.Effective(game.ExePath,settings!,display:true,unreal:true),settings!.SourceLanguage));
                     else connection.PrimeStartup(saved);

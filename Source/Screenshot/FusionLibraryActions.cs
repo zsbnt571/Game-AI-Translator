@@ -10,13 +10,13 @@ public sealed partial class MainForm
 
     private async Task OpenLibraryGameAsync(string path)
     {
+        int navigation=++_libraryNavigationEpoch;
         await SelectFusionGameAsync(path,recordSelection:false);
-        if(IsDisposed||_gameDetecting||!SameGame(path,_selectedGame?.ExePath))return;
+        if(IsDisposed||navigation!=_libraryNavigationEpoch||_gameDetecting||!SameGame(path,_selectedGame?.ExePath))return;
         OpenGameSession(_selectedGame!);
-        ScheduleLibraryRefresh();
     }
 
-    private void ShowGameLaunchMenu(Control anchor)
+    private void ShowGameLaunchMenu(Control? anchor,System.Windows.FrameworkElement? nativeAnchor=null)
     {
         if(_selectedGame is not { } game)return;
         _gameLaunchMenu.ClearActions();
@@ -28,7 +28,7 @@ public sealed partial class MainForm
         if(EmbeddedGameAdapters.Handles(game))_gameLaunchMenu.AddAction("仅启动（不接入翻译）","play",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"plain-bare"),stopped&&!busy);
         var translation=_gameLaunchMenu.AddAction("翻译并启动","translate",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"launch"));
         UpdateTranslationMenuItem(translation,game,stopped,busy);
-        _gameLaunchMenu.Show(anchor,new Point(0,anchor.Height));
+        if(nativeAnchor is not null)WpfNativeMenus.Show(_gameLaunchMenu,nativeAnchor:nativeAnchor);else if(anchor is not null)_gameLaunchMenu.Show(anchor,new Point(0,anchor.Height));
     }
 
     private void UpdateTranslationMenuItem(ToolStripItem item,GameInfo game,bool stopped,bool busy)
@@ -61,9 +61,9 @@ public sealed partial class MainForm
     }
 
     private void ShowLibraryContextMenu(RecentGame game,Point point)
-        =>ShowLibraryGameContextMenu(game,point,_libraryGrid,false);
+        =>ShowLibraryGameContextMenu(game,point,_libraryGrid as Control,false,WpfWorkspace.Enabled?_libraryGrid.NativeView:null);
 
-    private void ShowLibraryGameContextMenu(RecentGame game,Point point,Control anchor,bool single)
+    private void ShowLibraryGameContextMenu(RecentGame game,Point point,Control? anchor,bool single,System.Windows.FrameworkElement? nativeAnchor=null)
     {
         _libraryContextMenu.ClearActions(); _libraryContextMenu.Font=Font;int capabilityEpoch=++_libraryCapabilityMenuEpoch;
         bool running=_gameSessions.Find(game.ExePath)?.Process==FusionGameProcessState.Running;
@@ -103,7 +103,7 @@ public sealed partial class MainForm
         }
         _libraryContextMenu.Items.Add(new ToolStripSeparator());
         _libraryContextMenu.AddAction(games.Length>1?$"从游戏库移除 {games.Length} 个游戏":"从游戏库移除","trash",async(_,_)=>await RemoveLibraryGamesAsync(games));
-        _libraryContextMenu.Show(anchor,point);
+        if(nativeAnchor is not null)WpfNativeMenus.Show(_libraryContextMenu,point:point,nativeAnchor:nativeAnchor);else if(anchor is not null)_libraryContextMenu.Show(anchor,point);
     }
 
     private async Task RunLibraryActionAsync(string path,string action)
@@ -145,8 +145,8 @@ public sealed partial class MainForm
         _gameSelectionEpoch++;_gameQueryEpoch++;
         CancelSelectedMedia();_selectedGame=null;_desktopGameState=null;_sessionGamePath=null;
         if(_fusion?.State.LastGame==game.ExePath)_fusion.Change(next=>next.LastGame="");
-        _gamePath.Text="";_gameTitle.Text="选择一个游戏";_gameOperationResult="";
+        GamePathText="";GameTitleText="选择一个游戏";_gameOperationResult="";
         ShowLibraryHome();RenderGameState();ScheduleLibraryRefresh();
-        _statusLabel.Text="已从游戏库移除；游戏文件和正在运行的游戏保留。";
+        DesktopStatus="已从游戏库移除；游戏文件和正在运行的游戏保留。";
     }
 }

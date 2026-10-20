@@ -29,7 +29,7 @@ internal sealed partial class TranslationWorkspaceForm:Form
     internal TranslationWorkspaceForm(GameInfo game,ApiSettings settings)
     {
         this.game=game;this.settings=ApiSettingsSnapshot.Copy(settings);store=TranslationWorkspaceStore.For(game.ExePath,settings);
-        syntax=game.AdapterId=="renpy"?EmbeddedTextSyntax.Renpy:game.AdapterId?.StartsWith("rpg-maker-")==true?EmbeddedTextSyntax.Rpg:EmbeddedTextSyntax.Generic;
+        syntax=EmbeddedGameAdapters.TextSyntax(game);
         unreal=game.AdapterId=="unreal";
         BuildUi();
     }
@@ -51,9 +51,12 @@ internal sealed partial class TranslationWorkspaceForm:Form
         if(!DiscardEdit())return;string remember=selectedSource;feedback.Text="正在读取译文…";
         var loaded=await Task.Run(()=>
         {
-            var a=RpgTranslationCache.Load(game.ExePath,settings).Entries;
+            var native=RpgTranslationCache.Load(game.ExePath,settings);var a=native.Entries;
             foreach(var p in RpgTranslationCache.LoadDisplay(game.ExePath,settings).Entries)a.TryAdd(p.Key,p.Value);
-            var d=store.Snapshot(true);var issues=store.Issues().GroupBy(i=>i.Source,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.First().Reason,StringComparer.Ordinal);
+            var d=store.Snapshot(true);
+            if(syntax==EmbeddedTextSyntax.Renpy)
+                foreach(var p in GameDialogueContextCache.Load(native.Path+".dialogue-context-v1.json").ForEditor(settings,d.Terms))a[p.Key]=p.Value;
+            var issues=store.Issues().GroupBy(i=>i.Source,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.First().Reason,StringComparer.Ordinal);
             var values=a.Keys.Concat(d.Manual.Keys).Concat(issues.Keys).Concat(d.Requests.Keys).Distinct(StringComparer.Ordinal).Select(s=>
             {
                 var value=d.Manual.GetValueOrDefault(s)??a.GetValueOrDefault(s,"");string problem=issues.GetValueOrDefault(s,"");
@@ -102,11 +105,11 @@ internal sealed partial class TranslationWorkspaceForm:Form
     private async Task RequestAsync(string[] sources)
     {int count=await Task.Run(()=>store.RequestRetry(sources));await RefreshAsync();feedback.Text=$"已登记重译 {count} 条。需要开启游戏翻译并读取到这些原句；原有译文在新结果通过检查前保留。手动更正不参与重译。";}
     private async Task SaveTermAsync()
-    {string s=termSource.Text.Trim(),t=termText.Text.Trim();await Task.Run(()=>store.SetTerm(s,t));await RefreshAsync();feedback.Text="术语已保存，后续请求使用新术语；已有译文保留。";}
+    {string s=termSource.Text.Trim(),t=termText.Text.Trim();await Task.Run(()=>{GameTerminology.For(store).Set(s,t);store.RequestRetry(rows.Where(r=>TranslationGlossary.Contains(r.Source,s)).Select(r=>r.Source));});await RefreshAsync();feedback.Text="统一译名已保存，相关自动译文会重新准备；人工更正保留。原词和译名相同表示保留原文。";}
     private async Task DeleteTermAsync()
-    {string s=termSource.Text;await Task.Run(()=>store.SetTerm(s,null));await RefreshAsync();}
+    {string s=termSource.Text;await Task.Run(()=>GameTerminology.For(store).Remove(s));await RefreshAsync();}
     private Task RetryTermAsync()
-    {string s=termSource.Text.Trim();return RequestAsync(s.Length==0?[]:rows.Where(r=>r.Source.Contains(s,StringComparison.OrdinalIgnoreCase)).Select(r=>r.Source).Take(1000).ToArray());}
+    {string s=termSource.Text.Trim();return RequestAsync(s.Length==0?[]:rows.Where(r=>TranslationGlossary.Contains(r.Source,s)).Select(r=>r.Source).Take(1000).ToArray());}
     private async Task ExportAsync()
     {using var dialog=new SaveFileDialog{Filter=UiLanguage.Text("Fusion 译文文件 (*.json)|*.json"),FileName="Fusion-译文-"+store.Language+".json"};if(dialog.ShowDialog(this)!=DialogResult.OK)return;await Task.Run(()=>store.Export(dialog.FileName,automatic));feedback.Text="译文与术语已导出；文件不含接口密钥、存档或游戏资源。";}
     private async Task ImportAsync()

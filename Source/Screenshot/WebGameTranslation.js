@@ -161,7 +161,18 @@
         if(q.op==='translationDisable'){enabled=false;epoch++;queue=[];queued.clear();refresh();for(const item of sprites.values())if(item.rt)item.rt.Release();sprites.clear();return status();}
         if(q.op==='translationPoll')return {...status(),texts:enabled?queue.splice(0,8):[]};
         if(q.op==='translationRetry'){if(q.epoch===epoch&&typeof q.source==='string'){queued.delete(q.source);retry.set(q.source,Date.now()+30000);if(retry.size>4096)retry.delete(retry.keys().next().value);}return {accepted:0};}
-        if(q.op==='translationApply'){let accepted=0;if((enabled||q.prime)&&q.epoch===epoch)for(const e of (Array.isArray(q.entries)?q.entries:[]).slice(0,256)){if(e&&valid(e.source)&&typeof e.text==='string'&&e.text.trim()&&e.text.length<=12000&&!e.text.includes('\0')&&!e.text.includes('⟦RPG')&&compatible(e.source,e.text)&&(cache.has(e.source)||cache.size<150000)){cache.set(e.source,e.text);indexSource(e.source);queued.delete(e.source);retry.delete(e.source);accepted++;}}queue=queue.filter(s=>!cache.has(s));if(accepted)refresh();return {accepted};}
+        if(q.op==='translationApply'){
+            let accepted=0;const sources=[];
+            if((enabled||q.prime)&&q.epoch===epoch)for(const e of (Array.isArray(q.entries)?q.entries:[]).slice(0,256)){
+                if(e&&valid(e.source)&&typeof e.text==='string'&&e.text.trim()&&e.text.length<=12000&&!e.text.includes('\0')&&!e.text.includes('⟦RPG')&&compatible(e.source,e.text)&&(cache.has(e.source)||cache.size<150000)){
+                    cache.set(e.source,e.text);sources.push(e.source);indexSource(e.source);queued.delete(e.source);retry.delete(e.source);accepted++;
+                }
+            }
+            queue=queue.filter(s=>!cache.has(s));
+            const receipt={accepted,epoch,stale:q.epoch!==epoch};
+            if(typeof fusionSourcePairsHash==='function')receipt.sourcePairsHash=fusionSourcePairsHash(sources.map(source=>({source,text:cache.get(source)})));
+            if(accepted)refresh();return receipt;
+        }
         if(q.op==='translationStatus')return status();throw Error('Unsupported translation request');
     }
     const startup=JSON.parse(transport.startup()),prepare=command({op:'translationPrepare'});

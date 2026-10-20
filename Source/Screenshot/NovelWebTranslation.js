@@ -16,7 +16,7 @@ function createFusionNovelTranslation(g, engine) {
     }
     function text(source){
         if(!enabled||!valid(source))return source;
-        const normalized=key(source);if(cache.has(normalized))return cache.get(normalized);
+        const normalized=key(source);if(cache.has(normalized))return key(cache.get(normalized));
         // A measurement wrapper can call a drawing wrapper with our result.
         // Never enqueue that translated output as a new source sentence.
         if(outputs.has(normalized))return source;
@@ -195,12 +195,17 @@ function createFusionNovelTranslation(g, engine) {
         if(q.op==='translationPoll'){install();return Object.assign(status(),{texts:enabled?queue.splice(0,32):[]});}
         if(q.op==='translationRetry'){if(q.epoch===epoch&&typeof q.source==='string'){pending.delete(key(q.source));retry.set(key(q.source),Date.now()+30000);if(retry.size>4096)retry.delete(retry.keys().next().value);}return {accepted:0};}
         if(q.op==='translationApply'){
-            let accepted=0;
+            let accepted=0;const sources=[];
             if((enabled||q.prime)&&q.epoch===epoch)for(const e of (Array.isArray(q.entries)?q.entries:[]).slice(0,256)){
                 if(!e||!valid(e.source)||!compatible(e.source,e.text)||(cache.size>=150000&&!cache.has(key(e.source))))continue;
-                cache.set(key(e.source),key(e.text));outputs.add(key(e.text));pending.delete(key(e.source));retry.delete(key(e.source));accepted++;
+                cache.set(key(e.source),e.text);sources.push(e.source);outputs.add(key(e.text));pending.delete(key(e.source));retry.delete(key(e.source));accepted++;
             }
-            queue=queue.filter(s=>!cache.has(s));if(accepted){refresh();pump();}return {accepted};
+            queue=queue.filter(s=>!cache.has(s));
+            // Read back after the entire mutation, so colliding normalized keys
+            // cannot certify the earlier value that was overwritten.
+            const receipt={accepted,epoch,stale:q.epoch!==epoch};
+            if(typeof fusionSourcePairsHash==='function')receipt.sourcePairsHash=fusionSourcePairsHash(sources.map(source=>({source,text:cache.get(key(source))})));
+            if(accepted){refresh();pump();}return receipt;
         }
         if(q.op==='translationStatus')return status();throw Error('Unsupported narrative translation request');
     }

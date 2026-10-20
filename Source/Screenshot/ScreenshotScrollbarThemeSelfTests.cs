@@ -70,7 +70,7 @@ internal static class ScreenshotScrollbarThemeSelfTests
             {ShowInTaskbar=false,TopMost=true,StartPosition=FormStartPosition.Manual,Location=new(area.Left+24,area.Top+24)};
             main.Show();main.MinimumSize=new(100,100);main.ClientSize=new(Math.Min(1800,area.Width-80),Math.Min(1100,area.Height-80));
             main.NavigateForSmoke("主页");complete(main.RefreshScreenshotWorkspaceForSmoke());main.ToggleScreenshotHistoryForSmoke();pump(200);
-            var history=Find<ScreenshotRebuildHistory>(main).Single();var left=main.ScreenshotPaneForSmoke(0);var right=main.ScreenshotPaneForSmoke(1);
+            var history=Find<ScreenshotRebuildHistory>(main.LegacyWindow).Single();var left=main.ScreenshotPaneForSmoke(0);var right=main.ScreenshotPaneForSmoke(1);
             var leftCanvas=Find<ScreenshotRebuildCanvas>(left).Single();var rightCanvas=Find<ScreenshotRebuildCanvas>(right).Single();
             var leftText=Find<RichTextBox>(left).Single();var rightText=Find<RichTextBox>(right).Single();
             var originalHandles=new[]{history.Handle,leftCanvas.Handle,rightCanvas.Handle,leftText.Handle,rightText.Handle};

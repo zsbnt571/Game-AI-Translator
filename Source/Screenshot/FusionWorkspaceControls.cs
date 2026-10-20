@@ -1,4 +1,4 @@
-﻿using System.Drawing.Drawing2D;
+using System.Drawing.Drawing2D;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -25,42 +25,61 @@ internal sealed record LibraryTile(RecentGame Game,LibraryAnnotation Annotation,
     public void Dispose(){Cover?.Dispose();Icon?.Dispose();}
 }
 
-internal sealed partial class GameLibraryGrid:Control
+internal sealed partial class GameLibraryGrid:Control,ILibraryGridSession
 {
     private LibraryTile[] tiles=[];
     private string? selected;
     private int hover=-1;
     private HashSet<string> runningPaths=new(StringComparer.OrdinalIgnoreCase);
-    internal void UpdateRunning(IEnumerable<string> paths){var next=paths.ToHashSet(StringComparer.OrdinalIgnoreCase);if(!runningPaths.SetEquals(next)){runningPaths=next;Invalidate();}}
-    internal bool ShelfMode {get;set;}
-    internal bool Portrait {get;set;}=true;
-    internal int CoverWidth {get;set;}=158;
-    internal bool ListMode {get;private set;}
-    internal void SetListMode(bool value){ListMode=value;scrollOffset=Point.Empty;Reflow();Invalidate();}
-    internal event Action<RecentGame>? GameSelected;
-    internal event Action<RecentGame>? GameActivated;
-    internal event Action<RecentGame,Point>? ContextRequested;
-    internal string EmptyText {get;set;}="把游戏拖到这里\n或点击右上角“导入游戏”";
+    public void UpdateRunning(IEnumerable<string> paths){var next=paths.ToHashSet(StringComparer.OrdinalIgnoreCase);if(!runningPaths.SetEquals(next)){runningPaths=next;Invalidate();}}
+    public bool ShelfMode {get;set;}
+    public bool Portrait {get;set;}=true;
+    public int CoverWidth {get;set;}=158;
+    public bool ListMode {get;private set;}
+    public void SetListMode(bool value){ListMode=value;scrollOffset=Point.Empty;Reflow();Invalidate();}
+    public event Action<RecentGame>? GameSelected;
+    public event Action<RecentGame>? GameActivated;
+    public event Action<RecentGame,Point>? ContextRequested;
+    public string EmptyText {get;set;}="把游戏拖到这里\n或点击右上角“导入游戏”";
     internal GameLibraryGrid(){TabStop=true;AccessibleName="游戏库";AccessibleRole=AccessibleRole.List;SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable|ControlStyles.StandardClick|ControlStyles.StandardDoubleClick,true);InitializeWpfCanvas();}
-    internal void SetTiles(LibraryTile[] next,string? selectedPath,Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader=null){var old=tiles;RetainTileImages(next,loader);tiles=next;selected=selectedPath;selection.IntersectWith(next.Select(t=>t.Game.Id));if(!selecting&&old.Length==0&&selection.Count==0&&next.FirstOrDefault(t=>SamePath(t.Game.ExePath,selectedPath)) is {} chosen)selection.Add(chosen.Game.Id);foreach(var tile in old)tile.Dispose();Reflow();Invalidate();}
-    internal void SelectPath(string? path){if(SamePath(selected,path))return;selected=path;if(tiles.FirstOrDefault(t=>SamePath(t.Game.ExePath,path)) is {} tile&&!selection.Contains(tile.Game.Id)){selection.Clear();selection.Add(tile.Game.Id);}Invalidate();}
+    public void SetTiles(LibraryTile[] next,string? selectedPath,Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader=null){var old=tiles;RetainTileImages(next,loader);tiles=next;selected=selectedPath;selection.IntersectWith(next.Select(t=>t.Game.Id));if(!selecting&&old.Length==0&&selection.Count==0&&next.FirstOrDefault(t=>SamePath(t.Game.ExePath,selectedPath)) is {} chosen)selection.Add(chosen.Game.Id);foreach(var tile in old)tile.Dispose();Reflow();Invalidate();}
+    public void SelectPath(string? path){if(SamePath(selected,path))return;selected=path;if(tiles.FirstOrDefault(t=>SamePath(t.Game.ExePath,path)) is {} tile&&!selection.Contains(tile.Game.Id)){selection.Clear();selection.Add(tile.Game.Id);}Invalidate();}
     private int S(int n)=>(int)Math.Round(n*DeviceDpi/96f);
     // Reserve a stable scrollbar lane so appearing/disappearing scrollbars cannot
     // change the column count. Share remaining pixels across columns, not a blank strip.
-    private int GridWidth=>Math.Max(1,ClientSize.Width-S(16));
+    private int GridWidth=>Math.Max(1,ViewportSize.Width-S(16));
     private int Columns=>ListMode?1:ShelfMode?Math.Max(1,tiles.Length):Math.Max(1,(GridWidth+S(12))/(S(LibraryCoverSizes.Normalize(CoverWidth))+S(12)));
-    private Size Cell {get{int width=ShelfMode?S(212):ListMode?Math.Max(1,ClientSize.Width-S(16)):Math.Max(1,(GridWidth-(Columns-1)*S(12))/Columns);return new(width,ListMode?Math.Max(S(94),Font.Height*3+S(32)):(int)(width*(Portrait&&!ShelfMode?1.24f:.52f))+Math.Max(S(52),Font.Height*2+S(12)));}}
-    private int ShelfContentWidth=>S(4)+tiles.Length*Cell.Width+Math.Max(0,tiles.Length-1)*S(12);
-    internal int ShelfContentHeight=>tiles.Length==0?S(64):Cell.Height+S(6)+(ShelfContentWidth>ClientSize.Width?S(12):0);
+    private int ListWidth=>GridWidth;
+    private int ListCoverWidth=>Math.Min(Math.Max(S(72),ListWidth-S(180)),(int)Math.Round(S(LibraryCoverSizes.ListWidths[LibraryCoverSizes.IndexFor(CoverWidth)])*Math.Clamp(ListWidth/(double)S(1200),.9,1.2)));
+    private int ListCoverHeight=>(int)Math.Round(ListCoverWidth*9d/16);
+    private int ShelfCellWidth(int viewportWidth)=>Math.Min(Math.Max(1,viewportWidth-S(16)),S(LibraryCoverSizes.ShelfWidths[LibraryCoverSizes.IndexFor(CoverWidth)]));
+    private int CoverCellHeight(int width)=>(int)(width*(Portrait&&!ShelfMode?1.24f:.52f))+Math.Max(S(52),Font.Height*2+S(12));
+    private Size Cell
+    {
+        get
+        {
+            int width=ShelfMode?ShelfCellWidth(ViewportSize.Width):ListMode?ListWidth:Math.Max(1,(GridWidth-(Columns-1)*S(12))/Columns);
+            return new(width,ListMode?Math.Max(ListCoverHeight+S(12),Font.Height*3+S(24)):CoverCellHeight(width));
+        }
+    }
+    private int ShelfContentWidthForCell(int cellWidth)=>S(4)+tiles.Length*cellWidth+Math.Max(0,tiles.Length-1)*S(12);
+    private int ShelfContentWidth=>ShelfContentWidthForCell(Cell.Width);
+    public int ShelfContentHeight=>ShelfHeightForWidth(ViewportSize.Width);
+    private int ShelfHeightForWidth(int viewportWidth)
+    {
+        if(tiles.Length==0)return S(64);
+        int width=ShelfCellWidth(viewportWidth);
+        return CoverCellHeight(width)+S(6)+(ShelfContentWidthForCell(width)>viewportWidth?S(12):0);
+    }
     private Rectangle BoundsFor(int i)
     {
         var c=Cell;int column=i%Columns;
         int remainder=ListMode||ShelfMode?0:Math.Max(0,GridWidth-(Columns-1)*S(12)-Columns*c.Width);
-        return new(S(2)+column*(c.Width+S(12))+Math.Min(column,remainder)-scrollOffset.X,
+        return new(S(2)+(ListMode?Math.Max(0,(GridWidth-c.Width)/2):0)+column*(c.Width+S(12))+Math.Min(column,remainder)-scrollOffset.X,
             S(3)+(i/Columns)*(c.Height+S(12))-scrollOffset.Y,c.Width+(column<remainder?1:0),c.Height);
     }
-    private void Reflow(){UpdateScrollRange();Invalidate();}
-    protected override void OnResize(EventArgs e){base.OnResize(e);Reflow();}
+    private void Reflow(){resizeAnchor=null;UpdateScrollRange();wpfCanvas?.InvalidateMeasure();Invalidate();}
+    protected override void OnResize(EventArgs e){base.OnResize(e);if(nativeViewport is null)Reflow();}
     protected override void OnFontChanged(EventArgs e){base.OnFontChanged(e);Reflow();}
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -78,11 +97,11 @@ internal sealed partial class GameLibraryGrid:Control
             using var pen=new Pen(active?p.Accent:i==hover?p.SecondaryText:p.Border,active?S(2):1);g.DrawPath(pen,shape);
             if(ListMode)
             {
-                var imageBox=new Rectangle(r.X+S(6),r.Y+S(6),S(122),r.Height-S(12));
+                var imageBox=new Rectangle(r.X+S(6),r.Y+(r.Height-ListCoverHeight)/2,ListCoverWidth,ListCoverHeight);
                 if(t.Cover is not null)g.DrawImage(t.Cover,WorkspaceDrawing.Fit(t.Cover.Size,imageBox));else WorkspaceSkin.Icon(g,"game",new(imageBox.X+S(40),imageBox.Y+S(16),S(40),S(40)),p.Accent);
                 int x=imageBox.Right+S(15),listY=r.Y+S(10),width=r.Right-x-S(20),height=Font.Height+S(6);
                 WorkspaceDrawing.Text(g,t.Game.Name,bold,new(x,listY,width,height),p.Text);
-                WorkspaceDrawing.Text(g,t.Annotation.ChineseName.Length>0?t.Annotation.ChineseName:t.Engine,Font,new(x,listY+height,width,height),p.SecondaryText);
+                WorkspaceDrawing.Text(g,t.Annotation.DisplayName.Length>0?t.Annotation.DisplayName:t.Engine,Font,new(x,listY+height,width,height),p.SecondaryText);
                 if(t.Annotation.Note.Length>0)WorkspaceDrawing.Text(g,t.Annotation.Note,Font,new(x,listY+height*2,width,Font.Height+S(4)),p.SecondaryText);
                 if(runningPaths.Contains(t.Game.ExePath))WorkspaceDrawing.Text(g,UiLanguage.Text("运行中"),Font,new(r.Right-S(85),r.Top+S(7),S(75),height),Color.SeaGreen,TextFormatFlags.Right|TextFormatFlags.VerticalCenter);
                 continue;
@@ -98,7 +117,7 @@ internal sealed partial class GameLibraryGrid:Control
             if(t.Icon is not null)g.DrawImage(t.Icon,WorkspaceDrawing.Fit(t.Icon.Size,iconBox));else WorkspaceSkin.Icon(g,"game",Rectangle.Inflate(iconBox,-S(5),-S(5)),p.Accent);
             int tx=iconBox.Right+S(9),tw=r.Right-tx-S(14);
             WorkspaceDrawing.Text(g,t.Game.Name,bold,new(tx,y-1,tw-S(2),htext),p.Text);
-            WorkspaceDrawing.Text(g,t.Annotation.ChineseName.Length>0?t.Annotation.ChineseName:t.Engine,Font,new(tx,y+htext,tw-S(8),htext),p.SecondaryText);
+            WorkspaceDrawing.Text(g,t.Annotation.DisplayName.Length>0?t.Annotation.DisplayName:t.Engine,Font,new(tx,y+htext,tw-S(8),htext),p.SecondaryText);
             bool running=runningPaths.Contains(t.Game.ExePath);
             if(running){using var dot=new SolidBrush(Color.FromArgb(55,197,104));g.FillEllipse(dot,cover.Left+S(8),cover.Top+S(8),S(8),S(8));}
             if(t.Annotation.Note.Length>0)
@@ -134,12 +153,12 @@ internal sealed partial class GameLibraryGrid:Control
         int i=Array.FindIndex(tiles,x=>StringComparer.OrdinalIgnoreCase.Equals(x.Game.ExePath,selected));
         if(i>=0&&e.KeyCode==Keys.Enter){GameActivated?.Invoke(tiles[i].Game);e.Handled=e.SuppressKeyPress=true;return;}
         if(i>=0&&(e.KeyCode==Keys.Apps||e.Shift&&e.KeyCode==Keys.F10)){var r=BoundsFor(i);ContextRequested?.Invoke(tiles[i].Game,new(r.Left+S(20),r.Top+S(20)));e.Handled=e.SuppressKeyPress=true;return;}
-        int page=Math.Max(1,(ShelfMode?ClientSize.Width:ClientSize.Height)/(ShelfMode?Cell.Width:Cell.Height))*(ShelfMode?1:Columns);
+        int page=Math.Max(1,(ShelfMode?ViewportSize.Width:ViewportSize.Height)/(ShelfMode?Cell.Width:Cell.Height))*(ShelfMode?1:Columns);
         int n=e.KeyCode switch{Keys.Left=>i-1,Keys.Right=>i+1,Keys.Up=>i-Columns,Keys.Down=>i+Columns,Keys.Home=>0,Keys.End=>tiles.Length-1,Keys.PageUp=>i-page,Keys.PageDown=>i+page,_=>i};
         if(e.KeyCode is Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageUp or Keys.PageDown)
         {n=Math.Clamp(n,0,tiles.Length-1);if(n!=i)SelectIndex(n,e.Modifiers);EnsureTileVisible(n);e.Handled=e.SuppressKeyPress=true;}
     }
-    protected override void Dispose(bool disposing){if(disposing){ResetTileImages(null);boxScrollTimer?.Dispose();foreach(var tile in tiles)tile.Dispose();tiles=[];}base.Dispose(disposing);}
+    protected override void Dispose(bool disposing){if(disposing){wpfCanvas?.StopWheelMotion();ResetTileImages(null);boxScrollTimer?.Dispose();foreach(var tile in tiles)tile.Dispose();tiles=[];}base.Dispose(disposing);}
 }
 
 internal sealed class GalleryCanvas:Control

@@ -1,4 +1,4 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
@@ -30,14 +30,18 @@ public sealed partial class MainForm
             if((record.CoverPreference??_libraryPreferences.CoverSource)==ArtworkSource.Online)
                 await FillDefaultArtworkAsync([path]);
             record=store.Find(path);if(record is null||record.CoverManual)return;
-            using(var existing=await Task.Run(()=>store.ReadImage(record,true),cancel.Token))if(existing is not null){Log("event=reuse-valid-cover");return;}
+            // Older automatic captures could be taken during initialization.
+            // Refresh those once, while retaining the old image until a valid
+            // replacement is ready. Imported and online artwork stays intact.
+            using(var existing=await Task.Run(()=>store.ReadImage(record,true),cancel.Token))
+                if(existing is not null&&record.CoverOrigin!="automatic"){Log("event=reuse-valid-cover");return;}
             var version=store.CoverIdentityVersion(record);
             Log("event=start");
             var result=await GameWindowCover.CaptureAsync(path,true,cancel.Token,Log);
             using var bitmap=result.Image;
             if(bitmap is null){Log("event=failed "+result.Diagnostic);return;}
             bool Valid()=>!cancel.IsCancellationRequested&&result.Target is not null&&GameLibraryWindowIdentity.Matches(result.Target);
-            bool saved=await Task.Run(()=>store.SaveImage(record,bitmap,true,null,cancel.Token,Valid,version,manual:false,origin:"automatic"),cancel.Token);
+            bool saved=await Task.Run(()=>store.SaveImage(record,bitmap,true,null,cancel.Token,Valid,version,manual:false,origin:"automatic-window-v2"),cancel.Token);
             Log(saved?"event=committed":"event=commit-rejected reason=stale-record-or-window");
             if(saved&&!IsDisposed)
             {

@@ -20,7 +20,7 @@ public sealed partial class MainForm
                 catch(Exception ex){ShowFusionError(ex);}
             });
         }
-        _folderContext.Show(_libraryNavigation,point);
+        if(WpfWorkspace.Enabled)WpfNativeMenus.Show(_folderContext,point:point,nativeAnchor:_libraryNavigation.NativeView);else _folderContext.Show((Control)_libraryNavigation,point);
     }
     private void RenameLibraryCategory(string category,string name)
     {
@@ -36,7 +36,7 @@ public sealed partial class MainForm
             MainSection=current.MainSection=="tag:"+category?"tag:"+name:current.MainSection};
         metadata.RenameCategory(category,name);LibraryPreferencesStore.Save(next);_libraryPreferences=next;
         if(_libraryTag==category)_libraryTag=name;
-        ScheduleLibraryRefresh();_statusLabel.Text="分类已重命名，原有游戏归属保留。";
+        ScheduleLibraryRefresh();DesktopStatus="分类已重命名，原有游戏归属保留。";
     }
     private void DeleteLibraryCategory(string category)
     {
@@ -52,6 +52,6 @@ public sealed partial class MainForm
         LibraryPreferencesStore.Save(next);_libraryPreferences=next;
         if(_libraryTag==category){_libraryTag="";_libraryScope="home";}
         ScheduleLibraryRefresh();
-        if(_statusLabel is not null)_statusLabel.Text="已删除分类“"+category+"”，游戏和磁盘文件保留。";
+        if(_statusLabel is not null)DesktopStatus="已删除分类“"+category+"”，游戏和磁盘文件保留。";
     }
 }

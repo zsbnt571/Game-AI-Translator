@@ -1,4 +1,4 @@
-using System.Drawing.Drawing2D;
+﻿using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
 namespace ScreenshotTranslationUiTester;
@@ -59,15 +59,15 @@ public sealed partial class MainForm
     {
         base.OnSizeChanged(e);
         bool minimized=WindowState==FormWindowState.Minimized;
-        if(_workspaceWasMinimized&&!minimized)WorkspaceRepaint.Complete(this);
+        if(_workspaceWasMinimized&&!minimized&&HasLegacyWindow)WorkspaceRepaint.Complete(LegacyWindow);
         _workspaceWasMinimized=minimized;
     }
     protected override void OnResizeBegin(EventArgs e){_workspaceResizing=true;base.OnResizeBegin(e);}
-    protected override void OnResizeEnd(EventArgs e){base.OnResizeEnd(e);_workspaceResizing=false;QueueModificationSize();_dataMap.Invalidate();WorkspaceRepaint.Complete(this);}
+    protected override void OnResizeEnd(EventArgs e){base.OnResizeEnd(e);_workspaceResizing=false;QueueModificationSize();_dataMap.Invalidate();if(HasLegacyWindow)WorkspaceRepaint.Complete(LegacyWindow);}
     protected override void OnVisibleChanged(EventArgs e)
     {
         base.OnVisibleChanged(e);
-        if(Visible&&IsHandleCreated)WorkspaceRepaint.Complete(this);
+        if(Visible&&IsHandleCreated&&HasLegacyWindow)WorkspaceRepaint.Complete(LegacyWindow);
     }
     protected override void OnPaint(PaintEventArgs e)
     {

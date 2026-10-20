@@ -6,9 +6,14 @@ namespace ScreenshotTranslationUiTester;
 public sealed partial class MainForm
 {
     private GameCrashMonitor? _gameCrashMonitor;
-    private readonly Label _gameDiagnosticState=WorkspaceLabel("");
+    private readonly Label _gameDiagnosticState=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
     private Button? _gameDiagnosticOpen;
     private GameCrashMonitor CrashMonitor=>_gameCrashMonitor??=new((game,start,end)=>GameDiagnosticLogs.Collect(game,start,end));
+    internal static byte[] LocalizedGameDiagnosticReport(byte[] json)
+    {
+        var snapshot=System.Text.Json.JsonSerializer.Deserialize<GameExitReport>(json)??throw new IOException("诊断报告缺失或超过读取限制。");
+        return Encoding.UTF8.GetBytes(GameCrashMonitor.Markdown(snapshot,localized:true));
+    }
 
     private Control BuildGameDiagnosticRow()
     {
@@ -53,6 +58,7 @@ public sealed partial class MainForm
 
     private void RenderGameDiagnosticState()
     {
+        if(WpfWorkspace.Enabled){RenderNativeGameDiagnosticState();NotifyNativeGameDetailChanged();return;}
         if(_gameDiagnosticOpen is null||_selectedGame is not {} game)return;
         try
         {
@@ -88,7 +94,7 @@ public sealed partial class MainForm
         try
         {
             var report=CrashMonitor.Latest(game.ExePath);
-            if(report is null){_statusLabel.Text="还没有此游戏的退出报告。请从本软件启动游戏，退出后会自动保存。";return;}
+            if(report is null){DesktopStatus="还没有此游戏的退出报告。请从本软件启动游戏，退出后会自动保存。";return;}
             string reportRoot=CrashMonitor.GetReportsDirectory(game.ExePath);
             static byte[] ReadReport(string path,string root)
             {
@@ -103,12 +109,19 @@ public sealed partial class MainForm
             {
                 var latest=CrashMonitor.Latest(game.ExePath);
                 if(latest?.SessionId==report.SessionId)report=latest;
-                return report.ReportSaveFailed
-                    ?(Encoding.UTF8.GetBytes(GameCrashMonitor.Markdown(report)),System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(report,new System.Text.Json.JsonSerializerOptions{WriteIndented=true}))
-                    :(ReadReport(report.MarkdownPath,reportRoot),ReadReport(report.JsonPath,reportRoot));
+                var json=report.ReportSaveFailed
+                    ?System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(report,new System.Text.Json.JsonSerializerOptions{WriteIndented=true})
+                    :ReadReport(report.JsonPath,reportRoot);
+                // Render old reports in the selected UI language. Retain the
+                // stored facts and raw engine messages for the exported JSON.
+                return (LocalizedGameDiagnosticReport(json),json);
             }
             var contents=await Task.Run(ReadContents);
             if(IsDisposed)return;
+            if(WpfWorkspace.Enabled)
+            {
+                using var native=new NativeDiagnosticDialog(game.Name+" · 游戏退出诊断",contents,()=>Task.Run(ReadContents),"game-exit-report.md","diagnostic.json","Fusion-game-exit",localizeText:LocalizedGameDiagnosticReport);native.ShowDialog(this);return;
+            }
             using var viewer=new Form{Text=game.Name+" · 游戏退出诊断",Size=new(820,620),MinimumSize=new(520,360),StartPosition=FormStartPosition.CenterParent,Padding=new(14)};
             var body=new RichTextBox{Dock=DockStyle.Fill,ReadOnly=true,DetectUrls=false,WordWrap=true,BorderStyle=BorderStyle.None,Text=Encoding.UTF8.GetString(contents.Text)};
             var footer=new FlowLayoutPanel{Dock=DockStyle.Bottom,Height=48,Padding=new(0,8,0,0)};

@@ -12,6 +12,7 @@ internal static class Program
             DesktopStages.Start();
             args = FusionRuntime.Prepare(args);
             AppDataPaths.Initialize(args);
+            UiLanguage.ReadStartupPreference();
             FusionRuntime.Initialize();
             Run(args);
         }
@@ -32,7 +33,7 @@ internal static class Program
         string hint=afterMainWindowShown?"请重新打开软件；若再次出现，请提供本次操作步骤和 logs/ui.log。"
             :ex is UnauthorizedAccessException?"请检查提示所涉及文件或目录的读写权限。"
             :"请保留错误内容；若再次出现，请提供 logs/startup.log（若已生成）。";
-        return prefix+"\n"+SafeDiagnosticOutput.ExceptionSummary(ex)+"\n"+hint;
+        return UiLanguage.Text(prefix)+"\n"+UiLanguage.Text(SafeDiagnosticOutput.ExceptionSummary(ex))+"\n"+UiLanguage.Text(hint);
     }
 
     private static void Run(string[] args)
@@ -405,12 +406,12 @@ internal static class Program
         var uiChecks=ArgumentValue(args,"--ui-repair-checks=");if(uiChecks is not null)main.Shown+=async(_,_)=>await main.RunUiRepairChecksAsync(uiChecks);
         instance.Start(()=>{if(!main.IsDisposed)main.BeginInvoke(new Action(()=>{main.RestoreFromExternalLaunch();if(!string.IsNullOrWhiteSpace(singleHarness)){File.WriteAllText(singleHarness,"ACTIVATED");main.ExitForSmoke();}}));});
         if(!string.IsNullOrWhiteSpace(singleHarness))main.Shown+=(_,_)=>{main.TrayHideForSmoke();File.WriteAllText(singleHarness+".ready","READY");};
-        if(WpfWorkspace.Enabled)WpfWorkspace.Run(main);else Application.Run(main);
+        if(WpfWorkspace.Enabled)WpfWorkspace.Run(main);else Application.Run(main.LegacyWindow);
     }
 
     private static void Run0501ExitHarness(string scenario)
     {
-        ApplicationConfiguration.Initialize();var config=Path.Combine(Path.GetTempPath(),$"st-0501-exit-{Guid.NewGuid():N}.json");ConfigurationManager.Save(config,new ApiSettings{CloseMainWindowBehavior=scenario=="tray"?CloseMainWindowBehavior.MinimizeToTray:CloseMainWindowBehavior.Exit,VisualModel=VisualModelKind.Off});using var main=new MainForm(config);PreviewForm? preview=null;var timer=new System.Windows.Forms.Timer{Interval=350};main.Shown+=(_,_)=>{if(scenario is "preview-off" or "preview-on" or "dialog"){using var image=new Bitmap(160,90);preview=main.OpenPreviewForSmoke(image);preview.TopMost=scenario is "preview-on" or "dialog";}if(scenario=="tray")main.Close();if(scenario=="dialog"&&preview is not null)main.BeginInvoke(new Action(()=>AppDialog.Show(preview,"退出测试","可见模态窗口",AppDialogKind.Confirmation)));timer.Tick+=(_,_)=>{timer.Stop();main.ExitForSmoke();};timer.Start();};Application.Run(main);try{File.Delete(config);File.Delete(config+".bak");}catch{}
+        ApplicationConfiguration.Initialize();var config=Path.Combine(Path.GetTempPath(),$"st-0501-exit-{Guid.NewGuid():N}.json");ConfigurationManager.Save(config,new ApiSettings{CloseMainWindowBehavior=scenario=="tray"?CloseMainWindowBehavior.MinimizeToTray:CloseMainWindowBehavior.Exit,VisualModel=VisualModelKind.Off});using var main=new MainForm(config);PreviewForm? preview=null;var timer=new System.Windows.Forms.Timer{Interval=350};main.Shown+=(_,_)=>{if(scenario is "preview-off" or "preview-on" or "dialog"){using var image=new Bitmap(160,90);preview=main.OpenPreviewForSmoke(image);preview.TopMost=scenario is "preview-on" or "dialog";}if(scenario=="tray")main.Close();if(scenario=="dialog"&&preview is not null)main.BeginInvoke(new Action(()=>AppDialog.Show(preview,"退出测试","可见模态窗口",AppDialogKind.Confirmation)));timer.Tick+=(_,_)=>{timer.Stop();main.ExitForSmoke();};timer.Start();};Application.Run(main.LegacyWindow);try{File.Delete(config);File.Delete(config+".bak");}catch{}
     }
 
     private static string? ArgumentValue(IEnumerable<string> args, string prefix) =>
@@ -449,11 +450,26 @@ internal static class Program
     private static void RunPageHostBenchmark(string output){ApplicationConfiguration.Initialize();var config=Path.Combine(Path.GetDirectoryName(output)??AppContext.BaseDirectory,"page-host-benchmark.json");ConfigurationManager.Save(config,new ApiSettings{VisualModel=VisualModelKind.Off,CloseMainWindowBehavior=CloseMainWindowBehavior.Exit});using var main=new MainForm(config);main.Show();var lines=new List<string>();var timer=System.Diagnostics.Stopwatch.StartNew();for(var stepNumber=0;stepNumber<1000;stepNumber++){var page=MainForm.MainPageNamesForSmoke[stepNumber%MainForm.MainPageNamesForSmoke.Length];var step=System.Diagnostics.Stopwatch.StartNew();var ok=main.NavigateWithoutEventsForSmoke(page);lines.Add($"{stepNumber}:{page}:ok={ok}:ms={step.ElapsedMilliseconds}:host={main.MainHostControlCountForSmoke}");}lines.Add($"TOTAL={timer.ElapsedMilliseconds}");File.WriteAllLines(output,lines);main.Close();}
 
     private static IReadOnlyList<string> DescribeControls(Control root){var lines=new List<string>();void Scan(Control c,int depth){lines.Add($"{new string(' ',depth*2)}{c.GetType().Name} text={c.Text} bounds={c.Bounds} visible={c.Visible} dock={c.Dock}");foreach(Control child in c.Controls)Scan(child,depth+1);}Scan(root,0);return lines;}
+    private static IReadOnlyList<string> DescribeControls(DesktopForm controller)
+    {
+        var lines=new List<string>();
+        if(controller.NativeWindow is not { } window)return lines;
+        void Walk(System.Windows.DependencyObject value,int depth)
+        {
+            lines.Add($"{new string(' ',depth*2)}{value.GetType().Name} name={System.Windows.Automation.AutomationProperties.GetName(value)}");
+            for(int i=0;i<System.Windows.Media.VisualTreeHelper.GetChildrenCount(value);i++)Walk(System.Windows.Media.VisualTreeHelper.GetChild(value,i),depth+1);
+        }
+        Walk(window,0);return lines;
+    }
+    private static Bitmap CaptureWindow(DesktopForm form)
+    {
+        var shot=new Bitmap(Math.Max(1,form.Width),Math.Max(1,form.Height));form.DrawToBitmap(shot,new(Point.Empty,shot.Size));return shot;
+    }
     private static Bitmap CaptureWindow(Form form){var shot=new Bitmap(form.ClientSize.Width,form.ClientSize.Height);form.DrawToBitmap(shot,form.ClientRectangle);using var graphics=Graphics.FromImage(shot);void Scan(Control c,Point origin){var here=new Point(origin.X+c.Left,origin.Y+c.Top);if(c is FlowLayoutPanel&&c.Controls.Cast<Control>().Any(x=>x is Button)){using var layer=new Bitmap(c.Width,c.Height);c.DrawToBitmap(layer,c.ClientRectangle);graphics.DrawImageUnscaled(layer,here);}foreach(Control child in c.Controls)Scan(child,here);}foreach(Control child in form.Controls)Scan(child,Point.Empty);return shot;}
 
     private static void RunSettingsUiSmoke(string output)
     {
-        ApplicationConfiguration.Initialize();Directory.CreateDirectory(output);var config=Path.Combine(output,"settings-smoke.json");ConfigurationManager.Save(config,new ApiSettings{CloseMainWindowBehavior=CloseMainWindowBehavior.Exit});using var form=new MainForm(config);var timer=new System.Windows.Forms.Timer{Interval=900};form.Shown+=(_,_)=>{timer.Tick+=(_,_)=>{timer.Stop();for(var i=0;i<form.SettingsTabCountForSmoke;i++){var name=form.SelectSettingsTabForSmoke(i);Application.DoEvents();using var shot=new Bitmap(form.ClientSize.Width,form.ClientSize.Height);form.DrawCurrentPageForSmoke(shot);shot.Save(Path.Combine(output,$"settings-{i+1:D2}-{name.Replace('/','-')}.png"));}File.WriteAllLines(Path.Combine(output,"visible-text.txt"),form.SettingsVisibleTextsForSmoke());File.WriteAllText(Path.Combine(output,"settings-ui-smoke.txt"),$"Tabs={form.SettingsTabCountForSmoke}{Environment.NewLine}RealApiCalls=0{Environment.NewLine}ActiveOperations=0{Environment.NewLine}WorkerResidue=NONE");form.Close();};timer.Start();};Application.Run(form);
+        ApplicationConfiguration.Initialize();Directory.CreateDirectory(output);var config=Path.Combine(output,"settings-smoke.json");ConfigurationManager.Save(config,new ApiSettings{CloseMainWindowBehavior=CloseMainWindowBehavior.Exit});using var form=new MainForm(config);var timer=new System.Windows.Forms.Timer{Interval=900};form.Shown+=(_,_)=>{timer.Tick+=(_,_)=>{timer.Stop();for(var i=0;i<form.SettingsTabCountForSmoke;i++){var name=form.SelectSettingsTabForSmoke(i);Application.DoEvents();using var shot=new Bitmap(form.ClientSize.Width,form.ClientSize.Height);form.DrawCurrentPageForSmoke(shot);shot.Save(Path.Combine(output,$"settings-{i+1:D2}-{name.Replace('/','-')}.png"));}File.WriteAllLines(Path.Combine(output,"visible-text.txt"),form.SettingsVisibleTextsForSmoke());File.WriteAllText(Path.Combine(output,"settings-ui-smoke.txt"),$"Tabs={form.SettingsTabCountForSmoke}{Environment.NewLine}RealApiCalls=0{Environment.NewLine}ActiveOperations=0{Environment.NewLine}WorkerResidue=NONE");form.Close();};timer.Start();};Application.Run(form.LegacyWindow);
     }
 
     private static int Run0411LivePreview(string imagePath, string output, VisualModelKind model)
@@ -482,7 +498,7 @@ internal static class Program
             catch(Exception ex){File.WriteAllText(Path.Combine(output,"live-preview-error.txt"),ex.ToString());Environment.ExitCode=2;}
             finally{form.Close();}
         };
-        Application.Run(form); return Environment.ExitCode;
+        DesktopForm.RunStandalone(form); return Environment.ExitCode;
     }
 
     private static int Run0411LivePreviewRepeat(string imagePath, string output, VisualModelKind model)
@@ -546,7 +562,7 @@ internal static class Program
                     catch (Exception ex) { failure = ex; }
                     finally { form.Close(); }
                 };
-                Application.Run(form);
+                DesktopForm.RunStandalone(form);
                 if (failure is not null) throw failure;
             }
             File.WriteAllText(Path.Combine(output, "cold-warm-warm-summary.json"),
@@ -605,7 +621,7 @@ internal static class Program
             using var form = new RecognitionRegionEditorForm(image, result.Document.Regions,
                 (_, _) => Task.FromResult<IReadOnlyList<OcrEngineBlock>>([]), (_, _) => Task.FromResult<VisualRegion?>(null));
             form.Shown += (_, _) => { using var shot = new Bitmap(form.ClientSize.Width, form.ClientSize.Height); form.DrawToBitmap(shot, form.ClientRectangle); shot.Save(Path.Combine(output, "region-editor-v2.png")); File.WriteAllText(Path.Combine(output, "region-editor-v2.txt"), $"Regions={form.ResultRegions.Count}{Environment.NewLine}ActiveOperations=0{Environment.NewLine}RealApiCalls=0"); form.Close(); };
-            Application.Run(form);
+            DesktopForm.RunStandalone(form);
         }
         finally { vision.DisposeAsync().AsTask().GetAwaiter().GetResult(); ocr.DisposeAsync().AsTask().GetAwaiter().GetResult(); }
     }
@@ -755,7 +771,7 @@ internal static class Program
             catch (Exception ex) { File.WriteAllText(Path.Combine(output, "live-preview-v2-error.txt"), ex.ToString()); Environment.ExitCode = 2; }
             finally { form.Close(); }
         };
-        Application.Run(form);
+        DesktopForm.RunStandalone(form);
     }
 
     private static void RunRepair2OcrSmoke(string imagePath, string output)
@@ -785,7 +801,7 @@ internal static class Program
             }
             finally { form.Close(); }
         };
-        Application.Run(form);
+        DesktopForm.RunStandalone(form);
         runtime.DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 
@@ -845,7 +861,7 @@ internal static class Program
             }
             finally { primary.Close(); }
         };
-        Application.Run(primary);
+        DesktopForm.RunStandalone(primary);
 
         using var experimental = new OcrComparisonForm(runtime, loaded,
             OcrComparisonMode.ExperimentalWindows, autoRunPrimary: false);
@@ -864,7 +880,7 @@ internal static class Program
             }
             finally { experimental.Close(); }
         };
-        Application.Run(experimental);
+        DesktopForm.RunStandalone(experimental);
         runtime.DisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 

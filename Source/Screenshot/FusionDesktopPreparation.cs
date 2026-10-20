@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -23,19 +23,20 @@ internal static class DesktopStages
 public sealed partial class MainForm
 {
     private readonly List<Action?> _settingsBuilders=[];
-    private readonly Label _defaultUiFont=new(){AutoSize=true};
-    private readonly Label _actualUiFont=new(){AutoSize=true};
+    private readonly Label _defaultUiFont=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _actualUiFont=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
     private bool _preparingSettings;
     private static bool _buildingSettingsLayout;
     private void EnsureSettingsCategory(int index)
     {
+        if (WpfWorkspace.Enabled) { if (index == 3 && _draftOriginal is null) LoadEditedProfile(); return; }
         if(index<0||index>=_settingsBuilders.Count||_settingsBuilders[index] is not { } build||_preparingSettings)return;
         _preparingSettings=true;var dirty=_settingsDirty;var applying=_applyingSettings;_applyingSettings=true;
         using var timing=DesktopStages.MeasureOnce("settings-category-"+index);
         using var performance=UiPerformanceTrace.Measure("settings-build-"+index);
         try{_buildingSettingsLayout=true;build();_settingsBuilders[index]=null;UpdateAppearanceEnabled();}
         catch(Exception ex){_settingsBuilders[index]=null;
-            _statusLabel.Text="设置页面准备失败："+SafeDiagnosticOutput.ExceptionSummary(ex);AppLog.Write("desktop-preparation",SafeDiagnosticOutput.ExceptionSummary(ex));
+            DesktopStatus="设置页面准备失败："+SafeDiagnosticOutput.ExceptionSummary(ex);AppLog.Write("desktop-preparation",SafeDiagnosticOutput.ExceptionSummary(ex)+Environment.NewLine+ex.StackTrace);
             if(_settingsTabs?.TabPages[index].Tag is Control root)root.Controls.Add(new Label{AutoSize=true,Text="本页准备失败，请保留日志并重新打开软件。"});}
         finally{_buildingSettingsLayout=false;_applyingSettings=applying;_settingsDirty=dirty;_preparingSettings=false;}
     }
@@ -57,10 +58,10 @@ public sealed partial class MainForm
                         box.DropDownWidth=Math.Max(box.Width,Math.Min(Screen.FromControl(box).WorkingArea.Width/2,420*DeviceDpi/96));ready=true;}
                     finally{box.EndUpdate();_applyingSettings=applying;}
                 }
-                catch(Exception ex){if(!IsDisposed)_statusLabel.Text="字体列表暂不可用："+SafeDiagnosticOutput.ExceptionSummary(ex);}
+                catch(Exception ex){if(!IsDisposed)DesktopStatus="字体列表暂不可用："+SafeDiagnosticOutput.ExceptionSummary(ex);}
                 finally{loading=false;}
             };
-            box.Leave+=(_,_)=>box.SelectionLength=0;
+            box.Leave+=(_,_)=>{if(box.DropDownStyle!=ComboBoxStyle.DropDownList)box.SelectionLength=0;};
         }
         _uiFontBox.TextChanged+=(_,_)=>UpdateUiFontExplanation();
     }
@@ -68,7 +69,9 @@ public sealed partial class MainForm
     {
         var custom=_uiFontModeBox.SelectedIndex==1;
         _uiFontBox.Visible=custom;_defaultUiFont.Visible=!custom;
-        if(!custom)_uiFontBox.SelectionLength=0;
+        // DropDownList has no editable selection. Hidden binding controls must
+        // not ask its native non-existent edit field for selection offsets.
+        if(!custom&&_uiFontBox.DropDownStyle!=ComboBoxStyle.DropDownList)_uiFontBox.SelectionLength=0;
         var settings=new ApiSettings{UiFontMode=custom?UiFontMode.Custom:UiFontMode.CurrentDefault,UiFontFamily=_uiFontBox.Text,UiFontSize=(float)_uiFontSizeBox.Value};
         var actual=FontManager.ResolveUiProfile(settings).PrimaryFamily;
         _defaultUiFont.Text=actual;

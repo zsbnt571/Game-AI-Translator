@@ -1,6 +1,6 @@
 namespace ScreenshotTranslationUiTester;
 
-public sealed class OcrComparisonForm : Form
+public sealed partial class OcrComparisonForm : DesktopForm
 {
     private static readonly OcrEngineKind[] PrimaryEngines =
         [OcrEngineKind.Rapid, OcrEngineKind.Paddle];
@@ -8,20 +8,13 @@ public sealed class OcrComparisonForm : Form
     private readonly OcrRuntimeManager _runtime;
     private readonly OcrComparisonMode _mode;
     private readonly bool _autoRunPrimary;
-    private readonly PictureBox _image = new()
-    {
-        Dock = DockStyle.Fill,
-        SizeMode = PictureBoxSizeMode.Zoom,
-        BackColor = Color.FromArgb(15, 17, 22)
-    };
-    private readonly TabControl _tabs = new() { Dock = DockStyle.Fill };
-    private readonly Label _activity = new()
-    {
-        AutoSize = true,
-        ForeColor = Color.LightSkyBlue,
-        Margin = new Padding(10, 10, 2, 2)
-    };
-    private readonly Dictionary<OcrEngineKind, RichTextBox> _outputs = [];
+    internal override bool UsesNativePresentation=>true;
+    private readonly NativePreviewPicture _image=new(){SizeMode=PictureBoxSizeMode.Zoom};
+    private readonly System.Windows.Controls.TabControl _tabs=new();
+    private readonly NativeRpgLabel _activity=new();
+    private readonly Dictionary<OcrEngineKind,NativePreviewText> _outputs=[];
+    private readonly Dictionary<OcrEngineKind,Func<string>> _outputRenderers=[];
+    private System.Windows.Controls.Grid? _nativeCompareRoot;
     private readonly Dictionary<OcrEngineKind, OcrEngineResult> _results = [];
     private readonly Dictionary<OcrEngineKind, CancellationTokenSource> _operations = [];
     private readonly Dictionary<OcrEngineKind, string> _requestIds = [];
@@ -61,6 +54,8 @@ public sealed class OcrComparisonForm : Form
         Size = new Size(1280, 820);
         MinimumSize = new Size(900, 600);
         BuildUi();FontManager.ApplyUi(this,new ApiSettings());UiDarkTheme.Apply(this);
+        UiLanguage.LanguageChanged+=RefreshLanguage;
+        RefreshLanguage();
         if (initialImage is not null) LoadBitmap(initialImage);
         Shown += async (_, _) =>
         {
@@ -72,59 +67,30 @@ public sealed class OcrComparisonForm : Form
 
     private void BuildUi()
     {
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 50, Padding = new Padding(6) };
-        Button Add(string text, EventHandler handler)
-        {
-            var button = new Button { Text = text, AutoSize = true, Height = 34 };
-            button.Click += handler;
-            bar.Controls.Add(button);
-            return button;
-        }
-
-        Add("选择图片", (_, _) => SelectImage());
-        Add("Rapid（快速）", async (_, _) => await RunAsync(OcrEngineKind.Rapid));
-        Add("Paddle（高质量）", async (_, _) => await RunAsync(OcrEngineKind.Paddle));
-        if (_mode == OcrComparisonMode.ExperimentalWindows)
-            Add("Windows（实验）", async (_, _) => await RunAsync(OcrEngineKind.Windows));
-        Add("全部运行", async (_, _) => await RunVisibleAsync());
-        Add("取消", (_, _) => CancelAll(invalidateRequests: true));
-        bar.Controls.Add(_activity);
-
-        foreach (var kind in _visibleEngines)
-        {
-            var text = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                ReadOnly = true,
-                Font = new Font("Microsoft YaHei UI", 10F),
-                BackColor = Color.FromArgb(29, 34, 44),
-                ForeColor = Color.White
-            };
-            _outputs[kind] = text;
-            var title = kind switch
-            {
-                OcrEngineKind.Rapid => "Rapid（快速）",
-                OcrEngineKind.Paddle => "Paddle（高质量）",
-                _ => "Windows（实验）"
-            };
-            var page = new TabPage(title) { Tag = kind };
-            page.Controls.Add(text);
-            _tabs.TabPages.Add(page);
-        }
-
-        var split = new SplitContainer { Dock = DockStyle.Fill, SplitterDistance = 620 };
-        split.Panel1.Controls.Add(_image);
-        split.Panel2.Controls.Add(_tabs);
-        Controls.Add(split);
-        Controls.Add(bar);
-        _image.Paint += DrawBoxes;
-        _tabs.SelectedIndexChanged += (_, _) => _image.Invalidate();
+        var root=new System.Windows.Controls.Grid();_nativeCompareRoot=root;root.RowDefinitions.Add(new(){Height=System.Windows.GridLength.Auto});root.RowDefinitions.Add(new());root.RowDefinitions.Add(new(){Height=System.Windows.GridLength.Auto});
+        var bar=NativeDialogControls.Row(NativeDialogControls.Button("选择图片",SelectImage),NativeDialogControls.Button("Rapid（快速）",async()=>await RunAsync(OcrEngineKind.Rapid)),NativeDialogControls.Button("Paddle（高质量）",async()=>await RunAsync(OcrEngineKind.Paddle)));
+        if(_mode==OcrComparisonMode.ExperimentalWindows)bar.Children.Add(NativeDialogControls.Button("Windows（实验）",async()=>await RunAsync(OcrEngineKind.Windows)));
+        bar.Children.Add(NativeDialogControls.Button("全部运行",async()=>await RunVisibleAsync()));bar.Children.Add(NativeDialogControls.Button("取消",()=>CancelAll(true)));bar.Margin=new(8);root.Children.Add(bar);
+        var body=new System.Windows.Controls.Grid();body.ColumnDefinitions.Add(new());body.ColumnDefinitions.Add(new(){Width=new(6)});body.ColumnDefinitions.Add(new());System.Windows.Controls.Grid.SetRow(body,1);root.Children.Add(body);body.Children.Add(_image.View);var splitter=new System.Windows.Controls.GridSplitter{HorizontalAlignment=System.Windows.HorizontalAlignment.Stretch};splitter.SetResourceReference(System.Windows.Controls.Control.BackgroundProperty,"Fusion.Border");System.Windows.Controls.Grid.SetColumn(splitter,1);body.Children.Add(splitter);System.Windows.Controls.Grid.SetColumn(_tabs,2);body.Children.Add(_tabs);
+        foreach(var kind in _visibleEngines){var text=new NativePreviewText();_outputs[kind]=text;var title=kind switch{OcrEngineKind.Rapid=>"Rapid（快速）",OcrEngineKind.Paddle=>"Paddle（高质量）",_=>"Windows（实验）"};_tabs.Items.Add(new System.Windows.Controls.TabItem{Header=UiLanguage.Text(title),Tag=kind,Content=text.View});}
+        _tabs.SelectedIndex=0;_tabs.SelectionChanged+=(_,_)=>_image.Invalidate();_image.Overlay=DrawNativeOverlay;_activity.Margin=new(12,6,12,6);System.Windows.Controls.Grid.SetRow(_activity.View,2);root.Children.Add(_activity.View);
     }
 
     private void SelectImage()
     {
         using var dialog = new OpenFileDialog { Filter = UiLanguage.Text("图片|*.png;*.jpg;*.jpeg;*.bmp") };
         if (dialog.ShowDialog(this) == DialogResult.OK) LoadImage(dialog.FileName);
+    }
+
+    private void RefreshLanguage(object? sender=null,EventArgs? e=null)
+    {
+        Text=UiLanguage.Text(_mode==OcrComparisonMode.ExperimentalWindows?"OCR 对比（含 Windows 实验）":"OCR 对比");
+        if(_nativeCompareRoot is not null)WpfUiLanguage.Dialog(_nativeCompareRoot);
+        foreach(var pair in _outputRenderers)_outputs[pair.Key].Text=pair.Value();
+    }
+    private void SetOutput(OcrEngineKind kind,Func<string> render)
+    {
+        _outputRenderers[kind]=render;_outputs[kind].Text=render();
     }
 
     private void LoadImage(string path)
@@ -156,6 +122,7 @@ public sealed class OcrComparisonForm : Form
         _imageGeneration++;
         _image.Image = _source;
         _results.Clear();
+        _outputRenderers.Clear();
         foreach (var box in _outputs.Values) box.Clear();
         _activity.Text = $"ImageSession {_imageSessionId[..8]} · {_source.Width}×{_source.Height}";
         _image.Invalidate();
@@ -183,7 +150,7 @@ public sealed class OcrComparisonForm : Form
         var expectedHash = _imageHash;
         var expectedGeneration = _imageGeneration;
         var box = _outputs[kind];
-        box.Text = $"运行中…\nImageSession: {expectedSession}\nRequestId: {requestId}";
+        SetOutput(kind,()=>UiLanguage.Format($"运行中…\nImageSession: {expectedSession}\nRequestId: {requestId}"));
         _activity.Text = $"正在运行 {kind}… · 后台请求 {_operations.Count}";
         try
         {
@@ -192,7 +159,7 @@ public sealed class OcrComparisonForm : Form
                 requestId, expectedHash, expectedSession);
             if (!TryAcceptResult(kind, result, expectedGeneration, expectedSession, out var expiryReason))
             {
-                box.Text = $"已忽略过期结果。\n{expiryReason}";
+                SetOutput(kind,()=>UiLanguage.Format($"已忽略过期结果。\n{expiryReason}"));
                 return;
             }
             RenderResult(kind, result);
@@ -201,11 +168,11 @@ public sealed class OcrComparisonForm : Form
         }
         catch (OperationCanceledException)
         {
-            if (!_closing && !box.IsDisposed) box.Text = "已取消";
+            if (!_closing && !box.IsDisposed) SetOutput(kind,()=>UiLanguage.Text("已取消"));
         }
         catch (Exception ex)
         {
-            if (!_closing && !box.IsDisposed) box.Text = $"失败：{ex.GetType().Name}: {ex.Message}";
+            if (!_closing && !box.IsDisposed) SetOutput(kind,()=>UiLanguage.Format($"失败：{ex.GetType().Name}: {UiLanguage.Text(ex.Message)}"));
         }
         finally
         {
@@ -235,48 +202,18 @@ public sealed class OcrComparisonForm : Form
     }
 
     private void RenderResult(OcrEngineKind kind, OcrEngineResult result)
-    {
-        var validity = result.ValidForQualityComparison ? "VALID" : "INVALID - FALLBACK";
-        var confidenceStatus = result.ConfidenceAvailableBlockCount == 0
-            ? "Unavailable (N/A)"
-            : $"Available {result.ConfidenceAvailableBlockCount}/{result.Blocks.Count}";
-        var lowConfidence = result.ConfidenceAvailableBlockCount == 0
-            ? "N/A"
-            : result.LowConfidenceBlockCount.ToString();
-        var warning = result.ValidForQualityComparison ? "" :
-            "\n本次实际引擎与请求不一致，不可用于该引擎质量比较。\n";
-        _outputs[kind].Text =
-            $"Quality result: {validity}\nRequested: {result.EngineRequested}\nActual: {result.EngineActual}\n" +
-            $"ImageSession: {result.ImageSessionId}\nRequestId: {result.RequestId}\nImageHash: {result.ImageHash}\n" +
-            $"Instance: {result.EngineInstanceId}\nModel: {result.ModelName}\nModel version: {result.ModelVersion}\n" +
-            $"Time: {result.TotalMilliseconds}ms (load {result.ModelLoadMilliseconds}ms)\n" +
-            $"Correction: {result.CorrectionMilliseconds}ms | Preprocess retry: {result.PreprocessRetryMilliseconds}ms\n" +
-            $"Detected blocks: {result.Blocks.Count} | Confidence: {confidenceStatus} | Low confidence: {lowConfidence}\n" +
-            $"Corrected blocks: {result.CorrectedBlockCount} | Corrections: {result.CorrectionCount}\n" +
-            $"Ambiguous blocks: {result.AmbiguousBlockCount} | False-positive suspects: {result.FalsePositiveSuspectCount}\n" +
-            $"Retry count: {result.PreprocessRetryCount} | Retry reason: {result.RetryReason}\n" +
-            $"Retry preprocess: {result.RetryPreprocessType}\n" +
-            $"Retry raw: {result.RetryRawText} | Chosen: {result.RetryChosenText}\n" +
-            $"Character Top-K: {(result.CharacterTopKAvailable ? "available" : "unavailable")}\n" +
-            $"Working set: {result.WorkingSetBytes / 1024d / 1024d:0.0} MiB\n" +
-            $"Quality: UNRATED\nFallback: {result.FallbackUsed} {result.FallbackReason}{warning}\n" +
-            $"\n=== Raw OCR ===\n{result.RawText}\n\n=== Corrected OCR ===\n{result.CorrectedText}\n\n" +
-            string.Join("\n", result.Blocks.SelectMany(b => b.Corrections.Select(c =>
-                $"[{b.Id}] {c.Original} -> {c.Corrected} | {c.Reason} | {c.Confidence}"))) +
-            "\n" + string.Join("\n", result.Blocks.Where(b => b.UnresolvedAmbiguity).Select(b =>
-                $"[{b.Id}] UNRESOLVED_AMBIGUITY raw={b.RawText} candidates={b.AmbiguityCandidates}"));
-    }
+        => SetOutput(kind,()=>FormatResult(result));
 
     private void SelectEngineTab(OcrEngineKind kind)
     {
-        var page = _tabs.TabPages.Cast<TabPage>()
+        var page = _tabs.Items.Cast<System.Windows.Controls.TabItem>()
             .First(x => x.Tag is OcrEngineKind value && value == kind);
-        _tabs.SelectedTab = page;
+        _tabs.SelectedItem = page;
     }
 
     private void DrawBoxes(object? sender, PaintEventArgs e)
     {
-        if (_source is null || _tabs.SelectedTab?.Tag is not OcrEngineKind kind ||
+        if (_source is null || (_tabs.SelectedItem as System.Windows.Controls.TabItem)?.Tag is not OcrEngineKind kind ||
             !_results.TryGetValue(kind, out var result) || result.ImageSessionId != _imageSessionId) return;
         var scale = Math.Min((float)_image.ClientSize.Width / _source.Width,
             (float)_image.ClientSize.Height / _source.Height);
@@ -345,19 +282,24 @@ public sealed class OcrComparisonForm : Form
 
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        base.OnFormClosing(e);
+        if(e.Cancel)return;
         _closing = true;
         CancelAll(invalidateRequests: true);
-        base.OnFormClosing(e);
     }
 
     protected override void Dispose(bool disposing)
     {
+        if(IsDisposed||Disposing)return;
         if (disposing)
         {
+            UiLanguage.LanguageChanged-=RefreshLanguage;
+            _outputRenderers.Clear();
             _closing = true;
             CancelAll(invalidateRequests: true);
             _image.Image = null;
             _source?.Dispose();
+            foreach (var output in _outputs.Values) output.Dispose();
         }
         base.Dispose(disposing);
     }

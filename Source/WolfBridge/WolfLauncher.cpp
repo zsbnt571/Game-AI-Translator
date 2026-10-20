@@ -20,6 +20,14 @@ int wmain(int argc,wchar_t** argv){
         if(!fs::is_regular_file(exe)||!fs::is_regular_file(dll))throw 3;
         std::wstring command=L"\""+exe.wstring()+L"\"";
         STARTUPINFOW si={sizeof(si)};
+        // Background acceptance runs use a new, invisible Windows desktop.
+        // Never switch the user's input desktop or foreground window. This is
+        // enabled only for an explicitly marked, isolated test copy.
+        auto testDesktop=Env(L"FUSION_WOLF_TEST_DESKTOP");
+        if(fs::exists(exe.parent_path()/L".fusion-test-copy")&&testDesktop.rfind(L"FusionWolfTest_",0)==0&&testDesktop.size()<80&&
+           testDesktop.find_first_not_of(L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_")==testDesktop.npos){
+            si.lpDesktop=testDesktop.data();
+        }
         if(Env(L"FUSION_WOLF_TEST_HIDDEN")==L"1"&&fs::exists(exe.parent_path()/L".fusion-test-copy")){
             si.dwFlags=STARTF_USESHOWWINDOW;si.wShowWindow=SW_HIDE;
         }

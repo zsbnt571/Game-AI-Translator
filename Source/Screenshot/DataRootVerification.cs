@@ -47,6 +47,15 @@ internal static class DataRootVerification
                 main=new MainForm(null,new(CaptureFlashDiagnosticMode.CaptureOnly,false,false));
                 _=main.Handle;
                 result["Gui"]=main.VerifyDataRootServicesForSmoke(readback);
+                if(args.Contains("--verify-artwork-runtime"))
+                {
+                    var browser=Microsoft.Web.WebView2.Core.CoreWebView2Environment.GetAvailableBrowserVersionString();
+                    using var pixels=new SkiaSharp.SKBitmap(32,24);pixels.Erase(new SkiaSharp.SKColor(17,190,80));
+                    using var encoded=pixels.Encode(SkiaSharp.SKEncodedImageFormat.Webp,100);
+                    using var decoded=await ArtworkWebSources.DecodeImageAsync(encoded.ToArray(),timeout.Token);
+                    if(decoded.Width!=32||decoded.Height!=24||decoded.GetPixel(15,10).G<170)throw new IOException("Bundled WebP decoder failed.");
+                    result["ArtworkRuntime"]=new{WebView2=browser,WebpDecoded=true,DecodedWidth=decoded.Width,DecodedHeight=decoded.Height};
+                }
                 // Exercise the real History/Preview highlighter, then verify its actual persisted owner.
                 var diagnosticsRoot=Path.GetFullPath(RealPathDiagnosticTrace.Root);
                 var expectedDiagnostics=Path.Combine(AppDataPaths.LogsRoot,"diagnostics");

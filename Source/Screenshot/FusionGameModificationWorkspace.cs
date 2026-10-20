@@ -7,7 +7,7 @@ namespace ScreenshotTranslationUiTester;
 internal sealed class GameDataSession(IGameDataConnection connection) : IDisposable
 {
     internal IGameDataConnection Connection {get;}=connection;
-    internal bool Enabled,Ready,EnableOnEntry,InBattle;
+    internal bool Enabled,Ready,EnableOnEntry,InBattle,ModificationEntered;
     internal int Generation,Locks;
     internal RpgTranslationSession? Translation;
     internal EmbeddedTranslationOptions? TranslationOptions;
@@ -21,17 +21,17 @@ public sealed partial class MainForm
 {
     private readonly Dictionary<string,GameDataSession> _dataSessions=new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string,bool> _dataCapabilities=new(StringComparer.OrdinalIgnoreCase);
-    private readonly Label _dataStatus=WorkspaceLabel("");
-    private readonly Label _dataFeedback=WorkspaceLabel("");
-    private readonly Label _dataPage=WorkspaceLabel("");
-    private readonly ComboBox _dataScope=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=136};
-    private readonly TextBox _dataSearch=new(){Width=190,PlaceholderText=UiLanguage.Text("搜索原名、中文名或编号")};
-    private readonly GameDataGrid _dataGrid=new(){Name="GameDataGrid",Height=250,Dock=DockStyle.Fill};
-    private readonly NumericUpDown _dataValue=new WorkspaceNumberBox(){Width=118,Minimum=int.MinValue,Maximum=int.MaxValue};
-    private readonly CheckBox _dataBoolean=new WorkspaceSwitch(){Text="开启",Height=36,Width=118,AccessibleName="目标开关状态"};
-    private readonly TextBox _dataChinese=new(){Width=180,PlaceholderText=UiLanguage.Text("填写中文名")};
-    private readonly RpgMapGrid _dataMap=new(){Height=260,Dock=DockStyle.Fill};
-    private readonly Label _dataMapSelection=WorkspaceLabel("点击地图选择格子");
+    private readonly Label _dataStatus=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
+    private readonly Label _dataFeedback=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
+    private readonly Label _dataPage=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
+    private readonly ComboBox _dataScope=WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=136};
+    private readonly TextBox _dataSearch=WpfWorkspace.Enabled ? null! : new(){Width=190,PlaceholderText=UiLanguage.Text("搜索原名、译名或编号")};
+    private readonly GameDataGrid _dataGrid=WpfWorkspace.Enabled ? null! : new(){Name="GameDataGrid",Height=250,Dock=DockStyle.Fill};
+    private readonly NumericUpDown _dataValue=WpfWorkspace.Enabled ? null! : new WorkspaceNumberBox(){Width=118,Minimum=int.MinValue,Maximum=int.MaxValue};
+    private readonly CheckBox _dataBoolean=WpfWorkspace.Enabled ? null! : new WorkspaceSwitch(){Text="开启",Height=36,Width=118,AccessibleName="目标开关状态"};
+    private readonly TextBox _dataChinese=WpfWorkspace.Enabled ? null! : new(){Width=180,PlaceholderText=UiLanguage.Text("填写译名")};
+    private readonly RpgMapGrid _dataMap=WpfWorkspace.Enabled ? null! : new(){Height=260,Dock=DockStyle.Fill};
+    private readonly Label _dataMapSelection=WpfWorkspace.Enabled ? null! : WorkspaceLabel("点击地图选择格子");
     private Button? _dataLaunch,_dataToggle,_dataRefresh,_dataRestore,_dataPrevious,_dataNext;
     private Control? _dataBrowser,_dataEditor,_dataMapPanel;
     private string? _dataViewPath;
@@ -49,6 +49,7 @@ public sealed partial class MainForm
     private GameDataSession? SelectedDataSession()=>_selectedGame is { } g&&_dataSessions.TryGetValue(g.ExePath,out var s)?s:null;
     private void RenderGameModificationState()
     {
+        if(WpfWorkspace.Enabled){nativeRpg?.Render();return;}
         if(_dataLaunch is null)return;
         var game=_selectedGame;
         if(!SameGame(game?.ExePath,_dataViewPath))
@@ -91,6 +92,7 @@ public sealed partial class MainForm
 
     private async Task RefreshGameDataStatusAsync()
     {
+        if(WpfWorkspace.Enabled){if(nativeRpg is not null)await nativeRpg.RefreshStatus();return;}
         if(_dataPolling||_dataLoading||_dataWriting||_selectedGame is not { } game||SelectedDataSession() is not {Enabled:true} state||!state.Connection.Connected)return;
         int epoch=_dataEpoch;_dataPolling=true;
         try
@@ -172,6 +174,7 @@ public sealed partial class MainForm
 
     private async Task RefreshGameDataAsync()
     {
+        if(WpfWorkspace.Enabled){if(nativeRpg is not null)await nativeRpg.Refresh();return;}
         if(_dataLoading){_dataRefreshPending=true;return;}
         if(_selectedGame is not { } game||SelectedDataSession() is not { } state||!state.Connection.Connected)return;
         int epoch=_dataEpoch,revision=_dataRevision;string scope=ActiveDataScope,query=_dataSearch.Text.Trim();
@@ -361,9 +364,9 @@ public sealed partial class MainForm
     private void SaveGameDataAlias()
     {
         if(_selectedGame is not { } game||_dataSelected is not { } row)return;
-        if(!_dataAliasWritable){_dataFeedback.Text="中文名文件无法读取，未覆盖原文件。";return;}
+        if(!_dataAliasWritable){_dataFeedback.Text="译名文件无法读取，未覆盖原文件。";return;}
         var next=new Dictionary<string,string>(_dataAliases,StringComparer.Ordinal);next[row.GetProperty("key").GetString()!]=_dataChinese.Text.Trim();
-        try{PortableDataStorage.WriteJson(Path.Combine(RpgMakerDataAdapter.Storage(game.ExePath),"data-labels.json"),next);_dataAliases=next;_=RefreshGameDataAsync();_dataFeedback.Text="中文名已保存在软件的数据目录。";}
+        try{PortableDataStorage.WriteJson(Path.Combine(RpgMakerDataAdapter.Storage(game.ExePath),"data-labels.json"),next);_dataAliases=next;_=RefreshGameDataAsync();_dataFeedback.Text="译名已保存在软件的数据目录。";}
         catch(Exception ex){_dataFeedback.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
     }
     private Task ReadGameDataMapAsync()=>RefreshGameDataAsync();

@@ -105,8 +105,9 @@ internal sealed partial class FusionConfiguration
         else
         {
             State = new();
-            State.Profiles["我的方案"] = new ApiSettings { ApiUrl="",ApiKey="",Model="" };
-            State.CommonProfile="我的方案";
+            string name=UiLanguage.Text("我的方案");
+            State.Profiles[name] = new ApiSettings { ApiUrl="",ApiKey="",Model="" };
+            State.CommonProfile=name;
         }
         MigrateProfiles();
         if(State.TranslationContent is null)
@@ -139,10 +140,11 @@ internal sealed partial class FusionConfiguration
     {
         target.ApiUrl=p.ApiUrl;target.ApiKey=p.ApiKey;target.AllowEmptyApiKey=p.AllowEmptyApiKey;target.Model=p.Model;
         target.ProviderDisplayName=p.ProviderDisplayName;target.TranslationProviderKind=p.TranslationProviderKind;
+        target.AdvancedApiParameters=p.AdvancedApiParameters;
         target.FirstByteTimeoutSeconds=p.FirstByteTimeoutSeconds;target.RequestTimeoutSeconds=p.RequestTimeoutSeconds;
     }
     internal static string NormalizeLanguage(string? language) => UiTargetLanguageDisplay.CodeFromDisplay(UiTargetLanguageDisplay.DisplayFromCode(language));
-    internal static string TranslationIdentity(ApiSettings s) => string.Join("|",s.ApiUrl.TrimEnd('/'),s.ApiKey,s.Model,NormalizeLanguage(s.TargetLanguage),TranslationLanguagePolicy.Identity(s),s.TranslationStyle,s.CustomTranslationPrompt,s.PreserveNumbers,s.PreserveVariables,s.PreserveIdentifiers);
+    internal static string TranslationIdentity(ApiSettings s) => string.Join("|",s.ApiUrl.TrimEnd('/'),s.ApiKey,s.Model,NormalizeLanguage(s.TargetLanguage),TranslationLanguagePolicy.Identity(s),s.TranslationStyle,s.CustomTranslationPrompt,s.PreserveNumbers,s.PreserveVariables,s.PreserveIdentifiers)+ChatRequestParameters.IdentitySuffix(s);
     internal static string PluginPrompt(ApiSettings s)
     {
         return "Translate game UI and complete dialogue into the requested target language. " +

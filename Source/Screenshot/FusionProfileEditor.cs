@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -9,22 +9,25 @@ public sealed partial class MainForm
     {
         if(item is ProfileChoice {Id:not null} profile)
         {
-            if(!UiLanguage.IsEnglish)return profile.Label;
-            foreach(var suffix in new[]{("（未配置完成）"," (incomplete)"),("（未保存）"," (unsaved)")})
+            if(!UiLanguage.IsTranslated)return profile.Label;
+            foreach(var suffix in new[]{("（未配置完成）",UiLanguage.IsEnglish?" (incomplete)":" (не настроен)"),("（未保存）",UiLanguage.IsEnglish?" (unsaved)":" (не сохранено)")})
                 if(profile.Label.EndsWith(suffix.Item1,StringComparison.Ordinal))return profile.Label[..^suffix.Item1.Length]+suffix.Item2;
             return profile.Label;
         }
-        return item?.ToString()=="关闭"?UiLanguage.Choose("关闭","Off"):UiLanguage.Text(item?.ToString());
+        return item?.ToString()=="关闭"?UiLanguage.Choose("关闭","Off","Выкл."):UiLanguage.Text(item?.ToString());
     }
-    private readonly TextBox _schemeName=new(){Name="ProfileName",AccessibleName="方案名称"};
-    private readonly CheckBox _noCredential=new(){Text="无需密钥（本地／免鉴权）",AutoSize=true};
-    private readonly Label _profileOrigin=Info("");
-    private readonly Label _profileUsage=Info("");
-    private readonly Label _profileSaveStatus=Info("");
-    private readonly Label _translationStyleDescription=Info(TranslationStylePolicy.Description(TranslationStyle.GameLocalization));
-    private readonly Label _profileTestStatus=Info("连接尚未测试。测试不会保存或应用方案。");
-    private readonly Button _testProfileButton=new(){Text="测试连接",Name="TestProfile",AutoSize=true,MinimumSize=new(145,36),FlatStyle=FlatStyle.Flat};
-    private readonly Button _saveProfileButton=new(){Text="保存 API 方案",Name="SaveProfile",AutoSize=true,MinimumSize=new(145,36),FlatStyle=FlatStyle.Flat};
+    private readonly TextBox _schemeName=WpfWorkspace.Enabled ? null! : new(){Name="ProfileName",AccessibleName="方案名称"};
+    private readonly CheckBox _noCredential=WpfWorkspace.Enabled ? null! : new(){Text="无需密钥（本地／免鉴权）",AutoSize=true};
+    private readonly TextBox _advancedApiParameters=WpfWorkspace.Enabled ? null! : new(){Name="AdvancedApiParameters",AccessibleName="高级 API 参数",Multiline=true,ScrollBars=ScrollBars.Vertical,Height=132,MaxLength=32768,Visible=false};
+    private readonly CheckBox _advancedApiToggle=WpfWorkspace.Enabled ? null! : new(){Text="展开高级 API 参数",AutoSize=true};
+    private readonly Label _advancedApiHint=WpfWorkspace.Enabled ? null! : Info("留空或 {} 自动适配。JSON 字段覆盖默认参数，null 移除字段；model、messages、stream 由软件管理。仅影响当前 API 方案，保存后用于新请求。");
+    private readonly Label _profileOrigin=WpfWorkspace.Enabled ? null! : Info("");
+    private readonly Label _profileUsage=WpfWorkspace.Enabled ? null! : Info("");
+    private readonly Label _profileSaveStatus=WpfWorkspace.Enabled ? null! : Info("");
+    private readonly Label _translationStyleDescription=WpfWorkspace.Enabled ? null! : Info(TranslationStylePolicy.Description(TranslationStyle.GameLocalization));
+    private readonly Label _profileTestStatus=WpfWorkspace.Enabled ? null! : Info("连接尚未测试。测试不会保存或应用方案。");
+    private readonly Button _testProfileButton=WpfWorkspace.Enabled ? null! : new(){Text="测试连接",Name="TestProfile",AutoSize=true,MinimumSize=new(145,36),FlatStyle=FlatStyle.Flat};
+    private readonly Button _saveProfileButton=WpfWorkspace.Enabled ? null! : new(){Text="保存 API 方案",Name="SaveProfile",AutoSize=true,MinimumSize=new(145,36),FlatStyle=FlatStyle.Flat};
     private Control? _settingsSaveFooter;
     private ApiSettings? _draftOriginal;
     private string _draftOriginalName="",_draftOrigin="用户创建";
@@ -33,13 +36,22 @@ public sealed partial class MainForm
     private CancellationTokenSource? _profileTestCancellation;
     private string? _testedIdentity,_testedProfile;
     private static string? ChoiceId(ComboBox box)=>(box.SelectedItem as ProfileChoice)?.Id;
-    private ApiSettings ReadProfileDraft(){var p=new ApiSettings();FusionConfiguration.ApplyConnection(p,UiSettings);p.AllowEmptyApiKey=_noCredential.Checked;return p;}
-    private bool ProfileHasChanges=>_draftOriginal is not null&&(_draftNew||_schemeName.Text.Trim()!=_draftOriginalName||FusionConfiguration.ConnectionIdentity(ReadProfileDraft())!=FusionConfiguration.ConnectionIdentity(_draftOriginal));
+    private ApiSettings ReadProfileDraft(){if(WpfWorkspace.Enabled)return _profileDraft.Snapshot();var p=new ApiSettings();FusionConfiguration.ApplyConnection(p,UiSettings);p.AllowEmptyApiKey=_noCredential.Checked;p.AdvancedApiParameters=_advancedApiParameters.Text;return p;}
+    private bool ProfileHasChanges=>_draftOriginal is not null&&(_draftNew||ProfileDraftName.Trim()!=_draftOriginalName||FusionConfiguration.ConnectionIdentity(ReadProfileDraft())!=FusionConfiguration.ConnectionIdentity(_draftOriginal));
     private bool IsProfileControl(object? sender)=>new object[]{_apiUrlBox,_apiKeyBox,_modelBox,_firstByteTimeoutBox,_requestTimeoutBox,_providerDisplayNameBox}.Contains(sender!);
 
     private TableLayoutPanel BuildProfileSettings()
     {
         var table=SettingsTable();table.Name="ProfileSettingsTable";
+        if(WpfWorkspace.Enabled)
+        {
+            // Only section markers remain in the compatibility layout. The
+            // connection editor itself is constructed directly from its state.
+            AddSettingRow(table,"公共默认方案",new Panel{Name="NativeProfileDefaults"});
+            AddSettingRow(table,"正在编辑的方案",new Panel{Name="NativeProfileConnection"});
+        }
+        else
+        {
         AddSettingRow(table,"公共默认方案",_commonProfile);
         AddSettingRow(table,"",Info("公共默认及模式选择立即保存；跟随公共者随之切换，固定选择保持不变。"));
         AddSettingRow(table,"正在编辑的方案",_profileEditor);
@@ -52,13 +64,44 @@ public sealed partial class MainForm
         AddSettingRow(table,"接口地址",_apiUrlBox);AddSettingRow(table,"API 密钥",_apiKeyBox);
         AddSettingRow(table,"",_noCredential);AddSettingRow(table,"模型",_modelBox);
         AddSettingRow(table,"首响应 / 总超时（秒）",Stack(_firstByteTimeoutBox,_requestTimeoutBox));
+        var examples=MakeButton("常用参数示例 ▾",Point.Empty,new(145,36));examples.AutoSize=true;examples.Visible=false;
+        var parameterMenu=new LocalizedContextMenuStrip();
+        void Example(string text,string json)=>parameterMenu.Items.Add(text,null,(_,_)=>
+        {
+            try
+            {
+                var value=ChatRequestParameters.Parse(_advancedApiParameters.Text);
+                foreach(var pair in ChatRequestParameters.Parse(json))value[pair.Key]=pair.Value?.DeepClone();
+                _advancedApiParameters.Text=value.ToJsonString(new System.Text.Json.JsonSerializerOptions{WriteIndented=true});
+            }
+            catch(Exception ex){_profileSaveStatus.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
+        });
+        Example("DeepSeek：关闭思考","{\"thinking\":{\"type\":\"disabled\"},\"reasoning_effort\":null}");
+        Example("DeepSeek：开启思考","{\"thinking\":{\"type\":\"enabled\"},\"reasoning_effort\":null}");
+        Example("OpenAI：关闭思考（模型需支持 none）","{\"reasoning_effort\":\"none\",\"thinking\":null}");
+        Example("OpenAI：低思考","{\"reasoning_effort\":\"low\",\"temperature\":null,\"thinking\":null}");
+        parameterMenu.Items.Add("恢复自动参数",null,(_,_)=>_advancedApiParameters.Text="");
+        examples.Click+=(_,_)=>parameterMenu.Show(examples,new Point(0,examples.Height));
+        AddSettingRow(table,"",_advancedApiToggle);AddSettingRow(table,"请求参数（JSON）",_advancedApiParameters);
+        AddSettingRow(table,"",examples);AddSettingRow(table,"",_advancedApiHint);
+        _advancedApiHint.Visible=false;
+        _advancedApiToggle.CheckedChanged+=(_,_)=>
+        {_advancedApiParameters.Visible=examples.Visible=_advancedApiHint.Visible=_advancedApiToggle.Checked;_wpfWindow?.RefreshWorkspace();};
+        _advancedApiParameters.TextChanged+=(_,_)=>ProfileEdited();
+        table.Disposed+=(_,_)=>parameterMenu.Dispose();
         // A flow row with explicit minimum button sizes prevents native table
         // auto-sizing from collapsing a left-anchored standalone button.
         var actions=new FlowLayoutPanel{AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=true,MinimumSize=new(0,46),Name="ProfileApiActions"};
         actions.Controls.AddRange([_testProfileButton,_saveProfileButton,_profileReturnButton,_profileBackButton]);
         _profileReturnButton.Click+=(_,_)=>ReturnFromProfile(true);_profileBackButton.Click+=(_,_)=>ReturnFromProfile(false);AddSettingRow(table,"",actions);
         AddSettingRow(table,"",_profileTestStatus);AddSettingRow(table,"",_profileSaveStatus);
-        AddSettingRow(table,"",Info("API 方案只保存接口、密钥、模型和连接超时。下方翻译内容独立保存，切换 API 方案不会改变它。"));
+        AddSettingRow(table,"",Info("API 方案保存接口、密钥、模型、连接超时和高级参数。下方翻译内容独立保存，切换 API 方案不会改变它。"));
+        _schemeName.TextChanged+=(_,_)=>ProfileEdited();_noCredential.CheckedChanged+=(_,_)=>ProfileEdited();
+        _testProfileButton.Click+=async(_,_)=>await TestProfileAsync();_saveProfileButton.Click+=(_,_)=>SaveProfileEditor();
+        }
+        if (WpfWorkspace.Enabled) AddSettingRow(table,"目标语言",new Panel{Name="NativeTranslationContent"});
+        else
+        {
         foreach(var pair in new (string,Control)[]{("目标语言",_targetLanguageBox),("原文语言",LanguageCombinationPicker.WithMode(_sourceLanguageBox,_sourceLanguageChoices)),("翻译风格",_translationStyleBox)})AddSettingRow(table,pair.Item1,pair.Item2);
         _translationStyleDescription.Name="TranslationStyleDescription";
         AddSettingRow(table,"",_translationStyleDescription);
@@ -70,8 +113,7 @@ public sealed partial class MainForm
         AddSettingRow(table,"",Stack(_saveTranslationContentButton));
         AddSettingRow(table,"",_translationContentStatus);
         _saveTranslationContentButton.Click+=(_,_)=>SaveTranslationContentEditor();
-        _schemeName.TextChanged+=(_,_)=>ProfileEdited();_noCredential.CheckedChanged+=(_,_)=>ProfileEdited();
-        _testProfileButton.Click+=async(_,_)=>await TestProfileAsync();_saveProfileButton.Click+=(_,_)=>SaveProfileEditor();
+        }
         return table;
     }
     private void FillChoices(ComboBox box,string? selected,bool following,bool editor=false)
@@ -90,13 +132,17 @@ public sealed partial class MainForm
     {
         _loadingFusion=true;
         var fusion=_fusion!;
-        try{FillChoices(_commonProfile,fusion.State.CommonProfile,false);FillChoices(_shotProfile,fusion.State.ScreenshotProfile,true);FillChoices(_embeddedProfile,_selectedGame is { } game?fusion.GameProfileId(game.ExePath):fusion.State.EmbeddedProfile,_selectedGame is null);FillChoices(_profileEditor,_editingProfile,false,true);}
+        try{
+            if(!WpfWorkspace.Enabled){FillChoices(_commonProfile,fusion.State.CommonProfile,false);FillChoices(_profileEditor,_editingProfile,false,true);}
+            if(!WpfWorkspace.Enabled){FillChoices(_shotProfile,fusion.State.ScreenshotProfile,true);FillChoices(_embeddedProfile,_selectedGame is { } game?fusion.GameProfileId(game.ExePath):fusion.State.EmbeddedProfile,_selectedGame is null);}
+            UpdateNativeProfileChoices();
+        }
         finally{_loadingFusion=false;}
     }
     private void LoadFusionUi()
     {
         _editingProfile=_fusion!.State.CommonProfile;PopulateProfiles();
-        _loadingFusion=true;_embeddedKey.SetShortcut(GameShortcut.TryNormalize(_fusion.State.EmbeddedToggleKey,out var loadedKey)?loadedKey:"F8");_loadingFusion=false;
+        _loadingFusion=true;var shortcut=GameShortcut.TryNormalize(_fusion.State.EmbeddedToggleKey,out var loadedKey)?loadedKey:"F8";if(WpfWorkspace.Enabled)_nativeEmbeddedShortcut=shortcut;else _embeddedKey.SetShortcut(shortcut);_loadingFusion=false;
         // Restored game recognition runs asynchronously after the first paint.
         RefreshFusionChrome();
     }
@@ -109,10 +155,16 @@ public sealed partial class MainForm
     {
         _loadingFusion=true;_applyingSettings=true;
         try{
-            _draftOriginal=ApiSettingsSnapshot.Copy(p);_draftOriginalName=name;_schemeName.Text=name;
+            _draftOriginal=ApiSettingsSnapshot.Copy(p);_draftOriginalName=name;
+            _profileDraft.Load(p,name);
+            if(!WpfWorkspace.Enabled)
+            {
+            _schemeName.Text=name;
             _apiUrlBox.Text=p.ApiUrl;_apiKeyBox.Text=p.ApiKey;_modelBox.Text=p.Model;_noCredential.Checked=p.AllowEmptyApiKey;
             _providerDisplayNameBox.Text=p.ProviderDisplayName;
             _firstByteTimeoutBox.Value=p.FirstByteTimeoutSeconds;_requestTimeoutBox.Value=p.RequestTimeoutSeconds;
+            _advancedApiParameters.Text=p.AdvancedApiParameters??"";_advancedApiToggle.Checked=!string.IsNullOrWhiteSpace(p.AdvancedApiParameters);
+            }
         }finally{_loadingFusion=false;_applyingSettings=false;}
         PopulateProfiles();ProfileEdited();RefreshFusionChrome();
     }
@@ -122,33 +174,34 @@ public sealed partial class MainForm
         var p=ReadProfileDraft();SafeDiagnosticOutput.RegisterCredential(p.ApiKey);
         var identity=FusionConfiguration.ConnectionIdentity(p);
         if(_testedIdentity!=identity||_testedProfile!=_editingProfile)
-        { _profileTestCancellation?.Cancel();_profileTestStatus.Text="当前编辑内容尚未测试。测试不会保存或应用方案。"; }
+        { _profileTestCancellation?.Cancel();ProfileTestMessage="当前编辑内容尚未测试。测试不会保存或应用方案。"; }
         var missing=FusionConfiguration.MissingConnection(p);
-        _profileSaveStatus.Text=(ProfileHasChanges?"未保存修改":"已保存")+(missing.Count>0?" · 草稿，缺少："+string.Join("、",missing):" · 配置完整，连接结果见上方");
+        ProfileSaveMessage=(ProfileHasChanges?"未保存修改":"已保存")+(missing.Count>0?" · 草稿，缺少："+string.Join("、",missing):" · 配置完整，连接结果见上方");
         var host=Uri.TryCreate(p.ApiUrl,UriKind.Absolute,out var uri)?uri.Host:"尚未填写地址";
-        _profileOrigin.Text=$"来源：{_draftOrigin} · 接收服务：{host}\n协议：OpenAI 兼容格式（实际请求发送至上方接口地址）";
+        _profileDraft.Origin=$"来源：{_draftOrigin} · 接收服务：{host}\n协议：OpenAI 兼容格式（实际请求发送至上方接口地址）";
         var refs=_editingProfile is null?[]:_fusion!.References(_editingProfile);
-        _profileUsage.Text=refs.Length>0?"配置引用："+string.Join("；",refs)+"。保存会影响这些功能后续使用的方案，不表示任务正在运行。":"没有模式使用此方案，保存不会自动应用。";
+        _profileDraft.Usage=refs.Length>0?"配置引用："+string.Join("；",refs)+"。保存会影响这些功能后续使用的方案，不表示任务正在运行。":"没有模式使用此方案，保存不会自动应用。";
+        if(!WpfWorkspace.Enabled){_profileOrigin.Text=_profileDraft.Origin;_profileUsage.Text=_profileDraft.Usage;}
     }
     private bool SaveProfileEditor()
     {
         if(_editingProfile is null)return false;
-        RememberPosition(_pages["设置"]);
+        if(!WpfWorkspace.Enabled)RememberPosition(_pages["设置"]);
         try{
-            var p=ReadProfileDraft();var missing=FusionConfiguration.MissingConnection(p);
+            var p=ReadProfileDraft();ChatRequestParameters.Parse(p.AdvancedApiParameters);var missing=FusionConfiguration.MissingConnection(p);
             if(missing.Count>0&&AppDialog.Show(this,"保存未完成草稿","仍缺少："+string.Join("、",missing)+"。保存为草稿，补全前不能用于翻译。",AppDialogKind.Confirmation)!=DialogResult.Yes)return false;
-            _fusion!.SaveProfile(_editingProfile,_schemeName.Text,p,_draftOrigin);LoadEditedProfile();
-            _profileSaveStatus.Text="保存成功 · "+_fusion.Name(_editingProfile)+(missing.Count>0?"（未完成草稿）":" · 已从文件重载复核整份方案");
+            _fusion!.SaveProfile(_editingProfile,ProfileDraftName,p,_draftOrigin);LoadEditedProfile();
+            ProfileSaveMessage="保存成功 · "+_fusion.Name(_editingProfile)+(missing.Count>0?"（未完成草稿）":" · 已从文件重载复核整份方案");
             return true;
-        }catch(Exception ex){_profileSaveStatus.Text="保存失败，编辑内容已保留："+SafeDiagnosticOutput.ExceptionSummary(ex);return false;}
-        finally{RestorePosition(_pages["设置"]);}
+        }catch(Exception ex){ProfileSaveMessage="保存失败，编辑内容已保留："+SafeDiagnosticOutput.ExceptionSummary(ex);return false;}
+        finally{if(!WpfWorkspace.Enabled)RestorePosition(_pages["设置"]);}
     }
     private bool ConfirmProfileLeave()
     {
         if(_guardingProfile||!ProfileHasChanges)return true;
         _guardingProfile=true;
         try{
-            var result=FusionProfileDialogs.Unsaved(this,_schemeName.Text,UiSettings);
+            var result=FusionProfileDialogs.Unsaved(this,ProfileDraftName,UiSettings);
             if(result==DialogResult.Cancel)return false;
             if(result==DialogResult.Yes)return SaveProfileEditor();
             _profileTestCancellation?.Cancel();
@@ -169,45 +222,64 @@ public sealed partial class MainForm
         var template=FusionProfileDialogs.Template(this,UiSettings);if(template is null)return;
         var p=ApiSettingsSnapshot.Copy(CurrentSettings);p.ApiKey="";p.CustomTranslationPrompt="";
         p.ApiUrl=template.Value switch{0=>"https://api.deepseek.com",1=>"https://api.openai.com/v1",_=>""};
-        p.Model=template.Value switch{0=>"deepseek-v4-flash",1=>"gpt-4.1-mini",_=>""};p.AllowEmptyApiKey=template.Value==3;
+        p.Model=template.Value switch{0=>"deepseek-v4-flash",1=>"gpt-4.1-mini",_=>""};p.AllowEmptyApiKey=template.Value==3;p.AdvancedApiParameters="";
         _editingProfile=Guid.NewGuid().ToString("N");_draftNew=true;_draftOrigin="用户从接口模板新建";
-        LoadDraft(p,UniqueProfileName("新方案"));_schemeName.Focus();_schemeName.SelectAll();
+        LoadDraft(p,UniqueProfileName(UiLanguage.Text("新方案")));FocusProfileName();
     }
     private string UniqueProfileName(string basis){var name=basis;var n=2;while(_fusion!.State.ProfileInfo.Values.Any(x=>x.Name.Equals(name,StringComparison.OrdinalIgnoreCase)))name=basis+" "+n++;return name;}
     private void CopyProfile()
     {
         if(!ConfirmProfileLeave())return;
-        var p=ApiSettingsSnapshot.Copy(_draftOriginal!);var name=UniqueProfileName(_draftOriginalName+" · 副本");
+        var p=ApiSettingsSnapshot.Copy(_draftOriginal!);var name=UniqueProfileName(_draftOriginalName+UiLanguage.Text(" · 副本"));
         _editingProfile=Guid.NewGuid().ToString("N");_draftNew=true;_draftOrigin="用户复制";LoadDraft(p,name);
     }
     private void DeleteProfile()
     {
         if(_editingProfile is null)return;
-        var refs=_fusion!.References(_editingProfile);
-        if(refs.Length>0){_profileSaveStatus.Text="不能删除："+string.Join("、",refs)+"。请先在对应位置选择替代方案。";return;}
         if(_draftNew){if(ConfirmProfileLeave())LoadEditedProfile();return;}
-        if(AppDialog.Show(this,"删除方案","删除“"+_schemeName.Text+"”？当前没有模式或公共默认引用它。",AppDialogKind.Confirmation)!=DialogResult.Yes)return;
-        try{_fusion.DeleteProfile(_editingProfile);_editingProfile=_fusion.State.CommonProfile;LoadEditedProfile();_profileSaveStatus.Text="方案已删除，其他方案保持不变。";}
-        catch(Exception ex){_profileSaveStatus.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
+        var refs=_fusion!.References(_editingProfile);string? replacement=null;
+        if(refs.Length>0)
+        {
+            var choices=_fusion.State.Profiles.Keys.Where(id=>id!=_editingProfile).Select(id=>(Id:id,Name:_fusion.Name(id))).ToArray();
+            if(choices.Length==0){ProfileSaveMessage="这是唯一的 API 方案。请先新建一个替代方案，再删除当前方案。";return;}
+            if(WpfWorkspace.Enabled)
+            {
+                using var dialog=new NativeProfileDeleteDialog(_fusion.Name(_editingProfile),refs,choices);
+                if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+                replacement=dialog.ReplacementId;
+            }
+            else
+            {
+                using var dialog=new ProfileDeleteDialogForm(_fusion.Name(_editingProfile),refs,choices,UiSettings);
+                if(ModalSafety.Show(this,dialog)!=DialogResult.OK)return;
+                replacement=dialog.ReplacementId;
+            }
+        }
+        else if(AppDialog.Show(this,"删除方案","删除“"+ProfileDraftName+"”？当前没有模式或公共默认引用它。",AppDialogKind.Confirmation)!=DialogResult.Yes)return;
+        try{_fusion.DeleteProfile(_editingProfile,replacement);_profileTestCancellation?.Cancel();_editingProfile=replacement??_fusion.State.CommonProfile;LoadEditedProfile();ProfileSaveMessage=replacement is null?"方案已删除，其他方案保持不变。":"方案已删除，原有引用已改用所选方案。运行中的翻译任务保留原配置。";}
+        catch(Exception ex){ProfileSaveMessage=SafeDiagnosticOutput.ExceptionSummary(ex);}
     }
     private void PersistChoice(ComboBox box)
     {
         if(_loadingFusion)return;
-        var id=ChoiceId(box);
+        PersistProfileChoice(ChoiceId(box),box==_commonProfile,box==_embeddedProfile);
+    }
+    private void PersistProfileChoice(string? id,bool common,bool embedded)
+    {
         try{
-            if(box==_embeddedProfile&&_selectedGame is { } game) { if(id is null)throw new InvalidOperationException("请选择此游戏的翻译方案。"); _fusion!.SelectGameProfile(game.ExePath,id); }
-            else _fusion!.Change(next=>{if(box==_commonProfile){if(id is null)throw new InvalidOperationException("请选择公共默认方案。");next.CommonProfile=id;}else if(box==_shotProfile)next.ScreenshotProfile=id;else next.EmbeddedProfile=id;});
-            PopulateProfiles();RefreshFusionChrome();ProfileEdited();_statusLabel.Text="方案选择已保存；截图新任务使用，游戏配置需应用后生效。";
-        }catch(Exception ex){PopulateProfiles();_statusLabel.Text="选择保存失败："+SafeDiagnosticOutput.ExceptionSummary(ex);}
+            if(embedded&&_selectedGame is { } game) { if(id is null)throw new InvalidOperationException("请选择此游戏的翻译方案。"); _fusion!.SelectGameProfile(game.ExePath,id); }
+            else _fusion!.Change(next=>{if(common){if(id is null)throw new InvalidOperationException("请选择公共默认方案。");next.CommonProfile=id;}else if(!embedded)next.ScreenshotProfile=id;else next.EmbeddedProfile=id;});
+            PopulateProfiles();RefreshFusionChrome();ProfileEdited();DesktopStatus="方案选择已保存；截图新任务使用，游戏配置需应用后生效。";
+        }catch(Exception ex){PopulateProfiles();DesktopStatus="选择保存失败："+SafeDiagnosticOutput.ExceptionSummary(ex);}
     }
     private void EditModeProfile(bool embedded)
     {
         EnsureSettingsCategory(3);
         if(!ConfirmProfileLeave())return;
         _profileReturnPage=embedded?"内嵌翻译":"主页";
-        _profileReturnButton.Visible=_profileBackButton.Visible=true;
-        _profileReturnButton.Text=embedded?"保存并返回游戏":"保存并返回截图";
-        _editingProfile=embedded&&_selectedGame is { } game?_fusion!.GameProfileId(game.ExePath):_fusion!.SelectedId(embedded);LoadEditedProfile();ShowPage("设置");_settingsNavigation.SelectedIndex=3;
+        _profileDraft.Returning=true;_profileDraft.ReturnLabel=embedded?"保存并返回游戏":"保存并返回截图";
+        if(!WpfWorkspace.Enabled){_profileReturnButton.Visible=_profileBackButton.Visible=true;_profileReturnButton.Text=_profileDraft.ReturnLabel;}
+        _editingProfile=embedded&&_selectedGame is { } game?_fusion!.GameProfileId(game.ExePath):_fusion!.SelectedId(embedded);LoadEditedProfile();ShowPage("设置");WpfSelectSettings(3);
     }
     private void SettingsCategoryChanged()
     {
@@ -235,37 +307,48 @@ public sealed partial class MainForm
     }
     private void SaveFusionState()
     {
-        if(_fusion is null)return;var key=_embeddedKey.Shortcut;
+        if(_fusion is null)return;var key=WpfWorkspace.Enabled?_nativeEmbeddedShortcut:_embeddedKey.Shortcut;
         if(_fusion.State.EmbeddedToggleKey!=key)_fusion.Change(next=>next.EmbeddedToggleKey=key);
     }
     private async Task TestProfileAsync()
     {
-        if(!_testProfileButton.Enabled)return;
+        if(_profileDraft.Testing)return;
         var snapshot=ReadProfileDraft();var missing=FusionConfiguration.MissingConnection(snapshot);
-        if(missing.Count>0){_profileTestStatus.Text="无法测试，请填写："+string.Join("、",missing);return;}
+        if(missing.Count>0){ProfileTestMessage="无法测试，请填写："+string.Join("、",missing);return;}
+        try{ChatRequestParameters.Parse(snapshot.AdvancedApiParameters);}catch(Exception ex){ProfileTestMessage=SafeDiagnosticOutput.ExceptionSummary(ex);return;}
         _testedIdentity=FusionConfiguration.ConnectionIdentity(snapshot);_testedProfile=_editingProfile;
         var identity=_testedIdentity;var id=_editingProfile;var sw=Stopwatch.StartNew();
         using var cancel=new CancellationTokenSource(TimeSpan.FromSeconds(Math.Clamp(snapshot.RequestTimeoutSeconds,1,45)));
-        _profileTestCancellation=cancel;_testProfileButton.Enabled=false;_profileTestStatus.Text="正在测试当前编辑内容…";
+        _profileTestCancellation=cancel;_profileDraft.Testing=true;if(!WpfWorkspace.Enabled)_testProfileButton.Enabled=false;ProfileTestMessage="正在测试当前编辑内容…";
         try{
             var response=await _translationService.TranslatePlainAsync("Hello, welcome to the village.",snapshot,cancel.Token);
             if(string.IsNullOrWhiteSpace(response.Text))throw new InvalidDataException("服务返回空译文。");
-            if(id==_editingProfile&&identity==FusionConfiguration.ConnectionIdentity(ReadProfileDraft()))_profileTestStatus.Text=$"测试成功 · 收到有效译文 · {sw.Elapsed.TotalSeconds:0.00} 秒 · 未自动保存";
-        }catch(Exception ex){if(id==_editingProfile&&identity==FusionConfiguration.ConnectionIdentity(ReadProfileDraft()))_profileTestStatus.Text=$"测试失败 · {sw.Elapsed.TotalSeconds:0.00} 秒："+SafeDiagnosticOutput.ExceptionSummary(ex);}
-        finally{_profileTestCancellation=null;if(!IsDisposed)_testProfileButton.Enabled=true;}
+            if(id==_editingProfile&&identity==FusionConfiguration.ConnectionIdentity(ReadProfileDraft()))ProfileTestMessage=$"测试成功 · 收到有效译文 · {sw.Elapsed.TotalSeconds:0.00} 秒 · 未自动保存";
+        }catch(Exception ex){if(id==_editingProfile&&identity==FusionConfiguration.ConnectionIdentity(ReadProfileDraft()))ProfileTestMessage=$"测试失败 · {sw.Elapsed.TotalSeconds:0.00} 秒："+SafeDiagnosticOutput.ExceptionSummary(ex);}
+        finally{_profileTestCancellation=null;if(!IsDisposed){_profileDraft.Testing=false;if(!WpfWorkspace.Enabled)_testProfileButton.Enabled=true;}}
     }
 }
 
 internal static class FusionProfileDialogs
 {
-    internal static DialogResult Unsaved(Form owner,string name,ApiSettings settings)
+    internal static DialogResult Unsaved(IWin32Window owner,string name,ApiSettings settings)
     {
+        if(WpfWorkspace.Enabled)
+        {
+            using var dialog=new NativeProfileDialog("方案有未保存修改","方案有未保存修改","“"+name+"”的 API 连接尚未保存。保存连接、放弃修改，或取消并继续编辑；下方翻译内容单独保存。",false);
+            return dialog.ShowDialog(owner);
+        }
         using var f=new ProfileDialogForm("方案有未保存修改","方案有未保存修改",
             "“"+name+"”的 API 连接尚未保存。保存连接、放弃修改，或取消并继续编辑；下方翻译内容单独保存。",settings,false);
         return ModalSafety.Show(owner,f);
     }
-    internal static int? Template(Form owner,ApiSettings settings)
+    internal static int? Template(IWin32Window owner,ApiSettings settings)
     {
+        if(WpfWorkspace.Enabled)
+        {
+            using var dialog=new NativeProfileDialog("新建翻译方案","选择接口模板","模板仅预填接口地址和模型，继续后可编辑。",true);
+            return dialog.ShowDialog(owner)==DialogResult.OK?dialog.TemplateBox!.SelectedIndex:null;
+        }
         using var f=new ProfileDialogForm("新建翻译方案","选择接口模板",
             "模板仅预填接口地址和模型，继续后可编辑。",settings,true);
         return ModalSafety.Show(owner,f)==DialogResult.OK?f.TemplateBox!.SelectedIndex:null;

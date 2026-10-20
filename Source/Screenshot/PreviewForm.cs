@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
@@ -12,8 +12,9 @@ using ScreenshotTranslationUiTester.CorePipelineV2;
 
 namespace ScreenshotTranslationUiTester;
 
-public sealed partial class PreviewForm : Form
+public sealed partial class PreviewForm : DesktopForm
 {
+    internal override bool UsesNativePresentation=>true;
     internal int RecognitionRegionCountForSmoke => _recognitionV2?.Regions.Count ?? 0;
     internal int VisionWorkerPidForSmoke => _visionRuntimeManager.ActiveWorkerPid ?? 0;
     internal VisionRuntimeManager VisionRuntimeForSmoke => _visionRuntimeManager;
@@ -68,23 +69,20 @@ public sealed partial class PreviewForm : Form
     private string _currentTranslationRequestId = "";
     private Func<IReadOnlyList<TranslationItem>, ApiSettings, IProgress<TranslationProgress>?, CancellationToken,
         Task<TranslationBatchResult>> _translateBatchAsync;
-    private readonly System.Windows.Forms.Timer _apiTimer = new() { Interval = 250 };
+    private readonly DesktopUiTimer _apiTimer = new(true) { Interval = 250 };
     private DateTimeOffset _apiRequestStarted;
     private long _apiElapsedBeforeRequest;
     private bool _apiTiming;
     private string _translationStageText = "";
-    private readonly Panel _imagePanel = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.FromArgb(15, 17, 22) };
-    private readonly PictureBox _picture = new() { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(15, 17, 22) };
+    private readonly NativePreviewViewport _imagePanel = new();
+    private readonly NativePreviewPicture _picture = new();
     private float _viewZoom=1f;private bool _fitView=true;private const float MinViewZoom=.1f,MaxViewZoom=5f;private bool _panning;private Point _panStart,_panScrollStart;private bool _updatingImageLayout,_syncingZoomSelector;
-    private readonly RichTextBox _text = new() { ReadOnly = true, ScrollBars = RichTextBoxScrollBars.Both, Dock = DockStyle.Fill, Font = new Font("Microsoft YaHei UI", 10F), BorderStyle = BorderStyle.None, DetectUrls = true };
-    private readonly ComboBox _imageMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 90 };
-    private readonly ComboBox _textMode = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 135 };
-    private readonly Label _status = new() { AutoSize = true, ForeColor = Color.LightSkyBlue, Margin = new Padding(12, 10, 4, 4) };
-    private Button? _retryButton;
-    private Button? _errorDetailsButton;
+    private readonly NativePreviewText _text = new();
+    private readonly NativePreviewChoice _imageMode = new(130), _textMode = new(150), _zoom = new(110);
+    private readonly NativeRpgLabel _status = new();
+    private NativeRpgButton? _retryButton, _errorDetailsButton;
     private string? _lastTranslationError;
-    private readonly ComboBox _zoom = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 100 };
-    private readonly SplitContainer _split = new() { Dock = DockStyle.Fill };
+    private readonly NativePreviewSplit _split = new();
     private OcrDocument? _document;
     private CorePipelineDocument? _corePipelineV2;
     private RecognitionDocumentV2? _recognitionV2;
@@ -147,7 +145,7 @@ public sealed partial class PreviewForm : Form
     private float _lastDisplayScale=-1;
     private Size _lastScrollExtent=Size.Empty;
     private bool _awaitingFirstFinalPaint;
-    private readonly System.Windows.Forms.Timer _stableFrameTimer=new(){Interval=650};
+    private readonly DesktopUiTimer _stableFrameTimer=new(true){Interval=650};
     private RealExeE2ESnapshot? _lastE2ESnapshot;
     private bool _suppressAutoOcrForE2E;
     private bool _showGroupBounds = false;
@@ -160,25 +158,13 @@ public sealed partial class PreviewForm : Form
     private readonly Action<PreviewWindowPlacement>? _saveWindowPlacement;
     private bool _isUserResize;
     private bool _isProgrammaticResize;
-    private readonly ComboBox _ocrEngineSelector = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 118 };
-    private Button? _moreButton;
-    private Button? _textVisibilityButton;
-    private readonly List<Control> _fullModeControls=[];
+    private readonly NativePreviewChoice _ocrEngineSelector = new(170);
+    private NativeRpgButton? _moreButton;
+    private NativeRpgButton? _textVisibilityButton;
+    private readonly List<NativeRpgElement> _fullModeControls=[];
     public event EventHandler? ReSelectRequested;
     public event Action<PreviewForm, Bitmap>? SelfCaptureRequested;
     public event Action<ApiSettings>? AppearanceSettingsChanged;
-    private const int EmGetFirstVisibleLine = 0x00CE;
-    private const int EmGetScrollPos = 0x04DD;
-    private const int EmSetScrollPos = 0x04DE;
-    private const int EmLineScroll = 0x00B6;
-    private const int WmVScroll = 0x0115;
-    private const int SbBottom = 7;
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
-    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
-    [DllImport("user32.dll", CharSet = CharSet.Auto)]
-    private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, ref NativePoint lParam);
-
-    [StructLayout(LayoutKind.Sequential)]
     private struct NativePoint { public int X; public int Y; }
 
     public PreviewForm(Bitmap image, PreviewMode startupMode, ApiSettings settings,
@@ -231,7 +217,7 @@ public sealed partial class PreviewForm : Form
         StartPosition = FormStartPosition.CenterScreen;
         Size = new Size(1220, 800);
         MinimumSize = new Size(820, 560);
-        FontSettingsPolicy.ApplyPreviewText(_text,_settings);FontSettingsPolicy.ApplyOverlay(_renderSettings,_settings);
+        _text.ApplyFont(_settings);FontSettingsPolicy.ApplyOverlay(_renderSettings,_settings);
         ConfigureRightTextUrlInteraction();
         if (_settings.PreviewWindowSizingMode==PreviewWindowSizingMode.FollowPrevious && (_settings.HasLastUserPreviewBounds || _settings.HasPreviewWindowPlacement))
         {
@@ -253,7 +239,7 @@ public sealed partial class PreviewForm : Form
         KeyPreview = true;
         BuildUi();
         FontManager.ApplyUi(this,_settings);
-        FontManager.ApplyPreviewText(_text,_settings);
+        _text.ApplyFont(_settings);
         UiTheme.Apply(this,_settings);
         Shown += (_, _) => { UpdateSplitter();RealExeE2ETrace.Mark("T_SOURCE_PREVIEW_COMMIT");BeginInvoke(new Action(async ()=>
             {
@@ -270,7 +256,7 @@ public sealed partial class PreviewForm : Form
         ResizeEnd += (_, _) => { BeginInvoke(new Action(() => RestoreTextScroll(SelectedTextMode))); if(_isUserResize&&!_isProgrammaticResize)SavePlacementNow(); _isUserResize=false; };
         KeyDown += HandleKeyDown;
         _apiTimer.Tick += (_, _) => UpdateRunningApiTime();
-        _picture.Paint += Picture_Paint;
+        _picture.Overlay=DrawNativeOverlay;
         _picture.MouseMove += Picture_MouseMove;
         _picture.MouseLeave += (_, _) => SetHover(null);
         _picture.Click += Picture_Click;
@@ -279,8 +265,8 @@ public sealed partial class PreviewForm : Form
         _text.MouseLeave += (_, _) => SetHover(null);
         _text.MouseClick += Text_Click;
         _split.Panel2.SizeChanged+=(_,_)=>{if(_finalTranslationTextCommitted&&_split.Panel2.ClientSize.Width!=_rightPanelWidthAtFinal){_rightPanelWidthChangeAfterFinalText++;_rightPanelWidthAtFinal=_split.Panel2.ClientSize.Width;}};
-        _text.FontChanged+=(_,_)=>{if(_finalTranslationTextCommitted)_rightFontChangeAfterFinalText++;};
-        _text.Layout+=(_,_)=>{if(_finalTranslationTextCommitted&&!_atomicCommitInProgress)_rightLayoutEventAfterFinalText++;};
+
+
     }
 
     private void SavePlacementNow(){if(_settings.PreviewWindowSizingMode!=PreviewWindowSizingMode.FollowPrevious||_saveWindowPlacement is null||IsDisposed)return;var b=WindowState==FormWindowState.Normal?Bounds:RestoreBounds;_saveWindowPlacement(new(b.X,b.Y,b.Width,b.Height,WindowState==FormWindowState.Maximized));}
@@ -312,7 +298,7 @@ public sealed partial class PreviewForm : Form
         var overlayChanged=beforeOverlay!=(_settings.OverlayFontMode,_settings.OverlayFontFamily,_settings.OverlayFontSize,_settings.OverlayBackgroundStyle,_settings.OverlayBackgroundOpacity);
         if(uiChanged){stage.Restart();FontManager.ApplyUi(this,_settings);stage.Stop();uiFontMs=stage.ElapsedMilliseconds;}
         var resolvedPreview=FontManager.ResolvePreviewProfile(_settings);
-        if(previewChanged||beforeResolvedPreview.PrimaryFamily!=resolvedPreview.PrimaryFamily||beforeResolvedPreview.Size!=resolvedPreview.Size){stage.Restart();FontSettingsPolicy.ApplyPreviewText(_text,_settings);stage.Stop();previewFontMs=stage.ElapsedMilliseconds;}
+        if(previewChanged||beforeResolvedPreview.PrimaryFamily!=resolvedPreview.PrimaryFamily||beforeResolvedPreview.Size!=resolvedPreview.Size){stage.Restart();_text.ApplyFont(_settings);stage.Stop();previewFontMs=stage.ElapsedMilliseconds;}
         FontSettingsPolicy.ApplyOverlay(_renderSettings,_settings);
         if(_document is not null&&overlayChanged&&!_busy){stage.Restart();BuildTranslatedDisplay();stage.Stop();renderMs=stage.ElapsedMilliseconds;}
         if(_document is not null&&(overlayChanged||previewChanged)){stage.Restart();UpdateIndependentViews();stage.Stop();refreshMs=stage.ElapsedMilliseconds;SetStatus("外观已更新：仅应用对应字体范围，未重新识别或调用翻译 API。");}
@@ -324,85 +310,15 @@ public sealed partial class PreviewForm : Form
         if(!applyGeometry||previous==_settings.PreviewWindowSizingMode)return;
         _isProgrammaticResize=true;
         try{
-        var area=Screen.FromControl(this).WorkingArea;
+        var area=Screen.FromHandle(Handle).WorkingArea;
         if(_settings.PreviewWindowSizingMode==PreviewWindowSizingMode.FollowPrevious&&_settings.HasPreviewWindowPlacement){WindowState=FormWindowState.Normal;Bounds=PreviewWindowPlacementPolicy.Normalize(new(_settings.PreviewWindowX,_settings.PreviewWindowY,_settings.PreviewWindowWidth,_settings.PreviewWindowHeight),Screen.AllScreens.Select(x=>x.WorkingArea).ToArray(),MinimumSize);if(_settings.PreviewWindowMaximized)WindowState=FormWindowState.Maximized;}
         else if(_settings.PreviewWindowSizingMode!=PreviewWindowSizingMode.FollowPrevious){WindowState=FormWindowState.Normal;Size=PreviewSizingPolicy.Resolve(_settings.PreviewWindowSizingMode,_original.Size,area.Size,new(_settings.FixedPreviewWidth,_settings.FixedPreviewHeight),new(_settings.LastPreviewWidth,_settings.LastPreviewHeight),MinimumSize);Location=new(area.Left+Math.Max(0,(area.Width-Width)/2),area.Top+Math.Max(0,(area.Height-Height)/2));}
         }finally{_isProgrammaticResize=false;}
     }
     private DialogResult ShowPreviewDialog(Form dialog){FontManager.ApplyUi(dialog,_settings);return ModalSafety.Show(this,dialog);}
+    private DialogResult ShowPreviewDialog(DesktopForm dialog){FontManager.ApplyUi(dialog,_settings);return ModalSafety.Show(this,dialog);}
     private DialogResult ShowPreviewDialog(CommonDialog dialog)=>ModalSafety.Run(this,()=>dialog.ShowDialog(this));
-    private void ShowAppearanceQuickDialog(){using var dialog=new AppearanceSettingsDialog(_settings);if(ShowPreviewDialog(dialog)!=DialogResult.OK)return;ApplyPreviewWindowSettings(dialog.Value,true);ApplyAppearanceSettings(dialog.Value);AppearanceSettingsChanged?.Invoke(ApiSettingsSnapshot.Copy(dialog.Value));}
-
-    private void BuildUi()
-    {
-        var bar = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Top, Height = 94, WrapContents = true, Padding = new Padding(6),
-            BackColor = Color.FromArgb(29, 34, 44)
-        };
-        Button Add(string label, EventHandler action)
-        {
-            var button = new Button
-            {
-                Text = label, AutoSize = true, MinimumSize = new Size(82, 34),
-                FlatStyle = FlatStyle.Flat, ForeColor = Color.White,
-                BackColor = Color.FromArgb(48, 57, 72), Margin = new Padding(3)
-            };
-            button.Click += action;
-            bar.Controls.Add(button);
-            return button;
-        }
-        bar.Controls.Add(new Label { Text = "图片", ForeColor = Color.White, AutoSize = true, Margin = new Padding(5, 10, 2, 2) });
-        var initialSelection = ResolveInitialPreviewSelection();
-        _preferredImageMode=initialSelection.Image;_imageMode.Items.AddRange(["原图", "译图（实验·生成中）"]);_suppressImageModeEvent=true;_imageMode.SelectedIndex=(int)_preferredImageMode;_suppressImageModeEvent=false;
-        _imageMode.SelectedIndexChanged += (_, _) => {if(!_suppressImageModeEvent)SetPreferredImageMode((ImageViewMode)Math.Max(0,_imageMode.SelectedIndex),"UserSelection",true);};bar.Controls.Add(_imageMode);
-        bar.Controls.Add(new Label { Text = "文本", ForeColor = Color.White, AutoSize = true, Margin = new Padding(8, 10, 2, 2) });
-        RebuildTextModeItems(initialSelection.Text);
-        _textMode.SelectedIndexChanged += (_, _) => {_selectedTextMode=TextModeFromVisibleIndex();if(!_atomicCommitInProgress)UpdateIndependentViews();}; bar.Controls.Add(_textMode);
-        _textMode.SelectionChangeCommitted += (_, _) => RememberCurrentPreviewSelection();
-        _ocrEngineSelector.Items.AddRange(["RapidOCR（快速）", "PaddleOCR（高质量）", "Windows OCR（实验 / 回退）"]);
-        _settings.OcrEngine = initialSelection.Engine;
-        _ocrEngineSelector.SelectedIndex = OcrEngineUiMapping.ToSelectedIndex(initialSelection.Engine);
-        _ocrEngineSelector.SelectionChangeCommitted += (_, _) =>
-            HandleOcrEngineSelectionCommitted();
-        bar.Controls.Add(_ocrEngineSelector);_fullModeControls.Add(_ocrEngineSelector);
-        Add("重新识别 OCR", (_, _) => StartOcr(false));
-        _retryButton = Add("重新翻译", (_, _) => StartTranslation());
-        _textVisibilityButton=Add(_settings.PreviewTextPanelVisible?"隐藏文本":"显示文本",(_,_)=>SetTextPanelVisibility(!_settings.PreviewTextPanelVisible,true));
-        Button pin=null!;pin=Add(TopMost?"📌 已置顶":"📌 置顶",(_,_)=>{TopMost=!TopMost;_settings.PreviewAlwaysOnTop=TopMost;pin.Text=TopMost?"📌 已置顶":"📌 置顶";AppearanceSettingsChanged?.Invoke(ApiSettingsSnapshot.Copy(_settings));});
-        var moreMenu=new LocalizedContextMenuStrip();
-        void Menu(string text,EventHandler action){var item=moreMenu.Items.Add(text);item.Click+=action;}
-        Menu("按当前模式重绘",async(_,_)=>await RedrawUsingCurrentModeAsync());
-        Menu("编辑 OCR 区域",(_,_)=>ShowOcrBlockEditor());Menu("区域与调试图层",(_,_)=>ShowV2LayerDialog());Menu("取消翻译",(_,_)=>CancelTranslation());
-        Menu("查看错误详情",(_,_)=>ShowTranslationErrorDetails());Menu("OCR 输入",(_,_)=>ShowOcrInput());Menu("译图与字体设置",(_,_)=>ShowAppearanceQuickDialog());Menu("翻译设置",(_,_)=>ShowTranslationSettings());
-        Menu("复制图片",(_,_)=>CopyImage());Menu("复制当前文本",(_,_)=>CopyText());Menu("保存图片",(_,_)=>SaveImage());Menu("截取当前预览",(_,_)=>RequestSelfCapture());Menu("翻译输入追踪",(_,_)=>ShowTranslationInputTrace());Menu("重新选择",(_,_)=>{ReSelectRequested?.Invoke(this,EventArgs.Empty);Close();});
-        Menu(_settings.PreviewChromeMode==PreviewChromeMode.GameCompact?"切换到完整模式":"切换到游戏简洁模式",(_,_)=>ToggleChromeMode());
-        _moreButton=Add("⋯ 更多",(_,_)=>moreMenu.Show(Cursor.Position));
-        var imageMenu=new LocalizedContextMenuStrip();var copySource=imageMenu.Items.Add("复制原图");copySource.Click+=(_,_)=>CopySpecificImage(_original,"已复制原图");var copyTranslated=imageMenu.Items.Add("复制译图");copyTranslated.Click+=(_,_)=>{if(_translatedDisplay is not null)CopySpecificImage(_translatedDisplay,"已复制译图");};imageMenu.Opening+=(_,_)=>copyTranslated.Enabled=_translatedDisplay is not null;imageMenu.Items.Add(new ToolStripSeparator());var saveCurrent=imageMenu.Items.Add("保存图片");saveCurrent.Click+=(_,_)=>SaveImage();_picture.ContextMenuStrip=imageMenu;_imagePanel.ContextMenuStrip=imageMenu;
-        var textMenu=new LocalizedContextMenuStrip();var copyCurrentText=textMenu.Items.Add("复制文字");copyCurrentText.Click+=(_,_)=>CopyText();_text.ContextMenuStrip=textMenu;
-        Button FullAdd(string text,EventHandler action){var control=Add(text,action);_fullModeControls.Add(control);return control;}
-        FullAdd("编辑 OCR 区域",(_,_)=>ShowOcrBlockEditor());FullAdd("区域与调试图层",(_,_)=>ShowV2LayerDialog());FullAdd("取消翻译",(_,_)=>CancelTranslation());
-        _errorDetailsButton=FullAdd("查看错误详情",(_,_)=>ShowTranslationErrorDetails());_errorDetailsButton.Enabled=false;
-        FullAdd("OCR 输入",(_,_)=>ShowOcrInput());FullAdd("译图与字体设置",(_,_)=>ShowAppearanceQuickDialog());FullAdd("翻译设置",(_,_)=>ShowTranslationSettings());
-        FullAdd("复制图片",(_,_)=>CopyImage());FullAdd("复制当前文本",(_,_)=>CopyText());FullAdd("保存图片",(_,_)=>SaveImage());
-        FullAdd("截取当前预览",(_,_)=>RequestSelfCapture());FullAdd("翻译输入追踪",(_,_)=>ShowTranslationInputTrace());
-        FullAdd("重新选择",(_,_)=>{ReSelectRequested?.Invoke(this,EventArgs.Empty);Close();});
-        FullAdd("切换到游戏简洁模式",(_,_)=>ToggleChromeMode());
-        _zoom.Items.AddRange(["适应窗口", "100%"]);
-        _zoom.SelectedIndex = 0;
-        _zoom.Margin = new Padding(9, 6, 3, 3);
-        _zoom.SelectedIndexChanged += (_, _) => HandleZoomSelectionChanged();
-        bar.Controls.Add(_zoom);
-        bar.Controls.Add(_status);
-        _imagePanel.Controls.Add(_picture);
-        _imagePanel.Resize += (_, _) => UpdateImageLayout();_imagePanel.MouseWheel+=Picture_MouseWheel;_imagePanel.MouseDown+=Picture_MouseDown;_imagePanel.MouseMove+=PicturePan_MouseMove;_imagePanel.MouseUp+=Picture_MouseUp;
-        _split.Panel1.Controls.Add(_imagePanel);
-        _split.Panel2.Controls.Add(_text);
-        Controls.Add(_split);
-        Controls.Add(bar);
-        ApplyChromeMode();
-        UpdateIndependentViews();
-    }
+    private void ShowAppearanceQuickDialog(){if(WpfWorkspace.Enabled){using var native=new NativeAppearanceDialog(_settings);if(native.ShowDialog(this)!=DialogResult.OK)return;ApplyPreviewWindowSettings(native.Value,true);ApplyAppearanceSettings(native.Value);AppearanceSettingsChanged?.Invoke(ApiSettingsSnapshot.Copy(native.Value));return;}using var dialog=new AppearanceSettingsDialog(_settings);if(ShowPreviewDialog(dialog)!=DialogResult.OK)return;ApplyPreviewWindowSettings(dialog.Value,true);ApplyAppearanceSettings(dialog.Value);AppearanceSettingsChanged?.Invoke(ApiSettingsSnapshot.Copy(dialog.Value));}
 
     private void ToggleChromeMode()
     {
@@ -417,7 +333,7 @@ public sealed partial class PreviewForm : Form
         var selected=SelectedTextMode;RebuildTextModeItems(selected);
         if(_moreButton is not null)_moreButton.Visible=!full;
         foreach(var control in _fullModeControls)control.Visible=full;
-        PerformLayout();
+        _nativePreviewRoot?.InvalidateMeasure();
     }
 
     private TextViewMode TextModeFromVisibleIndex()=>_textMode.SelectedIndex switch{1=>TextViewMode.Organized,2=>TextViewMode.Translation,_=>TextViewMode.RawOcr};
@@ -433,18 +349,7 @@ public sealed partial class PreviewForm : Form
     private void SetTextPanelVisibility(bool visible,bool notify){_settings.PreviewTextPanelVisible=visible;if(_textVisibilityButton is not null)_textVisibilityButton.Text=visible?"隐藏文本":"显示文本";UpdateIndependentViews();if(notify)AppearanceSettingsChanged?.Invoke(ApiSettingsSnapshot.Copy(_settings));}
     internal void ApplyTextPanelVisibility(bool visible)=>SetTextPanelVisibility(visible,false);
 
-    private void ShowV2LayerDialog()
-    {
-        using var dialog = new Form { Text = UiStrings.RegionLayers, StartPosition = FormStartPosition.CenterParent,
-            Size = new Size(390, 430), MinimizeBox = false, MaximizeBox = false };
-        var list = new CheckedListBox { Dock = DockStyle.Fill, CheckOnClick = true };
-        foreach (var layer in Enum.GetValues<RegionOverlayLayer>()) list.Items.Add(new RegionLayerOption(layer), _visibleV2Layers.Contains(layer));
-        var apply = new Button { Text = UiStrings.Apply, DialogResult = DialogResult.OK, Dock = DockStyle.Bottom, Height = 38 };
-        dialog.Controls.Add(list); dialog.Controls.Add(apply); dialog.AcceptButton = apply;
-        if (ShowPreviewDialog(dialog) != DialogResult.OK) return;
-        _visibleV2Layers.Clear(); foreach (RegionLayerOption option in list.CheckedItems) _visibleV2Layers.Add(option.Layer);
-        _picture.Invalidate();
-    }
+    private void ShowV2LayerDialog()=>ShowNativeLayers();
 
     private void StartOcr(bool translateAfter, bool continueOperation=false) => _ = StartOcrWhenSnapshotReadyAsync(translateAfter,continueOperation);
 
@@ -804,38 +709,9 @@ public sealed partial class PreviewForm : Form
             return;
         }
         if (_document is null || _document.RawLines.Count == 0) { SetStatus("尚无可编辑的OCR区域"); return; }
-        using var dialog = new Form { Text = "编辑 OCR 区域", StartPosition = FormStartPosition.CenterParent,
-            Size = new Size(920, 560), MinimumSize = new Size(720, 440), Font = Font };
-        var grid = new DataGridView { Dock = DockStyle.Fill, AutoGenerateColumns = false,
-            AllowUserToAddRows = false, AllowUserToDeleteRows = false, RowHeadersVisible = false,
-            SelectionMode = DataGridViewSelectionMode.FullRowSelect };
-        grid.Columns.Add(new DataGridViewCheckBoxColumn { Name = "Enabled", HeaderText = "启用", Width = 58 });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Order", HeaderText = "顺序", Width = 64 });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Text", HeaderText = "文字", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Confidence", HeaderText = "置信度", Width = 82, ReadOnly = true });
-        grid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Bounds", HeaderText = "坐标", Width = 190, ReadOnly = true });
-        foreach (var line in _document.RawLines.OrderBy(x => x.ReadingOrder))
-        {
-            var index = grid.Rows.Add(true, line.ReadingOrder, line.Text, line.Confidence.ToString("0.000"),
-                $"{line.Bounds.X:0},{line.Bounds.Y:0} {line.Bounds.Width:0}×{line.Bounds.Height:0}");
-            grid.Rows[index].Tag = line;
-            if (line.Confidence > 0 && line.Confidence < .65f) grid.Rows[index].DefaultCellStyle.BackColor = Color.MistyRose;
-        }
-        var buttons = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 52, FlowDirection = FlowDirection.RightToLeft };
-        var apply = new Button { Text = "应用", DialogResult = DialogResult.OK, Width = 100, Height = 34 };
-        var cancel = new Button { Text = "取消", DialogResult = DialogResult.Cancel, Width = 100, Height = 34 };
-        buttons.Controls.AddRange([apply, cancel]); dialog.Controls.Add(grid); dialog.Controls.Add(buttons);
-        dialog.AcceptButton = apply; dialog.CancelButton = cancel;
-        if (ShowPreviewDialog(dialog) != DialogResult.OK) return;
-        var edited = new List<OcrRegion>();
-        foreach (DataGridViewRow row in grid.Rows)
-        {
-            if (row.Tag is not OcrRegion source || row.Cells["Enabled"].Value is not true) continue;
-            var text = Convert.ToString(row.Cells["Text"].Value)?.Trim() ?? ""; if (text.Length == 0) continue;
-            var order = int.TryParse(Convert.ToString(row.Cells["Order"].Value), out var parsed) ? parsed : source.ReadingOrder;
-            edited.Add(new OcrRegion { Id = source.Id, Text = text, RawText = text, Bounds = source.Bounds,
-                Confidence = source.Confidence, Language = source.Language, ReadingOrder = order, RawLines = [] });
-        }
+        using var dialog=new NativeOcrLinesDialog(_document.RawLines);
+        if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+        var edited=dialog.Edited();
         edited = edited.OrderBy(x => x.ReadingOrder).ToList();
         foreach (var line in edited) line.RawLines = [new OcrRegion { Id = line.Id, Text = line.Text, RawText = line.Text,
             Bounds = line.Bounds, Confidence = line.Confidence, Language = line.Language, ReadingOrder = line.ReadingOrder }];
@@ -1026,6 +902,8 @@ public sealed partial class PreviewForm : Form
             _translationSemanticGroups = snapshot.SemanticGroups;
             _structuredTextGroups = snapshot.StructuredGroups;
             _translationByUnitId=new Dictionary<string,string>(result.Translations,StringComparer.Ordinal);
+            if(!_historyViewOnly&&_document.Groups.Any(x=>!string.IsNullOrWhiteSpace(x.Translation)))
+                _document.FullTranslation=PrepareTextDocument(TextViewMode.Translation).Text;
             _document.Metrics.ApiRequests = Math.Max(_document.Metrics.ApiRequests, result.RequestCount);
             _document.Metrics.ApiWaitMs = Math.Max(_document.Metrics.ApiWaitMs, result.WaitMs);
             RecalculateTotalTime();
@@ -1217,6 +1095,7 @@ public sealed partial class PreviewForm : Form
 
     private void ShowTranslationSettings()
     {
+        if(WpfWorkspace.Enabled){using var native=new NativeTranslationSettingsDialog(_settings);if(native.ShowDialog(this)==DialogResult.OK)ApplyTranslationSettings(native.ResultSettings);return;}
         using var dialog = new TranslationSettingsDialog(_settings);
         if (ShowPreviewDialog(dialog) != DialogResult.OK) return;
         ApplyTranslationSettings(dialog.ResultSettings);
@@ -1251,7 +1130,7 @@ public sealed partial class PreviewForm : Form
         target.ApiUrl = source.ApiUrl; target.ApiKey = source.ApiKey; target.Model = source.Model;
         target.TargetLanguage = source.TargetLanguage; target.SourceLanguage = source.SourceLanguage; target.SourceLanguages = TranslationLanguagePolicy.Normalize(source.SourceLanguages);
         target.TranslationProvider = source.TranslationProvider; target.TranslationProviderKind = source.TranslationProviderKind;
-        target.ProviderDisplayName = source.ProviderDisplayName; target.TranslationStyle = source.TranslationStyle;
+        target.AdvancedApiParameters = source.AdvancedApiParameters; target.ProviderDisplayName = source.ProviderDisplayName; target.TranslationStyle = source.TranslationStyle;
         target.CustomTranslationPrompt = source.CustomTranslationPrompt; target.PreserveIdentifiers = source.PreserveIdentifiers;
         target.PreserveNumbers = source.PreserveNumbers; target.PreserveVariables = source.PreserveVariables;
         target.TranslationPromptVersion = source.TranslationPromptVersion;
@@ -1594,22 +1473,7 @@ public sealed partial class PreviewForm : Form
         return intersection.IsEmpty ? 0 : intersection.Width * intersection.Height;
     }
 
-    private void ShowOcrInput()
-    {
-        if (_document?.DebugImage is null)
-        {
-            AppDialog.Show(this, "没有 OCR 调试图片", "请先执行 OCR。", AppDialogKind.Warning);
-            return;
-        }
-        var form = new Form
-        {
-            Text = $"OCR实际输入：{_document.SelectedCandidate}｜{_document.DebugImage.Width}×{_document.DebugImage.Height}｜原始行 {_document.RawLines.Count}",
-            Size = new Size(1000, 700), StartPosition = FormStartPosition.CenterParent
-        };
-        form.Controls.Add(new PictureBox { Dock = DockStyle.Fill, Image = new Bitmap(_document.DebugImage), SizeMode = PictureBoxSizeMode.Zoom });
-        form.FormClosed += (_, _) => ((PictureBox)form.Controls[0]).Image?.Dispose();
-        form.Show(this);
-    }
+    private void ShowOcrInput()=>ShowNativeOcrInput();
 
     private void ShowTranslationInputTrace()
     {
@@ -1622,20 +1486,9 @@ public sealed partial class PreviewForm : Form
             _document.Groups.OrderBy(x => x.ReadingOrder).Select(x => x.OrganizedText));
         var translationInput = string.Join(Environment.NewLine,
             DocumentState.CreateTranslationItems(_document, _settings.TranslationTextSource).Select(x => $"[{x.Id}] {x.Text}"));
-        var form = new Form { Text = "OCR → 翻译输入链追踪（诊断）", Size = new Size(1000, 720), StartPosition = FormStartPosition.CenterParent };
-        var tabs = new TabControl { Dock = DockStyle.Fill };
-        AddTraceTab(tabs, "Raw OCR", raw); AddTraceTab(tabs, "Normalized OCR", normalized);
-        AddTraceTab(tabs, "Edited OCR", edited); AddTraceTab(tabs, "Final Source Text", finalSource);
-        AddTraceTab(tabs, "Translation Input", translationInput);
-        form.Controls.Add(tabs); form.Show(this);
-    }
-
-    private static void AddTraceTab(TabControl tabs, string title, string value)
-    {
-        var page = new TabPage(title);
-        page.Controls.Add(new RichTextBox { Dock = DockStyle.Fill, ReadOnly = true, Text = value,
-            Font = new Font("Microsoft YaHei UI", 10F), BackColor = Color.FromArgb(29, 34, 44), ForeColor = Color.White });
-        tabs.TabPages.Add(page);
+        var form=new NativeDialogWindow("OCR → 翻译输入链追踪（诊断）",1000,720);var tabs=new System.Windows.Controls.TabControl();
+        AddNativeTraceTab(tabs,"OCR 原文",raw);AddNativeTraceTab(tabs,"规范化原文",normalized);AddNativeTraceTab(tabs,"编辑后原文",edited);AddNativeTraceTab(tabs,"最终原文",finalSource);AddNativeTraceTab(tabs,"翻译输入",translationInput);
+        form.Content=tabs;form.Show(this);
     }
 
     private void ShowStyleDialog()
@@ -1721,7 +1574,10 @@ public sealed partial class PreviewForm : Form
         var stage=Stopwatch.StartNew();
         _split.Panel2Collapsed=!_settings.PreviewTextPanelVisible;
         var translatedAvailable=_translatedDisplay is not null;_displayedImageMode=_preferredImageMode==ImageViewMode.Translated&&translatedAvailable?ImageViewMode.Translated:ImageViewMode.Original;
-        var translatedLabel=translatedAvailable?"译图（实验）":"译图（实验·生成中）";if(_imageMode.Items.Count>1&&!Equals(_imageMode.Items[1],translatedLabel)){_suppressImageModeEvent=true;try{_imageMode.Items[1]=translatedLabel;}finally{_suppressImageModeEvent=false;}}
+        if(_imageMode.SelectedIndex!=(int)_preferredImageMode){_suppressImageModeEvent=true;try{_imageMode.SelectedIndex=(int)_preferredImageMode;}finally{_suppressImageModeEvent=false;}}
+        _imageMode.View.ToolTip=UiLanguage.Text(translatedAvailable?"查看原图或译图":"译图尚未生成，暂显示原图");
+        System.Windows.Automation.AutomationProperties.SetHelpText(_imageMode.View,_imageMode.View.ToolTip.ToString());
+        if(_nativeImageNotice is not null)_nativeImageNotice.Visibility=_preferredImageMode==ImageViewMode.Translated&&!translatedAvailable?System.Windows.Visibility.Visible:System.Windows.Visibility.Collapsed;
         stage.Stop();chromeMs=stage.ElapsedMilliseconds;stage.Restart();
         Image? nextImage=_allowUiImageDisplay?(_displayedImageMode==ImageViewMode.Translated?_translatedDisplay!:_originalDisplay??_original):null;
         if(!ReferenceEquals(_picture.Image,nextImage)){_picture.Image=nextImage;_imageAssignCount++;}
@@ -1738,7 +1594,7 @@ public sealed partial class PreviewForm : Form
     {
         if(_translatedDisplay is null)return;
         _suppressImageModeEvent=true;
-        try { if(_imageMode.Items.Count>1) _imageMode.Items[1]="译图（实验）"; }
+        try { if(_imageMode.Items.Count>1) _imageMode.Items[1]="译图"; if(_nativeImageNotice is not null)_nativeImageNotice.Visibility=System.Windows.Visibility.Collapsed; }
         finally { _suppressImageModeEvent=false; }
         var commit=Stopwatch.StartNew();
         _atomicCommitInProgress=true;
@@ -1840,11 +1696,11 @@ public sealed partial class PreviewForm : Form
     {
         var scroll=GetTextScrollPosition();var ranges=new Dictionary<string,(int,int)>(StringComparer.Ordinal);
         var identities=new Dictionary<string,RightTextRangeIdentity>(StringComparer.Ordinal);var builder=new StringBuilder();
-        void Add(string id,string value,IReadOnlyList<string>? sourceIds=null,StructuredTextRole role=StructuredTextRole.Unknown)
+        void Add(string id,string value,IReadOnlyList<string>? sourceIds=null,StructuredTextRole role=StructuredTextRole.Unknown,bool continuation=false)
         {
             // RichEdit mouse hit-test indexes normalized LF characters. Build the ownership
             // ranges in that same coordinate system or every block after the first drifts.
-            if(string.IsNullOrWhiteSpace(value))return;LogTextIntegrity(id,value);if(builder.Length>0)builder.Append("\n\n");var start=builder.Length;builder.Append(value);ranges[id]=(start,value.Length);
+            if(string.IsNullOrWhiteSpace(value))return;LogTextIntegrity(id,value);if(builder.Length>0)builder.Append(continuation?" ":"\n\n");var start=builder.Length;builder.Append(value);ranges[id]=(start,value.Length);
             var expected=(sourceIds??[]).Distinct(StringComparer.Ordinal).OrderBy(x=>x,StringComparer.Ordinal).ToArray();
             TranslationUnitV2? unit=null;var reason="UNRESOLVED";
             if(_recognitionV2 is not null)
@@ -1873,9 +1729,26 @@ public sealed partial class PreviewForm : Form
         }
         if(mode==TextViewMode.Translation&&!_document.Groups.Any(x=>!string.IsNullOrWhiteSpace(x.Translation)))
         {var value=!string.IsNullOrWhiteSpace(_document.FullTranslation)?(_document.TranslationStale?"[需要重新翻译]\r\n\r\n":"")+_document.FullTranslation:"尚未翻译";Add("FullTranslation",value);return new(builder.ToString(),ranges,identities,scroll);}
+        string previousSource="";RectangleF previousBounds=RectangleF.Empty;
         if(mode==TextViewMode.Translation&&_translationSemanticGroups.Count>0)
-        {foreach(var semantic in _translationSemanticGroups.OrderBy(x=>x.ReadingOrder)){var value=_translationByUnitId.GetValueOrDefault(semantic.Id,"");if(string.IsNullOrWhiteSpace(value))value=DocumentState.TranslationForSemanticGroup(_document,semantic);Add(semantic.Id,value,semantic.SourceBlockIds,(StructuredTextRole)(int)semantic.GroupType);}RealPathDiagnosticTrace.Stage("POST_DISPLAY_UNIT",identities.Select(x=>(object)new{Text=builder.ToString().Substring(x.Value.Start,x.Value.Length),SourceIds=x.Value.SourceIds,RegionIds=x.Value.StableRenderUnitIds,Role=x.Value.Role.ToString(),OwnerId=x.Key}));return new(builder.ToString(),ranges,identities,scroll);}
-        foreach(var segment in _document.Groups.OrderBy(x=>x.ReadingOrder))Add(segment.GroupId,mode switch{TextViewMode.RawOcr=>RawTextForGroup(segment),TextViewMode.Translation=>segment.Translation,_=>segment.OrganizedText});
+        {
+            foreach(var semantic in PreviewTextFlow.Order(_translationSemanticGroups,x=>x.Bounds,x=>x.ReadingOrder))
+            {
+                var value=_translationByUnitId.GetValueOrDefault(semantic.Id,"");
+                if(string.IsNullOrWhiteSpace(value))value=DocumentState.TranslationForSemanticGroup(_document,semantic);
+                Add(semantic.Id,value,semantic.SourceBlockIds,(StructuredTextRole)(int)semantic.GroupType,
+                    PreviewTextFlow.ContinuesBracket(previousSource,semantic.Text,previousBounds,semantic.Bounds));
+                previousSource=semantic.Text;previousBounds=semantic.Bounds;
+            }
+            RealPathDiagnosticTrace.Stage("POST_DISPLAY_UNIT",identities.Select(x=>(object)new{Text=builder.ToString().Substring(x.Value.Start,x.Value.Length),SourceIds=x.Value.SourceIds,RegionIds=x.Value.StableRenderUnitIds,Role=x.Value.Role.ToString(),OwnerId=x.Key}));return new(builder.ToString(),ranges,identities,scroll);
+        }
+        foreach(var segment in PreviewTextFlow.Order(_document.Groups,x=>x.Bounds,x=>x.ReadingOrder))
+        {
+            var source=segment.OrganizedText;
+            Add(segment.GroupId,mode switch{TextViewMode.RawOcr=>RawTextForGroup(segment),TextViewMode.Translation=>segment.Translation,_=>source},segment.SourceSegmentIds,
+                continuation:mode!=TextViewMode.RawOcr&&PreviewTextFlow.ContinuesBracket(previousSource,source,previousBounds,segment.Bounds));
+            previousSource=source;previousBounds=segment.Bounds;
+        }
         return new(builder.ToString(),ranges,identities,scroll);
     }
 
@@ -1890,19 +1763,13 @@ public sealed partial class PreviewForm : Form
 
     private void ConfigureRightTextUrlInteraction()
     {
-        _text.LinkClicked+=(_,e)=>OpenSafeHttpUrl(e.LinkText);
-        _text.MouseDown+=(_,e)=>
-        {
-            if(e.Button!=MouseButtons.Right)return;
-            _rightTextContextUrl=SafeHttpUrlAt(_text.Text,_text.GetCharIndexFromPosition(e.Location));
-        };
-        var menu=new LocalizedContextMenuStrip();
-        var open=menu.Items.Add("用默认浏览器打开链接");
-        var copy=menu.Items.Add("复制链接地址");
-        menu.Opening+=(_,_)=>{var enabled=_rightTextContextUrl is not null;open.Enabled=enabled;copy.Enabled=enabled;};
-        open.Click+=(_,_)=>{if(_rightTextContextUrl is not null)OpenSafeHttpUrl(_rightTextContextUrl);};
-        copy.Click+=(_,_)=>{if(_rightTextContextUrl is not null)try{Clipboard.SetText(_rightTextContextUrl);}catch(ExternalException ex){AppLog.Write("url","Clipboard unavailable",ex);}};
-        _text.ContextMenuStrip=menu;
+        var menu=new System.Windows.Controls.ContextMenu();
+        var copy=new System.Windows.Controls.MenuItem{Header=UiLanguage.Text("复制文字")};copy.Click+=(_,_)=>CopyText();menu.Items.Add(copy);
+        var open=new System.Windows.Controls.MenuItem{Header=UiLanguage.Text("用默认浏览器打开链接")};open.Click+=(_,_)=>{if(_rightTextContextUrl is not null)OpenSafeHttpUrl(_rightTextContextUrl);};menu.Items.Add(open);
+        var link=new System.Windows.Controls.MenuItem{Header=UiLanguage.Text("复制链接地址")};link.Click+=(_,_)=>{if(_rightTextContextUrl is not null)Clipboard.SetText(_rightTextContextUrl);};menu.Items.Add(link);
+        menu.Opened+=(_,_)=>{open.IsEnabled=link.IsEnabled=_rightTextContextUrl is not null;};_text.Box.ContextMenu=menu;
+        _text.MouseDown+=(_,e)=>{if(e.Button==MouseButtons.Right)_rightTextContextUrl=SafeHttpUrlAt(_text.Text,_text.GetCharIndexFromPosition(e.Location));};
+        _text.Box.PreviewMouseLeftButtonDown+=(_,e)=>{if((System.Windows.Input.Keyboard.Modifiers&System.Windows.Input.ModifierKeys.Control)==0)return;var point=e.GetPosition(_text.Box);var url=SafeHttpUrlAt(_text.Text,_text.GetCharIndexFromPosition(new((int)point.X,(int)point.Y)));if(url is not null){OpenSafeHttpUrl(url);e.Handled=true;}};
     }
 
     internal static bool TryNormalizeSafeHttpUrl(string? value,out string normalized)
@@ -1996,30 +1863,10 @@ public sealed partial class PreviewForm : Form
             AppLog.Write("text-integrity",$"source={source} code={issue.Code} index={issue.Index} message={issue.Message}");
     }
 
-    private int GetFirstVisibleTextLine() => !_text.IsHandleCreated ? 0 :
-        SendMessage(_text.Handle, EmGetFirstVisibleLine, IntPtr.Zero, IntPtr.Zero).ToInt32();
-
-    private void SaveTextScroll(TextViewMode mode)
-    {
-        if (_text.IsHandleCreated) _textScrollLines[mode] = Math.Max(0, GetFirstVisibleTextLine());
-    }
-
-    private void RestoreTextScroll(TextViewMode mode)
-    {
-        if (!_text.IsHandleCreated) return;
-        RestoreFirstVisibleLine(_textScrollLines.GetValueOrDefault(mode));
-    }
-
-    private void RestoreFirstVisibleLine(int wanted)
-    {
-        if (!_text.IsHandleCreated) return;
-        SendMessage(_text.Handle, WmVScroll, new IntPtr(SbBottom), IntPtr.Zero);
-        var maximum = Math.Max(0, GetFirstVisibleTextLine());
-        var target = Math.Clamp(wanted, 0, maximum);
-        var current = GetFirstVisibleTextLine();
-        if (target != current) SendMessage(_text.Handle, EmLineScroll, IntPtr.Zero, new IntPtr(target - current));
-        _text.Invalidate();
-    }
+    private int GetFirstVisibleTextLine()=>_text.FirstVisibleLine;
+    private void SaveTextScroll(TextViewMode mode)=>_textScrollLines[mode]=GetFirstVisibleTextLine();
+    private void RestoreTextScroll(TextViewMode mode)=>RestoreFirstVisibleLine(_textScrollLines.GetValueOrDefault(mode));
+    private void RestoreFirstVisibleLine(int wanted)=>_text.RestoreLine(wanted);
 
     private string RawTextForGroup(SegmentGroup group)
     {
@@ -2043,9 +1890,6 @@ public sealed partial class PreviewForm : Form
         {
             _previewLayoutCount++;
             var preservedScroll=_fitView?Point.Empty:CurrentImageScrollOffset();
-            _imagePanel.AutoScrollPosition=Point.Empty;
-            _imagePanel.AutoScrollMinSize=Size.Empty;
-            _imagePanel.PerformLayout();
             var scale=_fitView?CalculateShrinkOnlyFitScale(imageSize,_imagePanel.ClientSize):_viewZoom;
             _picture.Dock=DockStyle.None;
             _picture.SizeMode=Math.Abs(scale-1f)<.0001f?PictureBoxSizeMode.Normal:PictureBoxSizeMode.StretchImage;
@@ -2055,6 +1899,7 @@ public sealed partial class PreviewForm : Form
             _imagePanel.PerformLayout();
             _picture.Location=new(Math.Max(0,(_imagePanel.ClientSize.Width-_picture.Width)/2),Math.Max(0,(_imagePanel.ClientSize.Height-_picture.Height)/2));
             if(!_fitView&&preservedScroll!=Point.Empty)_imagePanel.AutoScrollPosition=preservedScroll;
+            else if(_fitView)_imagePanel.AutoScrollPosition=Point.Empty;
             if(extent!=_lastScrollExtent){_scrollExtentChangeCount++;_lastScrollExtent=extent;}
             if(Math.Abs(scale-_lastDisplayScale)>.0001f){_displayScaleChangeCount++;_lastDisplayScale=scale;}
             SyncZoomSelector();
@@ -2081,9 +1926,9 @@ public sealed partial class PreviewForm : Form
         finally{_syncingZoomSelector=false;}
     }
     private void Picture_MouseWheel(object? sender,MouseEventArgs e)
-    {var mods=ModifierKeys;var anchor=sender is Control control?_imagePanel.PointToClient(control.PointToScreen(e.Location)):(Point?)null;if(InputBindingMatcher.Wheel(_settings.PreviewZoomInBinding??InputBindingDefaults.ZoomIn,e.Delta,mods)){ZoomAround(1.12f,anchor);return;}if(InputBindingMatcher.Wheel(_settings.PreviewZoomOutBinding??InputBindingDefaults.ZoomOut,e.Delta,mods)){ZoomAround(1/1.12f,anchor);return;}_imagePanel.AutoScrollPosition=new Point(-_imagePanel.AutoScrollPosition.X,Math.Max(0,-_imagePanel.AutoScrollPosition.Y-e.Delta));}
-    private void Picture_MouseDown(object? sender,MouseEventArgs e){if(InputBindingMatcher.Mouse(_settings.PreviewResetFitBinding??InputBindingDefaults.ResetFit,e.Button,ModifierKeys)){ResetFit();return;}if(e.Button==MouseButtons.Left&&!_fitView){_panning=true;_panStart=_imagePanel.PointToClient(((Control)sender!).PointToScreen(e.Location));_panScrollStart=new(-_imagePanel.AutoScrollPosition.X,-_imagePanel.AutoScrollPosition.Y);_picture.Cursor=Cursors.Hand;}}
-    private void PicturePan_MouseMove(object? sender,MouseEventArgs e){if(!_panning)return;var now=_imagePanel.PointToClient(((Control)sender!).PointToScreen(e.Location));_imagePanel.AutoScrollPosition=new Point(Math.Max(0,_panScrollStart.X- (now.X-_panStart.X)),Math.Max(0,_panScrollStart.Y-(now.Y-_panStart.Y)));}
+    {var mods=ModifierKeys;var anchor=sender is NativePreviewElement control?_imagePanel.PointToClient(control.PointToScreen(e.Location)):(Point?)null;if(InputBindingMatcher.Wheel(_settings.PreviewZoomInBinding??InputBindingDefaults.ZoomIn,e.Delta,mods)){ZoomAround(1.12f,anchor);return;}if(InputBindingMatcher.Wheel(_settings.PreviewZoomOutBinding??InputBindingDefaults.ZoomOut,e.Delta,mods)){ZoomAround(1/1.12f,anchor);return;}_imagePanel.AutoScrollPosition=new Point(-_imagePanel.AutoScrollPosition.X,Math.Max(0,-_imagePanel.AutoScrollPosition.Y-e.Delta));}
+    private void Picture_MouseDown(object? sender,MouseEventArgs e){if(InputBindingMatcher.Mouse(_settings.PreviewResetFitBinding??InputBindingDefaults.ResetFit,e.Button,ModifierKeys)){ResetFit();return;}if(e.Button==MouseButtons.Left&&!_fitView){_panning=true;_panStart=_imagePanel.PointToClient(((NativePreviewElement)sender!).PointToScreen(e.Location));_panScrollStart=new(-_imagePanel.AutoScrollPosition.X,-_imagePanel.AutoScrollPosition.Y);_picture.Cursor=Cursors.Hand;}}
+    private void PicturePan_MouseMove(object? sender,MouseEventArgs e){if(!_panning)return;var now=_imagePanel.PointToClient(((NativePreviewElement)sender!).PointToScreen(e.Location));_imagePanel.AutoScrollPosition=new Point(Math.Max(0,_panScrollStart.X- (now.X-_panStart.X)),Math.Max(0,_panScrollStart.Y-(now.Y-_panStart.Y)));}
     private void Picture_MouseUp(object? sender,MouseEventArgs e){if(e.Button==MouseButtons.Left){_panning=false;_picture.Cursor=Cursors.Default;}}
     private void ZoomCentered(float factor)=>ZoomAround(factor,null);
     private void ZoomAround(float factor,Point? viewportAnchor)
@@ -2101,9 +1946,10 @@ public sealed partial class PreviewForm : Form
         var oldScale=_fitView?CalculateShrinkOnlyFitScale(imageSize,new(vw,vh)):_viewZoom;
         var oldLeft=_picture.Image is null?Math.Max(0,(vw-(int)Math.Round(imageSize.Width*oldScale))/2):_picture.Left;
         var oldTop=_picture.Image is null?Math.Max(0,(vh-(int)Math.Round(imageSize.Height*oldScale))/2):_picture.Top;
-        var anchorImageX=(anchor.X-oldLeft)/Math.Max(.001f,oldScale);var anchorImageY=(anchor.Y-oldTop)/Math.Max(.001f,oldScale);
+        var oldScroll=CurrentImageScrollOffset();
+        var anchorImageX=(anchor.X+oldScroll.X-oldLeft)/Math.Max(.001f,oldScale);var anchorImageY=(anchor.Y+oldScroll.Y-oldTop)/Math.Max(.001f,oldScale);
         _fitView=false;_viewZoom=Math.Clamp(targetScale,MinViewZoom,MaxViewZoom);
-        _imagePanel.AutoScrollPosition=Point.Empty;UpdateImageLayout();_imagePanel.PerformLayout();
+        UpdateImageLayout();
         var desiredX=_picture.Left+anchorImageX*_viewZoom-anchor.X;var desiredY=_picture.Top+anchorImageY*_viewZoom-anchor.Y;
         var shiftX=Math.Max(0,(int)Math.Ceiling(-desiredX));var shiftY=Math.Max(0,(int)Math.Ceiling(-desiredY));
         if(shiftX>0||shiftY>0)
@@ -2120,12 +1966,12 @@ public sealed partial class PreviewForm : Form
 
     private void UpdateSplitter()
     {
-        if (_adjusting || !_split.IsHandleCreated || _split.Panel2Collapsed || _split.ClientSize.Width < 680) return;
+        if (_adjusting || _split.IsDragging || !_split.IsHandleCreated || _split.Panel2Collapsed || _split.ClientSize.Width < 680) return;
         _adjusting = true;
         try
         {
             _split.Panel1MinSize = 0; _split.Panel2MinSize = 0;
-            _split.SplitterDistance = Math.Clamp((int)(_split.ClientSize.Width * .72), 0, _split.ClientSize.Width - _split.SplitterWidth);
+            _split.SplitterDistance = Math.Clamp((int)((_split.ClientSize.Width-_split.SplitterWidth)*_split.ImageFraction), 0, _split.ClientSize.Width - _split.SplitterWidth);
             _split.Panel1MinSize = 440; _split.Panel2MinSize = 220;
         }
         finally { _adjusting = false; }
@@ -2408,17 +2254,8 @@ public sealed partial class PreviewForm : Form
         return DocumentState.ResolveStructuredHighlightSourceBlockIds(selected,SelectedTextMode,_structuredTextGroups);
     }
 
-    private NativePoint GetTextScrollPosition()
-    {
-        var position = new NativePoint();
-        if (_text.IsHandleCreated) SendMessage(_text.Handle, EmGetScrollPos, IntPtr.Zero, ref position);
-        return position;
-    }
-
-    private void RestoreTextScrollPosition(NativePoint position)
-    {
-        if (_text.IsHandleCreated) SendMessage(_text.Handle, EmSetScrollPos, IntPtr.Zero, ref position);
-    }
+    private NativePoint GetTextScrollPosition(){var p=_text.ScrollPosition;return new(){X=p.X,Y=p.Y};}
+    private void RestoreTextScrollPosition(NativePoint position)=>_text.RestoreScroll(new(position.X,position.Y));
 
     private Bitmap CurrentImage => _displayedImageMode==ImageViewMode.Translated&&_translatedDisplay is not null?_translatedDisplay:_original;
     private void RequestSelfCapture()
@@ -2637,6 +2474,7 @@ public sealed partial class PreviewForm : Form
     internal ImageViewMode DisplayedImageViewForSmoke=>_displayedImageMode;
     internal bool TranslatedAvailableForSmoke=>_translatedDisplay is not null;
     internal string ImageModeTextForSmoke=>_imageMode.SelectedItem?.ToString()??"";
+    internal bool ImageModePendingForSmoke=>_nativeImageNotice?.Visibility==System.Windows.Visibility.Visible;
     internal void SetPreviewSelectionForSmoke(OcrEngineKind engine, ImageViewMode image, TextViewMode text)
     {
         _settings.OcrEngine = engine; _ocrEngineSelector.SelectedIndex = OcrEngineUiMapping.ToSelectedIndex(engine);
@@ -2675,9 +2513,9 @@ public sealed partial class PreviewForm : Form
     internal object[] FinalHighlightGeometryForSmoke(){var identity=ActiveRightIdentity;if(identity is null||_recognitionV2 is null)return[];var sources=identity.SourceIds.ToHashSet(StringComparer.Ordinal);var render=identity.StableRenderUnitIds.ToHashSet(StringComparer.Ordinal);return _recognitionV2.Regions.Where(x=>x.SourceBlockIds.Any(sources.Contains)||render.Contains(x.RegionId)).Select(x=>(object)new{x.RegionId,x.TranslationUnitId,x.SourceBlockIds,x.TranslationRenderRect,x.SourceLinePolygons}).ToArray();}
     internal void SelectSourceForSmoke(string sourceId){var identity=_rightTextRangeIdentities.Values.First(x=>x.SourceIds.Contains(sourceId,StringComparer.Ordinal));_lockedSegmentId=null;_lockedRightIdentity=null;SetHover(identity.TranslationUnitId,identity);}
     internal void SetRecognitionMappingForSmoke(RecognitionDocumentV2 recognition,IReadOnlyList<TranslationSemanticGroup> semantic,IReadOnlyDictionary<string,string> translations){_recognitionV2=recognition;_translationSemanticGroups=semantic;_translationByUnitId=translations;}
-    internal void ScrollTextLinesForSmoke(int lines) { if (_text.IsHandleCreated) SendMessage(_text.Handle, EmLineScroll, IntPtr.Zero, new IntPtr(lines)); }
+    internal void ScrollTextLinesForSmoke(int lines)=>_text.ScrollLines(lines);
     internal void ResizeTextViewportForSmoke(Size size) { SaveTextScroll(SelectedTextMode); _text.Size = size; RestoreTextScroll(SelectedTextMode); }
-    internal void ScrollTextToBottomForSmoke() { if (_text.IsHandleCreated) SendMessage(_text.Handle, WmVScroll, new IntPtr(SbBottom), IntPtr.Zero); }
+    internal void ScrollTextToBottomForSmoke()=>_text.ScrollBottom();
     internal void RefreshTextForSmoke() => BuildTextView();
     internal bool RegionLabelsVisibleForSmoke => _visibleV2Layers.Contains(RegionOverlayLayer.RoleLabels);
     internal int VisibleV2LayerCountForSmoke => _visibleV2Layers.Count;
@@ -2704,6 +2542,8 @@ public sealed partial class PreviewForm : Form
     internal void InvalidateTranslationForSmoke(string reason) => InvalidateTranslationRequest(reason);
     protected override void OnFormClosing(FormClosingEventArgs e)
     {
+        base.OnFormClosing(e);
+        if(e.Cancel)return;
         TranslationService.DiagnosticLog($"FormClosing enter uiThread={!InvokeRequired} disposed={IsDisposed} disposing={Disposing} task={_translationTask?.Status} operationCanceled={_operation?.IsCancellationRequested}");
         _closing = true;
         if (e.CloseReason != CloseReason.WindowsShutDown && _saveWindowPlacement is not null)
@@ -2725,7 +2565,6 @@ public sealed partial class PreviewForm : Form
             }
             catch (ObjectDisposedException) { TranslationService.DiagnosticLog("Cancel skipped: CTS already disposed"); }
         });
-        base.OnFormClosing(e);
         TranslationService.DiagnosticLog($"FormClosing exit cancel={e.Cancel} disposed={IsDisposed} disposing={Disposing}");
     }
     protected override void OnFormClosed(FormClosedEventArgs e)
@@ -2736,12 +2575,14 @@ public sealed partial class PreviewForm : Form
     }
     protected override void Dispose(bool disposing)
     {
+        if(IsDisposed||Disposing)return;
         if (disposing)
         {
             _closing = true;
             TranslationService.DiagnosticLog($"Dispose begin task={_translationTask?.Status} operationCanceled={_operation?.IsCancellationRequested}");
             _picture.Image = null;
             _apiTimer.Dispose();
+            _stableFrameTimer.Dispose();
             var operation = _operation;
             var task = _translationTask;
             var ocrOperation = _ocrOperation;
@@ -2770,6 +2611,7 @@ public sealed partial class PreviewForm : Form
             DisposeBitmapWhenSafe(_original,task,_ocrSnapshotTask);
             if(_ocrSource is not null)DisposeBitmapWhenSafe(_ocrSource,ocrTask,_imageIdentity?.ComputationTask);
             _originalDisplay?.Dispose(); _translatedDisplay?.Dispose();
+            _text.Dispose();
             if (_ownsVisionRuntime) _ = _visionRuntimeManager.DisposeAsync();
             if (_ownsServices)
             {

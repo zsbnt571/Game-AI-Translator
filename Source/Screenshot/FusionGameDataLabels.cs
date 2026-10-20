@@ -11,7 +11,7 @@ public sealed partial class MainForm
             if(choice.IsDisposed||choice.DroppedDown)return;
             var sources=names();
             for(int i=0;i<Math.Min(choice.Items.Count,sources.Length);i++)
-            {string chinese=DataLabel(sources[i]);if(chinese.Length==0)continue;string display=format(i,chinese+" · "+sources[i]);if(!Equals(choice.Items[i],display))choice.Items[i]=display;}
+            {string chinese=DataLabel(sources[i]);string display=format(i,chinese.Length>0?chinese+" · "+sources[i]:sources[i]);if(!Equals(choice.Items[i],display))choice.Items[i]=display;}
         }
         if(!_dataNameChoices.ContainsKey(choice))choice.Disposed+=(_,_)=>_dataNameChoices.Remove(choice);
         _dataNameChoices[choice]=Refresh;
@@ -19,17 +19,17 @@ public sealed partial class MainForm
     }
     private string DataLabel(string source,string fallback="")
     {
-        if(!string.IsNullOrWhiteSpace(fallback))return fallback;
         if(_selectedGame is not {} game||SelectedDataSession() is not {} session)return "";
-        // Full-game translation already owns these texts; don't pay for a second request.
-        if(session.Translation?.Enabled==true)
+        ApiSettings settings;
+        try{settings=_fusion!.GameSettings(_appliedDesktopSettings,game.ExePath);}catch(InvalidOperationException){return "";}
+        if(!string.IsNullOrWhiteSpace(fallback)&&InterfaceDisplayLanguage.Matches(settings.TargetLanguage))return fallback;
+        // Reuse game translations only when their target matches the UI.
+        if(session.Translation?.Enabled==true&&InterfaceDisplayLanguage.Matches(settings.TargetLanguage))
         {
             session.Labels?.Dispose();session.Labels=null;
             return session.Translation.Lookup(source);
         }
-        ApiSettings settings;
-        try{settings=_fusion!.GameSettings(_appliedDesktopSettings,game.ExePath);}catch(InvalidOperationException){return "";}
-        string identity=FusionConfiguration.TranslationIdentity(settings);
+        string identity=UiLanguage.Current+"|"+FusionConfiguration.TranslationIdentity(settings);
         if(session.Labels is not null&&session.LabelIdentity!=identity){session.Labels.Dispose();session.Labels=null;}
         if(session.Labels is null)
         {
@@ -52,16 +52,16 @@ public sealed partial class MainForm
         // Patch text cells in place. Keep selection, scroll, editor inputs and event pages.
         foreach(DataGridViewRow row in _dataGrid.Rows)
             if(row.Tag is System.Text.Json.JsonElement item)
-            {string name=DataChinese(item);if(name.Length>0&&!Equals(row.Cells[1].Value,name))row.Cells[1].Value=name;}
+            {string name=DataChinese(item);if(!Equals(row.Cells[1].Value,name))row.Cells[1].Value=name;}
         if(_dataSelected is {} selected)
         {
             string translated=DataChinese(selected),original=selected.GetProperty("name").GetString()??"";
-            if(translated.Length>0){_dataSelectedName.Text=translated;_dataOriginalName.Text=original;}
+            _dataSelectedName.Text=translated.Length>0?translated:original;_dataOriginalName.Text=original;
         }
         if(!_dataMapChoice.DroppedDown)
         {
             _dataMapChoosing=true;
-            try{for(int i=0;i<_dataMapChoice.Items.Count;i++)if(_dataMapChoice.Items[i] is MapChoice m&&m.Chinese.Length==0){string name=DataLabel(m.Name);if(name.Length>0)_dataMapChoice.Items[i]=m with{Chinese=name};}}
+            try{for(int i=0;i<_dataMapChoice.Items.Count;i++)if(_dataMapChoice.Items[i] is MapChoice m){string name=DataLabel(m.Name);if(name!=m.Chinese)_dataMapChoice.Items[i]=m with{Chinese=name};}}
             finally{_dataMapChoosing=false;}
         }
         _dataUpdatingNames=true;

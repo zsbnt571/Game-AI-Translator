@@ -4,6 +4,7 @@ internal static class ToastNotifier
 {
     public static void Show(string message)
     {
+        if(WpfWorkspace.Enabled){NativeToast.Show(message);return;}
         var owner = Application.OpenForms.Count > 0 ? Application.OpenForms[0] : null;
         if (owner is not null && owner.InvokeRequired)
         {

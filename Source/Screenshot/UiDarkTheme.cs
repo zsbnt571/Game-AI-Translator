@@ -22,6 +22,11 @@ internal static class UiDarkTheme
         foreach (Control child in root.Controls) Apply(child);
         // Do not invalidate: callers own the normal layout/paint cycle.
     }
+    internal static void Apply(DesktopApplicationController root)
+    {
+        if(root.HasLegacyWindow)Apply(root.LegacyWindow);
+        else { root.BackColor=WindowBackground;root.ForeColor=TextPrimary; }
+    }
 
     private static void ApplyOne(Control control)
     {

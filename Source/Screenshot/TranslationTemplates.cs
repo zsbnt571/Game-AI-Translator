@@ -22,7 +22,7 @@ internal sealed class TranslationTemplates
     internal static Request Prepare(string text,string[] codes,ApiSettings settings,EmbeddedTextSyntax syntax)
     {
         string visible=Token.Replace(text,"");
-        if(!FusionConfiguration.NormalizeLanguage(settings.TargetLanguage).StartsWith("zh",StringComparison.OrdinalIgnoreCase)
+        if(!settings.PreserveNumbers||!FusionConfiguration.NormalizeLanguage(settings.TargetLanguage).StartsWith("zh",StringComparison.OrdinalIgnoreCase)
             ||Word.Matches(visible).Count<3||Identifier.IsMatch(visible))return new(text,codes,"");
         // Replace only outside existing engine placeholders. Their digits are
         // indices, not quantities, and actual control values are part of the key.

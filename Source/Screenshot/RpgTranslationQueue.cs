@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -18,8 +18,26 @@ internal sealed class RpgTranslationSession : IDisposable
     private readonly TranslationWorkspaceStore workspace;
     private TranslationWorkspaceStore.Document workspaceDocument;
     private readonly TranslationTemplates templates=new();
+    private readonly WolfDisplayTemplates wolfTemplates=new();
+    private int wolfTemplateRevision;
+    private readonly object wolfManualGate=new();
+    private long wolfManualRevision=-1;
+    private void RegisterWolfManualTemplates(TranslationWorkspaceStore.Document document)
+    {
+        if(options.Syntax!=EmbeddedTextSyntax.Wolf||System.Threading.Volatile.Read(ref wolfManualRevision)==document.Revision)return;
+        lock(wolfManualGate)
+        {
+            if(wolfManualRevision==document.Revision)return;
+            foreach(var pair in document.Manual)
+                if(TranslationWorkspaceStore.Valid(pair.Key,pair.Value,EmbeddedTextSyntax.Wolf))wolfTemplates.Register(pair.Key);
+            System.Threading.Volatile.Write(ref wolfManualRevision,document.Revision);
+        }
+    }
+    private readonly GameDialogueContexts dialogueContexts=new();
+    private GameDialogueContextCache dialogueCache=new();
     private TranslationGlossaryCache nativeGlossary=new(),displayGlossary=new();
     private readonly HashSet<string> staleGlossary=new(StringComparer.Ordinal);
+    private readonly HashSet<string> provisional=new(StringComparer.Ordinal);
     private System.Collections.Concurrent.ConcurrentDictionary<string,string> boundaryAliases=new(StringComparer.Ordinal);
     private readonly DisplayLineEndingAliases lineAliases=new();
     private sealed record ManualDisplayAliases(long Revision,Dictionary<string,string> Boundary,DisplayLineEndingAliases Lines);
@@ -34,12 +52,15 @@ internal sealed class RpgTranslationSession : IDisposable
     private void RefreshBoundaryAliases()
     {
         System.Threading.Volatile.Write(ref manualAliases,IndexManual(workspaceDocument));
+        RegisterWolfManualTemplates(workspaceDocument);
         if(!options.DisplayBoundaryWhitespace)return;
         System.Threading.Volatile.Write(ref boundaryAliases,new(DisplayBoundaryAliases.Index(cache.Keys),StringComparer.Ordinal));
     }
     private void RememberNative(string source,string text)
     {
         cache[source]=text;
+        if(options.Syntax==EmbeddedTextSyntax.Wolf&&(source.Contains('\\')||WolfLanguageBranches.IsTemplate(source)||ClockDisplayTemplate.TrySource(source.Trim(),out _)))
+        {wolfTemplates.Register(source);System.Threading.Interlocked.Increment(ref wolfTemplateRevision);}
         if(options.Syntax==EmbeddedTextSyntax.Generic)lineAliases.Add(source);
         if(options.DisplayBoundaryWhitespace)
         {
@@ -68,8 +89,15 @@ internal sealed class RpgTranslationSession : IDisposable
     }
     private bool TryNative(string source,out string text,TranslationWorkspaceStore.Document? latest=null)
     {
+        bool found=TryNativeUnwrapped(source,out text,latest);
+        if(found&&options.Syntax==EmbeddedTextSyntax.Wolf)text=WolfDisplayWrapping.Fit(source,text);
+        return found;
+    }
+    private bool TryNativeUnwrapped(string source,out string text,TranslationWorkspaceStore.Document? latest=null)
+    {
         var document=latest??System.Threading.Volatile.Read(ref workspaceDocument);
         if(TryManual(source,document,out text))return true;
+        if(dialogueContexts.TryGet(source,out var context))return dialogueCache.TryGet(source,context,cacheSettings,document.Terms,out text);
         string key=options.DisplayBoundaryWhitespace?DisplayBoundaryAliases.Key(source):source;
         text=cache.GetValueOrDefault(source,"");
         if(text.Length==0&&options.DisplayBoundaryWhitespace&&System.Threading.Volatile.Read(ref boundaryAliases).TryGetValue(key,out var original)
@@ -77,6 +105,19 @@ internal sealed class RpgTranslationSession : IDisposable
         if(text.Length==0&&options.Syntax==EmbeddedTextSyntax.Generic&&lineAliases.TryGet(source,
             original=>cache.TryGetValue(original,out var value)&&nativeGlossary.Matches(original,value,document.Terms)?value:null,out var lines)
             &&TranslationWorkspaceStore.Valid(source,lines,options.Syntax,options.CatalogBoundOnly))text=lines;
+        if(text.Length==0&&options.Syntax==EmbeddedTextSyntax.Wolf)
+        {
+            RegisterWolfManualTemplates(document);
+            text=wolfTemplates.Find(source,owner=>
+            {
+                if(TryManual(owner,document,out var manual))return new WolfDisplayTemplates.Value(manual,true);
+                // A pending retry or changed glossary cannot lend authority to
+                // a newly expanded value. The original template stays intact.
+                return !document.Requests.ContainsKey(owner)&&cache.TryGetValue(owner,out var automatic)
+                    &&nativeGlossary.Matches(owner,automatic,document.Terms)?new WolfDisplayTemplates.Value(automatic):null;
+            });
+            if(text.Length>0&&!RpgTranslationText.ValidCachedPair(source,text,EmbeddedTextSyntax.Wolf))text="";
+        }
         return text.Length>0;
     }
     private readonly EmbeddedTranslationOptions options;
@@ -152,7 +193,14 @@ internal sealed class RpgTranslationSession : IDisposable
     private int? nativeCapturedTexts,nativeBindings,lastVerifiedBindings,nativeWritebackPending,fontBlockedBindings,revealingBindings,fontsOwned;
     private string nativeCaptureSemantics="unknown",fontStatus="unknown";
     internal void RetryFailures()=>retryRequested=true;
-    private sealed record Job(string[] Sources,Task<Dictionary<string,string>> Work,bool Foreground,CancellationTokenSource Cancellation,Dictionary<string,string> RequestTokens,IReadOnlyDictionary<string,string> Terms);
+    private sealed record Job(string[] Sources,Task<Dictionary<string,string>> Work,bool Foreground,CancellationTokenSource Cancellation,Dictionary<string,string> RequestTokens,IReadOnlyDictionary<string,string> Terms,RpgTranslationBatchProgress Progress,IReadOnlyDictionary<string,GameDialogueContext> Contexts)
+    {
+        // These fields belong exclusively to RunAsync, never to provider callbacks.
+        internal readonly HashSet<string> Delivered=new(StringComparer.Ordinal);
+        internal bool EarlyConsumed;
+        internal IEnumerable<string> PendingSources=>Sources.Where(source=>!Delivered.Contains(source));
+        internal bool HasResults=>Work.IsCompleted||!EarlyConsumed&&Progress.Accepted.IsCompletedSuccessfully;
+    }
     // Observation is incremental, so older screen text must remain queued.
     // Move this poll's text ahead of it without another entry or provider call.
     private sealed class ForegroundQueue
@@ -269,33 +317,67 @@ internal sealed class RpgTranslationSession : IDisposable
         if(RestorePending)throw new UnityRestoreUnconfirmedException();
         Status="正在准备已有译文…";
         var loaded=RpgTranslationCache.Normalize(RpgTranslationCache.Load(exe,cacheSettings,options.CacheScope),options.Syntax);cachePath=loaded.Path;
+        dialogueContexts.Clear();dialogueCache=GameDialogueContextCache.Load(cachePath+".dialogue-context-v1.json");
         dirty=loaded.NeedsSave;
-        nativeGlossary=TranslationGlossaryCache.Load(cachePath);
+        nativeGlossary=TranslationGlossaryCache.Load(cachePath,loaded.Receipts);
         var invalidCache=new List<TranslationWorkspaceStore.Issue>();
+        var previousIssues=workspace.Issues().GroupBy(p=>p.Source,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.Last(),StringComparer.Ordinal);
+        void RestoreProvisional(string source,string value,string reason)
+        {
+            provisional.Add(source);
+            var old=previousIssues.GetValueOrDefault(source);
+            bool same=old is not null&&old.Soft&&old.TextHash==TranslationAttemptStatus.TextHash(value)&&old.TermStamp==TranslationGlossary.Stamp(workspaceDocument.Terms,source);
+            int attempts=same?Math.Clamp(old!.Attempts,0,4):0;
+            if(attempts>0)failures[source]=(attempts,attempts>=4?DateTime.MaxValue:DateTime.UtcNow,reason);
+            invalidCache.Add(same?old!:TranslationAttemptStatus.Evidence(source,reason,attempts,value,workspaceDocument.Terms,true));
+        }
         foreach(var pair in loaded.Entries)
-            if(TranslationWorkspaceStore.Valid(pair.Key,pair.Value,options.Syntax,options.CatalogBoundOnly)&&(TranslationWorkspaceStore.Manual(workspaceDocument,pair.Key,options.Syntax,options.CatalogBoundOnly) is not null||AutomaticTranslationQuality.Valid(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax)))RememberNative(pair.Key,pair.Value);
-            else{dirty=true;invalidCache.Add(new(pair.Key,"已有自动译文存在格式残留、控制符问题或结巴词未译，暂未加载；原句再次读取后补译。",DateTime.UtcNow));}
-        if(invalidCache.Count>0)workspace.RecordIssues(invalidCache);
+            if(TranslationWorkspaceStore.Valid(pair.Key,pair.Value,options.Syntax,options.CatalogBoundOnly)&&(TranslationWorkspaceStore.Manual(workspaceDocument,pair.Key,options.Syntax,options.CatalogBoundOnly) is not null||AutomaticTranslationQuality.Displayable(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax)))
+            {
+                RememberNative(pair.Key,pair.Value);
+                string reason=AutomaticTranslationQuality.Reason(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax);
+                if(AutomaticTranslationQuality.Soft(reason)&&TranslationWorkspaceStore.Manual(workspaceDocument,pair.Key,options.Syntax,options.CatalogBoundOnly) is null)
+                    RestoreProvisional(pair.Key,pair.Value,reason);
+            }
+            else{dirty=true;invalidCache.Add(new(pair.Key,"已有自动译文未通过检查："+TranslationAttemptStatus.Reason(AutomaticTranslationQuality.Reason(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax))+"；读取原句后将自动补译。",DateTime.UtcNow));}
         RefreshBoundaryAliases();
         var displayLoaded=RpgTranslationCache.Normalize(RpgTranslationCache.LoadDisplay(exe,cacheSettings,options.CacheScope),options.Syntax);displayCachePath=displayLoaded.Path;
-        displayGlossary=TranslationGlossaryCache.Load(displayCachePath);
+        displayGlossary=TranslationGlossaryCache.Load(displayCachePath,displayLoaded.Receipts);
         dirty|=displayLoaded.NeedsSave;
         foreach(var pair in displayLoaded.Entries)
-            if(RpgTranslationText.ValidCachedPair(pair.Key,pair.Value,options.Syntax)&&AutomaticTranslationQuality.Valid(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax))displayCache[pair.Key]=pair.Value;
+            if(RpgTranslationText.ValidCachedPair(pair.Key,pair.Value,options.Syntax)&&AutomaticTranslationQuality.Displayable(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax))
+            {
+                displayCache[pair.Key]=pair.Value;
+                string reason=AutomaticTranslationQuality.Reason(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax);
+                if(AutomaticTranslationQuality.Soft(reason)&&
+                    !(cache.TryGetValue(pair.Key,out var nativeValue)&&nativeGlossary.Matches(pair.Key,nativeValue,workspaceDocument.Terms)&&
+                      AutomaticTranslationQuality.Valid(pair.Key,nativeValue,cacheSettings,workspaceDocument.Terms,options.Syntax)))
+                    RestoreProvisional(pair.Key,pair.Value,reason);
+            }
             else dirty=true;
+        if(invalidCache.Count>0)workspace.RecordIssues(invalidCache);
         if(options.CacheScope==TranslationCacheScope.Screen)
         {
             // Read-only reuse is safe for an explicitly opened screen overlay.
             // Never save this sidecar over the native queue's files or promote
             // OCR text into native startup/writeback permissions.
-            foreach(var pair in RpgTranslationCache.Load(exe,cacheSettings).Entries
-                .Concat(RpgTranslationCache.LoadDisplay(exe,cacheSettings).Entries))
-                if(RpgTranslationText.ValidCachedPair(pair.Key,pair.Value,options.Syntax)&&AutomaticTranslationQuality.Valid(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax)&&displayCache.TryAdd(pair.Key,pair.Value))dirty=true;
+            foreach(var nativeLoaded in new[]{RpgTranslationCache.Load(exe,cacheSettings),RpgTranslationCache.LoadDisplay(exe,cacheSettings)})
+            {
+                var receipts=TranslationGlossaryCache.Load(nativeLoaded.Path,nativeLoaded.Receipts);
+                foreach(var pair in nativeLoaded.Entries)
+                    if(receipts.Matches(pair.Key,pair.Value,workspaceDocument.Terms)&&RpgTranslationText.ValidCachedPair(pair.Key,pair.Value,options.Syntax)
+                        &&AutomaticTranslationQuality.Valid(pair.Key,pair.Value,cacheSettings,workspaceDocument.Terms,options.Syntax)&&displayCache.TryAdd(pair.Key,pair.Value))
+                    {displayGlossary.Accept(pair.Key,pair.Value,workspaceDocument.Terms);dirty=true;}
+            }
         }
-        TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,false,cache);
-        TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,true,displayCache);
+        TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,false,cache,nativeGlossary.ForSources(cache));
+        TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,true,displayCache,displayGlossary.ForSources(displayCache));
         foreach(var p in cache)if(!nativeGlossary.Matches(p.Key,p.Value,workspaceDocument.Terms))staleGlossary.Add(p.Key);
-        foreach(var p in displayCache)if(!displayGlossary.Matches(p.Key,p.Value,workspaceDocument.Terms))staleGlossary.Add(p.Key);
+        foreach(var p in displayCache)if(!displayGlossary.Matches(p.Key,p.Value,workspaceDocument.Terms)&&
+            !(cache.TryGetValue(p.Key,out var nativeValue)&&nativeGlossary.Matches(p.Key,nativeValue,workspaceDocument.Terms)&&
+              AutomaticTranslationQuality.Valid(p.Key,nativeValue,cacheSettings,workspaceDocument.Terms,options.Syntax)))staleGlossary.Add(p.Key);
+        foreach(var p in dialogueCache.ForEditor(cacheSettings,workspaceDocument.Terms))
+            if(!AutomaticTranslationQuality.Valid(p.Key,p.Value,cacheSettings,workspaceDocument.Terms,options.Syntax))provisional.Add(p.Key);
         // Preparation is a game-thread operation too. Switching away after its
         // publication can leave the receipt pending for as long as the game is
         // paused. Let the worker own it, just like polling and writeback, so
@@ -315,7 +397,7 @@ internal sealed class RpgTranslationSession : IDisposable
         // receipt counts source pairs independently of native control writes.
         if(!options.CatalogBoundOnly||EmbeddedWritebackReceipt.Count(result,"stored") is not null)
         {
-            if(EmbeddedWritebackReceipt.SourcePairsStored(result,epoch,entries.Count))pending.Accepted(entries);
+            if(EmbeddedWritebackReceipt.SourcePairsStored(result,epoch,entries,options.Syntax,options.CatalogBoundOnly))pending.Accepted(entries);
             else pending.Retry(entries);
         }
         ReadWritebackCounts(result);
@@ -340,13 +422,25 @@ internal sealed class RpgTranslationSession : IDisposable
         if(result.ValueKind==JsonValueKind.Object&&result.TryGetProperty("fontStatus",out var font)&&font.ValueKind==JsonValueKind.String)
             fontStatus=SafeDiagnosticOutput.Summary(font.GetString()??"unknown");
     }
+    private Task originIndexWork=Task.CompletedTask;
+    private bool remoteOriginsIndexed;
+    private void QueueOriginIndex(RpgTextCatalogResult value)
+    {
+        var settings=ApiSettingsSnapshot.Copy(cacheSettings);
+        originIndexWork=originIndexWork.ContinueWith(previous=>
+        {
+            _=previous.Exception;
+            TranslationOriginIndex.TrySave(exe,settings,value);
+        },CancellationToken.None,TaskContinuationOptions.None,TaskScheduler.Default);
+    }
     private Task<Exception?>? cacheSaveWork;
     private bool BeginCacheSave(bool finalAttempt=false)
     {
         if(cacheSaveWork is not null||!dirty||!finalAttempt&&DateTime.UtcNow<nextCacheSaveAttempt)return false;
         var nativeSnapshot=new Dictionary<string,string>(cache,StringComparer.Ordinal);
+        var dialogueSnapshot=dialogueCache.Snapshot();
         var displaySnapshot=new Dictionary<string,string>(displayCache,StringComparer.Ordinal);
-        var nativeReceipts=nativeGlossary.Snapshot(nativeSnapshot);var displayReceipts=displayGlossary.Snapshot(displaySnapshot);
+        var nativeReceipts=nativeGlossary.ForSources(nativeSnapshot);var displayReceipts=displayGlossary.ForSources(displaySnapshot);
         dirty=false; // Later arrivals mark dirty again; finishing this snapshot cannot erase them.
         cacheSaveWork=Persist();return true;
         async Task<Exception?> Persist()
@@ -355,12 +449,13 @@ internal sealed class RpgTranslationSession : IDisposable
             {
                 await latency.MeasureAsync(TranslationLatency.Stage.CacheSave,()=>Task.Run(()=>
                 {
-                    PortableDataStorage.WriteJson(cachePath,nativeSnapshot);
-                    PortableDataStorage.WriteJson(cachePath+".glossary.json",nativeReceipts);
-                    PortableDataStorage.WriteJson(displayCachePath+".glossary.json",displayReceipts);
-                    if(displayCachePath.Length>0)PortableDataStorage.WriteJson(displayCachePath,displaySnapshot);
-                    TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,false,nativeSnapshot);
-                    TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,true,displaySnapshot);
+                    TranslationStorage.WriteJson(cachePath,nativeSnapshot);
+                    if(options.Syntax==EmbeddedTextSyntax.Renpy)TranslationStorage.WriteJson(cachePath+".dialogue-context-v1.json",dialogueSnapshot);
+                    TranslationStorage.WriteJson(cachePath+".glossary.json",nativeReceipts);
+                    TranslationStorage.WriteJson(displayCachePath+".glossary.json",displayReceipts);
+                    if(displayCachePath.Length>0)TranslationStorage.WriteJson(displayCachePath,displaySnapshot);
+                    TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,false,nativeSnapshot,nativeReceipts);
+                    TranslationMemory.Publish(exe,cacheSettings,options.CacheScope,true,displaySnapshot,displayReceipts);
                     return true;
                 })).ConfigureAwait(false);
                 return null;
@@ -389,6 +484,7 @@ internal sealed class RpgTranslationSession : IDisposable
     {
         if(cacheSaveWork is not null){await cacheSaveWork;CompleteCacheSave(true);}
         if(dirty&&BeginCacheSave(true)){await cacheSaveWork!;CompleteCacheSave(true);}
+        try{await originIndexWork;}catch(Exception ex){AppLog.Write("translation-origins","来源索引未能保存",ex);}
     }
     private string WithCacheWarning(string status)
     {
@@ -402,6 +498,7 @@ internal sealed class RpgTranslationSession : IDisposable
     {
         var jobs=new List<Job>();
         Task<JsonElement>? pollWork=null,applyWork=null,catalogWork=null;
+        Task? terminologyWork=null;
         bool restoreAfterFailure=false;
         try
         {
@@ -420,6 +517,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     options.DesktopCatalog is {} reader?Task.Run(()=>reader(lifetime.Token),lifetime.Token):Task.FromResult(new RpgTextCatalogResult([],0,[]));
             }
             var extractionTask=ReadCatalog(extractionHint);
+            bool supplementStarted=false;
             var waitingCatalog=new HashSet<string>(StringComparer.Ordinal);
             var languageExcluded=new HashSet<string>(StringComparer.Ordinal);
             int declaredLanguageSkipped=0;
@@ -432,9 +530,11 @@ internal sealed class RpgTranslationSession : IDisposable
             var discoveredCatalog=new HashSet<string>(StringComparer.Ordinal);
             var deferredCatalog=new HashSet<string>(StringComparer.Ordinal);
             var remoteActiveSources=new HashSet<string>(StringComparer.Ordinal);
-            var backlog=new Queue<string>();
+            var backlog=new ForegroundQueue();
             var visible=new ForegroundQueue();var active=new HashSet<string>(StringComparer.Ordinal);
             var observed=new HashSet<string>(StringComparer.Ordinal);
+            int deliveredWolfTemplateRevision=0;
+            var suppressedWolfFragments=new HashSet<string>(StringComparer.Ordinal);
             var rawObserved=new HashSet<string>(StringComparer.Ordinal);
             var runtimeExcluded=new HashSet<string>(StringComparer.Ordinal);
             var runtimeNonText=new HashSet<string>(StringComparer.Ordinal);
@@ -445,20 +545,62 @@ internal sealed class RpgTranslationSession : IDisposable
             var readOnlySources=new HashSet<string>(StringComparer.Ordinal);
             var writableSources=new HashSet<string>(StringComparer.Ordinal);
             var aheadObserved=new HashSet<string>(StringComparer.Ordinal);
-            bool RuntimeAllowed(string source)=>RpgTranslationText.HasTranslatableText(source,options.Syntax)&&language.AllowsRuntime(source);
+            bool RuntimeFragmentAllowed(string source)
+            {
+                if(options.Syntax!=EmbeddedTextSyntax.Wolf||source.Trim(' ','\r','\n','\t').EnumerateRunes().Take(2).Count()!=1||catalog.Contains(source))return true;
+                var document=workspace.Snapshot();
+                if(TryManual(source,document,out _))return true;
+                bool Current(string text,TranslationGlossaryCache receipts)=>RpgTranslationText.ValidCachedPair(source,text,EmbeddedTextSyntax.Wolf)
+                    &&receipts.Matches(source,text,document.Terms)&&AutomaticTranslationQuality.Valid(source,text,cacheSettings,document.Terms,EmbeddedTextSyntax.Wolf);
+                if(cache.TryGetValue(source,out var exact)&&Current(exact,nativeGlossary)
+                    ||displayCache.TryGetValue(source,out var displayExact)&&Current(displayExact,displayGlossary))return true;
+                // Some WOLF games draw a sentence as individual glyph calls.
+                // Guessing a translation for each glyph wastes provider requests
+                // and can corrupt the sentence. Structured catalogue labels and
+                // explicitly saved exact translations keep their own authority.
+                if(suppressedWolfFragments.Count<256&&suppressedWolfFragments.Add(source))
+                    AppLog.Write("translation-fragment","session="+latencySession+" game="+latencyGameId+" engine=wolf action=keep-original reason=unproven-single-scalar provider=skipped");
+                return false;
+            }
+            bool RuntimeAllowed(string source)=>RpgTranslationText.HasTranslatableText(source,options.Syntax)&&language.AllowsRuntime(source)&&RuntimeFragmentAllowed(source);
             bool MayTranslate(string source)=>catalog.Contains(source)||(observed.Contains(source)||aheadObserved.Contains(source)||readOnlySources.Contains(source))&&RuntimeAllowed(source);
             bool HasTranslation(string source)=>TryNative(source,out _)||!writableSources.Contains(source)&&displayCache.ContainsKey(source);
-            var forced=new HashSet<string>(staleGlossary,StringComparer.Ordinal);
-            bool NeedsTranslation(string source)=>!HasTranslation(source)||forced.Contains(source)&&!TryManual(source,workspaceDocument,out _);
+            bool Complete(string source)=>TryManual(source,workspaceDocument,out _)||!provisional.Contains(source)&&TryNative(source,out _);
+            var forced=new HashSet<string>(staleGlossary.Concat(provisional),StringComparer.Ordinal);
+            void TrackReusedQuality(string source,string text)
+            {
+                if(TryManual(source,workspaceDocument,out _)||provisional.Contains(source))return;
+                if(AutomaticTranslationQuality.Soft(AutomaticTranslationQuality.Reason(source,text,cacheSettings,workspaceDocument.Terms,options.Syntax)))
+                {provisional.Add(source);forced.Add(source);}
+            }
+            bool NeedsTranslation(string source)=>RuntimeFragmentAllowed(source)&&(!HasTranslation(source)||forced.Contains(source)&&!TryManual(source,workspaceDocument,out _));
             void ReuseDisplayTranslation(string source)
             {
-                if(!cache.ContainsKey(source)&&displayCache.TryGetValue(source,out var reusable)&&displayGlossary.Matches(source,reusable,workspaceDocument.Terms)
+                if(dialogueContexts.TryGet(source,out _))return;
+                if(TryManual(source,workspaceDocument,out _))return;
+                if(displayCache.TryGetValue(source,out var reusable)&&displayGlossary.Matches(source,reusable,workspaceDocument.Terms)
+                    &&(!cache.TryGetValue(source,out var current)||!AutomaticTranslationQuality.Valid(source,current,cacheSettings,workspaceDocument.Terms,options.Syntax)&&
+                       AutomaticTranslationQuality.Valid(source,reusable,cacheSettings,workspaceDocument.Terms,options.Syntax))
                     &&(!options.CatalogBoundOnly||UnrealTranslationConnection.ValidPair(source,reusable)))
                 {
+                    bool wasComplete=Complete(source);
                     RememberNative(source,reusable);dirty=true;
                     nativeGlossary.Accept(source,reusable,workspaceDocument.Terms);
-                    if(!TryManual(source,workspaceDocument,out _))
+                    if(AutomaticTranslationQuality.Valid(source,reusable,cacheSettings,workspaceDocument.Terms,options.Syntax))
+                    {provisional.Remove(source);forced.Remove(source);failures.Remove(source);}
+                    if(!wasComplete&&Complete(source))
                     {if(catalog.Contains(source))completed++;if(observed.Contains(source))observedDone++;if(additional.Contains(source))additionalDone++;}
+                }
+            }
+            void ReadDialogueContexts(JsonElement receipt)
+            {
+                if(!renpy)return;
+                foreach(string source in dialogueContexts.Read(receipt))
+                {
+                    if(TryNative(source,out var ready)){cachedCatalogUpdates[source]=ready;continue;}
+                    if(!MayTranslate(source)||active.Contains(source))continue;
+                    if(observed.Contains(source))visible.Enqueue(source);
+                    else backlog.Enqueue(source);
                 }
             }
             void AddCatalog(string text,bool trusted=false,bool unlocalizedSource=false)
@@ -480,9 +622,10 @@ internal sealed class RpgTranslationSession : IDisposable
                 selectedCatalogueSources.TryAdd(text,0);
                 writableSources.Add(text);
                 bool translated=TryNative(text,out var effective);
-                if(translated){completed++;cachedCatalogUpdates[text]=effective;}
+                if(translated)TrackReusedQuality(text,effective);
+                if(translated){if(!provisional.Contains(text))completed++;cachedCatalogUpdates[text]=effective;}
                 if(NeedsTranslation(text))backlog.Enqueue(text);
-                if(additional.Remove(text)&&translated)additionalDone--;
+                if(additional.Remove(text)&&translated&&!provisional.Contains(text))additionalDone--;
             }
             int catalogCursor=0,catalogTotal=0,catalogSkipped=0,catalogFailures=0;bool catalogDone=!remote;
             var nextCatalogPoll=DateTime.MinValue;
@@ -492,10 +635,20 @@ internal sealed class RpgTranslationSession : IDisposable
             JsonArray? applyEntries=null;
             var nextBridgeAttempt=DateTime.MinValue;var nextPollAt=DateTime.MinValue;var saved=DateTime.UtcNow;
             var nextWorkspaceRefresh=DateTime.MinValue;
+            var fastPollUntil=DateTime.MinValue;
             var handledRequests=new Dictionary<string,string>(StringComparer.Ordinal);
             string CatalogIdentity()=>language.CatalogHint+"|"+language.Tracker.HasDeclaredLocale+"|"+language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage);
             string catalogIdentity=CatalogIdentity();
             string catalogLocale=language.CatalogHint;
+            var terminology=GameTerminology.For(workspace);bool terminologyDirty=true;
+            int pendingNames=0;DateTime nextNameCount=DateTime.MinValue;
+            var terminologyObserved=new HashSet<string>(StringComparer.Ordinal);
+            void ObserveNames(IEnumerable<string> values,IEnumerable<CatalogTextOrigin>? origins=null)
+            {
+                var fresh=values.Where(terminologyObserved.Add).ToArray();
+                if(fresh.Length==0&&origins is null)return;
+                terminology.Observe(fresh,origins);terminologyDirty=true;
+            }
             void RefreshActiveCatalog()
             {
                 string identity=CatalogIdentity();
@@ -510,16 +663,28 @@ internal sealed class RpgTranslationSession : IDisposable
                 }
                 // Apply this in the same poll that reports a new locale, before
                 // any old catalogue backlog can dispatch another provider call.
-                foreach(var job in jobs.Where(j=>!j.Foreground&&!j.Sources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
+                foreach(var job in jobs.Where(j=>!j.Foreground&&!j.PendingSources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
                 catalog.Clear();selectedCatalogueSources.Clear();backlog.Clear();cachedCatalogUpdates.Clear();waitingCatalog.Clear();
                 discoveredCatalog.Clear();deferredCatalog.Clear();remoteActiveSources.Clear();
                 completed=0;declaredLanguageSkipped=0;languageExcluded.Clear();pendingWritebacks.Clear();
                 language.ResetCatalogEvidence();coverage.ResetCatalog();
                 if(hasDesktopCatalog)extractionLoaded=false;
-                if(remote){catalogCursor=0;catalogDone=false;nextCatalogPoll=DateTime.MinValue;}
+                if(remote){catalogCursor=0;remoteOriginsIndexed=false;catalogDone=false;nextCatalogPoll=DateTime.MinValue;}
             }
             while(!lifetime.IsCancellationRequested&&connection.Connected)
             {
+                if(DateTime.UtcNow>=nextNameCount){pendingNames=terminology.PendingCount(cacheSettings);nextNameCount=DateTime.UtcNow.AddSeconds(1);}
+                if(terminologyWork?.IsCompleted==true)
+                {
+                    try{await terminologyWork;}catch(OperationCanceledException)when(lifetime.IsCancellationRequested){throw;}
+                    catch(Exception ex){AppLog.Write("game-terminology","统一译名准备暂未完成；当前对白继续处理",ex);}
+                    terminologyWork=null;
+                }
+                if(terminologyWork is null&&(terminologyDirty||DateTime.UtcNow>=nextWorkspaceRefresh&&terminology.HasPending(cacheSettings)))
+                {
+                    terminologyDirty=false;
+                    terminologyWork=Task.Run(()=>terminology.PrepareAsync(cacheSettings,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),lifetime.Token),lifetime.Token);
+                }
                 var loopStarted=System.Diagnostics.Stopwatch.StartNew();
                 var updates=new Dictionary<string,string>(StringComparer.Ordinal);
                 if(DateTime.UtcNow>=nextWorkspaceRefresh)
@@ -534,12 +699,20 @@ internal sealed class RpgTranslationSession : IDisposable
                         if(changedTerms.Length>0)
                         {
                             templates.Clear();
+                            foreach(string source in dialogueContexts.ChangedTerms(previous.Terms,latest.Terms))
+                            {
+                                if(TryManual(source,latest,out _)||!MayTranslate(source))continue;
+                                forced.Add(source);failures.Remove(source);
+                                provisional.Add(source);
+                                if(observed.Contains(source))visible.Enqueue(source);else backlog.Enqueue(source);
+                            }
                             foreach(var source in catalog.Concat(observed).Concat(aheadObserved).Concat(readOnlySources).Concat(cache.Keys).Concat(displayCache.Keys).Distinct(StringComparer.Ordinal))
                             {
                                 if(TryManual(source,latest,out _)||!MayTranslate(source)||!TranslationGlossary.Affected(source,changedTerms))continue;
                                 if(cache.TryGetValue(source,out var currentNative)&&nativeGlossary.Matches(source,currentNative,latest.Terms)
                                     ||!cache.ContainsKey(source)&&displayCache.TryGetValue(source,out var currentDisplay)&&displayGlossary.Matches(source,currentDisplay,latest.Terms))continue;
                                 forced.Add(source);failures.Remove(source);
+                                provisional.Add(source);
                                 // Keep the readable old result until its replacement is
                                 // ready. Visible work still takes priority over the catalogue.
                                 if(observed.Contains(source)||readOnlySources.Contains(source))visible.Enqueue(source);else backlog.Enqueue(source);
@@ -549,6 +722,8 @@ internal sealed class RpgTranslationSession : IDisposable
                         // periodic snapshots. Remember the actual writeback
                         // sources even when neither snapshot contains that edit.
                         var manualChanges=previous.Manual.Keys.Concat(latest.Manual.Keys).Concat(manualWritebackSources);
+                        if(options.Syntax==EmbeddedTextSyntax.Wolf&&previous.Manual.Keys.Concat(latest.Manual.Keys).Any(s=>s.Contains('\\')||WolfLanguageBranches.IsTemplate(s)||ClockDisplayTemplate.TrySource(s.Trim(),out _)))
+                            manualChanges=manualChanges.Concat(observed).Concat(aheadObserved);
                         if(options.DisplayBoundaryWhitespace)manualChanges=manualChanges.Concat(manualChanges.Select(DisplayBoundaryAliases.Key));
                         if(options.Syntax==EmbeddedTextSyntax.Generic)
                         {
@@ -559,10 +734,10 @@ internal sealed class RpgTranslationSession : IDisposable
                         {
                             if(!(catalog.Contains(source)||observed.Contains(source)||aheadObserved.Contains(source))||!MayTranslate(source))continue;
                             updates[source]=TryNative(source,out var value)?value:source;
-                            if(TryManual(source,latest,out _)){failures.Remove(source);forced.Remove(source);}
+                            if(TryManual(source,latest,out _)){failures.Remove(source);forced.Remove(source);provisional.Remove(source);}
                             else if(!HasTranslation(source))visible.Enqueue(source);
                         }
-                        completed=catalog.Count(s=>TryNative(s,out _));observedDone=observed.Count(s=>TryNative(s,out _));additionalDone=additional.Count(s=>TryNative(s,out _));
+                        completed=catalog.Count(Complete);observedDone=observed.Count(Complete);additionalDone=additional.Count(Complete);
                     }
                     foreach(var request in latest.Requests)
                     {
@@ -574,7 +749,7 @@ internal sealed class RpgTranslationSession : IDisposable
                 if(applyWork?.IsCompleted==true)
                 {
                     try{AcceptPending(await applyWork,applyEntries!,applyEpoch,pendingWritebacks);}
-                    catch(Exception ex)when(ex is UnityMainThreadPausedException or UnrealCulturePendingException)
+                    catch(Exception ex)when(ex is UnityMainThreadPausedException or UnrealCulturePendingException or EmbeddedTransportBusyException)
                     {pendingWritebacks.Retry(applyEntries!);bridgePaused=true;nextBridgeAttempt=DateTime.UtcNow.AddMilliseconds(500);}
                     finally{applyWork=null;applyEntries=null;}
                 }
@@ -596,6 +771,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     catalogIdentity=CatalogIdentity();
                     if(hasDesktopCatalog)
                     {
+                        QueueOriginIndex(extraction);
                         if(extraction.Report is {} report)
                         {
                             extractionSummary=report.Summary(extraction.Files,extraction.Texts.Length);
@@ -603,7 +779,7 @@ internal sealed class RpgTranslationSession : IDisposable
                             {
                                 string identity=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(exe).ToUpperInvariant()))).ToLowerInvariant();
                                 string reportPath=Path.Combine(AppDataPaths.Root,"diagnostics","catalogs",identity+".json");
-                                PortableDataStorage.WriteJson(reportPath,new{version=1,scannedAtUtc=DateTime.UtcNow,files=extraction.Files,texts=extraction.Texts.Length,skippedByLanguage=extraction.SkippedByLanguage,summary=extractionSummary,report});
+                                TranslationStorage.WriteJson(reportPath,new{version=1,scannedAtUtc=DateTime.UtcNow,files=extraction.Files,texts=extraction.Texts.Length,skippedByLanguage=extraction.SkippedByLanguage,summary=extractionSummary,report});
                                 AppLog.Write("translation-catalog",extractionSummary+"；详细记录：diagnostics/catalogs/"+identity+".json");
                             }
                             catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
@@ -611,8 +787,15 @@ internal sealed class RpgTranslationSession : IDisposable
                         }
                         language.SelectCatalog(extraction.Texts,extraction.SelectedLanguage);
                         declaredLanguageSkipped+=extraction.SkippedByLanguage;
-                        bool trusted=extraction.SelectedLanguage.Length>0&&language.CatalogHint==GameSourceLanguageTracker.Canonical(extraction.SelectedLanguage);
-                        foreach(var text in extraction.Texts)AddCatalog(text,trusted&&(extraction.TrustedSourceTexts is null||extraction.TrustedSourceTexts.Contains(text)),extraction.UnlocalizedSourceTexts?.Contains(text)==true);
+                        bool trusted=extraction.SelectedLanguage.Length>0&&language.CatalogHint==GameSourceLanguageTracker.CanonicalLocale(extraction.SelectedLanguage);
+                        foreach(var text in extraction.Texts.OrderBy(t=>extraction.PrioritySourceTexts?.Contains(t)==true?0:1))AddCatalog(text,trusted&&(extraction.TrustedSourceTexts is null||extraction.TrustedSourceTexts.Contains(text)),extraction.UnlocalizedSourceTexts?.Contains(text)==true);
+                        ObserveNames(catalog,extraction.Origins.Where(o=>catalog.Contains(o.Text)));
+                        if(extraction.PrioritySourceTexts is {} uiSources)backlog.Promote(uiSources.ToArray());
+                    }
+                    if(!supplementStarted&&options.SupplementalDesktopCatalog is {} supplement)
+                    {
+                        supplementStarted=true;extractionTask=Task.Run(()=>supplement(lifetime.Token),lifetime.Token);extractionLoaded=false;
+                        _=extractionTask.ContinueWith(t=>{_ = t.Exception;},TaskContinuationOptions.OnlyOnFaulted);
                     }
                 }
                 // A stalled game request must not stall provider completions,
@@ -620,13 +803,13 @@ internal sealed class RpgTranslationSession : IDisposable
                 // one bridge operation is in flight; all queue mutations remain
                 // on this worker and all replies are consumed before another send.
                 if(pollWork is null&&applyWork is null&&catalogWork is null&&DateTime.UtcNow>=nextBridgeAttempt&&DateTime.UtcNow>=nextPollAt
-                    &&(!hasPoll||!jobs.Any(j=>j.Work.IsCompleted)&&(pendingWritebacks.Count==0||DateTime.UtcNow>=nextPollAt.AddMilliseconds(150))))
-                {pollWork=PollBridgeAsync();nextPollAt=DateTime.UtcNow.AddMilliseconds(100);}
+                    &&(!hasPoll||!jobs.Any(j=>j.HasResults)&&(pendingWritebacks.Count==0||DateTime.UtcNow>=nextPollAt.AddMilliseconds(150))))
+                {pollWork=PollBridgeAsync();nextPollAt=DateTime.UtcNow.AddMilliseconds(!hasPoll||DateTime.UtcNow<fastPollUntil||jobs.Any(j=>j.Foreground)?50:100);}
                 JsonElement poll=default;
                 if(pollWork?.IsCompleted==true)
                 {
                     try{poll=await pollWork;hasPoll=true;bridgePaused=false;}
-                    catch(Exception ex)when(ex is UnityMainThreadPausedException or UnrealCulturePendingException)
+                    catch(Exception ex)when(ex is UnityMainThreadPausedException or UnrealCulturePendingException or EmbeddedTransportBusyException)
                     {bridgePaused=true;nextBridgeAttempt=DateTime.UtcNow.AddMilliseconds(500);}
                     finally{pollWork=null;}
                 }
@@ -636,10 +819,11 @@ internal sealed class RpgTranslationSession : IDisposable
                 int polledEpoch=poll.GetProperty("epoch").GetInt32();
                 if(epoch!=polledEpoch)
                 {
+                    dialogueContexts.Clear();
                     pendingWritebacks.Clear();
                     if(remote&&epoch>=0)
                     {
-                        foreach(var job in jobs.Where(j=>!j.Foreground&&!j.Sources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
+                        foreach(var job in jobs.Where(j=>!j.Foreground&&!j.PendingSources.Any(s=>observed.Contains(s)||aheadObserved.Contains(s))))job.Cancellation.Cancel();
                         catalog.Clear();selectedCatalogueSources.Clear();backlog.Clear();waitingCatalog.Clear();cachedCatalogUpdates.Clear();completed=0;
                         discoveredCatalog.Clear();deferredCatalog.Clear();remoteActiveSources.Clear();
                         declaredLanguageSkipped=0;languageExcluded.Clear();language.ResetCatalogEvidence();coverage.ResetCatalog();
@@ -654,18 +838,20 @@ internal sealed class RpgTranslationSession : IDisposable
                     // A cursor belongs to one bridge generation. A rebuilt or
                     // smaller catalogue must start at zero; cached translations
                     // stay reusable and AddCatalog deduplicates earlier pages.
-                    catalogCursor=0;catalogDone=!remote;catalogFailures=0;remoteFailed=false;nextCatalogPoll=DateTime.MinValue;
+                    catalogCursor=0;remoteOriginsIndexed=false;catalogDone=!remote;catalogFailures=0;remoteFailed=false;nextCatalogPoll=DateTime.MinValue;
                     // A new bridge epoch invalidates its cache acceptance. An
                     // incremental poll may not repeat old source events.
                     foreach(string source in catalog.Concat(observed).Concat(aheadObserved))
                         if(TryNative(source,out var cached)&&MayTranslate(source))cachedCatalogUpdates[source]=cached;
                 }
                 epoch=polledEpoch;
+                ReadDialogueContexts(poll);
                 ReadWritebackCounts(poll);
                 if(poll.TryGetProperty("runtimeWarning",out var runtimeNote)&&runtimeNote.ValueKind==JsonValueKind.String)
                     runtimeWarning=SafeDiagnosticOutput.Summary(runtimeNote.GetString()??"");
                 var currentTexts=poll.GetProperty("texts").EnumerateArray().Where(item=>item.ValueKind==JsonValueKind.String)
                     .Select(item=>item.GetString()!).Where(text=>!string.IsNullOrWhiteSpace(text)&&text.Length<=6000&&!text.Contains('\0')).Distinct(StringComparer.Ordinal).ToArray();
+                if(currentTexts.Length>0)fastPollUntil=DateTime.UtcNow.AddMilliseconds(750);
                 currentPriority.AddRange(currentTexts);
                 foreach(string text in currentTexts)coverage.Observe(text);
                 if(poll.TryGetProperty("activeTextLanguage",out var activeLocale)&&activeLocale.ValueKind==JsonValueKind.String)
@@ -682,7 +868,7 @@ internal sealed class RpgTranslationSession : IDisposable
                         // their controls become visible. Send existing translations
                         // through the same epoch/receipt path as newly translated ones.
                         // Keep this separate from visible-text statistics.
-                        aheadObserved.Add(text);writableSources.Add(text);deferredCatalog.Remove(text);
+                        if(aheadObserved.Add(text))ObserveNames([text]);writableSources.Add(text);deferredCatalog.Remove(text);
                         ReuseDisplayTranslation(text);
                         if(TryNative(text,out var cachedAhead))updates[text]=cachedAhead;
                         if(NeedsTranslation(text)&&!active.Contains(text)&&!failures.ContainsKey(text)&&aheadQueued.Add(text))upcoming.Enqueue(text);
@@ -691,6 +877,7 @@ internal sealed class RpgTranslationSession : IDisposable
                 {
                     language.SelectCatalog(waitingCatalog);
                     foreach(var text in waitingCatalog)AddCatalog(text);
+                    ObserveNames(waitingCatalog.Where(catalog.Contains));
                     waitingCatalog.Clear();
                 }
                 foreach(var pair in cachedCatalogUpdates)updates[pair.Key]=pair.Value;
@@ -699,7 +886,7 @@ internal sealed class RpgTranslationSession : IDisposable
                 {
                     rawObserved.Add(text);
                     if(!RpgTranslationText.HasTranslatableText(text,options.Syntax)){runtimeNonText.Add(text);continue;}
-                    if(!language.AllowsSelectedText(text)||!catalog.Contains(text)&&!language.AllowsRuntime(text)){runtimeExcluded.Add(text);continue;}
+                    if(!language.AllowsSelectedText(text)||!catalog.Contains(text)&&!RuntimeAllowed(text)){runtimeExcluded.Add(text);continue;}
                     writableSources.Add(text);
                     deferredCatalog.Remove(text);
                     // The current bridge now recognizes this exact source. Reuse
@@ -708,7 +895,9 @@ internal sealed class RpgTranslationSession : IDisposable
                     ReuseDisplayTranslation(text);
                     if(observed.Add(text))
                     {
-                        bool translated=TryNative(text,out _);
+                        ObserveNames([text]);
+                        if(TryNative(text,out var reused))TrackReusedQuality(text,reused);
+                        bool translated=Complete(text);
                         if(translated)observedDone++;
                         if(!catalog.Contains(text)&&additional.Add(text)&&translated)additionalDone++;
                     }
@@ -729,7 +918,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     RefreshActiveCatalog();
                     foreach(var text in current)
                     {
-                        readOnlySources.Add(text);
+                        if(readOnlySources.Add(text)&&RuntimeAllowed(text))ObserveNames([text]);
                         if(RuntimeAllowed(text))latency.ObserveVisible(text,HasTranslation(text)||active.Contains(text));
                         if(RuntimeAllowed(text)&&NeedsTranslation(text)&&!active.Contains(text)&&!failures.ContainsKey(text))visible.Enqueue(text);
                     }
@@ -742,23 +931,40 @@ internal sealed class RpgTranslationSession : IDisposable
                 cachedCatalogUpdates.Clear();
                 var resolvedIssues=new List<string>();var newIssues=new List<TranslationWorkspaceStore.Issue>();
                 var completedRequests=new Dictionary<string,string>(StringComparer.Ordinal);
-                foreach(var job in jobs.Where(j=>j.Work.IsCompleted).ToArray())
+                foreach(var job in jobs.Where(j=>j.HasResults).ToArray())
                 {
                     Dictionary<string,string> results;
-                    try{results=await job.Work;}
-                    catch(OperationCanceledException)when(job.Cancellation.IsCancellationRequested&&!lifetime.IsCancellationRequested)
-                    {results=new(StringComparer.Ordinal);}
-                    finally{jobs.Remove(job);job.Cancellation.Dispose();}
-                    foreach(var source in job.Sources)
+                    string[] deliveredSources;
+                    if(job.Work.IsCompleted)
+                    {
+                        try{results=await job.Work;}
+                        catch(OperationCanceledException)when(job.Cancellation.IsCancellationRequested&&!lifetime.IsCancellationRequested)
+                        {results=new(StringComparer.Ordinal);}
+                        finally{jobs.Remove(job);job.Cancellation.Dispose();}
+                        deliveredSources=job.PendingSources.ToArray();
+                    }
+                    else
+                    {
+                        job.EarlyConsumed=true;
+                        if(job.Cancellation.IsCancellationRequested)continue;
+                        results=RpgTranslationBatchResult.Copy(await job.Progress.Accepted);
+                        deliveredSources=job.PendingSources.Where(results.ContainsKey).ToArray();
+                        // Final completion cannot remove or overwrite a newer job for these sources.
+                        job.Delivered.UnionWith(deliveredSources);
+                    }
+                    foreach(var source in deliveredSources)
                     {
                         active.Remove(source);
                         // A newer retry must not be satisfied by an older request.
                         var currentDocument=workspace.Snapshot();
                         bool hasManual=TryManual(source,currentDocument,out var corrected);
                         if(hasManual)
-                        {forced.Remove(source);failures.Remove(source);updates[source]=corrected;resolvedIssues.Add(source);}
+                        {forced.Remove(source);failures.Remove(source);provisional.Remove(source);updates[source]=corrected;resolvedIssues.Add(source);continue;}
                         string requestToken=currentDocument.Requests.GetValueOrDefault(source,"");
-                        if(TranslationGlossary.Stamp(job.Terms,source)!=TranslationGlossary.Stamp(currentDocument.Terms,source))
+                        if(dialogueContexts.Stamp(source)!=(job.Contexts.TryGetValue(source,out var previousContext)?previousContext.Identity:""))
+                        {if(!hasManual){forced.Add(source);failures.Remove(source);visible.Enqueue(source);}continue;}
+                        if((job.Contexts.TryGetValue(source,out var termContext)?termContext.TermsStamp(job.Terms,source):TranslationGlossary.Stamp(job.Terms,source))
+                            !=(job.Contexts.TryGetValue(source,out termContext)?termContext.TermsStamp(currentDocument.Terms,source):TranslationGlossary.Stamp(currentDocument.Terms,source)))
                         {if(!hasManual){forced.Add(source);failures.Remove(source);visible.Enqueue(source);}continue;}
                         if(requestToken!=job.RequestTokens.GetValueOrDefault(source,"")&&requestToken.Length>0)
                         {if(!hasManual){forced.Add(source);visible.Enqueue(source);}continue;}
@@ -767,24 +973,67 @@ internal sealed class RpgTranslationSession : IDisposable
                             // A catalogue choice can arrive while a visible
                             // request is in flight. Do not apply another language.
                             if(!MayTranslate(source)){failures.Remove(source);continue;}
-                            forced.Remove(source);resolvedIssues.Add(source);
-                            if(requestToken.Length>0)completedRequests[source]=requestToken;
+                            bool wasComplete=Complete(source);
+                            var quality=results as RpgTranslationBatchResult;
+                            string soft=quality?.SoftFailures.GetValueOrDefault(source,"")??"";
+                            bool retainedPrevious=false;
+                            if(soft.Length>0)
+                            {
+                                // Keep an earlier readable result when a repair
+                                // comes back worse; it remains visibly pending.
+                                if(TryNativeUnwrapped(source,out var previousValue)&&previousValue.Length>0)
+                                {text=previousValue;retainedPrevious=true;}
+                                else if(readOnlySources.Contains(source)&&displayCache.TryGetValue(source,out previousValue)&&previousValue.Length>0)
+                                {text=previousValue;retainedPrevious=true;}
+                                provisional.Add(source);forced.Add(source);
+                                int count=failures.GetValueOrDefault(source).Attempts+1;
+                                failures[source]=(count,count<4?DateTime.UtcNow.AddSeconds(Math.Min(60,2*Math.Pow(3,count-1))):DateTime.MaxValue,soft);
+                                newIssues.Add(TranslationAttemptStatus.Evidence(source,soft,count,quality!.Replies.GetValueOrDefault(source,text),job.Terms,true,text));
+                            }
+                            else{forced.Remove(source);provisional.Remove(source);failures.Remove(source);resolvedIssues.Add(source);}
+                            latency.Accepted(source);
+                            if(requestToken.Length>0&&soft.Length==0)completedRequests[source]=requestToken;
                             if(readOnlySources.Contains(source)&&!writableSources.Contains(source))
-                            {displayCache[source]=text;displayGlossary.Accept(source,text,job.Terms);dirty=true;failures.Remove(source);continue;}
-                            if(!TryNative(source,out _))
-                            {if(catalog.Contains(source))completed++;if(observed.Contains(source))observedDone++;if(additional.Contains(source))additionalDone++;}
-                            RememberNative(source,text);nativeGlossary.Accept(source,text,job.Terms);dirty=true;failures.Remove(source);updates[source]=TryManual(source,workspace.Snapshot(),out var manualValue)?manualValue:text;
+                            {if(!retainedPrevious){displayCache[source]=text;displayGlossary.Accept(source,text,job.Terms);dirty=true;}continue;}
+                            bool nowComplete=soft.Length==0;
+                            int delta=(nowComplete?1:0)-(wasComplete?1:0);
+                            if(catalog.Contains(source))completed+=delta;if(observed.Contains(source))observedDone+=delta;if(additional.Contains(source))additionalDone+=delta;
+                            // A retained result keeps the receipt from the request
+                            // that produced it; this repair did not translate it.
+                            if(!retainedPrevious)
+                            {
+                                if(job.Contexts.TryGetValue(source,out var dialogue))dialogueCache.Accept(source,text,dialogue,job.Terms);
+                                else{RememberNative(source,text);nativeGlossary.Accept(source,text,job.Terms);}
+                                dirty=true;
+                            }
+                            updates[source]=TryManual(source,workspace.Snapshot(),out var manualValue)?manualValue:
+                                retainedPrevious&&options.Syntax==EmbeddedTextSyntax.Wolf?WolfDisplayWrapping.Fit(source,text):text;
                         }
                         else if(!hasManual&&MayTranslate(source))
                         {int count=failures.GetValueOrDefault(source).Attempts+1;
                             string reason=results is RpgTranslationBatchResult detail?detail.Failures.GetValueOrDefault(source,"unknown"):"unknown";
                             failures[source]=(count,count<4?DateTime.UtcNow.AddSeconds(Math.Min(60,2*Math.Pow(3,count-1))):DateTime.MaxValue,reason);
-                            newIssues.Add(new(source,TranslationAttemptStatus.Issue(reason,count),DateTime.UtcNow));}
+                            string reply=results is RpgTranslationBatchResult evidence?evidence.Replies.GetValueOrDefault(source,""):"";
+                            string? retained=provisional.Contains(source)?TryNativeUnwrapped(source,out var oldValue)?oldValue:displayCache.GetValueOrDefault(source):null;
+                            newIssues.Add(TranslationAttemptStatus.Evidence(source,reason,count,reply,job.Terms,provisional.Contains(source),retained));}
                     }
                 }
                 if(newIssues.Count>0||resolvedIssues.Count>0)workspace.RecordIssues(newIssues,resolvedIssues);
                 if(completedRequests.Count>0)workspace.CompleteRequests(completedRequests);
                 lifetime.Token.ThrowIfCancellationRequested();
+                int currentWolfTemplateRevision=System.Threading.Volatile.Read(ref wolfTemplateRevision);
+                if(options.Syntax==EmbeddedTextSyntax.Wolf&&currentWolfTemplateRevision!=deliveredWolfTemplateRevision)
+                {
+                    // A previously sent expanded result is an exact key inside
+                    // the native display cache. Refresh those observed values
+                    // when its automatic owner changes, without persisting them.
+                    // CompleteRequests just published a new workspace revision;
+                    // do not consult the periodic snapshot's old retry token.
+                    var templateDocument=workspace.Snapshot();
+                    foreach(string source in observed.Concat(aheadObserved).Distinct(StringComparer.Ordinal))
+                        if(MayTranslate(source)&&TryNative(source,out var updated,templateDocument))updates[source]=updated;
+                    deliveredWolfTemplateRevision=currentWolfTemplateRevision;
+                }
                 foreach(var pair in updates)
                     if(!readOnlySources.Contains(pair.Key)||writableSources.Contains(pair.Key))
                     {
@@ -852,9 +1101,16 @@ internal sealed class RpgTranslationSession : IDisposable
                         }
                     }
                     if(work.Count==0)break;
-                    var sources=work.ToArray();latency.Dispatched(sources);var jobCancellation=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);
-                    var doc=workspace.Snapshot();var prompts=TranslationWorkspaceStore.WithTerms(doc,sources,singleSettings,batchSettings);
-                    jobs.Add(new(sources,RpgTranslationBatch.Translate(sources,prompts.Single,prompts.Batch,(prompt,settings,token)=>latency.MeasureAsync(TranslationLatency.Stage.Provider,()=>TranslationFlightPool.Shared.Request(translate,prompt,settings,token)),jobCancellation.Token,renpy,options.Syntax,doc.Terms,templates),foreground,jobCancellation,sources.ToDictionary(s=>s,s=>doc.Requests.GetValueOrDefault(s,""),StringComparer.Ordinal),doc.Terms));
+                    var sources=work.ToArray();latency.Dispatched(sources);var jobCancellation=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token);var progress=new RpgTranslationBatchProgress();
+                    var doc=workspace.Snapshot();var contexts=dialogueContexts.ForSources(sources);
+                    var prompts=TranslationWorkspaceStore.WithTerms(doc,sources.Concat(contexts.Values.SelectMany(c=>c.Previous)).ToArray(),singleSettings,batchSettings);
+                    var bypassTemplates=sources.Where(forced.Contains).ToHashSet(StringComparer.Ordinal);
+                    Task<string> Provider(string prompt,ApiSettings settings,CancellationToken token)
+                    {
+                        Task<string> Call()=>latency.MeasureAsync(TranslationLatency.Stage.Provider,()=>TranslationFlightPool.Shared.Request(translate,prompt,settings,token));
+                        return foreground?latency.MeasureAsync(TranslationLatency.Stage.ForegroundProvider,Call):Call();
+                    }
+                    jobs.Add(new(sources,RpgTranslationBatch.Translate(sources,prompts.Single,prompts.Batch,Provider,jobCancellation.Token,renpy,options.Syntax,doc.Terms,templates,progress:progress,bypassTemplates:bypassTemplates,dialogueContexts:contexts),foreground,jobCancellation,sources.ToDictionary(s=>s,s=>doc.Requests.GetValueOrDefault(s,""),StringComparer.Ordinal),doc.Terms,progress,contexts));
                 }
                 // Dispatch current-screen work and apply ready results before
                 // asking for another directory page. Pace pages without starving
@@ -870,6 +1126,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     try
                     {
                     var page=await catalogWork;
+                    ReadDialogueContexts(page);
                     int total=page.GetProperty("total").GetInt32(),skipped=page.GetProperty("skipped").GetInt32();
                     int next=page.GetProperty("next").GetInt32();
                     bool scanning=page.TryGetProperty("scanning",out var scanningValue)&&scanningValue.GetBoolean()
@@ -900,9 +1157,16 @@ internal sealed class RpgTranslationSession : IDisposable
                     {
                         var text=item.GetString()!;
                         if(!language.CatalogResolved)waitingCatalog.Add(text);
-                        AddCatalog(text,selected.Length>0&&GameSourceLanguageTracker.Canonical(selected)==language.CatalogHint);
+                        AddCatalog(text,selected.Length>0&&GameSourceLanguageTracker.CanonicalLocale(selected)==language.CatalogHint);
                     }
+                    ObserveNames(rows.EnumerateArray().Select(item=>item.GetString()!).Where(catalog.Contains));
                     catalogCursor=next;catalogDone=next>=catalogTotal&&!scanning;
+                    if(catalogDone&&!remoteOriginsIndexed)
+                    {
+                        remoteOriginsIndexed=true;
+                        QueueOriginIndex(new(discoveredCatalog.ToArray(),0,[]){Report=new(false,
+                            [new(CatalogIssueKind.Incomplete,"runtime-catalog","远程目录未提供资源位置，不能用于文件写回。")])});
+                    }
                     if(remoteFailed)AppLog.Write("translation-catalog","session="+latencySession+" game="+latencyGameId+" remote-read-resumed cursor="+catalogCursor);
                     catalogFailures=0;remoteFailed=false;
                     // Drain pages already produced by the game promptly. Empty
@@ -911,7 +1175,7 @@ internal sealed class RpgTranslationSession : IDisposable
                     nextCatalogPoll=DateTime.UtcNow.AddMilliseconds(catalogDone?2000:next<total?25:scanning?100:250);
                     }
                     catch(OperationCanceledException)when(lifetime.IsCancellationRequested){throw;}
-                    catch(Exception ex)when(ex is UnityMainThreadPausedException or UnrealCulturePendingException)
+                    catch(Exception ex)when(ex is UnityMainThreadPausedException or UnrealCulturePendingException or EmbeddedTransportBusyException)
                     {bridgePaused=true;nextBridgeAttempt=DateTime.UtcNow.AddMilliseconds(500);}
                     catch(Exception ex)when(connection.Connected)
                     {
@@ -936,7 +1200,8 @@ internal sealed class RpgTranslationSession : IDisposable
                     BridgePaused:bridgePaused,CatalogRetryPending:remoteFailed,ActiveRenderedBindings:activeRenderedBindings,ActiveCachedWaitingBindings:activeCachedWaitingBindings,
                     FailureCodes:failures.Values.Select(f=>f.Code).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToArray(),RuntimeNote:runtimeWarning,
                     CatalogDiscoveredTexts:discoveredCatalog.Count,CatalogDeferredTexts:deferredCatalog.Count,
-                    CatalogLocaleUnconfirmed:deferredCatalog.Count>0&&!language.Tracker.HasDeclaredLocale&&!language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage)));
+                    CatalogLocaleUnconfirmed:deferredCatalog.Count>0&&!language.Tracker.HasDeclaredLocale&&!language.ScriptCatalogConfirmed(extraction.ScriptSourceLanguage),
+                    TerminologyPendingNames:pendingNames,TerminologyPreparing:terminologyWork is {IsCompleted:false}));
                 Status=$"原文：{language.Label} · 目录文本 {catalog.Count} 条（已有译文 {completed} 条）";
                 if(languageExcluded.Count+declaredLanguageSkipped>0)Status+=$" · 目录排除其他语言 {languageExcluded.Count+declaredLanguageSkipped} 条";
                 if(rawObserved.Count>0)Status+=$" · 运行时收到 {rawObserved.Count} 条（可译 {observed.Count} 条，已有译文 {observedDone} 条）";
@@ -983,9 +1248,12 @@ internal sealed class RpgTranslationSession : IDisposable
                 var signals=new List<Task>();
                 if(pollWork is not null)signals.Add(pollWork);if(applyWork is not null)signals.Add(applyWork);if(catalogWork is not null)signals.Add(catalogWork);
                 signals.AddRange(jobs.Select(j=>(Task)j.Work));if(!extractionLoaded)signals.Add(extractionTask);if(cacheSaveWork is not null)signals.Add(cacheSaveWork);
+                signals.AddRange(jobs.Where(j=>!j.EarlyConsumed).Select(j=>(Task)j.Progress.Accepted));
                 int wakeAfter=100;
+                if(pollWork is null&&applyWork is null&&catalogWork is null&&nextPollAt>DateTime.UtcNow)
+                    wakeAfter=Math.Clamp((int)Math.Ceiling((nextPollAt-DateTime.UtcNow).TotalMilliseconds),10,100);
                 if(remote&&!catalogDone&&!bridgePaused&&pollWork is null&&applyWork is null&&catalogWork is null)
-                    wakeAfter=Math.Clamp((int)Math.Ceiling((nextCatalogPoll-DateTime.UtcNow).TotalMilliseconds),10,100);
+                    wakeAfter=Math.Min(wakeAfter,Math.Clamp((int)Math.Ceiling((nextCatalogPoll-DateTime.UtcNow).TotalMilliseconds),10,100));
                 signals.Add(Task.Delay(wakeAfter,lifetime.Token));
                 await Task.WhenAny(signals).WaitAsync(lifetime.Token);
                 int pause=10-(int)loopStarted.ElapsedMilliseconds;if(pause>0)await Task.Delay(pause,lifetime.Token);
@@ -997,6 +1265,7 @@ internal sealed class RpgTranslationSession : IDisposable
         finally
         {
             lifetime.Cancel();
+            if(terminologyWork is not null)_=terminologyWork.ContinueWith(t=>{_ = t.Exception;},CancellationToken.None,TaskContinuationOptions.OnlyOnFaulted|TaskContinuationOptions.ExecuteSynchronously,TaskScheduler.Default);
             foreach(var request in new[]{pollWork,applyWork,catalogWork})
                 if(request is not null)_=request.ContinueWith(t=>{_ = t.Exception;},CancellationToken.None,TaskContinuationOptions.OnlyOnFaulted|TaskContinuationOptions.ExecuteSynchronously,TaskScheduler.Default);
             foreach(var job in jobs)_=job.Work.ContinueWith(t=>{_ = t.Exception;job.Cancellation.Dispose();},CancellationToken.None,TaskContinuationOptions.ExecuteSynchronously,TaskScheduler.Default);

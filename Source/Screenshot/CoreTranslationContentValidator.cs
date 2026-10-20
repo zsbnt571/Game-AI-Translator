@@ -7,7 +7,7 @@ internal sealed record CoreContentValidation(bool Accepted,string Text,bool Reco
 
 internal static class CoreTranslationContentValidator
 {
-    internal const string ContractVersion="core-content-v21-language-completion";
+    internal const string ContractVersion="core-content-v22-readable-names";
 
     internal static CoreContentValidation Validate(TranslationItem item,string translated,string requestId,string targetLanguage="")
     {
@@ -17,6 +17,11 @@ internal static class CoreTranslationContentValidator
             return new(false,translated,false,"LANGUAGE_OPTION_NAME_CHANGED");
         if(!string.IsNullOrWhiteSpace(targetLanguage)&&TranslationLanguageSpans.UnchangedEligibleText(item.Text,translated,
             new ApiSettings{TargetLanguage=targetLanguage,SourceLanguage=SourceLanguageMode.Auto},item.RequiredLiteralSpans))
+            return new(false,translated,false,"UNTRANSLATED_ELIGIBLE_CONTENT");
+        string sourceForNames=item.Text,resultForNames=translated;
+        foreach(string literal in item.RequiredLiteralSpans){sourceForNames=sourceForNames.Replace(literal,"",StringComparison.Ordinal);resultForNames=resultForNames.Replace(literal,"",StringComparison.Ordinal);}
+        if(!string.IsNullOrWhiteSpace(targetLanguage)&&TranslationLanguageSpans.ResidualJapanese(sourceForNames,resultForNames,
+            new ApiSettings{TargetLanguage=targetLanguage,SourceLanguage=SourceLanguageMode.Auto},null,EmbeddedTextSyntax.Generic))
             return new(false,translated,false,"UNTRANSLATED_ELIGIBLE_CONTENT");
         if(item.IdentityContract!=TranslationIdentityContract.CoreV2Block)
             return new(true,translated,false,"NON_CORE_CONTRACT");

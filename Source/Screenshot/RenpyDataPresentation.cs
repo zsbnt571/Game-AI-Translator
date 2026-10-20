@@ -35,8 +35,8 @@ internal sealed class RenpyDataPresentation
     internal static string LocalLabel(string raw)
     {
         string readable=Readable(raw);bool known=false;
-        string label=Regex.Replace(readable,@"[\p{L}]+",m=>{if(Words.TryGetValue(m.Value,out string? word)){known=true;return word;}return m.Value;});
+        string label=Regex.Replace(readable,@"[\p{L}]+",m=>{if(Words.TryGetValue(m.Value,out string? word)){known=true;return UiLanguage.Text(word);}return m.Value;});
         return known||Regex.IsMatch(readable,@"[\u4e00-\u9fff]")?label:"";
     }
-    internal string Label(string raw,string translated="")=>Notes.TryGetValue(raw,out var note)&&note.Length>0?note:translated.Length>0?translated:LocalLabel(raw) is {Length:>0} local?local:"待补充中文名";
+    internal string Label(string raw,string translated="")=>Notes.TryGetValue(raw,out var note)&&note.Length>0?note:translated.Length>0?translated:LocalLabel(raw) is {Length:>0} local?local:UiLanguage.Text("待补充译名");
 }

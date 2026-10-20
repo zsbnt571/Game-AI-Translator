@@ -2,7 +2,7 @@ using System.Drawing.Drawing2D;
 
 namespace ScreenshotTranslationUiTester;
 
-internal sealed class ScreenshotRebuildHistory : ScrollableControl
+internal sealed partial class ScreenshotRebuildHistory : ScrollableControl
 {
     private sealed record Card(SessionHistoryItem Item, Bitmap Thumbnail);
     private readonly List<Card> cards = [];
@@ -37,7 +37,7 @@ internal sealed class ScreenshotRebuildHistory : ScrollableControl
     // History image names are stable identifiers; the data directory may move
     // when a new private build carries forward the user's existing records.
     internal static string NormalizeKey(string? value) => (value ?? "").Replace('\\', '/').Split('/').Last();
-    internal static string Key(SessionHistoryItem item) => NormalizeKey(item.SourceImagePath ?? item.Timestamp.ToString("O"));
+    internal static string Key(SessionHistoryItem item) => ScreenshotHistoryIdentity.Key(item);
     internal void SetRecords(IReadOnlyList<SessionHistoryItem> records)
     {
         var selectedKey = SelectedRecord is { } oldSelected ? Key(oldSelected) : "";
@@ -63,7 +63,7 @@ internal sealed class ScreenshotRebuildHistory : ScrollableControl
             cards.Clear(); cards.AddRange(next);
             selected = cards.FindIndex(x => Key(x.Item) == selectedKey); hover = -1;
         }
-        Reflow(); Invalidate();
+        Reflow(); Invalidate(); NativeRecordsChanged?.Invoke();
     }
     internal void Reflow()
     {

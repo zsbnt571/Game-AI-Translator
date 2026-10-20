@@ -164,6 +164,7 @@ public static class ConfigurationManager
         settings.LastUserPreviewWidth=Math.Clamp(settings.LastUserPreviewWidth<=0?settings.LastPreviewWidth:settings.LastUserPreviewWidth,820,10000);
         settings.LastUserPreviewHeight=Math.Clamp(settings.LastUserPreviewHeight<=0?settings.LastPreviewHeight:settings.LastUserPreviewHeight,560,10000);
         if(!Enum.IsDefined(settings.PreviewChromeMode))settings.PreviewChromeMode=PreviewChromeMode.GameCompact;
+        if(!Enum.IsDefined(settings.CaptureToolbarPlacement))settings.CaptureToolbarPlacement=CaptureToolbarPlacement.NearPointer;
         if(!Enum.IsDefined(settings.InterfaceLanguage))settings.InterfaceLanguage=ApplicationLanguage.SimplifiedChinese;
         if(!Enum.IsDefined(settings.ThemeMode))settings.ThemeMode=ApplicationThemeMode.Night;
         if(!Enum.IsDefined(settings.CloseMainWindowBehavior))settings.CloseMainWindowBehavior=CloseMainWindowBehavior.Exit;
@@ -188,6 +189,7 @@ public static class ConfigurationManager
         settings.ProviderDisplayName = string.IsNullOrWhiteSpace(settings.ProviderDisplayName)
             ? "DeepSeek (OpenAI Compatible)" : settings.ProviderDisplayName.Trim();
         settings.CustomTranslationPrompt ??= "";
+        settings.AdvancedApiParameters ??= "";
         settings.TranslationPromptVersion = TranslationPromptBuilder.Version;
         return settings;
     }

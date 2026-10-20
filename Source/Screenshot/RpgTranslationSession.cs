@@ -20,6 +20,7 @@ internal static class RpgTranslationText
         string[] CodesOf(string value)=>syntax switch
         {
             EmbeddedTextSyntax.Renpy=>RenpyTranslationText.Protect(value).Codes,
+            EmbeddedTextSyntax.Wolf=>WolfTranslationText.Protect(value).Codes,
             EmbeddedTextSyntax.Generic=>EmbeddedTranslationText.Protect(value).Codes,
             EmbeddedTextSyntax.Yukar=>EmbeddedTranslationText.Protect(value,yukar:true).Codes,
             _=>Protect(value).Codes
@@ -29,6 +30,7 @@ internal static class RpgTranslationText
         bool Variable(string code)=>syntax switch
         {
             EmbeddedTextSyntax.Renpy=>code.StartsWith('[')&&!code.StartsWith("[[",StringComparison.Ordinal),
+            EmbeddedTextSyntax.Wolf=>WolfTranslationText.Variable(code),
             EmbeddedTextSyntax.Generic or EmbeddedTextSyntax.Yukar=>Regex.IsMatch(code,@"^\{(?:[A-Za-z_][A-Za-z_0-9]*|\d+)(?:[, :][^{}]*)?\}$")
                 ||Regex.IsMatch(code,@"^%\([A-Za-z_][A-Za-z_0-9]*\)"),
             _=>Regex.IsMatch(code,@"^(?:\\|\x1b)[VN]\[\d+\]$",RegexOptions.IgnoreCase)
@@ -42,6 +44,7 @@ internal static class RpgTranslationText
         var protectedText=syntax switch
         {
             EmbeddedTextSyntax.Renpy=>RenpyTranslationText.Protect(value).Text,
+            EmbeddedTextSyntax.Wolf=>WolfTranslationText.Protect(value).Text,
             EmbeddedTextSyntax.Generic=>EmbeddedTranslationText.Protect(value).Text,
             EmbeddedTextSyntax.Yukar=>EmbeddedTranslationText.Protect(value,yukar:true).Text,
             _=>Protect(value).Text

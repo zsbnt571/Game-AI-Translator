@@ -1,0 +1,72 @@
+{
+  "version": "1.0.0-preview.1",
+  "mainAssemblySha256": "a368131bbde8d6c0a4d60c9fa819986a5c48c7185e5f720ee524919fdb0102ea",
+  "controlledChecks": [
+    {
+      "name": "Localization42-en",
+      "checks": 87
+    },
+    {
+      "name": "Localization42-ru",
+      "checks": 87
+    },
+    {
+      "name": "ModificationLanguage42-all",
+      "checks": 95
+    },
+    {
+      "name": "CatalogLanguage42-all",
+      "checks": 34
+    },
+    {
+      "name": "WolfMapLanguage42-all",
+      "checks": 39
+    },
+    {
+      "name": "ModificationSwitch41",
+      "checks": 72
+    },
+    {
+      "name": "TranslationPriority40",
+      "checks": 57
+    },
+    {
+      "name": "Terminology41",
+      "checks": 43
+    },
+    {
+      "name": "NativeStartup179",
+      "checks": 16
+    },
+    {
+      "name": "CommonBoard41",
+      "checks": 53
+    },
+    {
+      "name": "RpgSpeed40",
+      "checks": 30
+    }
+  ],
+  "controlledTotal": 613,
+  "failed": 0,
+  "dotnetRuntime": "8.0.24",
+  "gameModification": "experimental",
+  "realApiCallsInThisReleaseRegression": 0,
+  "realGameWritesInThisReleaseRegression": 0,
+  "personalDataIncluded": false,
+  "stressTest": {
+    "rows": 21116,
+    "hotSwitchSamples": 42,
+    "hotSwitchP95Milliseconds": 79.1588,
+    "hotSwitchMaximumMilliseconds": 87.4076,
+    "overlappingRequests": 60
+  },
+  "boundaries": [
+    "Controlled tests and isolated Windows controls, not universal game compatibility.",
+    "Classification timings are not physical display FPS.",
+    "No clean Windows VM, all-engine, long-play, or 100x audiovisual acceptance.",
+    "Existing licensed runtime and plugin dependencies are reused; not every plugin was freshly rebuilt.",
+    "Full fixture data, private logs, game files, API credentials and private test reports are excluded."
+  ],
+  "releaseReceipt": "Independent extraction, first launch, source commit and asset checks are in the release-level PACKAGE-VERIFICATION.json."
+}

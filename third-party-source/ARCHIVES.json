@@ -3,8 +3,15 @@
   "archives": [
     {
       "file": "BepInEx-5b766a3-source.zip",
-      "bytes": 1207906,
-      "sha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0"
+      "bytes": 786491,
+      "sha256": "4e53a4650de500b1cd9c5e85669644bd5dc5e1ee40d12a66070a308a1e9eba0e",
+      "upstreamArchiveSha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
+      "upstreamArchiveBytes": 1207906,
+      "excludedBuildReferences": [
+        "BepInEx-5b766a3b7f6c164d4798924a93f3acf4db769d06/Runtimes/Unity/BepInEx.Unity.IL2CPP/lib/UnityEngine.CoreModule.dll",
+        "BepInEx-5b766a3b7f6c164d4798924a93f3acf4db769d06/Runtimes/Unity/BepInEx.Unity.IL2CPP/lib/UnityEngine.InputLegacyModule.dll"
+      ],
+      "distributionNote": "Distribution copy excludes only two Unity engine compile-reference DLLs. All other upstream archive members, source files and license notices are preserved byte-for-byte. The upstream URL returns the original archive identified by upstreamArchiveSha256, not this distribution hash. Rebuilding the affected upstream Unity components requires the developer to provide legally obtained matching Unity reference assemblies."
     },
     {
       "file": "Disarm-8574010-source.zip",
@@ -31,5 +38,6 @@
       "bytes": 109881,
       "sha256": "7f0c963104aa08bf5fefef8ff85e7fecd8306838f5af3101487d9db4e9188d63"
     }
-  ]
+  ],
+  "distributionNote": "BepInEx is the documented two-reference-excluded distribution copy; other archives retain the earlier public baseline hashes."
 }

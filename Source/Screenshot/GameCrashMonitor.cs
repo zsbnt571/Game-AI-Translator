@@ -397,33 +397,37 @@ internal sealed class GameCrashMonitor : IDisposable
         }
         finally{if(File.Exists(temporary)){ValidateReportPath(temporary);File.Delete(temporary);}}
     }
-    internal static string Markdown(GameExitReport report)
+    internal static string Markdown(GameExitReport report,bool localized=false)
     {
-        var text=new StringBuilder().AppendLine("# 游戏退出记录").AppendLine().AppendLine(report.Summary).AppendLine()
-            .AppendLine("- 游戏："+report.GameName+"（"+report.GameExecutable+"）").AppendLine("- 引擎："+report.Engine)
-            .AppendLine("- Fusion 版本："+report.FusionVersion).AppendLine("- 启动方式："+(report.LaunchMode switch{GameLaunchMode.Ordinary=>"普通启动",GameLaunchMode.Translation=>"翻译启动",GameLaunchMode.Modification=>"修改功能启动",_=>"未确定"}))
-            .AppendLine("- 监测开始（UTC）："+report.StartedUtc.ToString("O")).AppendLine("- 记录结束（UTC）："+report.EndedUtc.ToString("O"))
-            .AppendLine("- 报告生成（UTC）："+(report.RecordedUtc==default?report.EndedUtc:report.RecordedUtc).ToString("O"))
-            .AppendLine("- 实际运行 PID："+(report.RuntimePid?.ToString()??"未确认")).AppendLine("- 退出码："+(report.ExitCodeHex??"未取得"))
-            .AppendLine("- 游戏路径标识："+report.GamePathHash).AppendLine().AppendLine("## 状态时间线").AppendLine();
-        foreach(var entry in report.Timeline)text.AppendLine("- "+entry.AtUtc.ToString("O")+" · "+entry.Event+" · 请求翻译="+entry.TranslationRequested+"，组件连接="+entry.Connected+" · "+entry.Status);
-        text.AppendLine().AppendLine("## 进程记录").AppendLine();
-        foreach(var p in report.Processes)text.AppendLine("- PID "+p.Pid+" · "+p.Executable+" · "+(p.Runtime?"实际运行进程":"启动/待确认进程")+" · "+(p.ExitObserved?"退出码 "+(p.ExitCodeHex??"未取得"):"结束监测时未确认退出"));
+        // Persisted reports retain canonical facts. UI/export rendering chooses
+        // the current interface language without rewriting those files or logs.
+        string T(string value)=>localized?UiLanguage.Text(value):value;
+        string F(FormattableString value)=>localized?UiLanguage.Format(value):value.ToString();
+        var text=new StringBuilder().AppendLine("# "+T("游戏退出记录")).AppendLine().AppendLine(T(report.Summary)).AppendLine()
+            .AppendLine("- "+F($"游戏：{report.GameName}（{report.GameExecutable}）")).AppendLine("- "+F($"引擎：{report.Engine}"))
+            .AppendLine("- "+F($"Fusion 版本：{report.FusionVersion}")).AppendLine("- "+F($"启动方式：{T(report.LaunchMode switch{GameLaunchMode.Ordinary=>"普通启动",GameLaunchMode.Translation=>"翻译启动",GameLaunchMode.Modification=>"修改功能启动",_=>"未确定"})}"))
+            .AppendLine("- "+F($"监测开始（UTC）：{report.StartedUtc:O}")).AppendLine("- "+F($"记录结束（UTC）：{report.EndedUtc:O}"))
+            .AppendLine("- "+F($"报告生成（UTC）：{(report.RecordedUtc==default?report.EndedUtc:report.RecordedUtc):O}"))
+            .AppendLine("- "+F($"实际运行 PID：{report.RuntimePid?.ToString()??T("未确认")}")).AppendLine("- "+F($"退出码：{report.ExitCodeHex??T("未取得")}"))
+            .AppendLine("- "+F($"游戏路径标识：{report.GamePathHash}")).AppendLine().AppendLine("## "+T("状态时间线")).AppendLine();
+        foreach(var entry in report.Timeline)text.AppendLine("- "+entry.AtUtc.ToString("O")+" · "+T(entry.Event)+" · "+F($"请求翻译={entry.TranslationRequested}，组件连接={entry.Connected}")+" · "+T(entry.Status));
+        text.AppendLine().AppendLine("## "+T("进程记录")).AppendLine();
+        foreach(var p in report.Processes)text.AppendLine("- PID "+p.Pid+" · "+p.Executable+" · "+T(p.Runtime?"实际运行进程":"启动/待确认进程")+" · "+(p.ExitObserved?F($"退出码 {p.ExitCodeHex??T("未取得")}"):T("结束监测时未确认退出")));
         if(report.RuntimeErrors.Length>0)
         {
-            text.AppendLine().AppendLine("## 游戏错误弹窗（关闭前已保存）").AppendLine();
+            text.AppendLine().AppendLine("## "+T("游戏错误弹窗（关闭前已保存）")).AppendLine();
             foreach(var error in report.RuntimeErrors)
             {
-                text.AppendLine("- 捕获时间（UTC）："+error.AtUtc.ToString("O")+"；PID "+error.Pid+"；"+error.Title).AppendLine();
+                text.AppendLine("- "+F($"捕获时间（UTC）：{error.AtUtc:O}；PID {error.Pid}；{error.Title}")).AppendLine();
                 int ticks=Regex.Matches(error.Text,"`+").Select(m=>m.Length).DefaultIfEmpty(0).Max();string fence=new('`',Math.Max(3,ticks+1));
                 text.AppendLine(fence).AppendLine(error.Text).AppendLine(fence).AppendLine();
             }
         }
-        text.AppendLine().AppendLine("## 日志摘要").AppendLine();
-        if(report.LogsPending)text.AppendLine("正在等待引擎完成退出日志写入。");
+        text.AppendLine().AppendLine("## "+T("日志摘要")).AppendLine();
+        if(report.LogsPending)text.AppendLine(T("正在等待引擎完成退出日志写入。"));
         else if(report.Logs is {} logs&&logs.ValueKind==JsonValueKind.Array)
         {
-            if(logs.GetArrayLength()==0)text.AppendLine("没有找到本次会话的日志摘要。");
+            if(logs.GetArrayLength()==0)text.AppendLine(T("没有找到本次会话的日志摘要。"));
             foreach(var entry in logs.EnumerateArray())
             {
                 static string Value(JsonElement item,string key)=>item.ValueKind==JsonValueKind.Object&&item.TryGetProperty(key,out var value)&&value.ValueKind==JsonValueKind.String?value.GetString()??"":"";
@@ -436,13 +440,13 @@ internal sealed class GameCrashMonitor : IDisposable
                     int ticks=Regex.Matches(body,"`+").Select(m=>m.Length).DefaultIfEmpty(0).Max();string fence=new('`',Math.Max(3,ticks+1));
                     text.AppendLine(fence).AppendLine(body.TrimEnd('\r','\n')).AppendLine(fence).AppendLine();
                 }
-                if(note.Length>0)text.AppendLine(Safe(note,600)).AppendLine();
-                if(entry.ValueKind==JsonValueKind.Object&&entry.TryGetProperty("Truncated",out var truncated)&&truncated.ValueKind==JsonValueKind.True)text.AppendLine("此摘要已截断，仅保留受限长度的内容。").AppendLine();
+                if(note.Length>0)text.AppendLine(T(Safe(note,600))).AppendLine();
+                if(entry.ValueKind==JsonValueKind.Object&&entry.TryGetProperty("Truncated",out var truncated)&&truncated.ValueKind==JsonValueKind.True)text.AppendLine(T("此摘要已截断，仅保留受限长度的内容。")).AppendLine();
             }
         }
-        else if(report.Logs is {} detail&&detail.ValueKind==JsonValueKind.Object&&detail.TryGetProperty("Note",out var note)&&note.ValueKind==JsonValueKind.String)text.AppendLine(Safe(note.GetString(),600));
-        else text.AppendLine("本记录没有引擎日志摘要。");
-        text.AppendLine().AppendLine("退出码、连接中断或日志片段单独不能证明故障由翻译组件导致。监测停止不表示游戏已关闭。");
+        else if(report.Logs is {} detail&&detail.ValueKind==JsonValueKind.Object&&detail.TryGetProperty("Note",out var note)&&note.ValueKind==JsonValueKind.String)text.AppendLine(T(Safe(note.GetString(),600)));
+        else text.AppendLine(T("本记录没有引擎日志摘要。"));
+        text.AppendLine().AppendLine(T("退出码、连接中断或日志片段单独不能证明故障由翻译组件导致。监测停止不表示游戏已关闭。"));
         return text.ToString();
     }
     private static string Key(string path)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToUpperInvariant())));

@@ -13,13 +13,23 @@ internal static class WolfGameAdapter
     private sealed record Ledger(int Version,string ExeHash,string DataHash,Dictionary<string,string> Files);
     private static string InGame(string exe,string path)=>GameMakerGameAdapter.InGame(exe,path);
     private static string Hash(string file){using var s=File.OpenRead(file);return Convert.ToHexString(SHA256.HashData(s));}
+    private static string GameHash(string exe)=>Convert.ToHexString(SHA256.HashData(WolfResources.GameImage(exe)));
     private static int[] Pattern(string name){
         using var stream=typeof(WolfGameAdapter).Assembly.GetManifestResourceStream("Fusion.Wolf"+name+".txt")!;
         using var reader=new StreamReader(stream);return reader.ReadToEnd().Split((char[]?)null,StringSplitOptions.RemoveEmptyEntries).Select(x=>x=="??"?-1:Convert.ToInt32(x,16)).ToArray();
     }
     internal static readonly Lazy<int[]> LayoutPattern=new(()=>Pattern("LayoutPattern"));
     private static readonly Lazy<int[]> LegacyLayoutPattern=new(()=>Pattern("LegacyLayoutPattern")),LegacyConvertPattern=new(()=>Pattern("LegacyConvertPattern"));
-    internal static int FindLayoutRva(string exe)=>FindPatternRva(exe,LayoutPattern.Value);
+    private static readonly Lazy<int[]> Layout31Pattern=new(()=>Pattern("Layout31Pattern"));
+    internal static int FindLayoutRva(string exe)
+    {
+        int current=FindPatternRva(exe,LayoutPattern.Value);if(current!=0)return current;
+        // Separate 3.100 candidate ABI: the 24-byte payload at this+24 is
+        // checked against compare/c_str/length callees. Startup transport is
+        // tested separately; this is not a claim of complete scene coverage.
+        var version=FileVersionInfo.GetVersionInfo(exe);
+        return version.FileMajorPart==3&&version.FileMinorPart==100?FindPatternRva(exe,Layout31Pattern.Value):0;
+    }
     internal static int FindLegacyLayoutRva(string exe)=>FindPatternRva(exe,LegacyLayoutPattern.Value);
     private static int FindPatternRva(string exe,int[] pattern)
     {
@@ -46,17 +56,16 @@ internal static class WolfGameAdapter
     {
         try
         {
-            string root=Path.GetDirectoryName(Path.GetFullPath(exe))!,data=InGame(exe,"Data");
-            // Never circumvent WOLF's encrypted-package DLL policy. This
-            // display adapter accepts unpacked projects with verified renderer ABIs only.
-            if(Directory.EnumerateFiles(root,"*.wolf").Any()||Directory.EnumerateFiles(data,"*.wolf").Any())return false;
             var version=FileVersionInfo.GetVersionInfo(exe);if(version.FileMajorPart is not (2 or 3))return false;
-            using var game=File.OpenRead(InGame(exe,"Data/BasicData/Game.dat"));Span<byte> magic=stackalloc byte[10];game.ReadExactly(magic);
+            // A typed read-only archive reader establishes the same Game.dat
+            // format contract as a loose project. Renderer signatures remain
+            // mandatory; no address or native loader is inferred from a seal.
+            byte[] image=WolfResources.GameImage(exe);if(image.Length<10)return false;var magic=image.AsSpan(0,10);
             if(!magic[..9].SequenceEqual(new byte[]{0,0x57,0,0,0x4f,0x4c,0,0x46,0x4d}))return false;
             if(version.FileMajorPart==3&&magic[9]==0x55)return FindLayoutRva(exe)!=0;
             return version.FileMajorPart==2&&magic[9]==0&&FindLegacyLayoutRva(exe)!=0&&FindPatternRva(exe,LegacyConvertPattern.Value)!=0;
         }
-        catch(Exception e)when(e is IOException or UnauthorizedAccessException or BadImageFormatException or ArgumentException){return false;}
+        catch(Exception e)when(e is IOException or InvalidDataException or UnauthorizedAccessException or BadImageFormatException or ArgumentException or NotSupportedException){return false;}
     }
     private static void Stopped(string exe)
     {
@@ -75,23 +84,24 @@ internal static class WolfGameAdapter
     }
     internal static bool IsInstalled(string exe)
     {
-        try{var r=ReadLedger(exe);return Hash(exe)==r.ExeHash&&Hash(InGame(exe,"Data/BasicData/Game.dat"))==r.DataHash&&r.Files.All(p=>Hash(InGame(exe,Folder+"/"+p.Key))==p.Value&&Hash(Payload(p.Key))==p.Value);}
-        catch(Exception e)when(e is IOException or UnauthorizedAccessException or JsonException or ArgumentException){return false;}
+        try{var r=ReadLedger(exe);return Hash(exe)==r.ExeHash&&GameHash(exe)==r.DataHash&&r.Files.All(p=>Hash(InGame(exe,Folder+"/"+p.Key))==p.Value&&Hash(Payload(p.Key))==p.Value);}
+        catch(Exception e)when(e is IOException or InvalidDataException or UnauthorizedAccessException or JsonException or ArgumentException or NotSupportedException){return false;}
     }
-    internal static string InspectionStamp(string exe)=>exe+"|"+string.Join("|",new[]{"Data/BasicData/Game.dat",Folder+"/install.json",Folder+"/FusionWolf.dll"}.Select(n=>{var f=new FileInfo(InGame(exe,n));return f.Exists?f.Length+":"+f.LastWriteTimeUtc.Ticks:"missing";}));
+    internal static string InspectionStamp(string exe)=>exe+"|"+WolfResources.Stamp(exe)+"|"+string.Join("|",new[]{Folder+"/install.json",Folder+"/FusionWolf.dll"}.Select(n=>{var f=new FileInfo(InGame(exe,n));return f.Exists?f.Length+":"+f.LastWriteTimeUtc.Ticks:"missing";}));
     internal static void Install(string exe)
     {
         Stopped(exe);if(IsInstalled(exe))return;
         if(!Candidate(exe))throw new EmbeddedCompatibilityException("此 WOLF 版本尚未找到已验证的文字入口，未修改或启动游戏。");
+        GameFontCoverage.RequireChinesePayload(Payload("bridge-font.otf"));
         string folder=InGame(exe,Folder);string? priorHash=null;
         if(Directory.Exists(folder)){ValidateOwned(exe,Folder,ReadLedger(exe));priorHash=Hash(InGame(exe,Folder+"/install.json"));}
         string stage=InGame(exe,Folder+"-stage-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(stage);
         try
         {
-            string exeHash=Hash(exe),dataHash=Hash(InGame(exe,"Data/BasicData/Game.dat"));
+            string exeHash=Hash(exe),dataHash=GameHash(exe);
             foreach(string n in Owned)File.Copy(Payload(n),Path.Combine(stage,n));
             var files=Owned.ToDictionary(n=>n,n=>Hash(Path.Combine(stage,n)),StringComparer.Ordinal);
-            if(Hash(exe)!=exeHash||Hash(InGame(exe,"Data/BasicData/Game.dat"))!=dataHash)throw new IOException("准备期间游戏文件发生变化，未安装。");
+            if(Hash(exe)!=exeHash||GameHash(exe)!=dataHash)throw new IOException("准备期间游戏文件发生变化，未安装。");
             File.WriteAllText(Path.Combine(stage,"install.json"),JsonSerializer.Serialize(new Ledger(133,exeHash,dataHash,files)),new UTF8Encoding(false));
             Stopped(exe);
             if(priorHash is null){if(Directory.Exists(folder))throw new IOException("翻译目录在准备期间出现，未覆盖。");Directory.Move(stage,folder);}
@@ -119,12 +129,29 @@ internal static class WolfGameAdapter
         foreach(string n in Owned)File.Delete(InGame(exe,Folder+"/"+n));File.Delete(InGame(exe,Folder+"/install.json"));
         if(!Directory.EnumerateFileSystemEntries(InGame(exe,Folder)).Any())Directory.Delete(InGame(exe,Folder));
     }
-    internal static RpgTextCatalogResult ReadCatalog(string exe,CancellationToken token)
+    internal static ExperimentalRpgCatalog.Result DisplayBranches(ExperimentalRpgCatalog.Result r)=>r with{Entries=r.Entries.SelectMany(e=>WolfLanguageBranches.Sources(e.Text).Distinct(StringComparer.Ordinal).Select(text=>e with{Text=text})).ToArray()};
+    internal static RpgTextCatalogResult ReadCatalog(string exe,CancellationToken token,bool collect=false)
     {
-        var r=ExperimentalRpgCatalog.Read(exe,token);
-        var issues=r.Files.Where(f=>f.Status!="读取完成").Select(f=>new CatalogReadIssue(f.Status=="格式未支持"?CatalogIssueKind.Unsupported:f.Status=="达到限制"?CatalogIssueKind.Limited:CatalogIssueKind.Failed,f.File,f.Detail)).ToList();
-        issues.Insert(0,new(CatalogIssueKind.Incomplete,"WOLF","已读取事件文本；动态文字在游戏中补译，混合控制码段落暂保留原显示。"));
-        var unlocalized=r.Entries.Where(e=>UnityTextResourceLanguageSelection.ResourceLocale(e.File) is null&&System.Text.RegularExpressions.Regex.IsMatch(e.File.Replace('\\','/'),@"^Data/(?:MapData/[^/]+\.mps|BasicData/CommonEvent\.dat)$",System.Text.RegularExpressions.RegexOptions.IgnoreCase)).Select(e=>e.Text).ToHashSet(StringComparer.Ordinal);
-        return new(r.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(f=>f.Status=="读取完成"),[]){UnlocalizedSourceTexts=unlocalized,ReadCompleted=false,Report=new(false,issues.ToArray())};
+        var r=collect?WolfEngineCollection.Read(exe,token,collect:true):ExperimentalRpgCatalog.Read(exe,token);
+        // Queue the alternatives actually displayed by the game, instead of a
+        // bilingual storage value which can never match a visible dialogue.
+        r=DisplayBranches(r);
+        var issues=r.Files.Where(f=>f.Status is not ("读取完成" or "未发现可提取字段")).Select(f=>new CatalogReadIssue(f.Status=="格式未支持"?CatalogIssueKind.Unsupported:f.Status=="达到限制"?CatalogIssueKind.Limited:CatalogIssueKind.Failed,f.File,f.Detail)).ToList();
+        issues.Insert(0,new(CatalogIssueKind.Incomplete,"WOLF","已读取支持的事件、游戏显示设置和配对数据库普通文本；已知格式及变量模板会优先复用预译，未知或有歧义的动态文字在游戏中补译。"));
+        string Logical(string file)
+        {
+            file=file.Replace('\\','/');int split=file.IndexOf('!');if(split<0)return file;
+            string archive=file[..split],name=Path.GetFileNameWithoutExtension(archive);
+            return (archive.Equals("Data.wolf",StringComparison.OrdinalIgnoreCase)?"Data/":"Data/"+name+"/")+file[(split+1)..];
+        }
+        var unlocalized=r.Entries.Where(e=>UnityTextResourceLanguageSelection.ResourceLocale(Logical(e.File)) is null&&
+            (e.File is "engine-initialization" or "engine-display"||System.Text.RegularExpressions.Regex.IsMatch(Logical(e.File),@"^Data/(?:MapData/[^/]+\.mps|BasicData/[^/]+\.dat)$",System.Text.RegularExpressions.RegexOptions.IgnoreCase)))
+            .Select(e=>e.Text).ToHashSet(StringComparer.Ordinal);
+        var priority=r.Entries.Where(e=>e.Location.Contains(":102/",StringComparison.Ordinal)||e.Location.Contains("/display-db",StringComparison.Ordinal)||
+            e.Text.Length<=48&&!e.Text.Any(c=>c is '\n' or '\r' or '。' or '！' or '？' or '!' or '?' or '.')&&
+            e.Text.Count(c=>c==' ')<=5).Select(e=>e.Text).ToHashSet(StringComparer.Ordinal);
+        return new(r.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(f=>f.Status is "读取完成" or "未发现可提取字段"),[]){
+            Origins=r.Entries.Select(e=>ExperimentalRpgCatalog.Origin(e,"wolf-display-command")).ToArray(),
+            UnlocalizedSourceTexts=unlocalized,PrioritySourceTexts=priority,ReadCompleted=false,Report=new(false,issues.ToArray())};
     }
 }

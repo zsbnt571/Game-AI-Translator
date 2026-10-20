@@ -1,6 +1,6 @@
 ﻿namespace ScreenshotTranslationUiTester;
 
-internal enum EmbeddedTextSyntax { Rpg, Renpy, Generic, Yukar }
+internal enum EmbeddedTextSyntax { Rpg, Renpy, Generic, Yukar, Wolf }
 internal enum TranslationCacheScope { Native, Screen }
 
 // The scheduler owns translation, priority and cache. Engine adapters only supply
@@ -17,6 +17,7 @@ internal sealed record EmbeddedTranslationOptions(
     internal TranslationCacheScope CacheScope { get; init; } = TranslationCacheScope.Native;
     internal bool DisplayBoundaryWhitespace { get; init; }
     internal bool RemoteActiveSources { get; init; }
+    internal Func<CancellationToken,Task<RpgTextCatalogResult>>? SupplementalDesktopCatalog { get; init; }
     internal static EmbeddedTranslationOptions ForLegacy(string exe)
         => RenpyGameAdapter.Detect(exe) is not null
             ? new(EmbeddedTextSyntax.Renpy,true,StartupCache:true)

@@ -1,0 +1,129 @@
+namespace ScreenshotTranslationUiTester;
+
+internal sealed partial class NativeGameLibraryGrid
+{
+    private Point scrollOffset;
+    private int scrollMaximum,scrollGrab;
+    private bool scrollDragging,scrollHover;
+    private (int Index,double Fraction)? resizeAnchor;
+    public bool HasScrollBar=>scrollMaximum>0;
+    public Point ScrollOffset=>scrollOffset;
+    public int ScrollMaximum=>scrollMaximum;
+    public void ScrollToStart()=>SetScrollValue(0);
+    internal void RestoreScroll(Point value)
+    {
+        SetScrollValue(ShelfMode?value.X:value.Y);
+        // The workspace commits tiles before measuring its new header. Keep the
+        // absolute page target until that finite layout can clamp it correctly.
+        if(pageScrollEnabled)pendingPageRestore=value.Y;
+    }
+    private int ScrollValue=>ShelfMode?scrollOffset.X:scrollOffset.Y;
+    private Rectangle ContentViewport=>new(0,0,Math.Max(0,ViewportSize.Width-(!ShelfMode&&HasScrollBar?S(12):0)),Math.Max(0,ViewportSize.Height-(ShelfMode&&HasScrollBar?S(12):0)));
+    private Rectangle ScrollTrack=>!HasScrollBar?Rectangle.Empty:ShelfMode?
+        new(S(4),ViewportSize.Height-S(12),Math.Max(0,ViewportSize.Width-S(8)),S(12)):
+        new(ViewportSize.Width-S(12),S(4),S(12),Math.Max(0,ViewportSize.Height-S(8)));
+    private Rectangle ScrollThumb
+    {
+        get
+        {
+            var track=ScrollTrack;if(track.IsEmpty)return Rectangle.Empty;
+            int length=ShelfMode?track.Width:track.Height,viewport=ShelfMode?ContentViewport.Width:ContentViewport.Height;
+            int thumb=Math.Clamp((int)((long)length*viewport/Math.Max(1,viewport+scrollMaximum)),Math.Min(S(32),length),length);
+            int start=(int)((long)(length-thumb)*ScrollValue/Math.Max(1,scrollMaximum));
+            return ShelfMode?new(track.X+start,track.Y,thumb,track.Height):new(track.X,track.Y+start,track.Width,thumb);
+        }
+    }
+    private void UpdateScrollRange()
+    {
+        int total=ShelfMode?ShelfContentWidth:pageScrollEnabled?PageExtentHeight:PageContentHeight;
+        scrollMaximum=tiles.Length==0&&!pageScrollEnabled?0:Math.Max(0,total-(ShelfMode?ViewportSize.Width:ViewportSize.Height));
+        int value=Math.Clamp(ScrollValue,0,scrollMaximum);scrollOffset=ShelfMode?new(value,0):new(0,value);
+    }
+    private void SetScrollValue(int value, bool animated = false)
+    {
+        resizeAnchor=null;pageHeaderResizeAnchor=null;pendingPageRestore=null;
+        if (!animated) wpfCanvas?.StopWheelMotion();
+        value=Math.Clamp(value,0,scrollMaximum);var next=ShelfMode?new Point(value,0):new Point(0,value);
+        if(next==scrollOffset)return;scrollOffset=next;hover=-1;Invalidate();NotifyPageScroll();
+    }
+    private void CaptureResizeAnchor()
+    {
+        if(resizeAnchor is not null||pageHeaderResizeAnchor is not null)return;
+        if(pageScrollEnabled&&ScrollValue<pageLeadingHeight){pageHeaderResizeAnchor=ScrollValue*96d/DeviceDpi;return;}
+        if(tiles.Length==0)return;
+        int stride=Math.Max(1,(ShelfMode?Cell.Width:Cell.Height)+S(12));
+        int relative=Math.Max(0,ScrollValue-(pageScrollEnabled?pageLeadingHeight:0));
+        int row=relative/stride;
+        int index=ShelfMode?row:row*Columns;
+        resizeAnchor=(Math.Min(tiles.Length-1,index),(relative-row*stride)/(double)stride);
+    }
+    private void RestoreResizeAnchor()
+    {
+        if(pageHeaderResizeAnchor is { } headerAnchor)
+        {scrollOffset=new(0,Math.Clamp((int)Math.Round(headerAnchor*DeviceDpi/96d),0,scrollMaximum));NotifyPageScroll();return;}
+        if(resizeAnchor is not { } anchor||tiles.Length==0)return;
+        int row=ShelfMode?anchor.Index:anchor.Index/Columns;
+        int stride=Math.Max(1,(ShelfMode?Cell.Width:Cell.Height)+S(12));
+        int value=Math.Clamp((int)Math.Round((row+anchor.Fraction)*stride)+(pageScrollEnabled?pageLeadingHeight:0),0,scrollMaximum);
+        // Keep the original game across every intermediate resize. Recapturing
+        // the new first column would drift backwards as the column count flips.
+        scrollOffset=ShelfMode?new(value,0):new(0,value);NotifyPageScroll();
+    }
+
+    private bool BeginScroll(MouseEventArgs e)
+    {
+        if(!ScrollTrack.Contains(e.Location))return false;
+        if(e.Button!=MouseButtons.Left)return true;
+        var thumb=ScrollThumb;int position=ShelfMode?e.X:e.Y;
+        if(thumb.Contains(e.Location))scrollGrab=position-(ShelfMode?thumb.X:thumb.Y);
+        else
+        {
+            scrollGrab=(ShelfMode?thumb.Width:thumb.Height)/2;
+            SetScrollFromPointer(position);thumb=ScrollThumb;scrollGrab=position-(ShelfMode?thumb.X:thumb.Y);
+        }
+        scrollDragging=true;Capture=true;Cursor=Cursors.Default;Invalidate();return true;
+    }
+    private void SetScrollFromPointer(int position)
+    {
+        var track=ScrollTrack;var thumb=ScrollThumb;int start=ShelfMode?track.X:track.Y;
+        int travel=ShelfMode?track.Width-thumb.Width:track.Height-thumb.Height;
+        SetScrollValue((int)Math.Clamp((long)(position-start-scrollGrab)*scrollMaximum/Math.Max(1,travel),0,scrollMaximum));
+    }
+    private bool MoveScroll(Point point)
+    {
+        bool hot=ScrollTrack.Contains(point);if(scrollHover!=hot){scrollHover=hot;Invalidate();}
+        if(scrollDragging){SetScrollFromPointer(ShelfMode?point.X:point.Y);return true;}
+        if(hot){hover=-1;Cursor=Cursors.Default;return true;}return false;
+    }
+    private bool EndScroll()
+    {
+        if(!scrollDragging)return false;scrollDragging=false;Capture=false;Invalidate();return true;
+    }
+    private void EnsureTileVisible(int index)
+    {
+        var tile=BoundsFor(index);var view=ContentViewport;
+        if(ShelfMode)
+        {if(tile.Left<view.Left)SetScrollValue(ScrollValue+tile.Left-view.Left-S(2));else if(tile.Right>view.Right)SetScrollValue(ScrollValue+tile.Right-view.Right+S(2));}
+        else
+        {
+            int margin=Math.Max(0,Math.Min(S(3),(view.Height-tile.Height)/2));
+            if(tile.Top<view.Top)SetScrollValue(ScrollValue+tile.Top-view.Top-margin);
+            else if(tile.Bottom>view.Bottom)SetScrollValue(ScrollValue+tile.Bottom-view.Bottom+margin);
+        }
+    }
+    private void OnMouseCaptureChanged(EventArgs e){if(!Capture){scrollDragging=false;selecting=false;boxScrollTimer?.Stop();Invalidate();}}
+    private void OnMouseWheel(MouseEventArgs e)
+    {
+        if(e is HandledMouseEventArgs h)h.Handled=true;if(!HasScrollBar)return;
+        SetScrollValue(WheelTarget(e.Delta, ScrollValue));
+        if(e is HandledMouseEventArgs handled)handled.Handled=true;
+    }
+    private int WheelTarget(int delta, int current)
+    {
+        int lines=SystemInformation.MouseWheelScrollLines;
+        if(lines==0)return current;
+        int step=lines<0?(ShelfMode?ContentViewport.Width:ContentViewport.Height):Math.Max(S(24),fontPixelHeight)*lines;
+        return Math.Clamp(current-(int)Math.Round((double)delta/120*step),0,scrollMaximum);
+    }
+
+}

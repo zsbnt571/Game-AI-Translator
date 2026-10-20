@@ -17,6 +17,14 @@ internal static class UiTheme
 
     internal static Color Sidebar=>Current.Main.GetBrightness()<.5f?Current.Secondary:Current.Control;
 
+    internal static void Apply(DesktopApplicationController root, ApiSettings settings)
+    {
+        if (root.HasLegacyWindow) { Apply(root.LegacyWindow, settings); return; }
+        Current = Resolve(settings);
+        root.BackColor = Current.Main;
+        root.ForeColor = Current.Text;
+    }
+
     internal static void Apply(Control root, ApiSettings settings,bool dataSurface=false)
     {
         using var timing=UiPerformanceTrace.Measure("theme-apply");

@@ -3,7 +3,7 @@ using System.Net.Http;
 
 namespace ScreenshotTranslationUiTester;
 
-internal sealed class ArtworkCropPreview:Control
+internal sealed partial class ArtworkCropPreview:Control
 {
     private Bitmap? image;
     internal double Aspect {get;set;}=16d/9;
@@ -164,11 +164,12 @@ internal sealed class GameArtworkDialog:Form
 public sealed partial class MainForm
 {
     private readonly HashSet<string> _artworkAttempted=new(StringComparer.OrdinalIgnoreCase);
-    private async Task EditGameArtworkAsync()
+    private async Task EditGameArtworkAsync(bool capture=false)
     {
         if(_selectedGame is not { } game)return;
         try{await _rememberSelectedTask;var store=await RecentStore();if(IsDisposed||store.Find(game.ExePath)is not { } record)return;
-            using var dialog=new GameArtworkDialog(store,record,_appliedDesktopSettings);dialog.ShowDialog(this);
+            if(WpfWorkspace.Enabled){using var dialog=new NativeGameArtworkDialog(store,record,autoSearch:!capture,captureOnOpen:capture);dialog.ShowDialog(this);}
+            else{using var dialog=new GameArtworkDialog(store,record,_appliedDesktopSettings);dialog.ShowDialog(this);}
             if(!IsDisposed){if(SameGame(game.ExePath,_selectedGame?.ExePath))ReplaceGameIcon(store.ReadImage(record,false));ScheduleLibraryRefresh();}}
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
     }
@@ -192,7 +193,7 @@ public sealed partial class MainForm
                     foreach(bool isCover in new[]{true,false})
                     {
                         if(isCover?!cover:!icon)continue;var current=store.Find(path);if(current is null)continue;
-                        try{using var image=await service.GetImageAsync(exact[0],isCover,isCover&&_libraryPreferences.Portrait,_desktopLifetime.Token);store.SaveImage(current,image,isCover,null,_desktopLifetime.Token,()=>((isCover?current.CoverPreference:current.IconPreference)??(isCover?_libraryPreferences.CoverSource:_libraryPreferences.IconSource))==ArtworkSource.Online,origin:"online");}
+                        try{using var image=await service.GetImageAsync(exact[0],isCover,isCover&&_libraryPreferences.Portrait,_desktopLifetime.Token);store.SaveImage(current,image,isCover,null,_desktopLifetime.Token,()=>((isCover?current.CoverPreference:current.IconPreference)??(isCover?_libraryPreferences.CoverSource:_libraryPreferences.IconSource))==ArtworkSource.Online,origin:"online",sourceUrl:exact[0].SourcePage.AbsoluteUri);}
                         catch(HttpRequestException){} // Missing assets retain the previous local image.
                     }
                 }

@@ -17,7 +17,7 @@ public sealed partial class MainForm
     {
         _renpyDataBoolean.CheckedChanged+=async(_,_)=>
         {
-            if(!_renpyLoading&&!_renpyDataBusy)await WriteRenpyCapturedAsync(false,_renpyEditingRow,_renpyDataBoolean.Checked,"",_renpyEditingConnection);
+            if(!_renpyLoading&&!_renpyDataBusy)await WriteRenpyCapturedAsync(false,_renpyEditingRow,RenpyBoolean,"",_renpyEditingConnection);
         };
         _renpyDataValue.KeyDown+=async(_,e)=>
         {
@@ -56,10 +56,12 @@ public sealed partial class MainForm
     }
     private void UpdateRenpySortPresentation()
     {
-        var grid=(WorkspaceDataGrid)_renpyDataGrid;grid.ActiveSortColumn=_renpySortColumn;grid.SortDescending=_renpySortDescending;
+        
         string valueOrder=new[]{"开启优先","关闭优先","暂无记录优先"}[_renpyValueOrder];
-        _renpyDataSortStatus.Text=_renpySortColumn==2?"当前值 · "+valueOrder:(_renpySortColumn==0?"中文名":_renpySortColumn==1?"原文 / 路径":"生效范围")+(_renpySortDescending?" · 降序":" · 自然顺序");
-        _renpyDataSortStatus.AccessibleName="当前排序："+_renpyDataSortStatus.Text;
+        RenpySortStatus=_renpySortColumn==2?"当前值 · "+valueOrder:(_renpySortColumn==0?"译名":_renpySortColumn==1?"原文 / 路径":"生效范围")+(_renpySortDescending?" · 降序":" · 自然顺序");
+        if(WpfWorkspace.Enabled){NativeRenpyChanged?.Invoke();return;}
+        _renpyDataSortStatus.AccessibleName="当前排序："+RenpySortStatus;
+        var grid=(WorkspaceDataGrid)_renpyDataGrid;grid.ActiveSortColumn=_renpySortColumn;grid.SortDescending=_renpySortDescending;
         foreach(DataGridViewColumn c in grid.Columns){c.HeaderCell.SortGlyphDirection=SortOrder.None;c.HeaderCell.ToolTipText=c.Index==2?"点击依次切换：开启优先、关闭优先、暂无记录优先；数值按升序、降序、升序排列。":"点击切换升序或降序；数字按自然顺序排列。";}
         grid.Invalidate();
     }
@@ -70,9 +72,9 @@ public sealed partial class MainForm
     private Task CommitRenpyNumberAsync()
     {
         if(_renpyLoading||_renpyDataBusy||_renpyEditingRow is not {} row||row.GetProperty("kind").GetString()=="bool")return Task.CompletedTask;
-        return WriteRenpyCapturedAsync(false,row,false,_renpyDataValue.Text,_renpyEditingConnection);
+        return WriteRenpyCapturedAsync(false,row,false,RenpyInput,_renpyEditingConnection);
     }
-    private JsonElement[] SelectedRenpyRows()=>_renpyDataGrid.SelectedRows.Cast<DataGridViewRow>().Where(r=>r.Tag is JsonElement).OrderBy(r=>r.Index).Select(r=>(JsonElement)r.Tag!).ToArray();
+    private JsonElement[] SelectedRenpyRows()=>WpfWorkspace.Enabled?NativeRenpy.Selected.OrderBy(row=>Array.IndexOf(NativeRenpy.Rows,row)).Select(row=>row.Source).ToArray():_renpyDataGrid.SelectedRows.Cast<DataGridViewRow>().Where(r=>r.Tag is JsonElement).OrderBy(r=>r.Index).Select(r=>(JsonElement)r.Tag!).ToArray();
 
     internal static int NaturalRenpyCompare(string left,string right)
     {
@@ -110,7 +112,7 @@ public sealed partial class MainForm
     {
         if(_renpyDataBusy||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection||!ReferenceEquals(connection,_renpyDataSnapshotConnection))return;
         var rows=SelectedRenpyRows().Where(r=>r.GetProperty("kind").GetString()=="bool"&&r.GetProperty("value").ValueKind!=(value?JsonValueKind.True:JsonValueKind.False)).ToArray();
-        if(rows.Length==0){_renpyDataHint.Text="请选择需要更改的开关项。数值项不会被批量开启或关闭。";return;}
+        if(rows.Length==0){RenpyHint="请选择需要更改的开关项。数值项不会被批量开启或关闭。";return;}
         var changes=new JsonArray();foreach(var row in rows)changes.Add(new JsonObject{["entry"]=row.GetProperty("id").GetString(),["value"]=value});
         _renpyDataBusy=true;RenderRenpyModificationState();
         try
@@ -122,12 +124,13 @@ public sealed partial class MainForm
                 await Task.Run(()=>BackupRenpySaveLocations(game.ExePath,savedir,backup));_renpyDataBackups[connection]=backup;
             }
             if(!IsCurrentRenpyConnection(game.ExePath,connection))return;
+            _renpySnapshotsCache.Invalidate(connection);
             await connection.RequestAsync(new(){["op"]="dataSetMany",["changes"]=changes});
             if(!IsCurrentRenpyConnection(game.ExePath,connection))return;
             await LoadRenpySnapshotAsync(game.ExePath,connection);
-            _renpyDataHint.Text=$"已{(value?"开启":"关闭")} {rows.Length} 项，可一次撤销本批修改。画廊请重新打开查看。";
+            RenpyHint=$"已{(value?"开启":"关闭")} {rows.Length} 项，可一次撤销本批修改。画廊请重新打开查看。";
         }
-        catch(Exception ex){if(IsCurrentRenpyConnection(game.ExePath,connection))_renpyDataHint.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
+        catch(Exception ex){if(IsCurrentRenpyConnection(game.ExePath,connection))RenpyHint=SafeDiagnosticOutput.ExceptionSummary(ex);}
         finally{_renpyDataBusy=false;RenderRenpyModificationState();}
     }
 }

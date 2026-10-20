@@ -15,6 +15,7 @@ internal static class GameWindowCover
     internal static Bitmap Thumbnail(Image image,int width,int height)
     {
         var scale=Math.Min(1d,Math.Min((double)width/image.Width,(double)height/image.Height));
+        if(scale==1)return new Bitmap(image);
         var result=new Bitmap(Math.Max(1,(int)(image.Width*scale)),Math.Max(1,(int)(image.Height*scale)));
         using var g=Graphics.FromImage(result);g.InterpolationMode=System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
         g.DrawImage(image,new Rectangle(Point.Empty,result.Size));return result;
@@ -58,7 +59,7 @@ internal static class GameWindowCover
                     if(automatic&&settlingWindow!=found.Target.Window)
                     {
                         settlingWindow=found.Target.Window;
-                        await Task.Delay(2500,deadline.Token);
+                        await Task.Delay(8000,deadline.Token);
                         if(!GameLibraryWindowIdentity.Matches(found.Target))continue;
                     }
                     // Up to four worker processes, each checks up to eight frames in its existing session.
@@ -119,7 +120,7 @@ internal static class GameWindowCover
                 if(ocrFrame)return new(new Bitmap(image),"已取得游戏窗口画面",diagnostic,target,reply.CapturedUtc is {} sampled&&sampled<=DateTime.UtcNow?sampled:requestedUtc);
                 var quality=CoverQuality.Analyze(image);
                 if(!quality.Usable)return new(null,"尚未取得有效画面",diagnostic+" parent-rejected "+quality.Diagnostic);
-                return new(new Bitmap(image),"已取得有效窗口帧",diagnostic,target);
+                return new(new Bitmap(image),"已取得有效窗口帧",diagnostic,target,reply.CapturedUtc is {} captured&&captured>=requestedUtc&&captured<=DateTime.UtcNow?captured:requestedUtc);
             }catch(Exception ex)when(ex is not OperationCanceledException){return new(null,"封面图像解码失败，可重试",diagnostic+" final=decode-failed");}
         }
         catch(OperationCanceledException)when(!token.IsCancellationRequested){return new(null,"窗口捕获超时，请稍后更新","backend=WGC code=worker-timeout");}

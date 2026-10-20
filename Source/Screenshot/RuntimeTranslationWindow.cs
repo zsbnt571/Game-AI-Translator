@@ -42,9 +42,16 @@ internal sealed class RuntimeTranslationWindow : Form
 public sealed partial class MainForm
 {
     private RuntimeTranslationWindow? _runtimeTranslationWindow;
+    private NativeRuntimeTranslationWindow? _nativeRuntimeTranslationWindow;
     private void OpenRuntimeTranslationWindow()
     {
         if(_selectedGame is not {} game||SelectedTranslationSession()?.Translation is not {Enabled:true} session)return;
+        if(WpfWorkspace.Enabled)
+        {
+            if(_nativeRuntimeTranslationWindow is {IsDisposed:false} existing){if(ReferenceEquals(existing.Session,session)){existing.Activate();return;}existing.Close();}
+            var native=new NativeRuntimeTranslationWindow(game.Name,session);_nativeRuntimeTranslationWindow=native;
+            native.Closed+=(_,_)=>{if(ReferenceEquals(_nativeRuntimeTranslationWindow,native))_nativeRuntimeTranslationWindow=null;};native.Show(this);return;
+        }
         if(_runtimeTranslationWindow is {IsDisposed:false} previous)
         {if(ReferenceEquals(previous.Session,session)){previous.Activate();return;}previous.Close();}
         var window=new RuntimeTranslationWindow(game.Name,session,UiSettings);_runtimeTranslationWindow=window;

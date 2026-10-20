@@ -1,10 +1,10 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 
 namespace ScreenshotTranslationUiTester;
 
-public sealed class CaptureOverlay : Form
+public sealed partial class CaptureOverlay : DesktopForm
 {
     private const int RepaintIntervalMs = 8;
     private enum PointerOperation { None, Create, Move, Resize }
@@ -14,8 +14,11 @@ public sealed class CaptureOverlay : Form
     private Bitmap? _staticFreezeLayer;
     private bool _initialHoverReadyBeforeVisible;
     private int _startupDeferredHoverInvalidateCount;
-    private readonly Panel _toolbar = new();
+    private NativeCaptureToolbar? _nativeToolbar;
+    private NativeCaptureToolbar _toolbar => _nativeToolbar ??= new(this);
     private Size _toolbarPreferredSize;
+    private Point? _toolbarAnchor;
+    internal CaptureToolbarPlacement ToolbarPlacement { get; set; } = CaptureToolbarPlacement.NearPointer;
     private readonly SolidBrush _shadeBrush;
     private readonly SolidBrush _promptBackgroundBrush = new(Color.FromArgb(210, 20, 23, 31));
     private readonly SolidBrush _sizeBackgroundBrush = new(Color.FromArgb(220, 20, 23, 31));
@@ -102,6 +105,7 @@ public sealed class CaptureOverlay : Form
     private CaptureOverlay(Rectangle virtualBounds, Bitmap? testFrozenScreen, long captureRequestedAt,
         bool noActivate, bool noShade, bool captureImmediately, bool reusableLifecycle)
     {
+        Text = UiLanguage.Text("截图选区");
         _showWithoutActivation = noActivate;
         _reusableLifecycle = reusableLifecycle;
         _shadeBrush = new SolidBrush(noShade ? Color.Transparent : Color.FromArgb(115, 0, 0, 0));
@@ -247,6 +251,7 @@ public sealed class CaptureOverlay : Form
 
     private void ResetReusableState()
     {
+        _toolbarAnchor = null;
         Result = null;
         DialogResult = DialogResult.None;
         _cancelled = false;
@@ -292,6 +297,17 @@ public sealed class CaptureOverlay : Form
     }
 
     protected override bool ShowWithoutActivation => _showWithoutActivation;
+    internal override bool RetainNativeDialogWindow => _reusableLifecycle;
+
+    protected override void OnFormClosing(FormClosingEventArgs e)
+    {
+        base.OnFormClosing(e);
+        if (!_reusableLifecycle || !UsesNativePresentation || Disposing) return;
+        // Native close/Alt+F4 is another cancellation, not disposal of the
+        // prewarmed capture host. Defer Hide until WPF leaves its Closing event.
+        e.Cancel = true;
+        BeginInvoke(new Action(CancelCapture));
+    }
 
     internal void ShowNoActivateForDiagnostic()
     {
@@ -336,7 +352,7 @@ public sealed class CaptureOverlay : Form
             Activate();
             Focus();
             CaptureFlashDiagnosticLog.Write(
-                $"Overlay keyboard ready active={Form.ActiveForm == this} containsFocus={ContainsFocus} focused={Focused}");
+                $"Overlay keyboard ready active={ContainsFocus} containsFocus={ContainsFocus} focused={Focused}");
         }
         CaptureFlashDiagnosticLog.Write("Overlay.OnShown exit");
     }
@@ -378,50 +394,17 @@ public sealed class CaptureOverlay : Form
         base.OnGotFocus(e);
     }
 
-    private static Button MakeButton(string text) => new()
-    {
-        Text = text, AutoSize = true, MinimumSize = new Size(76, 36),
-        Margin = new Padding(4), FlatStyle = FlatStyle.Flat,
-        BackColor = Color.FromArgb(35, 40, 52), ForeColor = Color.White,
-        Cursor = Cursors.Hand, Font = new Font("Microsoft YaHei UI", 9F)
-    };
-
     private void BuildToolbar()
     {
-        _toolbar.AutoSize = true;
-        _toolbar.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _toolbar.Padding = new Padding(5);
-        _toolbar.BackColor = Color.FromArgb(235, 18, 21, 28);
-        _toolbar.Visible = false;
-        var flow = new FlowLayoutPanel
-        {
-            AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            WrapContents = false, Dock = DockStyle.Fill
-        };
-        var confirm = MakeButton("确认");
-        confirm.BackColor = Color.FromArgb(32, 155, 104);
-        confirm.Click += (_, _) => FinishSelection(PreviewMode.OcrAndTranslate);
-        var ocr = MakeButton("识别文字");
-        ocr.Click += (_, _) => FinishSelection(PreviewMode.OcrOnly);
-        var ocrCompare = MakeButton("OCR 对比");
-        ocrCompare.Click += (_, _) => FinishSelection(PreviewMode.OcrCompare);
-        var translate = MakeButton("翻译");
-        translate.Click += (_, _) => FinishSelection(PreviewMode.OcrAndTranslate);
-        var cancel = MakeButton("取消");
-        cancel.Click += (_, _) => Close();
-        var reselect = MakeButton("重新选择");
-        reselect.Click += (_, _) => ResetSelection();
-        var copy = MakeButton("复制截图");
-        copy.Click += (_, _) => CopySelection();
-        var save = MakeButton("保存截图");
-        save.Click += (_, _) => SaveSelection();
-        flow.Controls.AddRange([confirm, ocr, ocrCompare, translate, cancel, reselect, copy, save]);
-        flow.MouseDown += ToolbarMouseDown;
-        foreach (Control child in flow.Controls) child.MouseDown += ToolbarMouseDown;
-        _toolbar.Controls.Add(flow);
-        _toolbar.MouseDown += ToolbarMouseDown;
-        Controls.Add(_toolbar);
-        _toolbar.BringToFront();
+        _toolbar.Add("确认",()=>FinishSelection(PreviewMode.OcrAndTranslate),true);
+        _toolbar.Add("识别文字",()=>FinishSelection(PreviewMode.OcrOnly));
+        _toolbar.Add("OCR 对比",()=>FinishSelection(PreviewMode.OcrCompare));
+        _toolbar.Add("翻译",()=>FinishSelection(PreviewMode.OcrAndTranslate));
+        _toolbar.Add("取消",CancelCapture);
+        _toolbar.Add("重新选择",ResetSelection);
+        _toolbar.Add("复制截图",CopySelection);
+        _toolbar.Add("保存截图",SaveSelection);
+        _toolbar.View.PreviewMouseRightButtonDown+=(_,e)=>{CancelCapture();e.Handled=true;};
     }
 
     private void ToolbarMouseDown(object? sender, MouseEventArgs e)
@@ -552,6 +535,9 @@ public sealed class CaptureOverlay : Form
     {
         if (_dragging && e.Button == MouseButtons.Left)
         {
+            // Anchor once at selection completion, so moving toward a button
+            // cannot make the toolbar chase the mouse.
+            _toolbarAnchor = e.Location;
             Capture = false;
             _dragging = false;
             if (_pendingCreate)
@@ -752,7 +738,7 @@ public sealed class CaptureOverlay : Form
         const string fallback="移动鼠标识别窗口并单击；拖动选择区域；空白处单击选择当前屏幕；Esc 取消";
         var value=text??fallback;SizeF size;
         if(graphics is not null)size=graphics.MeasureString(value,_promptFont);
-        else using(var measure=CreateGraphics())size=measure.MeasureString(value,_promptFont);
+        else size=TextRenderer.MeasureText(value,_promptFont,Size.Empty,TextFormatFlags.NoPadding);
         return new((ClientSize.Width-size.Width)/2-16,ClientSize.Height-70,size.Width+32,size.Height+18);
     }
 
@@ -765,6 +751,7 @@ public sealed class CaptureOverlay : Form
 
     private void ResetSelection()
     {
+        _toolbarAnchor = null;
         CaptureFlashDiagnosticLog.Write("ResetSelection; no Hide/Show/CopyFromScreen");
         _hasSelection = false;
         _selection = Rectangle.Empty;
@@ -776,18 +763,15 @@ public sealed class CaptureOverlay : Form
 
     private void PositionToolbar()
     {
-        if (_toolbarPreferredSize.IsEmpty)
-        {
-            _toolbar.PerformLayout();
-            _toolbarPreferredSize = _toolbar.PreferredSize;
-        }
-        var preferred = _toolbarPreferredSize;
-        var x = Math.Clamp(_selection.Right - preferred.Width, 8,
-            Math.Max(8, ClientSize.Width - preferred.Width - 8));
-        var below = _selection.Bottom + 10;
-        var y = below + preferred.Height <= ClientSize.Height
-            ? below : Math.Max(8, _selection.Top - preferred.Height - 10);
-        _toolbar.Location = new Point(x, y);
+        var anchor = _toolbarAnchor ?? new Point(_selection.Left + _selection.Width / 2, _selection.Top + _selection.Height / 2);
+        var monitor = Screen.FromPoint(new Point(anchor.X + _virtualBounds.Left, anchor.Y + _virtualBounds.Top)).Bounds;
+        var available = Rectangle.Intersect(monitor, _virtualBounds);
+        available.Offset(-_virtualBounds.Left, -_virtualBounds.Top);
+        if (available.Width < 1 || available.Height < 1) available = ClientRectangle;
+        int gap = Math.Max(10, (int)Math.Round(12 * DeviceDpi / 96d));
+        _toolbar.MaximumWidthInPixels = Math.Max(120, available.Width - gap * 2);
+        _toolbarPreferredSize = _toolbar.PreferredSize;
+        _toolbar.Location = CaptureToolbarLayout.Place(_selection, anchor, _toolbarPreferredSize, available, ToolbarPlacement, gap);
         _toolbar.Visible = true;
         _toolbar.BringToFront();
     }

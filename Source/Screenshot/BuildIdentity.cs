@@ -7,6 +7,7 @@ public static class BuildIdentity
 {
     public const string ProductName="Game Translator";
     public static readonly string BuildVersion=typeof(BuildIdentity).Assembly.GetName().Version?.ToString()??"Unavailable";
+    internal static readonly string LocalWpfCandidate=System.Text.RegularExpressions.Regex.Match(typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"",@"wpf\.(\d+)").Groups[1].Value;
     public static string DisplayVersion=>"Fusion R1 · "+BuildVersion;
     public const string StableApplicationId="GameTranslator.Fusion.20260914";
     public static string ProductVersion=>DisplayVersion;

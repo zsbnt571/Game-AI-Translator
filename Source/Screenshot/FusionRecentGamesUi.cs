@@ -5,14 +5,14 @@ public sealed partial class MainForm
     private Task<RecentGameStore>? _recentStoreTask;
     private readonly CancellationTokenSource _desktopLifetime=new();
     private CancellationTokenSource? _mediaSelectionCancellation,_coverCancellation;
-    private readonly PictureBox _selectedGameIcon=new(){Size=new(48,48),SizeMode=PictureBoxSizeMode.Zoom,AccessibleName="游戏图标"};
-    private readonly Label _gameBadge=new(){AutoSize=true};
-    private readonly Label _mediaStatus=new(){AutoSize=true};
-    private readonly Label _coverDetails=new(){AutoSize=true};
-    private readonly GameActionButton _recentButton=new("选择游戏");
-    private readonly GameActionButton _coverButton=new("更新封面");
-    private readonly GameActionButton _folderButton=new("打开文件夹");
-    private readonly GameActionButton _saveGameButton=new("保存游戏");
+    private readonly PictureBox _selectedGameIcon=WpfWorkspace.Enabled ? null! : new(){Size=new(48,48),SizeMode=PictureBoxSizeMode.Zoom,AccessibleName="游戏图标"};
+    private readonly Label _gameBadge=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _mediaStatus=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _coverDetails=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly GameActionButton _recentButton=WpfWorkspace.Enabled ? null! : new("选择游戏");
+    private readonly GameActionButton _coverButton=WpfWorkspace.Enabled ? null! : new("更新封面");
+    private readonly GameActionButton _folderButton=WpfWorkspace.Enabled ? null! : new("打开文件夹");
+    private readonly GameActionButton _saveGameButton=WpfWorkspace.Enabled ? null! : new("保存游戏");
     private RecentGame? _currentRecent;
     private Task _rememberSelectedTask=Task.CompletedTask;
     private bool _recentOpening,_manualCoverActive;
@@ -22,6 +22,10 @@ public sealed partial class MainForm
     private Task<RecentGameStore> RecentStore()=>_recentStoreTask??=Task.Run(()=>new RecentGameStore());
     private void InitializeRecentUi()
     {
+        if(WpfWorkspace.Enabled)
+        {
+            FormClosed+=(_,_)=>{_desktopLifetime.Cancel();_mediaSelectionCancellation?.Cancel();_coverCancellation?.Cancel();ReplaceGameIcon(null);};return;
+        }
         GameIconPlaceholder.Attach(_selectedGameIcon);
         _mediaStatus.Visible=false;_mediaStatus.TextChanged+=(_,_)=>_mediaStatus.Visible=_mediaStatus.Text.Length>0;
         _recentButton.Click+=async(_,_)=>await OpenRecentGamesAsync();
@@ -34,7 +38,7 @@ public sealed partial class MainForm
                 var record=store.Find(game.ExePath)??await Task.Run(()=>store.Select(game.Name,game.ExePath,usage:false));
                 await Task.Run(()=>store.SetSaved(record.Id,!record.Saved));
                 if(!IsDisposed&&epoch==_gameSelectionEpoch){_currentRecent=store.Find(game.ExePath);UpdateSavedButton();}
-            }catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,SafeDiagnosticOutput.ExceptionSummary(ex));}
+            }catch(Exception ex){if(!IsDisposed)SetGameMediaText(SafeDiagnosticOutput.ExceptionSummary(ex));}
         };
         _folderButton.Click+=async(_,_)=>await OpenSelectedGameFolderAsync();
         FormClosed+=(_,_)=>{_desktopLifetime.Cancel();_mediaSelectionCancellation?.Cancel();_coverCancellation?.Cancel();ReplaceGameIcon(null);};
@@ -44,18 +48,20 @@ public sealed partial class MainForm
         var path=_selectedGame?.ExePath;if(path is null)return;
         try{var folder=Path.GetDirectoryName(path)!;if(!await Task.Run(()=>Directory.Exists(folder)))throw new IOException("游戏目录不可访问，请重新定位。");
             if(!IsDisposed)System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder){UseShellExecute=true});}
-        catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,SafeDiagnosticOutput.ExceptionSummary(ex));}
+        catch(Exception ex){if(!IsDisposed)SetGameMediaText(SafeDiagnosticOutput.ExceptionSummary(ex));}
     }
-    private void UpdateSavedButton()=>_saveGameButton.Text=_currentRecent?.Saved==true?"已保存 · 取消":"保存游戏";
-    private void CancelSelectedMedia()
+    private void UpdateSavedButton(){if(!WpfWorkspace.Enabled)_saveGameButton.Text=_currentRecent?.Saved==true?"已保存 · 取消":"保存游戏";}
+    private void CancelSelectedMedia(bool preserveArtwork=false)
     {
         _mediaSelectionCancellation?.Cancel();_mediaSelectionCancellation?.Dispose();
         _mediaSelectionCancellation=CancellationTokenSource.CreateLinkedTokenSource(_desktopLifetime.Token);
-        _libraryDetailEpoch++;var oldCover=_libraryCover.Image;_libraryCover.Image=null;oldCover?.Dispose();_libraryChineseName.Text="";_libraryNote.Text="";
-        Interlocked.Increment(ref _coverRound);_coverCancellation?.Cancel();_manualCoverActive=false;_currentRecent=null;ReplaceGameIcon(null);SetLabelText(_mediaStatus,"");SetLabelText(_coverDetails,"");UpdateSavedButton();
+        _libraryDetailEpoch++;
+        if(!preserveArtwork){_libraryArtworkSource=null;_libraryArtworkRecord=null;var oldCover=GameCoverImage;GameCoverImage=null;oldCover?.Dispose();GameChineseNameText="";GameNoteText="";}
+        Interlocked.Increment(ref _coverRound);_coverCancellation?.Cancel();_manualCoverActive=false;_currentRecent=null;ReplaceGameIcon(null);SetGameMediaText("");SetGameCoverDetailsText("");UpdateSavedButton();
     }
     private void ReplaceGameIcon(Bitmap? image)
     {
+        if(WpfWorkspace.Enabled){image?.Dispose();return;} // Native detail and navigation load their own retained images.
         var old=_selectedGameIcon.Image;_selectedGameIcon.Image=image;old?.Dispose();
         _selectedGameIcon.BackColor=image is null?UiTheme.Current.Secondary:UiTheme.Current.Main;
     }
@@ -67,25 +73,26 @@ public sealed partial class MainForm
             var store=await RecentStore();token.ThrowIfCancellationRequested();
             var record=await Task.Run(()=>store.Writable?store.Select(game.Name,game.ExePath,relinkId,recordSelection):store.Find(game.ExePath),token);
             if(IsDisposed||epoch!=_gameSelectionEpoch||token.IsCancellationRequested)return;
-            _currentRecent=record;UpdateSavedButton();SetLabelText(_mediaStatus,store.Notice);
+            _currentRecent=record;UpdateSavedButton();SetGameMediaText(store.Notice);
             if(record is null)return;
-            var usable=await Task.Run(()=>{using var cover=store.ReadImage(record,true);return cover is not null;},token);
+            var usable=WpfWorkspace.Enabled&&_libraryCoverCache.TryGet(store.CoverImageKey(record),out _)
+                ||await Task.Run(()=>{using var cover=store.ReadImage(record,true,640);return cover is not null;},token);
             if(IsDisposed||epoch!=_gameSelectionEpoch||token.IsCancellationRequested)return;
-            if(store.Notice.Length==0)SetLabelText(_mediaStatus,usable?"已有封面 · 可在游戏标题页更新":"尚未取得有效封面 · 游戏窗口可用时可更新");
+            if(store.Notice.Length==0)SetGameMediaText(usable?"已有封面 · 可在游戏标题页更新":"尚未取得有效封面 · 游戏窗口可用时可更新");
             icon=await Task.Run(()=>store.IconFor(record,token),token);
             if(IsDisposed||epoch!=_gameSelectionEpoch||token.IsCancellationRequested)return;
             ReplaceGameIcon(icon);icon=null;_=FillDefaultArtworkAsync([game.ExePath]);
         }
         catch(OperationCanceledException){}
-        catch(Exception ex){if(!IsDisposed&&epoch==_gameSelectionEpoch)SetLabelText(_mediaStatus,"游戏记录 / 图标："+SafeDiagnosticOutput.ExceptionSummary(ex));}
-        finally{icon?.Dispose();if(!IsDisposed)ScheduleLibraryRefresh();}
+        catch(Exception ex){if(!IsDisposed&&epoch==_gameSelectionEpoch)SetGameMediaText("游戏记录 / 图标："+SafeDiagnosticOutput.ExceptionSummary(ex));}
+        finally{icon?.Dispose();if(!IsDisposed&&_librarySubscribedStore is null)ScheduleLibraryRefresh();}
     }
     private async Task RememberLaunchAsync(GameInfo game)
     {
         try{
             await _rememberSelectedTask;var store=await RecentStore();
             if(store.Writable){var record=await Task.Run(()=>store.Select(game.Name,game.ExePath));if(SameGame(game.ExePath,_selectedGame?.ExePath))_currentRecent=record;}
-        }catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,"启动已发起，最近记录保存失败："+SafeDiagnosticOutput.ExceptionSummary(ex));}
+        }catch(Exception ex){if(!IsDisposed)SetGameMediaText("启动已发起，最近记录保存失败："+SafeDiagnosticOutput.ExceptionSummary(ex));}
     }
     private async Task UpdateGameCoverAsync(bool automatic)
     {
@@ -105,7 +112,7 @@ public sealed partial class MainForm
             await _rememberSelectedTask;
             if(!Current())return;
             var store=await RecentStore();var record=store.Find(game.ExePath);
-            if(record is null||!store.Writable){Log("event=failed stage=record");if(Current())SetLabelText(_mediaStatus,"封面获取失败 · 游戏记录不可写，请查看详情。");return;}
+            if(record is null||!store.Writable){Log("event=failed stage=record");if(Current())SetGameMediaText("封面获取失败 · 游戏记录不可写，请查看详情。");return;}
             recordId=record.Id;
             var identityVersion=store.CoverIdentityVersion(record);
             if(automatic&&record.CoverManual){Log("event=manual-cover-protected");return;}
@@ -115,12 +122,12 @@ public sealed partial class MainForm
             Log("event=cache-check "+store.CoverDiagnostic(record));
             if(automatic&&hadCover){Log("event=reuse-valid-cover");return;}
             if(record.Cover is not null&&!hadCover)Log("event=invalid-cache-reacquire");
-            SetLabelText(_mediaStatus,automatic?"正在等待有效游戏封面…":"正在更新封面…");stage="捕获";
+            SetGameMediaText(automatic?"正在等待有效游戏封面…":"正在更新封面…");stage="捕获";
             var result=await GameWindowCover.CaptureAsync(game.ExePath,automatic,cancel.Token,Log);
             using var image=result.Image;
             if(!Current()){Log("event=stale-result-rejected");return;}
-            SetLabelText(_coverDetails,result.Diagnostic);
-            if(image is null){Log("event=failed stage=capture "+result.Diagnostic);SetLabelText(_mediaStatus,(hadCover?"更新未成功，保留原封面 · ":"尚未取得有效封面 · ")+result.Message);return;}
+            SetGameCoverDetailsText(result.Diagnostic);
+            if(image is null){Log("event=failed stage=capture "+result.Diagnostic);SetGameMediaText((hadCover?"更新未成功，保留原封面 · ":"尚未取得有效封面 · ")+result.Message);return;}
             stage="写入";
             // The store checks generation, expected cover version and window identity under
             // its commit lock. A later manual result can never be overwritten by this one.
@@ -128,7 +135,7 @@ public sealed partial class MainForm
             if(!await Task.Run(()=>store.SaveImage(record,image,true,null,cancel.Token,CanCommit,identityVersion,manual:!automatic,origin:automatic?"automatic":"screenshot"),cancel.Token))
             {
                 Log("event=commit-rejected reason=stale-record-round-or-window");
-                if(Current())SetLabelText(_mediaStatus,hadCover?"封面未更新，已保留原封面。":"尚未取得有效封面 · 游戏窗口或记录已改变。");
+                if(Current())SetGameMediaText(hadCover?"封面未更新，已保留原封面。":"尚未取得有效封面 · 游戏窗口或记录已改变。");
                 return;
             }
             stage="读取";
@@ -138,16 +145,16 @@ public sealed partial class MainForm
             if(Current())
             {
                 _currentRecent=store.Find(game.ExePath);
-                SetLabelText(_mediaStatus,"封面已保存 · 可在“选择游戏”中查看");
-                SetLabelText(_coverDetails,result.Diagnostic+"；有效封面已保存并绑定；实际显示请查看卡片。");
+                SetGameMediaText("封面已保存 · 可在“选择游戏”中查看");
+                SetGameCoverDetailsText(result.Diagnostic+"；有效封面已保存并绑定；实际显示请查看卡片。");
             }
         }
         catch(OperationCanceledException){Log("event=cancelled");}
         catch(Exception ex){
             var reason=SafeDiagnosticOutput.ExceptionSummary(ex);Log("event=failed stage="+stage+" reason="+reason);
             if(Current()){
-                SetLabelText(_mediaStatus,(hadCover?"更新未成功，保留原封面":"尚未取得有效封面")+" · "+stage+"失败，可重试。");
-                SetLabelText(_coverDetails,stage+"："+reason);
+                SetGameMediaText((hadCover?"更新未成功，保留原封面":"尚未取得有效封面")+" · "+stage+"失败，可重试。");
+                SetGameCoverDetailsText(stage+"："+reason);
             }
         }
         finally{
@@ -158,7 +165,7 @@ public sealed partial class MainForm
     private async Task OpenRecentGamesAsync()
     {
         if(_gameActionRunning||_recentOpening)return;
-        _recentOpening=true;_recentButton.Enabled=false;
+        _recentOpening=true;if(!WpfWorkspace.Enabled)_recentButton.Enabled=false;
         try
         {
             var store=await RecentStore();if(IsDisposed)return;
@@ -166,10 +173,10 @@ public sealed partial class MainForm
             var result=dialog.ShowDialog(this);_lastGameTab=dialog.CurrentTab;
             if(result==DialogResult.OK&&dialog.SelectedPath is { } path)SelectFusionGame(path);
             else if(_selectedGame is { } game){_currentRecent=store.Find(game.ExePath);UpdateSavedButton();}
-            if(store.Notice.Length>0)SetLabelText(_mediaStatus,store.Notice);
+            if(store.Notice.Length>0)SetGameMediaText(store.Notice);
         }
-        catch(Exception ex){if(!IsDisposed)SetLabelText(_mediaStatus,"游戏选择："+SafeDiagnosticOutput.ExceptionSummary(ex));}
-        finally{_recentOpening=false;if(!IsDisposed)_recentButton.Enabled=!_gameActionRunning;}
+        catch(Exception ex){if(!IsDisposed)SetGameMediaText("游戏选择："+SafeDiagnosticOutput.ExceptionSummary(ex));}
+        finally{_recentOpening=false;if(!IsDisposed&&!WpfWorkspace.Enabled)_recentButton.Enabled=!_gameActionRunning;}
     }
 }
 
@@ -362,7 +369,7 @@ internal sealed class RecentGamesDialog:Form
                 {
                     var exists=await Task.Run(()=>File.Exists(item.Record.ExePath),token);
                     icon=await Task.Run(()=>store.IconFor(item.Record,token),token);
-                    cover=await Task.Run(()=>store.ReadImage(item.Record,true),token);
+                    cover=await Task.Run(()=>store.ReadImage(item.Record,true,640),token);
                     if(IsDisposed||token.IsCancellationRequested||item.Card.IsDisposed)continue;
                     item.Icon.Image=icon;icon=null;item.Cover.Image=cover;cover=null;
                     item.State.Text=!exists?"路径失效 · 请重新定位":item.Cover.Image is not null?"": "尚未取得有效封面 · 可返回主页更新";

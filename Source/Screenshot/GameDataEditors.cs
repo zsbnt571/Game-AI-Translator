@@ -1,6 +1,6 @@
 namespace ScreenshotTranslationUiTester;
 
-internal sealed class GameDataIcon:Control
+internal sealed partial class GameDataIcon:Control
 {
     internal Image? Atlas;
     internal int Index=-1;

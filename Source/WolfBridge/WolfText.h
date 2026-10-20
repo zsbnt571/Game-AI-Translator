@@ -8,7 +8,8 @@ namespace WolfText {
 struct Run {std::string bytes;bool display;};
 inline bool KnownCommand(unsigned count,unsigned op,bool legacy){
     if((count==2&&(op==5||op==20))||(count==4&&op==17)||(count==5&&op==3)||(count==6&&op==2))return true;
-    if(!legacy)return false;
+    // The WOLF 3 renderer retains the same framed alignment, position, font
+    // and icon controls. Their payload is opaque and copied byte-for-byte.
     // Verified against the legacy renderer's opcode dispatch and its cursor
     // advances. Icons (22), alignment (19/21), offsets and font switches are
     // opaque display commands, not a reason to discard adjacent prose.

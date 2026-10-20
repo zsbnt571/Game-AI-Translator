@@ -10,19 +10,19 @@ public sealed partial class MainForm
     private WorkspaceScrollView? _gameSessionPage;
     private string? _sessionGamePath;
     private bool _sessionPolling;
-    private readonly Label _sessionStatus = WorkspaceLabel("");
-    private readonly Label _sessionTranslationState = WorkspaceLabel("");
-    private readonly Label _sessionActionFeedback = WorkspaceLabel("");
+    private readonly Label _sessionStatus = WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
+    private readonly Label _sessionTranslationState = WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
+    private readonly Label _sessionActionFeedback = WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
     private Control? _sessionTranslationPanel, _sessionModificationPanel;
     private GameActionButton? _sessionTranslationChoice, _sessionModificationChoice;
     private Button? _sessionRetryTranslation;
     private Button? _sessionScreenTranslation;
-    private readonly Label _sessionScreenTranslationState=WorkspaceLabel("");
+    private readonly Label _sessionScreenTranslationState=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
     private Button? _sessionEnableTranslation, _sessionLaunchArrow, _sessionReturnGame;
     private readonly Dictionary<string, GameWorkspaceSession> _gameRootOperations = new(StringComparer.OrdinalIgnoreCase);
     private TableLayoutPanel? _sessionContent;
     private Control? _sessionHero,_sessionFilesRow,_sessionPathField,_sessionStatusRow,_sessionFileDetails;
-    private readonly Label _sessionCompactTitle=WorkspaceLabel("");
+    private readonly Label _sessionCompactTitle=WpfWorkspace.Enabled ? null! : WorkspaceLabel("");
     private GameActionButton? _sessionCompactReturn,_sessionCompactMore,_sessionRestart,_sessionCompactRestart;
     private GameActionButton? _sessionRename,_sessionCompactRename,_sessionCoverEdit,_sessionFolderOpen;
 
@@ -30,8 +30,15 @@ public sealed partial class MainForm
     {
         FormClosed+=(_,_)=>{foreach(var session in _scriptTranslationSessions.Values)session.Dispose();};
         FormClosed+=(_,_)=>{foreach(var session in _embeddedTranslationSessions.Values)session.Dispose();};
-        FormClosed+=(_,_)=>_runtimeTranslationWindow?.Close();
+        FormClosed+=(_,_)=>{_runtimeTranslationWindow?.Close();_nativeRuntimeTranslationWindow?.Close();};
         FormClosed+=(_,_)=>DisposeManualScreenSessions();
+        if(WpfWorkspace.Enabled)
+        {
+            nativeRpg=new(this);
+            FormClosed+=(_,_)=>{nativeRpg.Dispose();foreach(var session in _dataSessions.Values)session.Dispose();};
+            FormClosed+=(_,_)=>_gameCrashMonitor?.Dispose();
+            return;
+        }
         _gameSessionPage=new WorkspaceScrollView{Dock=DockStyle.Fill,AutoScroll=false,Padding=new(24,14,24,12),Visible=false};
         var content=new WorkspaceContentColumn();content.Dock=DockStyle.Top;content.AutoSize=true;content.AutoSizeMode=AutoSizeMode.GrowAndShrink;
         _sessionContent=content;
@@ -55,7 +62,7 @@ public sealed partial class MainForm
             int d=DeviceDpi;var r=_libraryCover.ClientRectangle;
             using var title=new Font("Microsoft YaHei UI",20,FontStyle.Bold);using var sub=new Font("Microsoft YaHei UI",14);
             int top=Math.Max(4*d/96,(r.Height-title.Height-sub.Height-5*d/96)/2);
-            int titleWidth=Math.Min(TextRenderer.MeasureText(_gameTitle.Text,title).Width,Math.Max(0,r.Width-_sessionRename.Width-62*d/96));
+            int titleWidth=Math.Min(TextRenderer.MeasureText(GameTitleText,title).Width,Math.Max(0,r.Width-_sessionRename.Width-62*d/96));
             _sessionRename.Location=new(22*d/96+titleWidth+12*d/96,top+Math.Max(0,(title.Height-_sessionRename.Height)/2));
             _sessionCoverEdit.Location=new(Math.Max(0,r.Width-_sessionCoverEdit.Width-14*d/96),Math.Max(0,r.Height-_sessionCoverEdit.Height-12*d/96));
         }
@@ -64,8 +71,8 @@ public sealed partial class MainForm
             var r=_libraryCover.ClientRectangle;
             using var title=new Font("Microsoft YaHei UI",20,FontStyle.Bold);using var sub=new Font("Microsoft YaHei UI",14);
             int d=DeviceDpi,gap=5*d/96,top=Math.Max(4*d/96,(r.Height-title.Height-sub.Height-gap)/2);
-            WorkspaceDrawing.Text(e.Graphics,_gameTitle.Text,title,new(22*d/96,top,Math.Max(0,_sessionRename.Left-34*d/96),title.Height),Color.White);
-            WorkspaceDrawing.Text(e.Graphics,_libraryChineseName.Text,sub,new(24*d/96,top+title.Height+gap,Math.Max(0,r.Width-_sessionCoverEdit.Width-62*d/96),sub.Height),Color.FromArgb(225,231,240));
+            WorkspaceDrawing.Text(e.Graphics,GameTitleText,title,new(22*d/96,top,Math.Max(0,_sessionRename.Left-34*d/96),title.Height),Color.White);
+            WorkspaceDrawing.Text(e.Graphics,GameChineseNameText,sub,new(24*d/96,top+title.Height+gap,Math.Max(0,r.Width-_sessionCoverEdit.Width-62*d/96),sub.Height),Color.FromArgb(225,231,240));
         };
         _gameTitle.TextChanged+=(_,_)=>_libraryCover.Invalidate();_libraryChineseName.TextChanged+=(_,_)=>_libraryCover.Invalidate();
         var status=new TableLayoutPanel{ColumnCount=2,RowCount=1,AutoSize=false,Height=44,Margin=Padding.Empty};status.ColumnStyles.Add(new(SizeType.Percent,100));status.ColumnStyles.Add(new(SizeType.AutoSize));
@@ -101,10 +108,9 @@ public sealed partial class MainForm
         _sessionPrepareText=IconButton("读取文本与准备译文","translate",(_,_)=>{if(_selectedGame is {} game)OpenTextPreparation(game);},false,168);_sessionPrepareText.Visible=false;
         WorkspaceAdd(left,WorkspaceRow(_sessionEnableTranslation,_launchGameButton,_sessionRetryTranslation,_installGameButton,_sessionPrepareText));WorkspaceAdd(left,_sessionTranslationState);
         var manage=IconButton("译文与术语","edit",(_,_)=>OpenTranslationManager(),false,120);
-        var route=IconButton("翻译接入方式","",(_,_)=>{},false,128);route.Click+=(_,_)=>ShowTranslationRoute(route);
         var diagnostics=IconButton("翻译状态","",(_,_)=>ShowTranslationDiagnostics(),false,108);
         diagnostics.Name="TranslationDiagnostics";
-        WorkspaceAdd(left,WorkspaceRow(manage,route,diagnostics));
+        WorkspaceAdd(left,WorkspaceRow(manage,diagnostics));
         var leftSurface=new WorkspaceSurface{Dock=DockStyle.Fill,AutoSize=true,Padding=new(1),Margin=new(0,0,8,0)};leftSurface.Controls.Add(left);translation.Controls.Add(leftSurface,0,0);
         var display=WorkspaceColumn();display.Dock=DockStyle.Top;display.AutoSize=true;display.Padding=new(16);
         var displayHeading=WorkspaceLabel("显示设置");displayHeading.Font=new Font("Microsoft YaHei UI",12,FontStyle.Bold);WorkspaceAdd(display,displayHeading);
@@ -161,22 +167,23 @@ public sealed partial class MainForm
         try
         {
             var profile=_fusion?.GameSettings(UiSettings,game.ExePath)??EmbeddedSettings;
-            new ExperimentalCatalogForm(game,UiSettings,profile,async(text,settings,token)=>(await _translationService.TranslatePlainAsync(text,settings,token)).Text).Show(this);
+            if(WpfWorkspace.Enabled)new NativeExperimentalCatalog(game,UiSettings,profile,async(text,settings,token)=>(await _translationService.TranslatePlainAsync(text,settings,token)).Text).Show(this);
+            else new ExperimentalCatalogForm(game,UiSettings,profile,async(text,settings,token)=>(await _translationService.TranslatePlainAsync(text,settings,token)).Text).Show(this);
         }
-        catch(Exception ex){if(_sessionTranslationState is not null)_sessionTranslationState.Text=SafeDiagnosticOutput.ExceptionSummary(ex);}
+        catch(Exception ex){SetGameTranslationFeedback(SafeDiagnosticOutput.ExceptionSummary(ex));}
     }
-    private void OpenKeysSettings(){ShowPage("设置");for(int i=0;i<_settingsNavigation.Items.Count;i++)if(_settingsNavigation.Items[i]?.ToString()=="按键"){_settingsNavigation.SelectedIndex=i;break;}}
-    private void ShowSessionMenu(Control anchor)
+    private void OpenKeysSettings(){if(WpfWorkspace.Enabled){ShowPage("设置");NativeSelectSettings(2);return;}ShowPage("设置");for(int i=0;i<_settingsNavigation.Items.Count;i++)if(_settingsNavigation.Items[i]?.ToString()=="按键"){_settingsNavigation.SelectedIndex=i;break;}}
+    private void ShowSessionMenu(Control? anchor,System.Windows.FrameworkElement? nativeAnchor=null)
     {
         _libraryContextMenu.ClearActions();_libraryContextMenu.Font=Font;
-        _libraryContextMenu.AddAction("恢复游戏文件（保留译文）","back",async(_,_)=>await RunGameActionAsync("restore"),_restoreGameButton?.Enabled==true);
+        _libraryContextMenu.AddAction("恢复游戏文件（保留译文）","back",async(_,_)=>await RunGameActionAsync("restore"),WpfWorkspace.Enabled?GameDetail.Restore.Enabled:_restoreGameButton?.Enabled==true);
         if(_selectedGame is {} resetGame&&CanResetMachineTranslations(resetGame))
             _libraryContextMenu.AddAction("清空机器译文并重译","refresh",async(_,_)=>await ResetMachineTranslationsAsync(resetGame),!_gameSessions.Get(resetGame).Busy);
         _libraryContextMenu.AddAction("查看最近诊断报告","",(_,_)=>ShowGameDiagnosticReport(),_selectedGame is not null);
         _libraryContextMenu.AddAction("打开诊断报告目录","folder",(_,_)=>OpenGameDiagnosticsFolder(),_selectedGame is not null);
         if(_selectedGame is {} selected&&CatalogTranslationPreparation.Supports(selected.Engine))
             _libraryContextMenu.AddAction("读取文本与准备译文","translate",(_,_)=>OpenTextPreparation(selected));
-        _libraryContextMenu.Show(anchor,new Point(0,anchor.Height));
+        if(nativeAnchor is not null)WpfNativeMenus.Show(_libraryContextMenu,nativeAnchor:nativeAnchor);else if(anchor is not null)_libraryContextMenu.Show(anchor,new Point(0,anchor.Height));
     }
     private async Task StartLibraryGameAsync()
     {
@@ -187,12 +194,15 @@ public sealed partial class MainForm
 
     private void OpenGameSession(GameInfo game,bool withTranslation=false,bool observed=false)
     {
-        if(_gameSessionPage is null||!SameGame(game.ExePath,_selectedGame?.ExePath))return;
+        if((!WpfWorkspace.Enabled&&_gameSessionPage is null)||!SameGame(game.ExePath,_selectedGame?.ExePath))return;
         var session=_gameSessions.Get(game);
         if(observed)session.Observe(FusionGameProcessState.Running);
         // Navigation never resets another game or implies a launch/activation.
         _sessionGamePath=game.ExePath;
-        WorkspacePages.Show(_gameSessionPage.Parent!,_gameSessionPage);ScheduleLibraryRefresh();
+        _libraryHomePending=false;
+        if(!WpfWorkspace.Enabled)WorkspacePages.Show(_gameSessionPage!.Parent!,_gameSessionPage);
+        if(_libraryNavigation is NativeLibraryNavigation navigation)navigation.SelectGame(game.ExePath);
+        _libraryGrid.SelectPath(game.ExePath);_recentShelf.SelectPath(game.ExePath);
         _wpfDetails=true;_wpfWindow?.RefreshWorkspace();
         if(withTranslation)session.Section=1;
         SelectGameSessionSection(session.Section);RecordPageLocation();
@@ -201,7 +211,9 @@ public sealed partial class MainForm
     private static bool SameGame(string? a,string? b)=>a is not null&&b is not null&&StringComparer.OrdinalIgnoreCase.Equals(a,b);
     private void ShowLibraryHome()
     {
-        _wpfDetails=false;_wpfWindow?.RefreshWorkspace();
+        _libraryNavigationEpoch++;
+        _libraryHomePending=false;_wpfDetails=false;_wpfWindow?.RefreshWorkspace();
+        if(WpfWorkspace.Enabled){RecordPageLocation();return;}
         if(_gameSessionPage is null)return;
         if(_libraryBody!.Visible&&!_gameSessionPage.Visible)return;
         WorkspacePages.Show(_gameSessionPage.Parent!,_libraryBody!);ScheduleLibraryRefresh();RecordPageLocation();
@@ -212,6 +224,7 @@ public sealed partial class MainForm
         if(_selectedGame is not { } game)return;
         _gameSessions.Get(game).Section=section==2?2:1;RecordPageLocation();
         RenderGameSessionState();
+        if(WpfWorkspace.Enabled){if(section==2)_=EnterGameModificationPageAsync(game);return;}
         if(section==2&&SelectedDataSession() is {Connection.Connected:true} data)
         {data.EnableOnEntry=true;_=RefreshGameDataAsync();}
         if(section==2&&game.AdapterId=="renpy"&&SelectedScriptTranslationSession()?.Connection.Connected==true)_=RefreshRenpyDataAsync();
@@ -239,6 +252,7 @@ public sealed partial class MainForm
 
     private void RenderGameSessionState()
     {
+        if(WpfWorkspace.Enabled){RenderNativeGameSessionState();return;}
         if(_gameSessionPage is null||_plainLaunchButton is null)return;
         var game=_selectedGame; var state=_desktopGameState;
         var session=game is null?null:_gameSessions.Get(game);
@@ -266,7 +280,7 @@ public sealed partial class MainForm
         _sessionReturnGame!.Visible=running; _sessionReturnGame.Enabled=!busy||restarting;
         _sessionRestart!.Visible=running||restarting;_sessionRestart.Enabled=restarting||running&&!busy;_sessionRestart.Text=restarting?"取消重启":"重启游戏";
         foreach(var button in new[]{_sessionRename,_sessionCoverEdit,_sessionFolderOpen})if(button is not null)button.Enabled=game is not null&&!busy;
-        _librarySelectionLabel.Text=game is null?"双击游戏进入详细主页":game.Name+(_libraryChineseName.Text.Length>0?" · "+_libraryChineseName.Text:"");
+        _librarySelectionLabel.Text=game is null?"双击游戏进入详细主页":game.Name+(GameChineseNameText.Length>0?" · "+GameChineseNameText:"");
         _sessionStatus.Text=_gameDetecting?"正在识别游戏…":busy?"正在处理此游戏…":session?.LaunchPending==true?"正在等待游戏启动…":running?"游戏运行中":stopped?"游戏未运行":"正在核对游戏状态…";
         _sessionStatus.ForeColor=running?Color.SeaGreen:UiTheme.Current.SecondaryText;
         _sessionTranslationChoice!.Enabled=_sessionModificationChoice!.Enabled=game is not null&&!_gameDetecting;
@@ -317,9 +331,9 @@ public sealed partial class MainForm
         }
         }
         _launchGameButton!.Visible=!running; _launchGameButton.Enabled=stopped&&supported&&ready&&!busy;
-        bool canPrepare=game is not null&&!supported&&CatalogTranslationPreparation.Supports(game.Engine);
+        bool canPrepare=game is not null&&CatalogTranslationPreparation.Supports(game.Engine);
         if(_sessionPrepareText is not null){_sessionPrepareText.Visible=canPrepare;_sessionPrepareText.Enabled=!busy;}
-        if(canPrepare&&game is not null){_launchGameButton.Visible=false;_sessionEnableTranslation!.Visible=false;_sessionTranslationState!.Text=game.Engine+" · 可读取文本并准备译文；游戏内显示尚未接入。";}
+        if(canPrepare&&!supported&&game is not null){_launchGameButton.Visible=false;_sessionEnableTranslation!.Visible=false;_sessionTranslationState!.Text=game.Engine+" · 可读取文本并准备译文；游戏内显示尚未接入。";}
         _restoreGameButton!.Enabled=(rpg||current&&state?.HasRecord==true)&&stopped&&!busy;
         _installGameButton!.Enabled=supported&&ready&&stopped&&!busy;
         _installGameButton.Visible=supported&&stopped;
@@ -362,7 +376,7 @@ public sealed partial class MainForm
         RenderNovelModificationState();
         RenderRenpyModificationState();
         RenderGameDiagnosticState();
-        WpfGameSessionView?.Refresh();
+        NotifyNativeGameDetailChanged();
     }
 
     private async Task RefreshOtherGameSessionsAsync()
@@ -391,7 +405,7 @@ public sealed partial class MainForm
             if(found.Target is not { } target||!GameLibraryWindowIdentity.Matches(target,forControl:true))throw new InvalidOperationException("尚未找到此游戏的可用窗口，请从任务栏切回。"+found.Message);
             var window=target.Window;
             if(IsIconic(window))ShowWindow(window,9);
-            if(!SetForegroundWindow(window))_statusLabel.Text="游戏窗口已找到，请从任务栏切回。";
+            if(!SetForegroundWindow(window))DesktopStatus="游戏窗口已找到，请从任务栏切回。";
         }
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
     }

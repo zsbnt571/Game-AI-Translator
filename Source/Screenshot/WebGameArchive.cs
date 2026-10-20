@@ -15,6 +15,7 @@ internal sealed class WebGameArchive : IDisposable
     private readonly long dataOffset;
     private readonly Dictionary<string,(long Offset,long Size,JsonObject? Node,ZipArchiveEntry? Zip)> entries=new(StringComparer.Ordinal);
     internal IEnumerable<string> Names=>entries.Keys;
+    internal StringComparison PathComparison=>directory is null?StringComparison.Ordinal:StringComparison.OrdinalIgnoreCase;
     internal int UnreadableEntries {get;private set;}
     internal static string SafeName(string name)
     {
@@ -25,6 +26,9 @@ internal sealed class WebGameArchive : IDisposable
     {
         if(Directory.Exists(path))
         {
+            // Loose desktop resources follow Windows path identity. ASAR and
+            // other virtual archives retain their original case-sensitive keys.
+            entries=new(StringComparer.OrdinalIgnoreCase);
             directory=Path.GetFullPath(path);var todo=new Stack<(string Path,int Depth)>();todo.Push((directory,0));
             int visited=0;var watch=System.Diagnostics.Stopwatch.StartNew();
             while(todo.Count>0)

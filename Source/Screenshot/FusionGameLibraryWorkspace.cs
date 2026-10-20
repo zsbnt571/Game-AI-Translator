@@ -2,17 +2,17 @@ namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
-    private readonly GameLibraryGrid _libraryGrid=new(){Dock=DockStyle.Fill};
-    private readonly TextBox _librarySearch=new(){PlaceholderText=UiLanguage.Text("搜索名称、标签或便签"),Width=220};
-    private readonly ComboBox _libraryFilter=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=125};
-    private readonly ComboBox _libraryEngine=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=155};
-    private readonly ComboBox _libraryFolder=new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=155};
-    private readonly Label _libraryCount=new(){AutoSize=true};
-    private readonly LinkLabel _libraryRetention=new(){AutoSize=true,Text="保留数量",Visible=false};
-    private readonly Label _libraryChineseName=new(){AutoSize=true};
-    private readonly PictureBox _libraryCover=new WorkspaceCover {Dock=DockStyle.Fill,AccessibleName="所选游戏封面"};
-    private readonly Label _libraryNote=new(){AutoSize=true};
-    private readonly System.Windows.Forms.Timer _libraryRefreshTimer=new(){Interval=180};
+    private readonly ILibraryGridSession _libraryGrid=WpfWorkspace.Enabled?new NativeGameLibraryGrid():new GameLibraryGrid{Dock=DockStyle.Fill};
+    private readonly TextBox _librarySearch=WpfWorkspace.Enabled ? null! : new(){PlaceholderText=UiLanguage.Text("搜索名称、标签或便签"),Width=220};
+    private readonly ComboBox _libraryFilter=WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=125};
+    private readonly ComboBox _libraryEngine=WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=155};
+    private readonly ComboBox _libraryFolder=WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList,Width=155};
+    private readonly Label _libraryCount=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly LinkLabel _libraryRetention=WpfWorkspace.Enabled ? null! : new(){AutoSize=true,Text="保留数量",Visible=false};
+    private readonly Label _libraryChineseName=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly PictureBox _libraryCover=WpfWorkspace.Enabled ? null! : new WorkspaceCover {Dock=DockStyle.Fill,AccessibleName="所选游戏封面"};
+    private readonly Label _libraryNote=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly DesktopUiTimer _libraryRefreshTimer=new(){Interval=180};
     private readonly Dictionary<string,string> _libraryEngines=new(StringComparer.OrdinalIgnoreCase);
     private LibraryMetadata? _libraryMetadata;
     private Task<LibraryMetadata>? _libraryMetadataTask;
@@ -20,8 +20,12 @@ public sealed partial class MainForm
     private bool _libraryIdentifying;
     private int _libraryDetailEpoch,_libraryViewRevision;
     private string _libraryScrollScope="";
+    private bool _libraryHomePending;
+    private int _libraryNavigationEpoch;
+    private string _libraryNavigationImageStamp="";
+    private readonly Dictionary<string,Point> _libraryScrollPositions=new(StringComparer.Ordinal);
     private Button? _plainLaunchButton;
-    private readonly Label _librarySelectionLabel=WorkspaceLabel("双击游戏进入详细主页");
+    private readonly Label _librarySelectionLabel=WpfWorkspace.Enabled ? null! : WorkspaceLabel("双击游戏进入详细主页");
     private RecentGameStore? _librarySubscribedStore;
     private FlowLayoutPanel? _libraryPager;
     private static GameActionButton IconButton(string text,string icon,EventHandler action,bool primary=false,int minWidth=84)
@@ -49,6 +53,8 @@ public sealed partial class MainForm
 
     private void BuildGameLibraryWorkspace(Panel page)
     {
+        if(WpfWorkspace.Enabled){InitializeNativeLibrary(page);return;}
+        var _libraryGrid=(GameLibraryGrid)this._libraryGrid;var _recentShelf=(GameLibraryGrid)this._recentShelf;
         page.AutoScroll=false;
         var body=WorkspaceColumn();body.Padding=new(24,18,24,0);
         var top=new TableLayoutPanel{ColumnCount=2,RowCount=1,AutoSize=false,Height=48,Margin=new(0,0,0,12)};top.ColumnStyles.Add(new(SizeType.Percent,100));top.ColumnStyles.Add(new(SizeType.AutoSize));top.RowStyles.Add(new(SizeType.Percent,100));
@@ -58,8 +64,8 @@ public sealed partial class MainForm
         var arrow=IconButton("","down",(_,_)=>{},true,32);arrow.LogicalHeight=36;arrow.RefreshMetrics();
         var menu=new WorkspaceMenu();menu.AddAction("选择游戏程序（可多选）","game",(_,_)=>ChooseLibraryGame());menu.AddAction("扫描文件夹","folder",async(_,_)=>await ImportLibraryFolderAsync());
         arrow.Click+=(_,_)=>{menu.Font=Font;menu.Show(arrow,new Point(0,arrow.Height));};FormClosed+=(_,_)=>menu.Dispose();top.Controls.Add(CompactRow(add,arrow),1,0);WorkspaceAdd(body,top,SizeType.Absolute,48);
-        _libraryFilter.Items.AddRange(["全部游戏","已保存","最近玩过","有书签"]);_libraryFilter.SelectedIndex=0;
-        _libraryEngine.Items.Add("全部引擎");_libraryEngine.SelectedIndex=0;_libraryFolder.Items.Add("全部文件夹");_libraryFolder.SelectedIndex=0;
+        _libraryFilter.Items.AddRange(["全部游戏","已保存","最近玩过","有书签"]);LibraryFilterIndex=0;
+        _libraryEngine.Items.Add("全部引擎");LibraryEngineIndex=0;_libraryFolder.Items.Add("全部文件夹");LibraryFolderIndex=0;
         var search=SearchField(_librarySearch);search.MinimumSize=new(180,34);
         var gridView=IconButton("","grid",(_,_)=>{},true,31);var listView=IconButton("","list",(_,_)=>{},false,31);gridView.AccessibleName="封面视图";listView.AccessibleName="列表视图";
         gridView.Click+=(_,_)=>{_libraryGrid.SetListMode(false);gridView.Primary=true;listView.Primary=false;gridView.Invalidate();listView.Invalidate();};
@@ -74,7 +80,7 @@ public sealed partial class MainForm
         WorkspaceAdd(shelf,_recentShelf,SizeType.Percent,100);WorkspaceAdd(body,shelf,SizeType.Absolute,202);
         _recentShelf.SizeChanged+=(_,_)=>SizeRecentShelf();_recentShelf.FontChanged+=(_,_)=>SizeRecentShelf();
         WorkspaceAdd(body,_mainSectionHeading);_mainSectionHeading.Dock=DockStyle.None;_mainSectionHeading.Anchor=AnchorStyles.Left;
-        _libraryGrid.Portrait=_libraryPreferences.Portrait;_libraryGrid.CoverWidth=_libraryPreferences.CoverWidth;WorkspaceAdd(body,_libraryGrid,SizeType.Percent,100);
+        _libraryGrid.Portrait=_libraryPreferences.Portrait;_libraryGrid.CoverWidth=_recentShelf.CoverWidth=_libraryPreferences.CoverWidth;WorkspaceAdd(body,_libraryGrid,SizeType.Percent,100);
         _libraryPager=WorkspaceRow(_libraryRetention);_libraryPager.Visible=false;WorkspaceAdd(body,_libraryPager);_libraryRetention.LinkClicked+=async(_,_)=>await EditLibraryRetentionAsync();
         page.Controls.Add(body);_libraryBody=body;BuildGameSessionWorkspace(page);
         foreach(var grid in new[]{_libraryGrid,_recentShelf})
@@ -87,13 +93,13 @@ public sealed partial class MainForm
         _libraryRefreshTimer.Tick+=async(_,_)=>{_libraryRefreshTimer.Stop();await RefreshLibraryAsync();};
         void DropTarget(Control control)
         {
-            control.AllowDrop=true;control.DragEnter+=(_,e)=>{if(e.Data?.GetDataPresent(DataFormats.FileDrop)==true){e.Effect=DragDropEffects.Copy;_statusLabel.Text="松开以导入游戏或扫描文件夹";}};
-            control.DragLeave+=(_,_)=>_statusLabel.Text="就绪";
+            control.AllowDrop=true;control.DragEnter+=(_,e)=>{if(e.Data?.GetDataPresent(DataFormats.FileDrop)==true){e.Effect=DragDropEffects.Copy;DesktopStatus="松开以导入游戏或扫描文件夹";}};
+            control.DragLeave+=(_,_)=>DesktopStatus="就绪";
             control.DragDrop+=async(_,e)=>{if(e.Data?.GetData(DataFormats.FileDrop)is string[] paths)await ImportLibraryPathsAsync(paths,true);};
             foreach(Control child in control.Controls)DropTarget(child);
         }
         DropTarget(body);InitializeRecentUi();RenderGameState();Shown+=(_,_)=>ScheduleLibraryRefresh();
-        FormClosed+=(_,_)=>{_libraryContextMenu.Dispose();_gameLaunchMenu.Dispose();_libraryRefreshTimer.Stop();_libraryRefreshTimer.Dispose();if(_librarySubscribedStore is not null)_librarySubscribedStore.Changed-=LibraryStoreChanged;_libraryCover.Image?.Dispose();_libraryCover.Image=null;};
+        FormClosed+=(_,_)=>{_libraryContextMenu.Dispose();_gameLaunchMenu.Dispose();_libraryRefreshTimer.Stop();_libraryRefreshTimer.Dispose();if(_librarySubscribedStore is not null)_librarySubscribedStore.Changed-=LibraryStoreChanged;GameCoverImage?.Dispose();GameCoverImage=null;};
     }
     private async void ChooseLibraryGame()
     {
@@ -106,6 +112,7 @@ public sealed partial class MainForm
         try{BeginInvoke((Action)ScheduleLibraryRefresh);}catch(InvalidOperationException){}
     }
     private void ScheduleLibraryRefresh(){if(IsDisposed||Disposing||!IsHandleCreated)return;_libraryViewRevision++;_libraryRefreshTimer.Stop();_libraryRefreshTimer.Start();}
+    private void RefreshLibraryImmediately(){if(IsDisposed||Disposing||!IsHandleCreated)return;_libraryViewRevision++;_libraryRefreshTimer.Stop();_=RefreshLibraryAsync();}
     private async Task RefreshLibraryAsync()
     {
         if(IsDisposed||Disposing)return;if(_libraryLoading){_libraryRefreshPending=true;return;}
@@ -117,7 +124,7 @@ public sealed partial class MainForm
             var store=await RecentStore();_libraryMetadata=await (_libraryMetadataTask??=Task.Run(()=>new LibraryMetadata()));if(IsDisposed)return;
             _libraryMetadata.Reload();if(Stale())return;
             if(_librarySubscribedStore is null){_librarySubscribedStore=store;store.Changed+=LibraryStoreChanged;}
-            _libraryRetention.Text=$"保留 {store.RecentLimit} 项";_libraryRetention.Visible=_libraryFilter.SelectedIndex==2;
+            LibraryRetentionText=$"保留 {store.RecentLimit} 项";if(!WpfWorkspace.Enabled)_libraryRetention.Visible=LibraryFilterIndex==2;
             var all=await Task.Run(store.SnapshotAll);if(Stale())return;
             foreach(var entry in all){var engine=_libraryMetadata.Get(entry.Id).Engine;_libraryEngines.TryAdd(entry.ExePath,string.IsNullOrWhiteSpace(engine)?"待识别":engine);}
             if(_selectedGame is { } selected)_libraryEngines[selected.ExePath]=selected.Engine;
@@ -125,11 +132,11 @@ public sealed partial class MainForm
             try
             {
                 void Refill(ComboBox box,IEnumerable<string> entries,string first){var chosen=box.Text;var items=new[]{first}.Concat(entries.Distinct().OrderBy(x=>x)).ToArray();if(box.Items.Cast<string>().SequenceEqual(items))return;box.Items.Clear();box.Items.AddRange(items);box.SelectedItem=items.Contains(chosen)?chosen:first;}
-                Refill(_libraryEngine,_libraryEngines.Values,"全部引擎");Refill(_libraryFolder,LibraryFolders.All(_libraryPreferences).Where(f=>f.Root is not null).Select(f=>f.Root!),"全部文件夹");
+                if (!WpfWorkspace.Enabled) { Refill(_libraryEngine,_libraryEngines.Values,"全部引擎");Refill(_libraryFolder,LibraryFolders.All(_libraryPreferences).Where(f=>f.Root is not null).Select(f=>f.Root!),"全部文件夹"); }
             }
             finally{_libraryFiltersLoading=false;}
-            var query=_librarySearch.Text.Trim();IEnumerable<RecentGame> filtered=all;
-            bool homeSections=_libraryCollection.Length==0&&_libraryScope=="home"&&_libraryTag.Length==0&&query.Length==0&&_libraryFilter.SelectedIndex==0&&_libraryEngine.SelectedIndex<=0&&_libraryFolder.SelectedIndex<=0;
+            var query=LibrarySearchText.Trim();IEnumerable<RecentGame> filtered=all;
+            bool homeSections=_libraryCollection.Length==0&&_libraryScope=="home"&&_libraryTag.Length==0&&query.Length==0&&LibraryFilterIndex==0&&LibraryEngineIndex<=0&&LibraryFolderIndex<=0;
             if(homeSections)filtered=LibrarySections.Select(filtered,_libraryPreferences.MainSection,_libraryMetadata,_libraryEngines,store.RecentLimit,_libraryPreferences);
             var sectionTitle=homeSections?LibrarySections.Title(_libraryPreferences.MainSection,_libraryPreferences):query.Length>0?"搜索结果":"筛选结果";
             var running=_gameSessions.Snapshot().Where(x=>x.Process==FusionGameProcessState.Running).Select(x=>x.Game.ExePath).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -138,57 +145,98 @@ public sealed partial class MainForm
             if(_libraryScope=="favorite")filtered=filtered.Where(x=>_libraryMetadata.Get(x.Id).Bookmark);
             if(_libraryCollection.Length>0)filtered=LibrarySections.Select(filtered,"collection:"+_libraryCollection,_libraryMetadata,_libraryEngines,store.RecentLimit,_libraryPreferences);
             if(_libraryTag.Length>0)filtered=filtered.Where(x=>_libraryMetadata.Get(x.Id).Tags.Split([',','，',';','；'],StringSplitOptions.TrimEntries).Contains(_libraryTag));
-            if(_libraryFilter.SelectedIndex==1)filtered=filtered.Where(x=>x.Saved);
-            if(_libraryFilter.SelectedIndex==2){var recent=store.Snapshot().Select(x=>x.Id).ToHashSet();filtered=filtered.Where(x=>recent.Contains(x.Id));}
-            if(_libraryFilter.SelectedIndex==3)filtered=filtered.Where(x=>_libraryMetadata.Get(x.Id).Bookmark);
-            if(_libraryEngine.SelectedIndex>0)filtered=filtered.Where(x=>_libraryEngines.GetValueOrDefault(x.ExePath)==_libraryEngine.Text);
-            if(_libraryFolder.SelectedIndex>0)filtered=filtered.Where(x=>LibraryFolders.Contains(_libraryFolder.Text,x.ExePath));
-            if(query.Length>0)filtered=filtered.Where(x=>(x.Name+" "+_libraryMetadata.Get(x.Id).ChineseName+" "+_libraryMetadata.Get(x.Id).Note+" "+_libraryMetadata.Get(x.Id).Tags).Contains(query,StringComparison.OrdinalIgnoreCase));
+            if(LibraryFilterIndex==1)filtered=filtered.Where(x=>x.Saved);
+            if(LibraryFilterIndex==2){var recent=store.Snapshot().Select(x=>x.Id).ToHashSet();filtered=filtered.Where(x=>recent.Contains(x.Id));}
+            if(LibraryFilterIndex==3)filtered=filtered.Where(x=>_libraryMetadata.Get(x.Id).Bookmark);
+            if(LibraryEngineIndex>0)filtered=filtered.Where(x=>_libraryEngines.GetValueOrDefault(x.ExePath)==LibraryEngineChoice);
+            if(LibraryFolderIndex>0)filtered=filtered.Where(x=>LibraryFolders.Contains(LibraryFolderChoice,x.ExePath));
+            if(query.Length>0)filtered=filtered.Where(x=>(x.Name+" "+_libraryMetadata.Get(x.Id).DisplayName+" "+_libraryMetadata.Get(x.Id).Note+" "+_libraryMetadata.Get(x.Id).Tags).Contains(query,StringComparison.OrdinalIgnoreCase));
             var found=filtered.ToArray();
             tiles=found.Select(x=>new LibraryTile(x,_libraryMetadata.Get(x.Id),_libraryEngines.GetValueOrDefault(x.ExePath)??"待识别",null,null)).ToArray();
             if(Stale())return;
             bool showShelf=all.Length>0&&homeSections;
-            var sectionRecords=LibrarySections.Select(all,_libraryPreferences.RecentSection,_libraryMetadata,_libraryEngines,store.RecentLimit,_libraryPreferences).ToArray();
+            string navigationKey=_libraryCollection.Length>0?"collection:"+_libraryCollection:_libraryTag.Length>0?"tag:"+_libraryTag:LibraryEngineIndex>0?"engine:"+LibraryEngineChoice:LibraryFolderIndex>0?"folder:"+LibraryFolderChoice:_libraryScope;
+            string scrollScope=string.Join("\0",navigationKey,_libraryPreferences.MainSection,LibraryFilterIndex.ToString(),LibraryEngineChoice,LibraryFolderChoice,query);
+            var desiredScroll=_libraryGrid is NativeGameLibraryGrid visibleGrid&&_libraryScrollScope==scrollScope?visibleGrid.ScrollOffset:_libraryScrollPositions.GetValueOrDefault(scrollScope);
+            Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)> imageLoader=game=>(store.ReadImage(game,true,640),store.ReadImage(game,false));
+            if(_libraryGrid is NativeGameLibraryGrid nativeGrid)await nativeGrid.PrepareVisibleImagesAsync(tiles,imageLoader,desiredScroll);
+            if(Stale())return;
+            var sectionRecords=showShelf?LibrarySections.Select(all,_libraryPreferences.RecentSection,_libraryMetadata,_libraryEngines,store.RecentLimit,_libraryPreferences).ToArray():[];
             var recentRecords=sectionRecords.Take(24).Select(x=>(Game:x,Note:_libraryMetadata.Get(x.Id),Engine:_libraryEngines.GetValueOrDefault(x.ExePath)??"")).ToArray();
-            recentTiles=await Task.Run(()=>recentRecords.Select(x=>new LibraryTile(x.Game,x.Note,x.Engine,store.ReadImage(x.Game,true),store.ReadImage(x.Game,false))).ToArray());
-            if(Stale())return;
-            navIcons=await Task.Run(()=>all.Take(200).Select(x=>(x.ExePath,Image:store.ReadImage(x,false))).Where(x=>x.Image is not null).ToDictionary(x=>x.ExePath,x=>x.Image!,StringComparer.OrdinalIgnoreCase));
-            if(Stale())return;
-            string navigationKey=_libraryCollection.Length>0?"collection:"+_libraryCollection:_libraryTag.Length>0?"tag:"+_libraryTag:_libraryEngine.SelectedIndex>0?"engine:"+_libraryEngine.Text:_libraryFolder.SelectedIndex>0?"folder:"+_libraryFolder.Text:_libraryScope;
-            // Commit a complete view without yielding between its heading, cards and navigation.
-            string? selectedPath=_gameSessionPage?.Visible==true?_selectedGame?.ExePath:null;
-            using(new UiLayoutBatch(_libraryBody!))
+            if(showShelf)
             {
-                _mainSectionHeading.Text=sectionTitle;
-                _libraryGrid.EmptyText=all.Length>0?"这个范围内暂无游戏\n可切换栏目、筛选或搜索":"把游戏拖到这里\n或点击右上角“导入游戏”";
-                _libraryGrid.SetTiles(tiles,_selectedGame?.ExePath,game=>(store.ReadImage(game,true),store.ReadImage(game,false)));tiles=null;_libraryGrid.UpdateRunning(running);
-                string scrollScope=string.Join("\0",navigationKey,_libraryPreferences.MainSection,_libraryFilter.SelectedIndex.ToString(),_libraryEngine.Text,_libraryFolder.Text,query);
-                if(_libraryScrollScope!=scrollScope){_libraryGrid.ScrollToStart();_libraryScrollScope=scrollScope;}
-                _showRecentShelf=showShelf;if(_recentShelfHost is not null)_recentShelfHost.Visible=showShelf;
-                _recentSectionTotal=sectionRecords.Length;_recentSectionHeading.Text=LibrarySections.Title(_libraryPreferences.RecentSection,_libraryPreferences)+(sectionRecords.Length>24?$"  24 / {sectionRecords.Length}":"");
-                _recentShelf.EmptyText="这个范围内暂无游戏，可点击标题切换";
-                _recentShelf.SetTiles(recentTiles,_selectedGame?.ExePath);recentTiles=null;_recentShelf.UpdateRunning(running);SizeRecentShelf();
-                _libraryNavigation.UpdateEntries(all,_libraryMetadata,_libraryEngines,running,selectedPath,navigationKey,_libraryPreferences,navIcons);navIcons=null;
-                if(_libraryHeading is not null)_libraryHeading.Text=_libraryCollection.Length>0?LibrarySections.Title("collection:"+_libraryCollection,_libraryPreferences):_libraryTag.Length>0?_libraryTag:_libraryEngine.SelectedIndex>0?_libraryEngine.Text:_libraryFolder.SelectedIndex>0?Path.GetFileName(_libraryFolder.Text):_libraryScope switch{"recent"=>"最近使用","running"=>"正在运行","favorite"=>"收藏",_=>"游戏库"};
-                _libraryCount.Text=$"{found.Length} 款游戏";if(_libraryPager is not null)_libraryPager.Visible=_libraryFilter.SelectedIndex==2;
+                if(_recentShelf is NativeGameLibraryGrid nativeShelf)
+                {recentTiles=recentRecords.Select(x=>new LibraryTile(x.Game,x.Note,x.Engine,null,null)).ToArray();await nativeShelf.PrepareVisibleImagesAsync(recentTiles,imageLoader,nativeShelf.ScrollOffset);}
+                else recentTiles=await Task.Run(()=>recentRecords.Select(x=>new LibraryTile(x.Game,x.Note,x.Engine,store.ReadImage(x.Game,true,640),store.ReadImage(x.Game,false))).ToArray());
             }
+            if(Stale())return;
+            string navigationImageStamp=string.Join("\n",all.Take(200).Select(x=>string.Join("\0",x.ExePath,x.Icon,x.IconStamp,x.ArtworkVersion)));
+            if(_libraryNavigationImageStamp!=navigationImageStamp)
+                navIcons=await Task.Run(()=>all.Take(200).Select(x=>(x.ExePath,Image:store.ReadImage(x,false))).Where(x=>x.Image is not null).ToDictionary(x=>x.ExePath,x=>x.Image!,StringComparer.OrdinalIgnoreCase));
+            if(Stale())return;
+            // Commit a complete view without yielding between its heading, cards and navigation.
+            string? selectedPath=(WpfWorkspace.Enabled?_wpfDetails&&!_libraryHomePending:_gameSessionPage?.Visible==true)?_selectedGame?.ExePath:null;
+            using(WpfWorkspace.Enabled ? null : new UiLayoutBatch(_libraryBody!))
+            {
+                LibraryLowerSectionText=sectionTitle;
+                _libraryGrid.EmptyText=all.Length>0?"这个范围内暂无游戏\n可切换栏目、筛选或搜索":"把游戏拖到这里\n或点击右上角“导入游戏”";
+                if(_libraryScrollScope!=scrollScope&&_libraryGrid is NativeGameLibraryGrid previousGrid)
+                {if(_libraryScrollPositions.Count>=128)_libraryScrollPositions.Remove(_libraryScrollPositions.Keys.First());_libraryScrollPositions[_libraryScrollScope]=previousGrid.ScrollOffset;}
+                _libraryGrid.SetTiles(tiles,_selectedGame?.ExePath,imageLoader);tiles=null;_libraryGrid.UpdateRunning(running);
+                if(_libraryScrollScope!=scrollScope){if(_libraryGrid is NativeGameLibraryGrid scrollGrid)scrollGrid.RestoreScroll(desiredScroll);else _libraryGrid.ScrollToStart();_libraryScrollScope=scrollScope;}
+                _showRecentShelf=showShelf;if(_recentShelfHost is not null)_recentShelfHost.Visible=showShelf;
+                _recentSectionTotal=sectionRecords.Length;LibraryUpperSectionText=LibrarySections.Title(_libraryPreferences.RecentSection,_libraryPreferences)+(sectionRecords.Length>24?$"  24 / {sectionRecords.Length}":"");
+                _recentShelf.EmptyText="这个范围内暂无游戏，可点击标题切换";
+                if(recentTiles is not null){_recentShelf.SetTiles(recentTiles,_selectedGame?.ExePath,_recentShelf is NativeGameLibraryGrid?imageLoader:null);recentTiles=null;}
+                _recentShelf.UpdateRunning(running);SizeRecentShelf();
+                _libraryNavigation.UpdateEntries(all,_libraryMetadata,_libraryEngines,running,selectedPath,navigationKey,_libraryPreferences,navIcons);navIcons=null;_libraryNavigationImageStamp=navigationImageStamp;
+                if(WpfWorkspace.Enabled||_libraryHeading is not null)LibraryHeadingText=_libraryCollection.Length>0?LibrarySections.Title("collection:"+_libraryCollection,_libraryPreferences):_libraryTag.Length>0?_libraryTag:LibraryEngineIndex>0?LibraryEngineChoice:LibraryFolderIndex>0?Path.GetFileName(LibraryFolderChoice):_libraryScope switch{"recent"=>"最近使用","running"=>"正在运行","favorite"=>"收藏",_=>"游戏库"};
+                LibraryCountText=$"{found.Length} 款游戏";if(_libraryPager is not null)_libraryPager.Visible=LibraryFilterIndex==2;
+            }
+            if(_libraryHomePending){_libraryHomePending=false;_wpfDetails=false;RecordPageLocation();}
             _wpfWindow?.RefreshWorkspace();
-            if(_libraryMetadata.Notice.Length>0)_statusLabel.Text=_libraryMetadata.Notice;
+            if(_libraryMetadata.Notice.Length>0)DesktopStatus=_libraryMetadata.Notice;
             if(_selectedGame is { } game&&store.Find(game.ExePath) is { } record)await RefreshLibraryDetailAsync(store,record);
             if(!IsDisposed){_=IdentifyLibraryEnginesAsync(all);_=FillLibraryChineseNamesAsync(all);}
         }
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
-        finally{if(tiles is not null)foreach(var tile in tiles)tile.Dispose();if(recentTiles is not null)foreach(var tile in recentTiles)tile.Dispose();if(navIcons is not null)foreach(var image in navIcons.Values)image.Dispose();_libraryLoading=false;if(_libraryRefreshPending&&!IsDisposed){_libraryRefreshPending=false;ScheduleLibraryRefresh();}}
+        finally{if(tiles is not null)foreach(var tile in tiles)tile.Dispose();if(recentTiles is not null)foreach(var tile in recentTiles)tile.Dispose();if(navIcons is not null)foreach(var image in navIcons.Values)image.Dispose();_libraryLoading=false;if(_libraryRefreshPending&&!IsDisposed){_libraryRefreshPending=false;RefreshLibraryImmediately();}}
     }
     private async Task RefreshLibraryDetailAsync(RecentGameStore store,RecentGame record)
     {
         int epoch=++_libraryDetailEpoch;
-        var cover=await Task.Run(()=>store.ReadImage(record,true));
+        record=store.Find(record.ExePath)??record;
+        Bitmap? cover=null;
+        System.Windows.Media.Imaging.BitmapSource? source=null;
+        if(WpfWorkspace.Enabled)
+        {
+            source=await LoadLibraryArtworkAsync(store,record);
+        }
+        else cover=await Task.Run(()=>store.ReadImage(record,true));
         if(IsDisposed||epoch!=_libraryDetailEpoch||!StringComparer.OrdinalIgnoreCase.Equals(record.ExePath,_selectedGame?.ExePath)){cover?.Dispose();return;}
+        // Store reads use the current image. If an image/crop changed while
+        // decoding, retain the previous complete pair until the next refresh.
+        var live=store.Find(record.ExePath);
+        if(live is null||live.Cover!=record.Cover||live.CoverFrame!=record.CoverFrame)
+        {cover?.Dispose();ScheduleLibraryRefresh();return;}
+        ApplyLibraryDetail(record,source,cover);
+    }
+    private Task<System.Windows.Media.Imaging.BitmapSource?> LoadLibraryArtworkAsync(RecentGameStore store,RecentGame record)
+    {
+        var key=store.CoverImageKey(record);
+        return _libraryCoverCache.GetAsync(key,()=>
+        {
+            using var bitmap=store.ReadImage(record,true);
+            return bitmap is null||store.CoverImageKey(record)!=key?null:WpfDrawing.Image(bitmap);
+        });
+    }
+    private void ApplyLibraryDetail(RecentGame record,System.Windows.Media.Imaging.BitmapSource? source,Bitmap? cover)
+    {
         var note=_libraryMetadata?.Get(record.Id)??new();
         if(_libraryMetadata is not null&&_libraryMetadata.Notice.Length==0&&_selectedGame is { } active&&note.Engine!=active.Engine){_libraryMetadata.Save(record.Id,note with{Engine=active.Engine});note=_libraryMetadata.Get(record.Id);}
-        _libraryChineseName.Text=note.ChineseName;_libraryChineseName.Visible=note.ChineseName.Length>0;_libraryNote.Text=note.Note;_libraryNote.Visible=note.Note.Length>0;
-        var old=_libraryCover.Image;_libraryCover.Image=cover;old?.Dispose();_libraryCover.BackColor=UiTheme.Current.Main;RenderGameSessionState();
+        GameChineseNameText=note.DisplayName;GameNoteText=note.Note;if(!WpfWorkspace.Enabled){_libraryChineseName.Visible=note.DisplayName.Length>0;_libraryNote.Visible=note.Note.Length>0;}
+        _libraryArtworkSource=source;_libraryArtworkRecord=record;
+        var old=GameCoverImage;GameCoverImage=cover;old?.Dispose();if(!WpfWorkspace.Enabled)_libraryCover.BackColor=UiTheme.Current.Main;RenderGameSessionState();
     }
     private async Task EditLibraryNoteAsync()
     {
@@ -196,26 +244,28 @@ public sealed partial class MainForm
         var record=store.Find(game.ExePath);if(record is null)return;
         _libraryMetadata=await (_libraryMetadataTask??=Task.Run(()=>new LibraryMetadata()));if(IsDisposed)return;
         var note=_libraryMetadata.Get(record.Id);
+        if(WpfWorkspace.Enabled){await EditNativeLibraryNoteAsync(store,record,game,note);return;}
         using var dialog=new Form{AutoScaleMode=AutoScaleMode.Dpi,AutoScaleDimensions=new(96,96),AutoScroll=true,Text="名称、标签与便签",StartPosition=FormStartPosition.CenterParent,ClientSize=new(560,460),MinimumSize=new(560,500),Font=Font,MinimizeBox=false,MaximizeBox=false};
+        var nameLanguage=UiLanguage.Current;
         using var cancelTranslation=CancellationTokenSource.CreateLinkedTokenSource(_desktopLifetime.Token);dialog.FormClosed+=(_,_)=>cancelTranslation.Cancel();
         var table=WorkspaceColumn();table.Padding=new(18);table.Dock=DockStyle.Top;table.AutoSize=true;
         var originalName=new TextBox{Text=record.Name,MaxLength=160};
-        var name=new TextBox{Text=note.ChineseName,PlaceholderText=UiLanguage.Text("添加中文显示名，保留原名"),MaxLength=120};
+        var name=new TextBox{Text=note.DisplayName,PlaceholderText=UiLanguage.Text("添加本地化显示名，保留原名"),MaxLength=120};
         var text=new TextBox{Text=note.Note,PlaceholderText=UiLanguage.Text("写一条贴在游戏上的备注"),MaxLength=120};
         var tags=new TextBox{Text=note.Tags,PlaceholderText=UiLanguage.Text("标签，例如：RPG, 像素, 待研究"),MaxLength=160};
         var bookmark=new CheckBox{Text="在卡片上放置书签",Checked=note.Bookmark,AutoSize=true};
         var color=new ComboBox{DropDownStyle=ComboBoxStyle.DropDownList};color.Items.AddRange(["浅黄","淡紫","薄荷"]);color.SelectedIndex=note.Color=="lavender"?1:note.Color=="mint"?2:0;
-        var generate=WorkspaceButton("生成中文名",(_,_)=>{});var feedback=WorkspaceLabel("");
-        WorkspaceAdd(table,WorkspaceLabel("游戏名称"));WorkspaceAdd(table,originalName);WorkspaceAdd(table,WorkspaceLabel("中文名称"));WorkspaceAdd(table,name);WorkspaceAdd(table,WorkspaceRow(generate));WorkspaceAdd(table,feedback);WorkspaceAdd(table,text);WorkspaceAdd(table,tags);WorkspaceAdd(table,WorkspaceRow(bookmark,color));
+        var generate=WorkspaceButton("生成译名",(_,_)=>{});var feedback=WorkspaceLabel("");
+        WorkspaceAdd(table,WorkspaceLabel("游戏名称"));WorkspaceAdd(table,originalName);WorkspaceAdd(table,WorkspaceLabel("本地化名称"));WorkspaceAdd(table,name);WorkspaceAdd(table,WorkspaceRow(generate));WorkspaceAdd(table,feedback);WorkspaceAdd(table,text);WorkspaceAdd(table,tags);WorkspaceAdd(table,WorkspaceRow(bookmark,color));
         var save=WorkspaceButton("保存",(_,_)=>dialog.DialogResult=DialogResult.OK);var cancel=WorkspaceButton("取消",(_,_)=>dialog.DialogResult=DialogResult.Cancel);WorkspaceAdd(table,WorkspaceRow(save,cancel));
         generate.Click+=async(_,_)=>{
             generate.Enabled=save.Enabled=false;name.ReadOnly=true;feedback.Text="正在用当前游戏翻译方案生成…";
             try
             {
-                var settings=LibraryNameTranslation.Settings(_fusion!.GameSettings(UiSettings,game.ExePath));
+                var settings=LibraryNameTranslation.Settings(_fusion!.GameSettings(UiSettings,game.ExePath),nameLanguage);
                 var translated=await _translationService.TranslatePlainAsync(originalName.Text.Trim(),settings,cancelTranslation.Token);
                 if(dialog.IsDisposed||!dialog.Visible||cancelTranslation.IsCancellationRequested)return;
-                var value=LibraryNameTranslation.Validate(translated.Text);
+                var value=LibraryNameTranslation.Validate(translated.Text,nameLanguage);
                 name.Text=value;feedback.Text="机器译名，可修改后保存。";
             }
             catch(OperationCanceledException){}
@@ -224,7 +274,7 @@ public sealed partial class MainForm
         };
         dialog.AcceptButton=save;dialog.CancelButton=cancel;dialog.Controls.Add(table);UiTheme.Apply(dialog,_appliedDesktopSettings);
         if(dialog.ShowDialog(this)!=DialogResult.OK)return;
-        try{if(originalName.Text.Trim()!=record.Name){store.SetDisplayName(record.Id,originalName.Text,true);_selectedGame=game with{Name=originalName.Text.Trim()};_gameTitle.Text=originalName.Text.Trim();}var value=_libraryMetadata.Get(record.Id) with{ChineseName=name.Text.Trim(),Note=text.Text.Trim(),Color=color.SelectedIndex==1?"lavender":color.SelectedIndex==2?"mint":"yellow",Bookmark=bookmark.Checked,Tags=tags.Text.Trim()};_libraryMetadata.Save(record.Id,value);ScheduleLibraryRefresh();}
+        try{if(originalName.Text.Trim()!=record.Name){store.SetDisplayName(record.Id,originalName.Text,true);_selectedGame=game with{Name=originalName.Text.Trim()};GameTitleText=originalName.Text.Trim();}var value=_libraryMetadata.Get(record.Id).WithName(nameLanguage,new(name.Text.Trim(),"manual")) with{Note=text.Text.Trim(),Color=color.SelectedIndex==1?"lavender":color.SelectedIndex==2?"mint":"yellow",Bookmark=bookmark.Checked,Tags=tags.Text.Trim()};_libraryMetadata.Save(record.Id,value);ScheduleLibraryRefresh();}
         catch(Exception ex){ShowFusionError(ex);}
     }
     private async Task ImportLibraryFolderAsync(string? selectedFolder=null)
@@ -239,7 +289,7 @@ public sealed partial class MainForm
         {
             var scan=await Task.Run(()=>LibraryImport.Scan(paths));if(IsDisposed)return;
             var chosen=scan.Games;
-            if(chosen.Length==0){_statusLabel.Text="未找到游戏主程序"+(scan.Skipped>0?$" · 已过滤 {scan.Skipped} 个辅助或重复程序":"")+"。";return;}
+            if(chosen.Length==0){DesktopStatus="未找到游戏主程序"+(scan.Skipped>0?$" · 已过滤 {scan.Skipped} 个辅助或重复程序":"")+"。";return;}
             var store=await RecentStore();int added=0,duplicates=0;var errors=new List<string>();
             foreach(var path in chosen)
             {
@@ -249,7 +299,7 @@ public sealed partial class MainForm
                 catch(Exception ex){errors.Add(Path.GetFileName(path)+"："+SafeDiagnosticOutput.ExceptionSummary(ex));}
             }
             if(chosen.Length>0)RegisterLibraryRoots(paths.Where(Directory.Exists));
-            if(!IsDisposed){_statusLabel.Text=$"已导入 {added} 个游戏"+(scan.Skipped>0?$" · 过滤 {scan.Skipped} 个辅助或重复入口":"")+(duplicates>0?$" · 跳过 {duplicates} 个已有记录":"")+(errors.Count>0?$" · {errors.Count} 项失败：{errors[0]}":"")+(scan.Limited?" · 已达到本次扫描上限，其余游戏可分批导入":"");ScheduleLibraryRefresh();_=FillDefaultArtworkAsync(chosen);}
+            if(!IsDisposed){DesktopStatus=$"已导入 {added} 个游戏"+(scan.Skipped>0?$" · 过滤 {scan.Skipped} 个辅助或重复入口":"")+(duplicates>0?$" · 跳过 {duplicates} 个已有记录":"")+(errors.Count>0?$" · {errors.Count} 项失败：{errors[0]}":"")+(scan.Limited?" · 已达到本次扫描上限，其余游戏可分批导入":"");ScheduleLibraryRefresh();_=FillDefaultArtworkAsync(chosen);}
         }
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
     }
@@ -284,6 +334,7 @@ public sealed partial class MainForm
         try
         {
             var store=await RecentStore();if(IsDisposed)return;
+            if(WpfWorkspace.Enabled){await EditNativeLibraryRetentionAsync(store);return;}
             using var dialog=new Form{AutoScaleMode=AutoScaleMode.Dpi,AutoScaleDimensions=new(96,96),AutoScroll=true,Text="最近玩过",StartPosition=FormStartPosition.CenterParent,ClientSize=new(410,180),MinimumSize=new(410,210),Font=Font,MinimizeBox=false,MaximizeBox=false};
             var table=WorkspaceColumn();table.Padding=new(16);table.Dock=DockStyle.Top;table.AutoSize=true;
             WorkspaceAdd(table,WorkspaceLabel("保留最近多少项？"));

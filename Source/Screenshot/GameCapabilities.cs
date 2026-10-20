@@ -1,4 +1,4 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 // Engine detection is descriptive. Only a registered adapter path grants an
 // action; a newly recognised engine must not inherit another engine's controls.

@@ -40,6 +40,20 @@ public static class FontManager
         }
     }
     private static readonly ConditionalWeakTable<Control,UiFontPool> UiFonts=new();
+    private static readonly ConditionalWeakTable<DesktopApplicationController,UiFontPool> ControllerFonts=new();
+    public static void ApplyUi(DesktopApplicationController root, ApiSettings settings)
+    {
+        if (root.HasLegacyWindow) { ApplyUi(root.LegacyWindow, settings); return; }
+        var pool = ControllerFonts.GetValue(root, controller =>
+        {
+            var value = new UiFontPool();
+            controller.Disposed += (_, _) => { foreach (var font in value.Fonts.Values) font.Dispose(); value.Fonts.Clear(); };
+            return value;
+        });
+        var profile = ResolveUiProfile(settings);
+        var desired = pool.Get(profile.FallbackFamilies, profile.Size, profile.BodyStyle, GraphicsUnit.Point);
+        if (!FontMatches(root.Font, desired)) root.Font = desired;
+    }
     private static UiFontPool Pool(Control root)=>UiFonts.GetValue(root,c=>{
         var pool=new UiFontPool();c.Disposed+=(_,_)=>{foreach(var font in pool.Fonts.Values)font.Dispose();pool.Fonts.Clear();};return pool;
     });

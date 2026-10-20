@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Collections.Concurrent;
@@ -73,7 +74,7 @@ public sealed class TranslationService
         ValidateSettings(settings);
         var stats = new RequestStats();
         string CacheKey(TranslationItem item)
-        {var raw=$"{CoreTranslationContentValidator.ContractVersion}|{item.IdentityContract}|{item.Id}|{item.RoleType}|{item.SemanticPurpose}|{string.Join(',',item.StableSourceIds)}|{item.Text}|{JsonSerializer.Serialize(item.SourceNeighbors)}{OcrTranslationContextContract.CacheSuffix(item)}|{TranslationPromptBuilder.PromptHash(settings)}|{settings.TargetLanguage}|{settings.TranslationProviderKind}|{TranslationCacheKeyBuilder.NormalizeBaseUrl(settings.ApiUrl)}|{settings.Model}";return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));}
+        {var raw=$"{CoreTranslationContentValidator.ContractVersion}|{item.IdentityContract}|{item.Id}|{item.RoleType}|{item.SemanticPurpose}|{string.Join(',',item.StableSourceIds)}|{item.Text}|{JsonSerializer.Serialize(item.SourceNeighbors)}{OcrTranslationContextContract.CacheSuffix(item)}|{TranslationPromptBuilder.PromptHash(settings)}|{settings.TargetLanguage}|{settings.TranslationProviderKind}|{TranslationCacheKeyBuilder.NormalizeBaseUrl(settings.ApiUrl)}|{settings.Model}{ChatRequestParameters.IdentitySuffix(settings)}";return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));}
         var existing=new Dictionary<string,string>(StringComparer.Ordinal);
         var existingAllocations=new Dictionary<string,TranslationAllocationSegment[]>(StringComparer.Ordinal);
         foreach(var item in pending.Where(x=>CorePipelineV2.NumericFidelityV2.IsPureQuantity(x.Text)))
@@ -158,7 +159,8 @@ public sealed class TranslationService
                 .GetProperty("message").GetProperty("content").GetString()?.Trim();
             if (string.IsNullOrWhiteSpace(translated)) throw new InvalidOperationException("API返回了空译文。");
             if(plain&&(!TranslationLanguageSpans.Preserved(text,translated,settings)||!TranslationLanguagePolicy.MenuNamesPreserved(text,translated)||
-                TranslationLanguageSpans.UnchangedEligibleText(text,translated,settings)))
+                TranslationLanguageSpans.UnchangedEligibleText(text,translated,settings)||
+                TranslationLanguageSpans.ResidualJapanese(text,translated,settings,settings.RequestTerms,EmbeddedTextSyntax.Generic)))
                 throw new InvalidDataException("译文改动了应保留的语言内容，或遗漏了需要翻译的内容，未采用此结果。");
             return new(translated, stats.Count, stats.WaitMs, raw.StatusCode);
         }
@@ -179,7 +181,7 @@ public sealed class TranslationService
         var watch = Stopwatch.StartNew();
         var requestBytes = request.Content?.Headers.ContentLength ?? 0;
         WriteLog($"request start={DateTimeOffset.Now:O} number={number} url={request.RequestUri} model={settings.Model} " +
-                 $"paragraphs={paragraphCount} source_chars={characterCount} request_bytes={requestBytes} fields=model,messages,temperature,stream,thinking stream=false thinking=disabled response_format=false mode={mode}");
+                 $"paragraphs={paragraphCount} source_chars={characterCount} request_bytes={requestBytes} stream=false custom_parameters={!string.IsNullOrWhiteSpace(settings.AdvancedApiParameters)} mode={mode}");
         try
         {
             progress?.Report(new(TranslationStage.SendingRequest, number, stats.WaitMs,
@@ -454,14 +456,15 @@ public sealed class TranslationService
     {
         var request = new HttpRequestMessage(HttpMethod.Post, NormalizeUrl(settings.ApiUrl));
         if(!string.IsNullOrEmpty(settings.ApiKey)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
-        request.Content = new StringContent(JsonSerializer.Serialize(new
+        var body=new JsonObject
         {
-            model = settings.Model,
-            messages,
-            temperature = 0.15,
-            stream = false,
-            thinking = new { type = "disabled" }
-        }), Encoding.UTF8, "application/json");
+            ["model"] = settings.Model,
+            ["messages"] = JsonSerializer.SerializeToNode(messages),
+            ["temperature"] = 0.15,
+            ["stream"] = false
+        };
+        ChatRequestParameters.Apply(body,settings);
+        request.Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
         return request;
     }
 
@@ -490,10 +493,8 @@ public sealed class TranslationService
             WriteLog($"response fields number={requestNumber} first_effective_content_ms={elapsedMs} " +
                      $"content_chars={content.Length} content_bytes={Encoding.UTF8.GetByteCount(content)} " +
                      $"reasoning_chars={reasoning.Length} reasoning_bytes={Encoding.UTF8.GetByteCount(reasoning)} " +
-                     $"finish_reason={Safe(finishReason)} thinking_disabled_effective={(reasoning.Length == 0 ? "true" : "false")} " +
+                     $"finish_reason={Safe(finishReason)} " +
                      $"prompt_tokens={promptTokens} completion_tokens={completionTokens} total_tokens={totalTokens}");
-            if (reasoning.Length > 0)
-                WriteLog($"warning number={requestNumber} message=思考模式未成功关闭");
             return new(promptTokens,completionTokens,totalTokens);
         }
         catch (Exception ex)
@@ -831,6 +832,7 @@ public sealed class TranslationService
         if (string.IsNullOrWhiteSpace(settings.ApiUrl)) throw new InvalidOperationException("API地址不能为空。");
         if (!settings.AllowEmptyApiKey && string.IsNullOrWhiteSpace(settings.ApiKey)) throw new InvalidOperationException("API Key不能为空。");
         if (string.IsNullOrWhiteSpace(settings.Model)) throw new InvalidOperationException("模型名称不能为空。");
+        ChatRequestParameters.Parse(settings.AdvancedApiParameters);
     }
 
     private static string NormalizeUrl(string url)

@@ -1,4 +1,4 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 public sealed record ProviderConnectionTestResult(bool Success, string Category, string Message, int? StatusCode = null);
 

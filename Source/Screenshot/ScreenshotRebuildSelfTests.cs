@@ -293,8 +293,8 @@ internal static class ScreenshotRebuildSelfTests
                 RequestedLogicalSize=new Size(1280,800),Workspace=form.ScreenshotWorkspaceStateForSmoke(),
                 LeftContentViewport=form.ScreenshotPaneForSmoke(0).ContentViewportBounds,
                 RightContentViewport=form.ScreenshotPaneForSmoke(1).ContentViewportBounds,
-                SearchCue=Descendants(form).OfType<TextBox>().Where(x=>x.Name=="ScreenshotHistorySearch").Select(x=>new{x.Text,x.PlaceholderText,x.Focused,x.IsHandleCreated,x.Visible}).ToArray(),
-                Controls=Descendants(form).Where(x=>x.Visible&&x.GetType().Name.StartsWith("Screenshot",StringComparison.Ordinal)).Select(x=>new
+                SearchCue=Descendants(form.LegacyWindow).OfType<TextBox>().Where(x=>x.Name=="ScreenshotHistorySearch").Select(x=>new{x.Text,x.PlaceholderText,x.Focused,x.IsHandleCreated,x.Visible}).ToArray(),
+                Controls=Descendants(form.LegacyWindow).Where(x=>x.Visible&&x.GetType().Name.StartsWith("Screenshot",StringComparison.Ordinal)).Select(x=>new
                 {Type=x.GetType().Name,x.Name,x.Bounds,x.ClientSize,ScreenBounds=new Rectangle(form.PointToClient(x.PointToScreen(Point.Empty)),x.Size)}).ToArray(),
                 Note="Offscreen WinForms DrawToBitmap. Native pixels are retained; the 1280x800 image is resampled for prototype comparison. Not a manual display acceptance test."
             },JsonOptions));
@@ -324,7 +324,7 @@ internal static class ScreenshotRebuildSelfTests
                 foreach(var name in new[]{"Profile","EditProfile","Retranslate","EditRecord","ResetSplit"})
                     Require(toolbar.ContainsKey("ScreenshotToolbar"+name),name+" is not directly visible in the toolbar.");
                 Require(!toolbar.ContainsKey("ScreenshotToolbarOverflow"),"Full-width toolbar still requires an overflow menu.");
-                var profile=Descendants(form).Single(x=>x.Name=="ScreenshotToolbarProfile");
+                var profile=Descendants(form.LegacyWindow).Single(x=>x.Name=="ScreenshotToolbarProfile");
                 Require(profile.Parent is Panel&&profile.Visible,"Profile selector is still hosted in a popup.");
                 Require(typeof(MainForm).GetField("_shotRecordTitle",BindingFlags.Instance|BindingFlags.NonPublic) is null&&typeof(MainForm).GetField("_shotMetadata",BindingFlags.Instance|BindingFlags.NonPublic) is null,"Low-value record information still occupies the toolbar.");
             });
@@ -501,7 +501,7 @@ internal static class ScreenshotRebuildSelfTests
             Check("history right click selects the intended record before its menu action",()=>
             {
                 form.ToggleScreenshotHistoryForSmoke();Pump();
-                var history=Descendants(form).OfType<ScreenshotRebuildHistory>().Single();
+                var history=Descendants(form.LegacyWindow).OfType<ScreenshotRebuildHistory>().Single();
                 var positions=(Rectangle[])typeof(ScreenshotRebuildHistory).GetField("bounds",BindingFlags.Instance|BindingFlags.NonPublic)!.GetValue(history)!;
                 var second=positions[1];var point=new Point(second.Left+second.Width/2,second.Top+history.AutoScrollPosition.Y+second.Height/2);
                 typeof(ScreenshotRebuildHistory).GetMethod("OnMouseDown",BindingFlags.Instance|BindingFlags.NonPublic)!.Invoke(history,[new MouseEventArgs(MouseButtons.Right,1,point.X,point.Y,0)]);
@@ -580,7 +580,7 @@ internal static class ScreenshotRebuildSelfTests
                 Require(form.ScreenshotPaneForSmoke(0).CurrentBitmap is null&&form.ScreenshotPaneForSmoke(1).CurrentBitmap is null,"Missing images reused stale content.");
                 var missingDecodes=form.ScreenshotWorkspacePerformanceForSmoke().SelectionDecodes;Complete(form.RefreshScreenshotWorkspaceForSmoke());
                 Require(form.ScreenshotWorkspacePerformanceForSmoke().SelectionDecodes==missingDecodes,"A missing-image record is retried on an unchanged refresh.");
-                Require(!Descendants(form).Single(x=>x.Name=="ScreenshotToolbarRetranslate").Enabled&&Descendants(form).Single(x=>x.Name=="ScreenshotToolbarEditRecord").Enabled,"Missing source image leaves unsafe retranslation enabled or prevents text editing.");
+                Require(!Descendants(form.LegacyWindow).Single(x=>x.Name=="ScreenshotToolbarRetranslate").Enabled&&Descendants(form.LegacyWindow).Single(x=>x.Name=="ScreenshotToolbarEditRecord").Enabled,"Missing source image leaves unsafe retranslation enabled or prevents text editing.");
                 form.SetScreenshotModesForSmoke(2,3);Require(form.ScreenshotPaneForSmoke(0).CurrentText.Contains("MISSING-SOURCE")&&form.ScreenshotPaneForSmoke(1).CurrentText.Contains("文字仍然保留"),"Missing images lost retained text.");Snapshot("07-retained-text");
             });
             form.SetScreenshotSearchForSmoke("",0);Complete(form.RefreshScreenshotWorkspaceForSmoke());Complete(form.SelectScreenshotRecordForSmoke(0));

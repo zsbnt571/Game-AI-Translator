@@ -4,6 +4,9 @@ namespace ScreenshotTranslationUiTester;
 
 internal static class NativeMethods
 {
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool IsWindow(IntPtr handle);
     [DllImport("uxtheme.dll", CharSet=CharSet.Unicode)]
     internal static extern int SetWindowTheme(IntPtr windowHandle,string? subAppName,string? subIdList);
     [DllImport("user32.dll")]

@@ -19,7 +19,7 @@ internal sealed record ScreenshotPaneViewState(
 
 // Both panes borrow the same bitmaps. Their owning workspace disposes images only
 // after clearing the references in both panes.
-internal sealed class ScreenshotRebuildPane : Panel
+internal sealed partial class ScreenshotRebuildPane : Panel
 {
     private readonly Font localFont;
     private readonly Panel header = new(), tools = new(), viewport = new();
@@ -163,7 +163,7 @@ internal sealed class ScreenshotRebuildPane : Panel
     internal bool HasContent => hasContent;
     internal bool IsImageView => view is ScreenshotPaneView.OriginalImage or ScreenshotPaneView.TranslatedImage;
     internal string CurrentText => view == ScreenshotPaneView.SourceText ? sourceText : view == ScreenshotPaneView.TranslatedText ? translationText : "";
-    internal string SelectedTextOrAll => copyAllText ? CurrentText : text.SelectionLength > 0 ? text.SelectedText : CurrentText;
+    internal string SelectedTextOrAll => copyAllText ? CurrentText : NativeStateRequested is not null ? NativeSelectedText.Length > 0 ? NativeSelectedText : CurrentText : text.SelectionLength > 0 ? text.SelectedText : CurrentText;
     private void RequestTextCopy(bool all)
     {
         if (IsImageView || (all ? text.TextLength == 0 : text.SelectionLength == 0)) return;
@@ -197,19 +197,19 @@ internal sealed class ScreenshotRebuildPane : Panel
         hasContent = false; loading = false; canvas.ResetView(); UpdateContent();
     }
     internal void SetLoading(bool value) { loading = value; UpdateContent(); }
-    internal void FitWindow() => canvas.SetFit(ScreenshotPaneFitMode.Window);
-    internal void FitWidth() => canvas.SetFit(ScreenshotPaneFitMode.Width);
-    internal void ActualSize() => canvas.SetZoom(1);
-    internal void ZoomIn() => canvas.ZoomBy(1.2f);
-    internal void ZoomOut() => canvas.ZoomBy(1 / 1.2f);
-    internal ScreenshotPaneViewState CaptureViewState() => new(view, fontSize, canvas.FitMode, canvas.Zoom, canvas.ScrollOffset.X, canvas.ScrollOffset.Y, canvas.PanOffset.X, canvas.PanOffset.Y);
+    internal void FitWindow() { if (NativeImageCommand is { } command) command("window"); else canvas.SetFit(ScreenshotPaneFitMode.Window); }
+    internal void FitWidth() { if (NativeImageCommand is { } command) command("width"); else canvas.SetFit(ScreenshotPaneFitMode.Width); }
+    internal void ActualSize() { if (NativeImageCommand is { } command) command("actual"); else canvas.SetZoom(1); }
+    internal void ZoomIn() { if (NativeImageCommand is { } command) command("in"); else canvas.ZoomBy(1.2f); }
+    internal void ZoomOut() { if (NativeImageCommand is { } command) command("out"); else canvas.ZoomBy(1 / 1.2f); }
+    internal ScreenshotPaneViewState CaptureViewState() => NativeStateRequested?.Invoke() ?? new(view, fontSize, canvas.FitMode, canvas.Zoom, canvas.ScrollOffset.X, canvas.ScrollOffset.Y, canvas.PanOffset.X, canvas.PanOffset.Y);
     internal void ApplyViewState(ScreenshotPaneViewState? state)
     {
         if (state is null) return; applyingState = true;
         try
         {
             View = Enum.IsDefined(state.View) ? state.View : ScreenshotPaneView.OriginalImage;
-            FontSize = state.FontSize; canvas.ApplyState(state.FitMode, state.Zoom, new(state.ScrollX, state.ScrollY), new(state.PanX, state.PanY)); UpdateLabels();
+            FontSize = state.FontSize; canvas.ApplyState(state.FitMode, state.Zoom, new(state.ScrollX, state.ScrollY), new(state.PanX, state.PanY)); NativeStateApplied?.Invoke(state); UpdateLabels();
         }
         finally { applyingState = false; }
     }
@@ -257,7 +257,7 @@ internal sealed class ScreenshotRebuildPane : Panel
         copy.Enabled = export.Enabled = content.Length > 0; edit.Enabled = hasContent;
         copyImage.Enabled = exportImage.Enabled = CurrentBitmap is not null;
         foreach (var control in imageTools) control.Enabled = CurrentBitmap is not null;
-        UpdateLabels(); PerformLayout(); canvas.Invalidate();
+        UpdateLabels(); PerformLayout(); canvas.Invalidate(); NativeViewChanged?.Invoke();
     }
     private void UpdateLabels()
     {
@@ -269,7 +269,7 @@ internal sealed class ScreenshotRebuildPane : Panel
         caption.Text = UiLanguage.Text(label)+(language.Length>0?" · "+UiLanguage.Text(language):"");
     }
     private void InterfaceLanguageChanged(object? sender,EventArgs e){UpdateLabels();PerformLayout();Invalidate(true);}
-    private void NotifyStateChanged() { if (!applyingState) StateChanged?.Invoke(this, EventArgs.Empty); }
+    private void NotifyStateChanged() { if (!applyingState) StateChanged?.Invoke(this, EventArgs.Empty); NativeViewChanged?.Invoke(); }
     protected override void OnDpiChangedAfterParent(EventArgs e) { base.OnDpiChangedAfterParent(e); PerformLayout(); }
     protected override void OnLayout(LayoutEventArgs e)
     {
@@ -287,7 +287,7 @@ internal sealed class ScreenshotRebuildPane : Panel
                 int sideWidth=Math.Max(S(26),TextRenderer.MeasureText(side.Text,side.Font,Size.Empty,TextFormatFlags.NoPadding).Width+S(3));
                 side.Visible = !narrow; side.SetBounds(pad, S(7), sideWidth, S(28));
                 int segmentLeft = narrow ? pad : side.Right+gap;
-                segments.SetBounds(segmentLeft, S(6), Math.Max(S(120), Math.Min(S(UiLanguage.IsEnglish?290:214), maximize.Left - gap - segmentLeft)), S(29));
+                segments.SetBounds(segmentLeft, S(6), Math.Max(S(120), Math.Min(S(UiLanguage.IsTranslated?290:214), maximize.Left - gap - segmentLeft)), S(29));
                 tools.SetBounds(1, headerHeight, Math.Max(1, width - 2), toolsHeight);
                 zoomLabel.Size = new(S(38), S(26)); fontLabel.Size = new(S(38), S(26));
                 int x = pad;

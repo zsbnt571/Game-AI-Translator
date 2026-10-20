@@ -6,6 +6,7 @@ internal static class AppDialog
 {
     internal static DialogResult Show(IWin32Window? owner, string title, string message, AppDialogKind kind = AppDialogKind.Information, string? details = null)
     {
+        if (WpfWorkspace.Enabled) { using var dialog = new NativeMessageDialog(title, message, kind, details); return dialog.ShowDialog(owner); }
         using var form = new Form { Text=title, StartPosition=owner is null?FormStartPosition.CenterScreen:FormStartPosition.CenterParent,
             ClientSize=new Size(520,210), MinimumSize=new Size(440,210), MaximizeBox=false,MinimizeBox=false,ShowInTaskbar=false,
             BackColor=UiTheme.Current.Main,ForeColor=UiTheme.Current.Text };
@@ -46,28 +47,39 @@ internal static class AppDialog
 
 internal static class ModalSafety
 {
+    private static bool IsTopMost(IWin32Window? window) => window switch { DesktopApplicationController native=>native.TopMost, Form form=>form.TopMost, _=>false };
+    private static void SetTopMost(IWin32Window? window, bool value) { if(window is DesktopApplicationController native)native.TopMost=value;else if(window is Form form)form.TopMost=value; }
+    private static bool Alive(IWin32Window? window)=>window switch { DesktopApplicationController native=>!native.IsDisposed&&!native.Disposing, Form form=>!form.IsDisposed&&!form.Disposing, _=>false };
     internal static DialogResult Show(IWin32Window? owner, Form dialog)
     {
         UiLanguage.BindTree(dialog);
-        var ownerForm=owner as Form;
-        var wasTopMost=ownerForm?.TopMost==true;
+        var ownerForm=owner;
+        var wasTopMost=ownerForm is not null && IsTopMost(ownerForm);
         try
         {
-            if(wasTopMost)ownerForm!.TopMost=false;
-            dialog.TopMost=wasTopMost;
+            if(wasTopMost)SetTopMost(ownerForm!,false);
+            SetTopMost(dialog,wasTopMost);
             return owner is null?dialog.ShowDialog():dialog.ShowDialog(owner);
         }
         finally
         {
-            if(ownerForm is {IsDisposed:false,Disposing:false})ownerForm.TopMost=wasTopMost;
+            if(Alive(ownerForm))SetTopMost(ownerForm,wasTopMost);
         }
     }
 
-    internal static T Run<T>(Form owner, Func<T> show)
+    internal static DialogResult Show(IWin32Window? owner, DesktopForm dialog)
     {
-        var wasTopMost=owner.TopMost;
-        try{if(wasTopMost)owner.TopMost=false;return show();}
-        finally{if(!owner.IsDisposed&&!owner.Disposing)owner.TopMost=wasTopMost;}
+        if (dialog.HasLegacyWindow) UiLanguage.BindTree(dialog.LegacyWindow);
+        var topmost=IsTopMost(owner);
+        try { if(topmost)SetTopMost(owner,false);dialog.TopMost=topmost;return dialog.ShowDialog(owner); }
+        finally { if(Alive(owner))SetTopMost(owner,topmost); }
+    }
+
+    internal static T Run<T>(IWin32Window owner, Func<T> show)
+    {
+        var wasTopMost=IsTopMost(owner);
+        try{if(wasTopMost)SetTopMost(owner,false);return show();}
+        finally{if(Alive(owner))SetTopMost(owner,wasTopMost);}
     }
 }
 

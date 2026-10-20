@@ -16,6 +16,7 @@ public sealed partial class MainForm
     private readonly WorkspaceMenu _folderContext=new();
     private string? AskLibraryFolderName(string title,string initial="",string label="文件夹名称")
     {
+        if(WpfWorkspace.Enabled)return AskNativeLibraryName(title,initial,label);
         int S(int value)=>value*DeviceDpi/96;
         using var dialog=new Form{Text=title,StartPosition=FormStartPosition.CenterParent,AutoScaleMode=AutoScaleMode.None,ClientSize=new(S(400),S(180)),Font=Font,FormBorderStyle=FormBorderStyle.FixedDialog,MinimizeBox=false,MaximizeBox=false};
         var input=new TextBox{Text=initial,MaxLength=64,Width=330,PlaceholderText=UiLanguage.Text("例如：剧情游戏、正在玩、待整理")};
@@ -56,7 +57,7 @@ public sealed partial class MainForm
     {
         if(target.Kind=="game")
         {
-            try{var store=await RecentStore();if(!IsDisposed&&store.Find(target.Value) is {} game)ShowLibraryGameContextMenu(game,point,_libraryNavigation,true);}
+            try{var store=await RecentStore();if(!IsDisposed&&store.Find(target.Value) is {} game)ShowLibraryGameContextMenu(game,point,_libraryNavigation as Control,true,WpfWorkspace.Enabled?_libraryNavigation.NativeView:null);}
             catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
             return;
         }
@@ -77,11 +78,11 @@ public sealed partial class MainForm
                     SaveLibraryFolders(LibraryFolders.All(_libraryPreferences).Where(f=>f.Id!=folder.Id));
                     var next=_libraryPreferences with{RecentSection=_libraryPreferences.RecentSection=="collection:"+folder.Id?"recent":_libraryPreferences.RecentSection,MainSection=_libraryPreferences.MainSection=="collection:"+folder.Id?"all":_libraryPreferences.MainSection};
                     LibraryPreferencesStore.Save(next);_libraryPreferences=next;if(_libraryCollection==folder.Id)NavigateLibrary(new("scope","home"));
-                    _statusLabel.Text="已删除库内文件夹，游戏和磁盘文件保留。";
+                    DesktopStatus="已删除库内文件夹，游戏和磁盘文件保留。";
                 }catch(Exception ex){ShowFusionError(ex);}
             });
         }
-        _folderContext.Show(_libraryNavigation,point);
+        if(WpfWorkspace.Enabled)WpfNativeMenus.Show(_folderContext,point:point,nativeAnchor:_libraryNavigation.NativeView);else _folderContext.Show((Control)_libraryNavigation,point);
     }
     private void AddLibraryFolderMembershipMenu(WorkspaceMenu menu,RecentGame game)
     {

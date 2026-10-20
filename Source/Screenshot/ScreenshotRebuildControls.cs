@@ -54,7 +54,7 @@ internal sealed class ScreenshotRebuildButton : Button
         int measured = Text.Length == 0 ? 0 : TextRenderer.MeasureText(Text, Font, Size.Empty, TextFormatFlags.NoPadding).Width;
         measuredText = Text; measuredIcon = iconKey; measuredFont = Font;
         measuredDpi = DeviceDpi; measuredHeight = LogicalHeight;
-        return measuredSize = new(Math.Max(S(logicalWidth), measured + S(iconKey.Length > 0 ? 30 : 16)), S(LogicalHeight));
+        return measuredSize = new(Math.Max(S(logicalWidth), measured + S(iconKey.Length > 0 ? LogicalHeight >= 36 ? 46 : 30 : LogicalHeight >= 36 ? 24 : 16)), S(LogicalHeight));
     }
     // A compact presentation must not grow to its default width before being
     // shortened again. Commit its label and final bounds as one layout step.
@@ -85,7 +85,7 @@ internal sealed class ScreenshotRebuildButton : Button
         using var shape = WorkspaceDrawing.Round(Rectangle.Inflate(ClientRectangle, -1, -1), S(4));
         if (!Borderless || hover || primary) { using var brush = new SolidBrush(fill); g.FillPath(brush, shape); }
         if (!Borderless) { using var border = new Pen(primary ? p.Accent : p.Border); g.DrawPath(border, shape); }
-        int icon = iconKey.Length > 0 ? S(12) : 0, gap = icon > 0 && Text.Length > 0 ? S(5) : 0;
+        int icon = iconKey.Length > 0 ? S(LogicalHeight >= 36 ? 18 : 12) : 0, gap = icon > 0 && Text.Length > 0 ? S(LogicalHeight >= 36 ? 8 : 5) : 0;
         int tw = Text.Length == 0 ? 0 : TextRenderer.MeasureText(Text, Font, Size.Empty, TextFormatFlags.NoPadding).Width;
         int x = Math.Max(S(3), (Width - icon - gap - tw) / 2);
         if (icon > 0) WorkspaceSkin.Icon(g, iconKey, new(x, (Height - icon) / 2, icon, icon), color);
@@ -138,7 +138,12 @@ internal sealed class ScreenshotRebuildSegments : Control
                 using var path = WorkspaceDrawing.Round(box, S(4)); using var brush = new SolidBrush(p.Secondary); g.FillPath(brush, path);
             }
             var color = i == (int)selected || i == hover ? p.Accent : p.SecondaryText;
-            var title=UiLanguage.IsEnglish?new[]{"Image","Translated","Source","Text"}[i]:ScreenshotRebuildPane.ViewTitle((ScreenshotPaneView)i);
+            var title=UiLanguage.Current switch
+            {
+                ApplicationLanguage.English=>new[]{"Image","Translated","Source","Text"}[i],
+                ApplicationLanguage.Russian=>new[]{"Снимок","Перевод","Оригинал","Текст"}[i],
+                _=>ScreenshotRebuildPane.ViewTitle((ScreenshotPaneView)i)
+            };
             TextRenderer.DrawText(g, title, Font, box, color, TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
         }
         if (Focused && ShowFocusCues) ControlPaint.DrawFocusRectangle(g, Rectangle.Inflate(ClientRectangle, -S(2), -S(2)), p.Accent, p.Control);

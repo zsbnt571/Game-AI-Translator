@@ -1,21 +1,21 @@
 namespace ScreenshotTranslationUiTester;
 
-public sealed class RecognitionRegionEditorForm : Form
+public sealed partial class RecognitionRegionEditorForm : DesktopForm
 {
+    internal override bool UsesNativePresentation=>true;
     private enum Tool { Select, Create, Polygon }
     private readonly Bitmap _image;
     private readonly RegionEditorSession _session;
     private readonly List<RecognitionRegion> _automatic;
     private readonly Func<RecognitionRegion, CancellationToken, Task<IReadOnlyList<OcrEngineBlock>>> _ocrRegion;
     private readonly Func<RecognitionRegion, CancellationToken, Task<VisualRegion?>> _visualRegion;
-    private readonly Panel _scroll = new() { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.FromArgb(14, 17, 23) };
-    private readonly PictureBox _canvas = new() { BackColor = Color.FromArgb(14, 17, 23), SizeMode = PictureBoxSizeMode.StretchImage };
-    private readonly ListBox _list = new() { Dock = DockStyle.Fill, SelectionMode = SelectionMode.MultiExtended };
-    private readonly ComboBox _role = new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = 150 };
-    private readonly NumericUpDown _order = new() { Minimum = 0, Maximum = 9999, Width = 74 };
-    private readonly CheckBox _ignore = new() { Text = UiStrings.IgnoreRegion, AutoSize = true };
-    private readonly CheckBox _preserve = new() { Text = UiStrings.PreserveOriginal, AutoSize = true };
-    private readonly Label _diagnostics = new() { Dock = DockStyle.Bottom, Height = 150, AutoEllipsis = true, ForeColor = Color.Gainsboro };
+    private readonly NativePreviewViewport _scroll=new();
+    private readonly NativePreviewPicture _canvas=new();
+    private readonly NativePreviewList _list=new();
+    private readonly NativePreviewChoice _role=new(150);
+    private readonly NativeRpgNumber _order=new(){Minimum=0,Maximum=9999,Width=120};
+    private readonly NativeRpgToggle _ignore=new(){Text=UiStrings.IgnoreRegion},_preserve=new(){Text=UiStrings.PreserveOriginal};
+    private readonly NativeRpgLabel _diagnostics=new();
     private readonly HashSet<string> _selected = new(StringComparer.Ordinal);
     private float _zoom = 1;
     private Tool _tool;
@@ -37,7 +37,8 @@ public sealed class RecognitionRegionEditorForm : Form
         AppBranding.Apply(this);
         Size = new(1380, 860); MinimumSize = new(980, 640); KeyPreview = true;
         BuildUi(); UiDarkTheme.Apply(this); RefreshAll();
-        _canvas.Paint += PaintCanvas; _canvas.MouseDown += CanvasMouseDown; _canvas.MouseMove += CanvasMouseMove; _canvas.MouseUp += CanvasMouseUp;
+        UiLanguage.LanguageChanged+=RefreshEditorLanguage;RefreshEditorLanguage();
+        _canvas.Overlay=DrawNativeOverlay; _canvas.MouseDown += CanvasMouseDown; _canvas.MouseMove += CanvasMouseMove; _canvas.MouseUp += CanvasMouseUp;
         _list.SelectedIndexChanged += (_, _) => { if (_syncing) return; _selected.Clear(); foreach (RegionListItem item in _list.SelectedItems) _selected.Add(item.Region.RegionId); LoadProperties(); _canvas.Invalidate(); };
         _role.Items.AddRange(Enum.GetNames<RegionRoleType>()); _role.SelectionChangeCommitted += (_, _) => ApplyRole();
         _order.ValueChanged += (_, _) => { if (_syncing || _selected.Count != 1) return; _session.SetReadingOrder(_selected.Single(), (int)_order.Value); RefreshAll(); };
@@ -45,29 +46,12 @@ public sealed class RecognitionRegionEditorForm : Form
         KeyDown += (_, e) => { if (e.Control && e.KeyCode == Keys.Z) { _session.Undo(); RefreshAll(); } else if (e.Control && e.KeyCode == Keys.Y) { _session.Redo(); RefreshAll(); } else if (e.KeyCode == Keys.Delete) DeleteSelected(); };
     }
 
-    private void BuildUi()
+    private void RefreshEditorLanguage(object? sender=null,EventArgs? e=null)
     {
-        var bar = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 46, Padding = new(4), BackColor = Color.FromArgb(29, 34, 44) };
-        Button Add(string text, Action action) { var b = new Button { Text = text, AutoSize = true, Height = 34 }; b.Click += (_, _) => action(); bar.Controls.Add(b); return b; }
-        Add(UiStrings.SelectMoveResize, () => _tool = Tool.Select); Add(UiStrings.CreateRegion, () => _tool = Tool.Create); Add(UiStrings.EditPolygon, () => _tool = Tool.Polygon);
-        Add(UiStrings.DeleteRegion, DeleteSelected); Add(UiStrings.MergeRegions, MergeSelected); Add(UiStrings.SplitHorizontal, () => SplitSelected(false)); Add(UiStrings.SplitVertical, () => SplitSelected(true));
-        Add(UiStrings.Undo, () => { _session.Undo(); RefreshAll(); }); Add(UiStrings.Redo, () => { _session.Redo(); RefreshAll(); });
-        Add(UiStrings.RerunRegionOcr, async () => await RunRegionOcr()); Add(UiStrings.RerunVisual, async () => await RunVisual());
-        Add(UiStrings.ResetSelected, ResetSelected); Add(UiStrings.ResetAll, () => { _session.ResetAllAuto(_automatic); RefreshAll(); });
-        Add(UiStrings.SourceLines, () => { _showSourceLines = !_showSourceLines; _canvas.Invalidate(); });
-        Add(UiStrings.ZoomIn, () => SetZoom(_zoom * 1.2f)); Add(UiStrings.ZoomOut, () => SetZoom(_zoom / 1.2f)); Add(UiStrings.ActualSize, () => SetZoom(1));
-        var split = new SplitContainer { Dock = DockStyle.Fill, SplitterDistance = 1030 };
-        _canvas.Image = _image; _scroll.Controls.Add(_canvas); split.Panel1.Controls.Add(_scroll);
-        var right = new TableLayoutPanel { Dock = DockStyle.Fill, RowCount = 3, ColumnCount = 1 };
-        right.RowStyles.Add(new(SizeType.Percent, 100)); right.RowStyles.Add(new(SizeType.Absolute, 80)); right.RowStyles.Add(new(SizeType.Absolute, 150));
-        right.Controls.Add(_list, 0, 0);
-        var props = new FlowLayoutPanel { Dock = DockStyle.Fill, Padding = new(4) }; props.Controls.AddRange([new Label { Text = UiStrings.RegionType, AutoSize = true }, _role, new Label { Text = UiStrings.ReadingOrder, AutoSize = true }, _order, _ignore, _preserve]); right.Controls.Add(props, 0, 1); right.Controls.Add(_diagnostics, 0, 2); split.Panel2.Controls.Add(right);
-        var bottom = new FlowLayoutPanel { Dock = DockStyle.Bottom, Height = 48, FlowDirection = FlowDirection.RightToLeft };
-        bottom.Controls.Add(new Button { Text = UiStrings.Apply, DialogResult = DialogResult.OK, Width = 100, Height = 34 }); bottom.Controls.Add(new Button { Text = UiStrings.Cancel, DialogResult = DialogResult.Cancel, Width = 100, Height = 34 });
-        Controls.Add(split); Controls.Add(bottom); Controls.Add(bar); AcceptButton = (IButtonControl)bottom.Controls[0]; CancelButton = (IButtonControl)bottom.Controls[1];
+        Text=UiLanguage.Text(UiStrings.RegionEditor);
+        if(_nativeRegionRoot is not null)WpfUiLanguage.Dialog(_nativeRegionRoot);
     }
-
-    private void SetZoom(float value) { _zoom = Math.Clamp(value, .25f, 4); _canvas.Size = new((int)(_image.Width * _zoom), (int)(_image.Height * _zoom)); _canvas.Invalidate(); }
+    private void SetZoom(float value) { _zoom = Math.Clamp(value, .25f, 4); _canvas.Size = new((int)(_image.Width * _zoom), (int)(_image.Height * _zoom)); _scroll.AutoScrollMinSize=_canvas.Size; _canvas.Invalidate(); }
     private PointF Source(Point p) => new(p.X / _zoom, p.Y / _zoom);
     private PointF Screen(PointF p) => new(p.X * _zoom, p.Y * _zoom);
     private void RefreshAll()
@@ -115,6 +99,6 @@ public sealed class RecognitionRegionEditorForm : Form
     private async Task RunRegionOcr() { if (_selected.Count != 1) return; var r=_session.Regions.Single(x=>_selected.Contains(x.RegionId)); Enabled=false; try { _session.ReplaceOcr(r.RegionId, await _ocrRegion(r,CancellationToken.None)); RefreshAll(); } finally { Enabled=true; } }
     private async Task RunVisual() { if (_selected.Count != 1) return; var r=_session.Regions.Single(x=>_selected.Contains(x.RegionId)); Enabled=false; try { var v=await _visualRegion(r,CancellationToken.None); if(v is not null && v.VisualRoleHint!=RegionRoleType.Unknown) _session.SetRole(r.RegionId,v.VisualRoleHint); RefreshAll(); } finally { Enabled=true; } }
     private void ResetSelected() { if (_selected.Count != 1) return; var id=_selected.Single(); var auto=_automatic.FirstOrDefault(x=>x.RegionId==id); if(auto is not null) _session.ResetSelected(id,auto); RefreshAll(); }
-    protected override void Dispose(bool disposing) { if(disposing) _image.Dispose(); base.Dispose(disposing); }
+    protected override void Dispose(bool disposing) { if(IsDisposed||Disposing)return;if(disposing) { UiLanguage.LanguageChanged-=RefreshEditorLanguage;_image.Dispose(); } base.Dispose(disposing); }
     private sealed record RegionListItem(RecognitionRegion Region) { public override string ToString() => $"#{Region.ReadingOrder} {Region.RoleType} {Region.RegionId[4..10]}  {Region.StructuredText}"; }
 }

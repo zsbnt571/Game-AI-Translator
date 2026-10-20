@@ -6,6 +6,8 @@ namespace ScreenshotTranslationUiTester;
 internal static class LibraryCoverSizes
 {
     internal static readonly int[] Widths=[120,158,220,300];
+    internal static readonly int[] ShelfWidths=[172,212,260,308];
+    internal static readonly int[] ListWidths=[240,300,360,440];
     internal static readonly string[] Labels=["小","标准","大","特大"];
     internal static int IndexFor(int width)=>Enumerable.Range(0,Widths.Length).MinBy(i=>Math.Abs((long)Widths[i]-width));
     internal static int Normalize(int width)=>Widths[IndexFor(width)];

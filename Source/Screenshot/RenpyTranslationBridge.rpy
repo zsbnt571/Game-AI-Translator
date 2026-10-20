@@ -4,7 +4,7 @@ init 999 python hide:
         import os
         if not os.environ.get('FUSION_RENPY_PIPE') or not os.environ.get('FUSION_RENPY_SECRET'):
             return
-        import renpy, threading, collections, weakref, json, ast, re, struct, time
+        import renpy, threading, collections, weakref, json, ast, re, struct, time, hashlib
         try:
             import builtins as native_builtins
         except ImportError:
@@ -27,6 +27,21 @@ init 999 python hide:
         startup_translation = os.environ.get('FUSION_RENPY_TRANSLATION_START', '1') != '0'
 
         class Bridge(native_builtins.object):
+            @staticmethod
+            def stored_pairs_hash(pairs):
+                # .NET ordinal order compares UTF-16 units, including astral
+                # characters before BMP private-use characters. Bind exact UTF-8
+                # bytes with little-endian lengths; this is not a display receipt.
+                digest = hashlib.sha256()
+                ordered = sorted(pairs, key=lambda pair: pair[0].encode('utf-16-be'))
+                digest.update(struct.pack('<I', len(ordered)))
+                for pair in ordered:
+                    for value in pair:
+                        data = value.encode('utf-8')
+                        digest.update(struct.pack('<I', len(data)))
+                        digest.update(data)
+                return digest.hexdigest()
+
             def __init__(self):
                 self.lock = threading.RLock()
                 self.ready = threading.Event()
@@ -372,7 +387,57 @@ init 999 python hide:
                 self.language_excluded = set()
                 self.nonoriginal_nodes = set()
                 self.catalog_marked = False
+                self.dialogue_contexts = {}
                 self.catalog_iter = self.catalog_steps()
+
+            def build_dialogue_contexts(self, nodes):
+                # Fixed AST neighbours, not traversal order or predicted branches.
+                # Repeated strings and multiple incoming edges remain context-free.
+                parents, counts = {}, {}
+                for node in nodes:
+                    for text in self.node_texts(node):
+                        if isinstance(text, string_type): counts[text] = counts.get(text, 0) + 1
+                    successor = getattr(node, 'next', None)
+                    if successor is not None:
+                        key = id(successor)
+                        parents[key] = node if key not in parents else None
+                    yield None
+                contexts = {}
+                transparent = ('Show', 'Hide', 'With', 'Voice', 'Pass', 'Window', 'Translate', 'EndTranslate')
+                for node in nodes:
+                    if not isinstance(node, renpy.ast.Say): continue
+                    source = getattr(node, 'what', None)
+                    if not isinstance(source, string_type) or not self.valid(source) or counts.get(source) != 1: continue
+                    previous, current, seen = [], node, set()
+                    for step in range(32):
+                        current = parents.get(id(current))
+                        if current is None or id(current) in seen: break
+                        seen.add(id(current))
+                        if getattr(current, 'filename', '') != getattr(node, 'filename', ''): break
+                        if isinstance(current, renpy.ast.Say):
+                            text = getattr(current, 'what', None)
+                            if not isinstance(text, string_type) or not self.valid(text) or len(text) > 600: break
+                            previous.append(text)
+                            if len(previous) == 3: break
+                        elif type(current).__name__ not in transparent: break
+                    if previous and sum(len(text) for text in previous) <= 1200:
+                        contexts[source] = list(reversed(previous))
+                    yield None
+                self.dialogue_contexts = contexts
+
+            def context_fields(self, texts):
+                rows, size, seen = [], 0, set()
+                for source in texts:
+                    if source in seen: continue
+                    seen.add(source)
+                    previous = self.dialogue_contexts.get(source)
+                    if not previous: continue
+                    row = {'source': source, 'unique': True, 'previous': previous}
+                    cost = len(json.dumps(row, ensure_ascii=True))
+                    if size + cost > 12000: continue
+                    rows.append(row); size += cost
+                    if len(rows) == 8: break
+                return {'dialogueContextContract': 'renpy-static-unique-1', 'dialogueContexts': rows}
 
             def catalog_steps(self):
                 def add(text, active_source=False):
@@ -435,6 +500,7 @@ init 999 python hide:
                         yield None
                     extras.append(node)
                     yield None
+                for step in self.build_dialogue_contexts(extras): yield None
                 # Publish all ordinary dialogue/choices before expensive screen
                 # expressions and Python data tables. They need no event execution.
                 for node in extras:
@@ -983,16 +1049,21 @@ init 999 python hide:
                             if texts and size + cost > 42000: break
                             texts.append(text)
                             size += cost
-                        return {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded), 'epoch': self.epoch, 'activeSourceTexts': [text for text in texts if text in self.catalog_active_sources]}
+                        response = {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded), 'epoch': self.epoch, 'activeSourceTexts': [text for text in texts if text in self.catalog_active_sources]}
+                        response.update(self.context_fields(texts))
+                        return response
                     if op == 'translationPoll':
                         texts = list(self.pending.keys())[:128]
                         for text in texts:
                             self.pending.pop(text, None)
-                        return {'epoch': self.epoch, 'texts': texts, 'ahead': self.ahead, 'activeTextLanguage': self.locale_language(self.active_text_language)}
+                        response = {'epoch': self.epoch, 'texts': texts, 'ahead': self.ahead, 'activeTextLanguage': self.locale_language(self.active_text_language)}
+                        response.update(self.context_fields(texts + self.ahead))
+                        return response
                     if op == 'translationApply':
                         if request.get('epoch') != self.epoch:
                             return {'stale': True}
                         count = 0
+                        accepted_pairs = []
                         for pair in request.get('entries', [])[:128]:
                             if not isinstance(pair, dict): continue
                             source, text = pair.get('source'), pair.get('text')
@@ -1008,8 +1079,9 @@ init 999 python hide:
                                     # before Text was created. A new template can therefore
                                     # match visible text whose dependency key is the resolved form.
                                         if '[' in source: self.refresh_all = True
+                                accepted_pairs.append((source, text))
                                 count += 1
-                        return {'applied': count}
+                        return {'applied': count, 'epoch': self.epoch, 'sourcePairsHash': self.stored_pairs_hash(accepted_pairs)}
                     if op == 'translationState':
                         return {'enabled': self.enabled, 'entries': len(set(self.cache).union(self.startup_exact)), 'startupExactCache': len(self.startup_exact), 'savedir': config.savedir, 'version': renpy.version_only, 'pending': len(self.pending), 'catalog': len(self.catalog)}
                     raise Exception('Unknown translation request')

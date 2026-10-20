@@ -1,12 +1,21 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
-    private readonly Label _translationContentStatus=Info("");
-    private readonly GameActionButton _saveTranslationContentButton=new("保存翻译内容")
+    private readonly TranslationContentEditorState _contentDraft = new();
+    internal TranslationContentEditorState ContentDraft => _contentDraft;
+    internal bool NativeSaveTranslationContent() => SaveTranslationContentEditor();
+    private void TranslationContentEdited()
+    { if (!_applyingSettings && !_loadingFusion && _translationContentLoaded) UpdateTranslationContentStatus(); }
+    private string TranslationContentMessage
+    {
+        set { if (WpfWorkspace.Enabled) _contentDraft.Status = value; else _translationContentStatus.Text = value; }
+    }
+    private readonly Label _translationContentStatus=WpfWorkspace.Enabled ? null! : Info("");
+    private readonly GameActionButton _saveTranslationContentButton=WpfWorkspace.Enabled ? null! : new("保存翻译内容")
         {Name="SaveTranslationContent",Primary=true,MinimumLogicalWidth=136};
     private bool _translationContentLoaded,_guardingTranslationContent;
-    private TranslationContentSettings ReadTranslationContentDraft()=>TranslationContentSettings.From(UiSettings);
+    private TranslationContentSettings ReadTranslationContentDraft()=>WpfWorkspace.Enabled?_contentDraft.Snapshot():TranslationContentSettings.From(UiSettings);
     private bool TranslationContentHasChanges=>_translationContentLoaded&&_fusion is not null&&
         ReadTranslationContentDraft().Identity!=_fusion.State.TranslationContent!.Identity;
     private bool IsTranslationContentControl(object? sender)=>new object[]{_targetLanguageBox,_sourceLanguageBox,
@@ -19,6 +28,9 @@ public sealed partial class MainForm
         try
         {
             content.ApplyTo(_translationOptions);
+            if (WpfWorkspace.Enabled) _contentDraft.Load(content);
+            else
+            {
             _targetLanguageBox.SelectedItem=UiTargetLanguageDisplay.DisplayFromCode(content.TargetLanguage);
             _sourceLanguageBox.SelectedIndex=(int)content.SourceLanguage;
             _sourceLanguageChoices.SelectLanguages(content.SourceLanguages);
@@ -27,6 +39,7 @@ public sealed partial class MainForm
             _customPromptBox.Text=content.CustomTranslationPrompt;
             _preserveIdentifiersBox.Checked=content.PreserveIdentifiers;
             _preserveNumbersBox.Checked=content.PreserveNumbers;_preserveVariablesBox.Checked=content.PreserveVariables;
+            }
             _translationContentLoaded=true;
         }
         finally { _applyingSettings=previous; }
@@ -34,7 +47,7 @@ public sealed partial class MainForm
     }
     private void UpdateTranslationContentStatus()
     {
-        _translationContentStatus.Text=TranslationContentHasChanges?"翻译内容有未保存的修改":"翻译内容已保存";
+        TranslationContentMessage=TranslationContentHasChanges?"翻译内容有未保存的修改":"翻译内容已保存";
     }
     private bool SaveTranslationContentEditor()
     {
@@ -44,12 +57,12 @@ public sealed partial class MainForm
             _fusion.SaveTranslationContent(ReadTranslationContentDraft());
             _fusion.State.TranslationContent!.ApplyTo(_translationOptions);
             UpdateTranslationContentStatus();RefreshFusionChrome();
-            _statusLabel.Text="翻译内容已保存：新截图任务使用；已运行的游戏下次启动生效。";
+            DesktopStatus="翻译内容已保存：新截图任务使用；已运行的游戏下次启动生效。";
             return true;
         }
         catch(Exception ex)
         {
-            _translationContentStatus.Text="翻译内容保存失败："+SafeDiagnosticOutput.ExceptionSummary(ex);
+            TranslationContentMessage="翻译内容保存失败："+SafeDiagnosticOutput.ExceptionSummary(ex);
             return false;
         }
     }
@@ -59,6 +72,14 @@ public sealed partial class MainForm
         _guardingTranslationContent=true;
         try
         {
+            if(WpfWorkspace.Enabled)
+            {
+                using var native=new NativeProfileDialog("翻译内容有未保存的修改","翻译内容有未保存的修改","保存目标语言、原文组合、风格、提示词和文字保护；也可以放弃修改，或取消并继续编辑。",false);
+                var choice=native.ShowDialog(this);
+                if(choice==DialogResult.Cancel)return false;
+                if(choice==DialogResult.Yes)return SaveTranslationContentEditor();
+                LoadTranslationContentToControls();return true;
+            }
             using var dialog=new ProfileDialogForm("翻译内容有未保存的修改","翻译内容有未保存的修改",
                 "保存目标语言、原文组合、风格、提示词和文字保护；也可以放弃修改，或取消并继续编辑。",UiSettings,false)
                 {Name="UnsavedTranslationContentDialog"};

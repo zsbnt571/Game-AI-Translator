@@ -1,102 +1,108 @@
-using W = System.Windows;
+﻿using W = System.Windows;
 using WC = System.Windows.Controls;
 
 namespace ScreenshotTranslationUiTester;
 
 internal sealed class WpfSettingsWorkspace : WC.Grid, IDisposable
 {
-    private readonly MainForm main;
+    private readonly ISettingsWorkspaceHost host;
     private readonly WC.StackPanel navigation = new();
-    private readonly WC.ContentControl content = new();
-    private readonly WpfSettingsFields footerFields = new();
-    private readonly W.FrameworkElement save;
-    private readonly Dictionary<int, (WC.ScrollViewer View, WpfSettingsFields Fields)> pages = [];
+    private readonly WC.ContentControl content = new() { Focusable = false, IsTabStop = false, FocusVisualStyle = null };
+    private readonly WC.Grid footer = new() { Margin = new(28, 12, 28, 8), MaxWidth = 1004, HorizontalAlignment = W.HorizontalAlignment.Stretch };
+    private readonly WC.TextBlock status = new() { TextWrapping = W.TextWrapping.Wrap, VerticalAlignment = W.VerticalAlignment.Center };
+    private readonly WC.Button save;
+    private readonly Dictionary<int, WC.ScrollViewer> pages = [];
     private readonly List<WC.Button> links = [];
+    private readonly Dictionary<int, WpfDesktopSettingsPage> nativePages = [];
+    private WpfProfileEditor? profileEditor;
+    private WpfTranslationContentEditor? contentEditor;
     private bool refreshing;
-    internal WpfSettingsWorkspace(MainForm main)
+
+    internal WpfSettingsWorkspace(ISettingsWorkspaceHost host)
     {
-        this.main = main;
+        this.host = host;
         ColumnDefinitions.Add(new() { Width = new(212) }); ColumnDefinitions.Add(new() { Width = new(1, W.GridUnitType.Star) });
         RowDefinitions.Add(new() { Height = new(1, W.GridUnitType.Star) }); RowDefinitions.Add(new() { Height = new(68) });
         navigation.Margin = new(20, 20, 0, 0);
-        for (int i = 0; i < main.WpfSettingsNames.Length; i++)
+        for (int i = 0; i < host.WpfSettingsNames.Length; i++)
         {
             int category = i;
-            var link = WpfThemeResources.Button(main.WpfSettingsNames[i], null, () => { main.WpfSelectSettings(category); Refresh(); });
+            var link = WpfThemeResources.Button(host.WpfSettingsNames[i], null, () => host.WpfSelectSettings(category));
+            link.SetResourceReference(WC.Control.StyleProperty, "Fusion.NavButton");
             link.MinHeight = 42; link.HorizontalContentAlignment = W.HorizontalAlignment.Left;
-            link.Padding = new(12, 0, 12, 0); link.Margin = new(0, 0, 0, 0); link.BorderThickness = new(3, 0, 0, 0);
+            link.Padding = new(12, 0, 12, 0); link.Margin = new(0); link.BorderThickness = new(3, 0, 0, 0);
             links.Add(link); navigation.Children.Add(link);
         }
         var navScroll = new WC.ScrollViewer { Content = navigation, VerticalScrollBarVisibility = WC.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = WC.ScrollBarVisibility.Disabled };
-        WC.Grid.SetRowSpan(navScroll, 2); Children.Add(navScroll);
-        WC.Grid.SetColumn(content, 1); Children.Add(content);
-        var footer = new WC.Grid { Margin = new(28, 12, 28, 8) };
+        WC.Grid.SetRowSpan(navScroll, 2); Children.Add(navScroll); WC.Grid.SetColumn(content, 1); Children.Add(content);
         footer.ColumnDefinitions.Add(new() { Width = new(1, W.GridUnitType.Star) }); footer.ColumnDefinitions.Add(new() { Width = W.GridLength.Auto });
-        footer.Children.Add(footerFields.Create(main.WpfSettingsSaveState));
-        save = footerFields.Create(main.WpfSettingsSaveButton); save.VerticalAlignment = W.VerticalAlignment.Center;
-        WC.Grid.SetColumn(save, 1); footer.Children.Add(save); WC.Grid.SetColumn(footer, 1); WC.Grid.SetRow(footer, 1); Children.Add(footer);
+        status.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted"); W.Automation.AutomationProperties.SetAutomationId(status, "SettingsSaveState"); footer.Children.Add(status);
+        save = WpfThemeResources.Button("保存设置", null, host.NativeSaveDesktopSettings); save.MinHeight = 36; save.MinWidth = 112; save.VerticalAlignment = W.VerticalAlignment.Center;
+        W.Automation.AutomationProperties.SetAutomationId(save, "SaveDesktopSettings"); WC.Grid.SetColumn(save, 1); footer.Children.Add(save);
+        WC.Grid.SetColumn(footer, 1); WC.Grid.SetRow(footer, 1); Children.Add(footer);
+        host.NativeSettingsStatusChanged += RefreshFooter;
     }
     internal void Refresh()
     {
-        if (refreshing) return; refreshing = true;
+        if (refreshing || host.WpfSettingsPreparing) return; refreshing = true;
         try
         {
-            int index = main.WpfSettingsCategory;
+            int index = host.WpfSettingsCategory;
             for (int i = 0; i < links.Count; i++)
             {
-                var link = links[i]; var p = UiTheme.Current;
-                WpfThemeResources.SetButton(link, main.WpfSettingsNames[i], null);
-                link.BorderBrush = WpfDrawing.Brush(i == index ? p.Accent : p.Main);
-                link.Background = WpfDrawing.Brush(i == index ? p.Control : p.Main);
+                var link = links[i]; var p = UiTheme.Current; WpfThemeResources.SetButton(link, host.WpfSettingsNames[i], null);
+                link.BorderBrush = WpfDrawing.Brush(i == index ? p.Accent : p.Main); link.Background = WpfDrawing.Brush(i == index ? p.Control : p.Main);
                 link.Foreground = WpfDrawing.Brush(i == index ? p.Accent : p.Text);
             }
             if (!pages.TryGetValue(index, out var page))
             {
-                var model = main.WpfSettingsContent(index); var fields = new WpfSettingsFields();
-                var body = new WC.StackPanel { MaxWidth = 1060, Margin = new(28, 24, 28, 28), HorizontalAlignment = W.HorizontalAlignment.Left };
-                foreach (Control block in model.Controls.Cast<Control>().ToArray())
+                var body = new WC.StackPanel { MaxWidth = 1004, Margin = new(28, 24, 28, 28), HorizontalAlignment = W.HorizontalAlignment.Stretch };
+                if (index == 3)
                 {
-                    W.FrameworkElement view = block is SettingsSection section ? Section(section, fields) : fields.Create(block);
-                    view.Margin = new(0, 0, 0, 16); body.Children.Add(view);
+                    host.NativePrepareProfilePage(); profileEditor ??= new(host.ProfileEditor); contentEditor ??= new(host.TranslationContent);
+                    var heading = new WC.TextBlock { FontSize = 28, FontWeight = W.FontWeights.Bold, Margin = new(0, 0, 0, 8), Tag = "SettingsHeading" };
+                    heading.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Text"); body.Children.Add(heading);
+                    var description = new WC.TextBlock { TextWrapping = W.TextWrapping.Wrap, Margin = new(0, 0, 0, 24), Tag = "SettingsDescription" };
+                    description.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted"); body.Children.Add(description);
+                    foreach (var view in new W.FrameworkElement[] { profileEditor.Defaults, profileEditor.Connection, contentEditor.Content }) { view.Margin = new(0, 0, 0, 16); body.Children.Add(view); }
                 }
-                var scroll = new WC.ScrollViewer { Content = body, VerticalScrollBarVisibility = WC.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = WC.ScrollBarVisibility.Disabled };
-                scroll.SizeChanged += (_, _) => body.Width = Math.Max(200, Math.Min(1004, scroll.ActualWidth - 74));
-                pages[index] = page = (scroll, fields);
+                else
+                {
+                    var native = new WpfDesktopSettingsPage(host.DesktopSettings, index); nativePages.Add(index, native); body.Children.Add(native.Content);
+                }
+                page = new() { Content = body, FocusVisualStyle = null, VerticalScrollBarVisibility = WC.ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = WC.ScrollBarVisibility.Disabled };
+                page.ScrollChanged += (_, _) => AlignFooter(page); pages.Add(index, page);
             }
-            content.Content = page.View; page.Fields.Refresh(); footerFields.Refresh();
-            save.Visibility = index == 3 ? W.Visibility.Collapsed : W.Visibility.Visible;
+            content.Content = page;
+            if (nativePages.TryGetValue(index, out var nativePage)) nativePage.Refresh();
+            if (index == 3)
+            {
+                profileEditor?.Refresh(); contentEditor?.Refresh();
+                foreach (var text in ((WC.StackPanel)page.Content).Children.OfType<WC.TextBlock>()) text.Text = UiLanguage.Text(Equals(text.Tag, "SettingsHeading") ? host.WpfSettingsNames[index] : host.NativeSettingsDescription(index));
+            }
+            AlignFooter(page); RefreshFooter();
         }
         finally { refreshing = false; }
     }
-    private static W.FrameworkElement Section(SettingsSection section, WpfSettingsFields fields)
+    private void RefreshFooter()
     {
-        var column = new WC.StackPanel();
-        var heading = fields.Create(section.Heading); heading.Margin = new(0, 0, 0, 20); column.Children.Add(heading);
-        foreach (var (label, model) in section.Fields)
-        {
-            var row = new WC.Grid { Margin = new(0, 0, 0, label.Text.Length == 0 ? 12 : 16) };
-            row.ColumnDefinitions.Add(new() { Width = new(206) }); row.ColumnDefinitions.Add(new() { Width = new(1, W.GridUnitType.Star) });
-            var title = fields.Create(label); title.Margin = new(0, 6, 16, 0); title.VerticalAlignment = W.VerticalAlignment.Top;
-            var value = fields.Create(model); WC.Grid.SetColumn(value, 1); row.Children.Add(title); row.Children.Add(value);
-            // Hiding a field hides its label and spacing, while its retained model
-            // still owns the previous value and all save/validation handlers.
-            fields.Bind(model, row);
-            row.SizeChanged += (_, _) => row.ColumnDefinitions[0].Width = new(Math.Clamp(row.ActualWidth / 4, 164, 206));
-            column.Children.Add(row);
-        }
-        var card = new WC.Border { Child = column, CornerRadius = new(8), Padding = new(20, 20, 20, 8), BorderThickness = new(1) };
-        card.SetResourceReference(WC.Border.BackgroundProperty, "Fusion.Secondary"); card.SetResourceReference(WC.Border.BorderBrushProperty, "Fusion.Border");
-        return card;
+        status.Text = UiLanguage.Text(host.NativeSettingsStatus); save.IsEnabled = host.NativeSettingsReady;
+        WpfThemeResources.SetButton(save, "保存设置", null); save.Visibility = host.WpfSettingsCategory == 3 ? W.Visibility.Collapsed : W.Visibility.Visible;
     }
-    public void Dispose() { footerFields.Dispose(); foreach (var page in pages.Values) page.Fields.Dispose(); pages.Clear(); }
+    private void AlignFooter(WC.ScrollViewer scroll)
+    {
+        if (!ReferenceEquals(content.Content, scroll) || scroll.ViewportWidth <= 0) return;
+        footer.Margin = new(28, 12, 28 + Math.Max(0, scroll.ActualWidth - scroll.ViewportWidth), 8);
+    }
+    public void Dispose()
+    { host.NativeSettingsStatusChanged -= RefreshFooter; profileEditor?.Dispose(); contentEditor?.Dispose(); foreach (var native in nativePages.Values) native.Dispose(); nativePages.Clear(); pages.Clear(); }
 }
 
 public sealed partial class MainForm
 {
-    internal string[] WpfSettingsNames => _settingsNavigation.Items.Cast<object>().Select(x => x.ToString() ?? "").ToArray();
-    internal int WpfSettingsCategory => Math.Max(0, _settingsNavigation.SelectedIndex);
-    internal void WpfSelectSettings(int index) => _settingsNavigation.SelectedIndex = index;
-    internal Control WpfSettingsContent(int index) { EnsureSettingsCategory(index); return (Control)_settingsTabs!.TabPages[index].Tag!; }
-    internal Label WpfSettingsSaveState => _settingsSaveState;
-    internal Button WpfSettingsSaveButton => _settingsSaveButton;
+    internal string[] WpfSettingsNames => NativeSettingsNames;
+    internal bool WpfSettingsPreparing => _preparingSettings;
+    internal int WpfSettingsCategory => WpfWorkspace.Enabled ? _lastSettingsCategory : Math.Max(0, _settingsNavigation.SelectedIndex);
+    internal void WpfSelectSettings(int index) { if (WpfWorkspace.Enabled) NativeSelectSettings(index); else _settingsNavigation.SelectedIndex = index; }
+    internal void NativePrepareProfilePage() => EnsureSettingsCategory(3);
 }

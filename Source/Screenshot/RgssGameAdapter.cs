@@ -128,7 +128,9 @@ internal static class RgssGameAdapter
     }
     internal static void Install(string exe)
     {
-        Stopped(exe);if(IsInstalled(exe))return;if(HasRecord(exe))Restore(exe);
+        Stopped(exe);if(IsInstalled(exe))return;
+        GameFontCoverage.RequireChinesePayload(Path.Combine(AppContext.BaseDirectory,"adapters/gamemaker/bridge-font.otf"));
+        if(HasRecord(exe))Restore(exe);
         var engine=Detect(exe)??throw new EmbeddedCompatibilityException("此 RGSS 运行时或脚本包尚未支持，未修改游戏。");
         string folder=At(exe,Folder);if(Directory.Exists(folder)||File.Exists(folder))throw new IOException("游戏中已有同名组件目录，未覆盖。");
         byte[] original=File.ReadAllBytes(At(exe,"Game.ini")),scripts=ScriptBytes(exe,engine);

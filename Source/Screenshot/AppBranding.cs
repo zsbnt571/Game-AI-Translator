@@ -33,6 +33,13 @@ internal static class AppBranding
         form.Disposed += (_, _) => icon.Dispose();
     }
 
+    internal static void Apply(DesktopApplicationController controller)
+    {
+        var icon = CreateIcon();
+        controller.Icon = icon;
+        controller.Disposed += (_, _) => icon.Dispose();
+    }
+
     internal static void DrawLogo(Graphics graphics, Rectangle bounds)
     {
         if (bounds.Width < 1 || bounds.Height < 1) return;

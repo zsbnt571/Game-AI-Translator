@@ -91,7 +91,7 @@ internal sealed partial class FusionConfiguration
     }
     internal static string EditIdentity(ApiSettings p)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(TranslationIdentity(p)+"|"+p.AllowEmptyApiKey+"|"+p.FirstByteTimeoutSeconds+"|"+p.RequestTimeoutSeconds)));
     internal static string ConnectionIdentity(ApiSettings p)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
-    {p.ApiUrl,p.ApiKey,p.Model,p.AllowEmptyApiKey,p.ProviderDisplayName,p.TranslationProviderKind,p.FirstByteTimeoutSeconds,p.RequestTimeoutSeconds}))));
+    {p.ApiUrl,p.ApiKey,p.Model,p.AdvancedApiParameters,p.AllowEmptyApiKey,p.ProviderDisplayName,p.TranslationProviderKind,p.FirstByteTimeoutSeconds,p.RequestTimeoutSeconds}))));
     internal string[] References(string id)
     {
         var refs=new List<string>();
@@ -107,6 +107,7 @@ internal sealed partial class FusionConfiguration
     }
     internal void SaveProfile(string id,string name,ApiSettings p,string origin="用户创建")
     {
+        ChatRequestParameters.Parse(p.AdvancedApiParameters);
         name=name.Trim();if(name.Length==0)throw new InvalidOperationException("请填写方案名称。");
         if(State.ProfileInfo.Any(x=>x.Key!=id&&x.Value.Name.Equals(name,StringComparison.OrdinalIgnoreCase)))throw new InvalidOperationException("已有同名方案，请使用不同名称。");
         SafeDiagnosticOutput.RegisterCredential(p.ApiKey);
@@ -124,10 +125,24 @@ internal sealed partial class FusionConfiguration
         var snapshot=new ApiSettings();content.ApplyTo(snapshot);
         Change(next=>next.TranslationContent=TranslationContentSettings.From(snapshot));
     }
-    internal void DeleteProfile(string id)
+    internal void DeleteProfile(string id,string? replacementId=null)
     {
-        var refs=References(id);if(refs.Length>0)throw new InvalidOperationException("此方案仍用于："+string.Join("、",refs)+"。请先明确选择替代方案。");
-        Change(next=>{next.Profiles.Remove(id);next.ProfileInfo.Remove(id);});
+        if(!State.Profiles.ContainsKey(id))throw new InvalidOperationException("此方案已不存在，请重新选择。");
+        var refs=References(id);
+        if(refs.Length>0&&replacementId is null)throw new InvalidOperationException("此方案仍用于："+string.Join("、",refs)+"。请先明确选择替代方案。");
+        if(replacementId is not null&&(replacementId==id||!State.Profiles.ContainsKey(replacementId)))
+            throw new InvalidOperationException("请选择另一个现有方案，未删除任何内容。");
+        Change(next=>
+        {
+            if(replacementId is not null)
+            {
+                if(next.CommonProfile==id)next.CommonProfile=replacementId;
+                if(next.ScreenshotProfile==id)next.ScreenshotProfile=replacementId;
+                if(next.EmbeddedProfile==id)next.EmbeddedProfile=replacementId;
+                foreach(var path in next.GameProfiles.Where(pair=>pair.Value==id).Select(pair=>pair.Key).ToArray())next.GameProfiles[path]=replacementId;
+            }
+            next.Profiles.Remove(id);next.ProfileInfo.Remove(id);
+        });
     }
     internal void RequireReady(bool embedded)
     {

@@ -1,4 +1,4 @@
-﻿using System.Drawing.Imaging;
+using System.Drawing.Imaging;
 using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
@@ -7,7 +7,8 @@ internal sealed record RecentGame(string Id,string Name,string ExePath,DateTimeO
     string? Icon=null,string? Cover=null,string? IconStamp=null,
     bool Saved=false,DateTimeOffset? SavedAt=null,DateTimeOffset? RecentAt=null,
     bool IconManual=false,bool CoverManual=false,string NameSource="file",string IconOrigin="automatic",string CoverOrigin="automatic",
-    ArtworkSource? IconPreference=null,ArtworkSource? CoverPreference=null,long ArtworkVersion=0);
+    ArtworkSource? IconPreference=null,ArtworkSource? CoverPreference=null,long ArtworkVersion=0,
+    string? IconSourceUrl=null,string? CoverSourceUrl=null,CoverFraming? CoverFrame=null);
 
 // Separate from OCR history, settings, credentials and installation ledgers.
 internal sealed class RecentGameStore
@@ -40,6 +41,7 @@ internal sealed class RecentGameStore
                     ||!ValidImageName(item.Id,item.Icon,false)||!ValidImageName(item.Id,item.Cover,true))
                 {Writable=false;continue;}
                 var g=item with{ExePath=Normalize(item.ExePath)};
+                if(g.NameSource!="manual"&&GameWindowNames.Clean(g.Name) is {} cleanName)g=g with{Name=cleanName};
                 // Older versions did not record manual ownership. Preserve every existing cover
                 // until the user explicitly chooses an automatic source for that game.
                 if(doc.Version<3&&g.Cover is not null)g=g with{CoverManual=true,CoverOrigin="preserved"};
@@ -60,6 +62,7 @@ internal sealed class RecentGameStore
     private static bool ValidImageName(string id,string? name,bool cover)
     {
         if(name is null)return true;
+        if(cover&&name.EndsWith(".cover.png",StringComparison.Ordinal))name=name[..^4]+".jpg";
         if(name==id+(cover?".cover.jpg":".icon.png"))return true;
         var prefix=id+".";var suffix=cover?".cover.jpg":".icon.png";
         return name.Length>prefix.Length+suffix.Length&&name.StartsWith(prefix,StringComparison.Ordinal)&&name.EndsWith(suffix,StringComparison.Ordinal)
@@ -111,8 +114,11 @@ internal sealed class RecentGameStore
                 value=new(old?.Id??Guid.NewGuid().ToString("N"),old is {NameSource:"window" or "manual"}?old.Name:name,path,usage?now:old?.SelectedAt??default,
                     changed&&old?.IconManual!=true?null:old?.Icon,old?.Cover,changed?null:old?.IconStamp,
                     old?.Saved??false,old?.SavedAt,usage?now:old?.RecentAt,
-                    old?.IconManual??false,old?.CoverManual??false,old?.NameSource??"file",old?.IconOrigin??"automatic",old?.CoverOrigin??"automatic",old?.IconPreference,old?.CoverPreference,old?.ArtworkVersion??0);
+                    old?.IconManual??false,old?.CoverManual??false,old?.NameSource??"file",old?.IconOrigin??"automatic",old?.CoverOrigin??"automatic",old?.IconPreference,old?.CoverPreference,old?.ArtworkVersion??0,old?.IconSourceUrl,old?.CoverSourceUrl,old?.CoverFrame);
             }
+            // Merely browsing an existing entry must not rewrite the store or
+            // fan out a library rebuild. Launch/usage and real edits still do.
+            if(old is not null&&value==old&&same?.Id==old.Id)return old;
             Commit(Trim(games.Where(x=>x.Id!=value.Id&&(old is null||x.Id!=old.Id)).Append(value).ToList(),RecentLimit));
             if(old is not null&&!StringComparer.OrdinalIgnoreCase.Equals(old.ExePath,path))
                 identityVersions[old.Id]=identityVersions.GetValueOrDefault(old.Id)+1;
@@ -130,25 +136,32 @@ internal sealed class RecentGameStore
     internal void SetRecentLimit(int limit)
     {if(limit is <1 or >1000)throw new ArgumentOutOfRangeException(nameof(limit));lock(gate){Commit(Trim(games,limit),limit);Changed?.Invoke();}}
     private string? ImagePath(RecentGame game,bool cover)=>(cover?game.Cover:game.Icon) is { } name?Path.Combine(root,name):null;
-    internal Bitmap? ReadImage(RecentGame game,bool cover)
+    private static CoverQualityResult AnalyzeCover(Image image)
+    {
+        // The capture worker's small-frame limit is not an original-artwork limit.
+        // Validate content on a bounded sample, retaining the full stored image.
+        using var sample=CoverQuality.VisibleThumbnail(image);
+        return CoverQuality.Analyze(sample);
+    }
+    internal Bitmap? ReadImage(RecentGame game,bool cover,int maxSide=0)
     {
         lock(gate)
         {
             var live=games.FirstOrDefault(x=>x.Id==game.Id&&StringComparer.OrdinalIgnoreCase.Equals(x.ExePath,game.ExePath));
             if(live is null)return null;
-            var path=ImagePath(live,cover);if(path is null||!File.Exists(path)||new FileInfo(path).Length>4_000_000){if(cover)coverQuality.Remove(game.Id);return null;}
+            var path=ImagePath(live,cover);if(path is null||!File.Exists(path)||new FileInfo(path).Length>128_000_000){if(cover)coverQuality.Remove(game.Id);return null;}
             try{
                 var info=new FileInfo(path);
                 var cached=cover&&!live.CoverManual&&coverQuality.TryGetValue(game.Id,out var found)&&found.Path==path&&found.Length==info.Length&&found.Written==info.LastWriteTimeUtc.Ticks?found:null;
                 if(cached is {Result.Usable:false})return null;
                 using var stream=File.OpenRead(path);using var image=Image.FromStream(stream);
-                if(image.Width>1280||image.Height>1280){if(cover)coverQuality[game.Id]=new(path,info.Length,info.LastWriteTimeUtc.Ticks,new(false,"invalid-size",image.Width,image.Height));return null;}
+                if(image.Width>8192||image.Height>8192||(long)image.Width*image.Height>32_000_000){if(cover)coverQuality[game.Id]=new(path,info.Length,info.LastWriteTimeUtc.Ticks,new(false,"invalid-size",image.Width,image.Height));return null;}
                 if(cover&&!live.CoverManual){
-                    var quality=cached?.Result??CoverQuality.Analyze(image);
+                    var quality=cached?.Result??AnalyzeCover(image);
                     coverQuality[game.Id]=new(path,info.Length,info.LastWriteTimeUtc.Ticks,quality);
                     if(!quality.Usable)return null;
                 }
-                return new Bitmap(image);
+                return maxSide>0?GameWindowCover.Thumbnail(image,maxSide,maxSide):new Bitmap(image);
             }
             catch{
                 if(cover){try{var info=new FileInfo(path);coverQuality[game.Id]=new(path,info.Length,info.LastWriteTimeUtc.Ticks,new(false,"decode-failed",0,0));}catch{coverQuality.Remove(game.Id);}}
@@ -156,10 +169,20 @@ internal sealed class RecentGameStore
             }
         }
     }
+    internal string? CoverImageKey(RecentGame game)
+    {
+        lock(gate)
+        {
+            var live=games.FirstOrDefault(x=>x.Id==game.Id&&StringComparer.OrdinalIgnoreCase.Equals(x.ExePath,game.ExePath));
+            if(live is null||ImagePath(live,true) is not {} path)return null;
+            try{var info=new FileInfo(path);return info.Exists?$"{path}|{info.Length}|{info.LastWriteTimeUtc.Ticks}":null;}
+            catch(IOException){return null;}catch(UnauthorizedAccessException){return null;}
+        }
+    }
     internal string CoverDiagnostic(RecentGame game)
     {lock(gate)return coverQuality.TryGetValue(game.Id,out var cached)?cached.Result.Diagnostic:"quality="+CoverQuality.RuleVersion+" reason=missing-or-unreadable";}
     internal long CoverIdentityVersion(RecentGame game){lock(gate)return identityVersions.GetValueOrDefault(game.Id);}
-    internal bool SaveImage(RecentGame expected,Bitmap image,bool cover,string? stamp,CancellationToken token,Func<bool>? stillCurrent=null,long? identityVersion=null,bool manual=false,string origin="automatic")
+    internal bool SaveImage(RecentGame expected,Bitmap image,bool cover,string? stamp,CancellationToken token,Func<bool>? stillCurrent=null,long? identityVersion=null,bool manual=false,string origin="automatic",string? sourceUrl=null,CoverFraming? frame=null)
     {
         lock(gate)
         {
@@ -174,26 +197,40 @@ internal sealed class RecentGameStore
             if(cover&&(live.Cover!=expected.Cover||stillCurrent?.Invoke()==false))return false;
             if(cover&&identityVersion.HasValue&&identityVersion!=identityVersions.GetValueOrDefault(live.Id))return false;
             if(!Writable)throw new InvalidOperationException(Notice);
-            Directory.CreateDirectory(root);var name=live.Id+"."+Guid.NewGuid().ToString("N")+(cover?".cover.jpg":".icon.png");
+            ArtworkWebSources.ValidateImage(image);
+            bool lossless=manual||origin=="online";
+            Directory.CreateDirectory(root);var name=live.Id+"."+Guid.NewGuid().ToString("N")+(cover?(lossless?".cover.png":".cover.jpg"):".icon.png");
             var dest=Path.Combine(root,name);var temp=dest+".pending";var committed=false;
             try
             {
                 using(var stream=new FileStream(temp,FileMode.CreateNew,FileAccess.Write,FileShare.None))
-                {image.Save(stream,cover?ImageFormat.Jpeg:ImageFormat.Png);stream.Flush(true);}
+                {image.Save(stream,cover&&!lossless?ImageFormat.Jpeg:ImageFormat.Png);stream.Flush(true);}
+                if(new FileInfo(temp).Length>128_000_000)throw new IOException("图片保存后过大，请选择较小的原图。");
                 CoverQualityResult? quality=null;
                 using(var check=Image.FromFile(temp)){
                     if(check.Width!=image.Width||check.Height!=image.Height)throw new InvalidDataException("封面写入后解码校验失败");
-                    if(cover&&!manual){quality=CoverQuality.Analyze(check);if(!quality.Usable)throw new InvalidDataException("封面未提交："+quality.Diagnostic);}
+                    if(cover&&!manual){quality=AnalyzeCover(check);if(!quality.Usable)throw new InvalidDataException("封面未提交："+quality.Diagnostic);}
                 }
                 token.ThrowIfCancellationRequested();
                 if(stillCurrent?.Invoke()==false)return false;
                 File.Move(temp,dest);
-                Commit(games.Select(x=>x.Id==live.Id?(cover?x with{Cover=name,CoverManual=manual,CoverOrigin=origin}:x with{Icon=name,IconStamp=stamp,IconManual=manual,IconOrigin=origin}):x).ToList());
+                var page=ArtworkWebSources.SourcePage(sourceUrl);
+                Commit(games.Select(x=>x.Id==live.Id?(cover?x with{Cover=name,CoverManual=manual,CoverOrigin=origin,CoverSourceUrl=page,CoverFrame=(frame??CoverFraming.Centered).Normalize()}:x with{Icon=name,IconStamp=stamp,IconManual=manual,IconOrigin=origin,IconSourceUrl=page}):x).ToList());
                 committed=true;
                 if(quality is not null){var info=new FileInfo(dest);coverQuality[live.Id]=new(dest,info.Length,info.LastWriteTimeUtc.Ticks,quality);}
                 Changed?.Invoke();CleanupUnreferencedImages();return true;
             }
             finally{try{File.Delete(temp);}catch{}if(!committed)try{File.Delete(dest);}catch{}}
+        }
+    }
+    internal bool SaveCoverFrame(RecentGame expected,CoverFraming frame)
+    {
+        lock(gate)
+        {
+            var live=games.FirstOrDefault(x=>x.Id==expected.Id);
+            if(live is null||live.Cover is null||live.Cover!=expected.Cover||live.ArtworkVersion!=expected.ArtworkVersion)return false;
+            Commit(games.Select(x=>x.Id==live.Id?x with{CoverFrame=frame.Normalize(),CoverManual=true}:x).ToList());
+            Changed?.Invoke();return true;
         }
     }
     private void CleanupUnreferencedImages()
@@ -210,10 +247,10 @@ internal sealed class RecentGameStore
                 var doc=JsonSerializer.Deserialize<Document>(File.ReadAllText(path));if(doc?.Games is null)return;
                 foreach(var g in doc.Games){referenced.Add(g.Icon);referenced.Add(g.Cover);}
             }
-            foreach(var path in Directory.EnumerateFiles(root).Where(x=>x.EndsWith(".cover.jpg",StringComparison.OrdinalIgnoreCase)||x.EndsWith(".icon.png",StringComparison.OrdinalIgnoreCase)).Take(1000))
+            foreach(var path in Directory.EnumerateFiles(root).Where(x=>x.EndsWith(".cover.jpg",StringComparison.OrdinalIgnoreCase)||x.EndsWith(".cover.png",StringComparison.OrdinalIgnoreCase)||x.EndsWith(".icon.png",StringComparison.OrdinalIgnoreCase)).Take(1000))
             {
                 var name=Path.GetFileName(path);if(referenced.Contains(name)||name.Length<33||!Guid.TryParseExact(name[..32],"N",out _))continue;
-                if(!ValidImageName(name[..32],name,name.EndsWith(".cover.jpg",StringComparison.OrdinalIgnoreCase)))continue;
+                if(!ValidImageName(name[..32],name,!name.EndsWith(".icon.png",StringComparison.OrdinalIgnoreCase)))continue;
                 try{File.Delete(path);}catch{}
             }
         }

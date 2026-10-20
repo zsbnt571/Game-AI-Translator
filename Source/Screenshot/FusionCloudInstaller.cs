@@ -192,6 +192,7 @@ internal sealed partial class FusionAdapterInstaller
         var text=BuildLegacyConfiguration(s,key).Replace("ConcurrentRequests = 3","ConcurrentRequests = 2").Replace("ScanIntervalSeconds = 0.6\n", "").Replace("BatchSize = 8\n", "");
         text=text.Replace("[API]",$"FirstByteTimeoutSeconds = {Math.Clamp(s.FirstByteTimeoutSeconds,5,Math.Clamp(s.RequestTimeoutSeconds,15,90))}\n\n[API]");
         text=text.Replace("[Translation]",$"AllowEmptyApiKey = {s.AllowEmptyApiKey.ToString().ToLowerInvariant()}\n\n[Translation]");
+        text=text.Replace(ChatRequestParameters.PluginParametersBase64(s,1200),ChatRequestParameters.PluginParametersBase64(s,4096));
         return text+$"PreserveNumbers = {s.PreserveNumbers.ToString().ToLowerInvariant()}\nPreserveVariables = {s.PreserveVariables.ToString().ToLowerInvariant()}\nPreserveIdentifiers = {s.PreserveIdentifiers.ToString().ToLowerInvariant()}\n";
     }
     static string BuildLegacyConfiguration(ApiSettings s,string key)
@@ -199,7 +200,7 @@ internal sealed partial class FusionAdapterInstaller
         if(!Uri.TryCreate(s.ApiUrl,UriKind.Absolute,out var u)||u.Scheme is not("https" or "http"))throw new ArgumentException("API 地址必须是 HTTP/HTTPS。");
         key=GameShortcut.Normalize(key);
         foreach(var value in new[]{s.ApiUrl,s.ApiKey,s.Model})if(value.Contains('\r')||value.Contains('\n'))throw new ArgumentException("API 字段不能包含换行。");
-        return $"[General]\nEnabled = true\nToggleKey = {GameShortcut.Normalize(key)}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(s.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {s.ApiUrl.Trim()}\nApiKey = {s.ApiKey.Trim()}\nModel = {s.Model.Trim()}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(s.TargetLanguage)}\nPromptBase64 = {Convert.ToBase64String(Encoding.UTF8.GetBytes(FusionConfiguration.PluginPrompt(s)))}\n";
+        return $"[General]\nEnabled = true\nToggleKey = {GameShortcut.Normalize(key)}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(s.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {s.ApiUrl.Trim()}\nApiKey = {s.ApiKey.Trim()}\nModel = {s.Model.Trim()}\nRequestParametersBase64 = {ChatRequestParameters.PluginParametersBase64(s,1200)}\nRequestParametersIdentity = {(string.IsNullOrWhiteSpace(s.AdvancedApiParameters)?"":TranslationPromptBuilder.Sha256(s.AdvancedApiParameters))}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(s.TargetLanguage)}\nPromptBase64 = {Convert.ToBase64String(Encoding.UTF8.GetBytes(FusionConfiguration.PluginPrompt(s)))}\n";
     }
     internal static void WriteConfiguration(string path,ApiSettings settings,string key)=>LegacyMgiAdapterInstaller.WriteConfiguration(path,settings,key);
 }

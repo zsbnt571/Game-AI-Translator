@@ -1,4 +1,4 @@
-namespace ScreenshotTranslationUiTester;
+﻿namespace ScreenshotTranslationUiTester;
 
 // A quiet, live divider; no native XOR drag line or persistent focus rectangle.
 internal sealed class WorkspaceLibrarySplit:Panel

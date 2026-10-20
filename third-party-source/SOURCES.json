@@ -2,8 +2,15 @@
   {
     "file": "BepInEx-5b766a3-source.zip",
     "url": "https://codeload.github.com/BepInEx/BepInEx/zip/5b766a3b7f6c164d4798924a93f3acf4db769d06",
-    "sha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
-    "bytes": 1207906
+    "sha256": "4e53a4650de500b1cd9c5e85669644bd5dc5e1ee40d12a66070a308a1e9eba0e",
+    "bytes": 786491,
+    "upstreamArchiveSha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
+    "upstreamArchiveBytes": 1207906,
+    "excludedBuildReferences": [
+      "BepInEx-5b766a3b7f6c164d4798924a93f3acf4db769d06/Runtimes/Unity/BepInEx.Unity.IL2CPP/lib/UnityEngine.CoreModule.dll",
+      "BepInEx-5b766a3b7f6c164d4798924a93f3acf4db769d06/Runtimes/Unity/BepInEx.Unity.IL2CPP/lib/UnityEngine.InputLegacyModule.dll"
+    ],
+    "distributionNote": "Distribution copy excludes only two Unity engine compile-reference DLLs. All other upstream archive members, source files and license notices are preserved byte-for-byte. The upstream URL returns the original archive identified by upstreamArchiveSha256, not this distribution hash. Rebuilding the affected upstream Unity components requires the developer to provide legally obtained matching Unity reference assemblies."
   },
   {
     "file": "UnityDoorstop-4.5.0-source.zip",

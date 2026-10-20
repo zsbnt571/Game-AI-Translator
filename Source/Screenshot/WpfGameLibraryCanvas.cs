@@ -9,7 +9,18 @@ namespace ScreenshotTranslationUiTester;
 internal sealed partial class GameLibraryGrid
 {
     private WpfLibraryCanvas? wpfCanvas;
-    internal W.FrameworkElement NativeView => wpfCanvas ??= new WpfLibraryCanvas(this);
+    private Size? nativeViewport;
+    internal Size ViewportSize => nativeViewport ?? ClientSize;
+    private void SetNativeViewport(Size size)
+    {
+        if (nativeViewport == size) return;
+        bool widthChanged = nativeViewport is { } previous && previous.Width != size.Width;
+        if (widthChanged) CaptureResizeAnchor();
+        nativeViewport = size;
+        UpdateScrollRange();
+        if (widthChanged) RestoreResizeAnchor();
+    }
+    public W.FrameworkElement NativeView => wpfCanvas ??= new WpfLibraryCanvas(this);
     private void InitializeWpfCanvas()
     {
         if (!WpfWorkspace.Enabled) return;
@@ -50,6 +61,11 @@ internal sealed partial class GameLibraryGrid
     {
         private readonly GameLibraryGrid grid;
         private readonly ConditionalWeakTable<LibraryTile, TileDrawing> drawings = new();
+        private bool wheelAnimating;
+        private int wheelStart, wheelTarget;
+        private long wheelStarted;
+        private string? fontFamilyName;
+        private WM.Typeface regularTypeface = null!, boldTypeface = null!;
         private sealed class TileDrawing { internal int Key; internal WM.DrawingGroup? Drawing; }
         private double Scale => grid.DeviceDpi / 96d;
         private W.Rect Rect(Rectangle r) => new(r.X / Scale, r.Y / Scale, Math.Max(0, r.Width / Scale), Math.Max(0, r.Height / Scale));
@@ -60,13 +76,16 @@ internal sealed partial class GameLibraryGrid
             this.grid = grid;
             WpfControlCoordinates.Register(grid, this);
             Focusable = true; ClipToBounds = true; SnapsToDevicePixels = true; UseLayoutRounding = true;
-            SizeChanged += (_, _) => grid.Size = new(Math.Max(1, (int)Math.Round(ActualWidth * Scale)), Math.Max(1, (int)Math.Round(ActualHeight * Scale)));
+            // The hidden WinForms TableLayoutPanel still owns its child's
+            // Bounds. Keep the visible viewport independent of that tree.
             WM.TextOptions.SetTextFormattingMode(this, WM.TextFormattingMode.Display);
             WM.TextOptions.SetTextRenderingMode(this, WM.TextRenderingMode.ClearType);
             WM.RenderOptions.SetBitmapScalingMode(this, WM.BitmapScalingMode.LowQuality);
             W.Automation.AutomationProperties.SetName(this, "游戏库");
             MouseDown += (_, e) =>
             {
+                if (e.ChangedButton is WI.MouseButton.XButton1 or WI.MouseButton.XButton2) return;
+                StopWheelMotion();
                 var point = Point(e.GetPosition(this));
                 var button = e.ChangedButton == WI.MouseButton.Right ? MouseButtons.Right : MouseButtons.Left;
                 grid.OnMouseDown(new(button, e.ClickCount, point.X, point.Y, 0));
@@ -75,6 +94,7 @@ internal sealed partial class GameLibraryGrid
             };
             MouseUp += (_, e) =>
             {
+                if (e.ChangedButton is WI.MouseButton.XButton1 or WI.MouseButton.XButton2) return;
                 var point = Point(e.GetPosition(this));
                 grid.OnMouseUp(new(e.ChangedButton == WI.MouseButton.Right ? MouseButtons.Right : MouseButtons.Left, 1, point.X, point.Y, 0));
                 e.Handled = true;
@@ -89,17 +109,68 @@ internal sealed partial class GameLibraryGrid
             LostMouseCapture += (_, _) => { grid.scrollDragging = false; grid.selecting = false; grid.boxScrollTimer?.Stop(); InvalidateVisual(); };
             MouseWheel += (_, e) =>
             {
-                var point = Point(e.GetPosition(this));
-                grid.OnMouseWheel(new HandledMouseEventArgs(MouseButtons.None, 0, point.X, point.Y, e.Delta));
+                ScrollWheel(e.Delta);
                 e.Handled = true;
             };
+            Unloaded += (_, _) => StopWheelMotion();
+            IsVisibleChanged += (_, _) => { if (!IsVisible) StopWheelMotion(); };
             KeyDown += (_, e) =>
             {
+                StopWheelMotion();
                 var key = (Keys)WI.KeyInterop.VirtualKeyFromKey(e.Key == WI.Key.System ? e.SystemKey : e.Key);
                 var args = new KeyEventArgs(key | ModifierKeys); grid.OnKeyDown(args); e.Handled = args.Handled;
             };
         }
+        private void ScrollWheel(int delta)
+        {
+            int target = grid.WheelTarget(delta, wheelAnimating ? wheelTarget : grid.ScrollValue);
+            if (!W.SystemParameters.ClientAreaAnimation)
+            { grid.SetScrollValue(target); return; }
+            StartWheelMotion(target);
+        }
+        private void StartWheelMotion(int target)
+        {
+            wheelStart = grid.ScrollValue; wheelTarget = target;
+            if (wheelStart == wheelTarget) { StopWheelMotion(); return; }
+            wheelStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (wheelAnimating) return;
+            wheelAnimating = true;
+            WM.CompositionTarget.Rendering += AdvanceWheel;
+        }
+        private void AdvanceWheel(object? sender, EventArgs args)
+        {
+            if (!IsVisible || grid.IsDisposed) { StopWheelMotion(); return; }
+            double elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(wheelStarted).TotalMilliseconds;
+            double t = Math.Clamp(elapsed / 120, 0, 1);
+            double eased = 1 - Math.Pow(1 - t, 3);
+            grid.SetScrollValue((int)Math.Round(wheelStart + (wheelTarget - wheelStart) * eased), animated: true);
+            if (t >= 1) StopWheelMotion();
+        }
+        internal void StopWheelMotion()
+        {
+            if (!wheelAnimating) return;
+            wheelAnimating = false;
+            WM.CompositionTarget.Rendering -= AdvanceWheel;
+        }
         private Point Point(W.Point point) => new((int)Math.Round(point.X * Scale), (int)Math.Round(point.Y * Scale));
+        protected override W.Size MeasureOverride(W.Size availableSize)
+        {
+            if (!grid.ShelfMode) return base.MeasureOverride(availableSize);
+            // The recent shelf is an auto-sized row. Its height must already
+            // reflect this measure's width, including whether its scrollbar is
+            // needed, rather than waiting for a later workspace refresh.
+            double width = double.IsInfinity(availableSize.Width) ? grid.ViewportSize.Width / Scale : availableSize.Width;
+            int pixels = Math.Max(1, (int)Math.Round(width * Scale));
+            return new(Math.Max(0, width), grid.ShelfHeightForWidth(pixels) / Scale);
+        }
+        protected override W.Size ArrangeOverride(W.Size finalSize)
+        {
+            // Arrange precedes OnRender; SizeChanged is delivered afterwards.
+            // Updating here avoids first painting the old viewport and queuing
+            // a second render at each resize step.
+            grid.SetNativeViewport(new(Math.Max(1, (int)Math.Round(finalSize.Width * Scale)), Math.Max(1, (int)Math.Round(finalSize.Height * Scale))));
+            return finalSize;
+        }
         protected override W.Automation.Peers.AutomationPeer OnCreateAutomationPeer() => new LibraryPeer(this);
         private sealed class LibraryPeer(WpfLibraryCanvas owner) : W.Automation.Peers.FrameworkElementAutomationPeer(owner)
         {
@@ -111,6 +182,17 @@ internal sealed partial class GameLibraryGrid
         {
             using var timing = DesktopRenderMetrics.Measure("library-wpf");
             var p = UiTheme.Current;
+            // Resolve shared text state once per canvas paint, rather than
+            // querying the native font and constructing faces for each label.
+            string family = grid.Font.FontFamily.Name;
+            if (fontFamilyName != family)
+            {
+                var fontFamily = WpfDrawing.FontFamily(family);
+                regularTypeface = new(fontFamily, W.FontStyles.Normal, W.FontWeights.Normal, W.FontStretches.Normal);
+                boldTypeface = new(fontFamily, W.FontStyles.Normal, W.FontWeights.Bold, W.FontStretches.Normal);
+                fontFamilyName = family;
+            }
+            int presentation = HashCode.Combine(p, family, grid.Font.SizeInPoints, Scale, UiLanguage.Current, CultureInfo.CurrentUICulture.Name);
             dc.DrawRectangle(Brush(p.Main), null, new W.Rect(RenderSize));
             if (grid.tiles.Length == 0)
             {
@@ -124,7 +206,7 @@ internal sealed partial class GameLibraryGrid
                 var holder = drawings.GetValue(tile, _ => new TileDrawing());
                 bool selected = grid.selection.Contains(tile.Game.Id), hovered = i == grid.hover, running = grid.runningPaths.Contains(tile.Game.ExePath);
                 int key = HashCode.Combine(HashCode.Combine(r.Width, r.Height, grid.Portrait, grid.ShelfMode, grid.ListMode, selected, hovered, running),
-                    p, grid.Font.FontFamily.Name, grid.Font.SizeInPoints, Scale);
+                    presentation);
                 if (holder.Drawing is null || holder.Key != key)
                 {
                     var drawing = new WM.DrawingGroup();
@@ -152,16 +234,20 @@ internal sealed partial class GameLibraryGrid
             var p = UiTheme.Current;
             dc.DrawRoundedRectangle(Brush(p.Secondary), Pen(active ? p.Accent : hover ? p.SecondaryText : p.Border, active ? 2 : 1), r, 12, 12);
             double fontHeight = grid.Font.Height / Scale;
-            string second = tile.Annotation.ChineseName.Length > 0 ? tile.Annotation.ChineseName : tile.Engine;
+            string second = tile.Annotation.DisplayName.Length > 0 ? tile.Annotation.DisplayName : tile.Engine;
             if (grid.ListMode)
             {
-                var imageBox = new W.Rect(6, 6, 122, Math.Max(1, r.Height - 12));
-                if (tile.Cover is not null) Image(dc, tile.Cover, imageBox, false);
-                else Icon(dc, "game", new(46, 22, 40, 40), p.Accent);
+                var imageBox = new W.Rect(6, (r.Height - grid.ListCoverHeight / Scale) / 2, grid.ListCoverWidth / Scale, grid.ListCoverHeight / Scale);
+                dc.PushClip(new WM.RectangleGeometry(imageBox, 5, 5));
+                dc.DrawRectangle(Brush(p.Control), null, imageBox);
+                if (tile.Cover is not null) Image(dc, tile.Cover, imageBox, true);
+                else Icon(dc, "game", new(imageBox.X + (imageBox.Width - 32) / 2, imageBox.Y + (imageBox.Height - 32) / 2, 32, 32), p.Accent);
+                dc.Pop();
                 double x = imageBox.Right + 15, height = fontHeight + 6, width = r.Width - x - 20;
-                Text(dc, tile.Game.Name, new(x, 10, Math.Max(1, width), height), p.Text, bold: true);
-                Text(dc, second, new(x, 10 + height, Math.Max(1, width), height), p.SecondaryText);
-                if (tile.Annotation.Note.Length > 0) Text(dc, tile.Annotation.Note, new(x, 10 + height * 2, Math.Max(1, width), fontHeight + 4), p.SecondaryText);
+                double yText = Math.Max(8, (r.Height - height * (tile.Annotation.Note.Length > 0 ? 3 : 2)) / 2);
+                Text(dc, tile.Game.Name, new(x, yText, Math.Max(1, width - (running ? 80 : 0)), height), p.Text, bold: true);
+                Text(dc, second, new(x, yText + height, Math.Max(1, width), height), p.SecondaryText);
+                if (tile.Annotation.Note.Length > 0) Text(dc, tile.Annotation.Note, new(x, yText + height * 2, Math.Max(1, width), fontHeight + 4), p.SecondaryText);
                 if (running) Text(dc, UiLanguage.Text("运行中"), new(Math.Max(0, r.Width - 85), 7, 75, height), Color.SeaGreen);
                 return;
             }
@@ -218,7 +304,7 @@ internal sealed partial class GameLibraryGrid
         private void Text(WM.DrawingContext dc, string text, W.Rect box, Color color, bool bold = false, bool center = false, bool multiline = false, double? size = null)
         {
             if (string.IsNullOrEmpty(text) || box.Width <= 0 || box.Height <= 0) return;
-            var typeface = new WM.Typeface(new WM.FontFamily(grid.Font.FontFamily.Name), W.FontStyles.Normal, bold ? W.FontWeights.Bold : W.FontWeights.Normal, W.FontStretches.Normal);
+            var typeface = bold ? boldTypeface : regularTypeface;
             var formatted = new WM.FormattedText(text, CultureInfo.CurrentUICulture, W.FlowDirection.LeftToRight, typeface,
                 size ?? grid.Font.SizeInPoints * 96 / 72, Brush(color), Scale)
             { MaxTextWidth = Math.Max(1, box.Width), Trimming = W.TextTrimming.CharacterEllipsis, TextAlignment = center ? W.TextAlignment.Center : W.TextAlignment.Left };

@@ -14,6 +14,7 @@ public sealed partial class MainForm
             data?.Translation?.Enabled==true,data?.Translation?.RestorePending==true,
             _fusion is null?0:FusionConfiguration.Missing(_fusion.GameSettings(UiSettings,game.ExePath)).Count,
             data?.Translation?.Snapshot);
+        if(WpfWorkspace.Enabled){ShowNativeTranslationDiagnostics(Capture,()=>{if(data?.Connection.Connected==true&&data.Translation?.Enabled==true)data.Translation.RetryFailures();});return;}
         using var viewer=BuildTranslationDiagnosticViewer(Capture,()=>
         {if(data?.Connection.Connected==true&&data.Translation?.Enabled==true)data.Translation.RetryFailures();});
         viewer.ShowDialog(this);

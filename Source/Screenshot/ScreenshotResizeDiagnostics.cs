@@ -53,7 +53,7 @@ internal static class ScreenshotResizeDiagnostics
             form.SetScreenshotModesForSmoke(0,1);
             using var events=new Instrumentation(form,host,screenshot);
             var split=(ScreenshotRebuildSplit)FieldControl(form,"_shotSplit");
-            var styled=new Control[]{form,form.ScreenshotPaneForSmoke(0),form.ScreenshotPaneForSmoke(1),split,split.Panel1,split.Panel2};
+            var styled=new Control[]{form.LegacyWindow,form.ScreenshotPaneForSmoke(0),form.ScreenshotPaneForSmoke(1),split,split.Panel1,split.Panel2};
             var flags=new[]{ControlStyles.OptimizedDoubleBuffer,ControlStyles.DoubleBuffer,ControlStyles.ResizeRedraw};
             var getStyle=typeof(Control).GetMethod("GetStyle",BindingFlags.Instance|BindingFlags.NonPublic)!;
             var setStyle=typeof(Control).GetMethod("SetStyle",BindingFlags.Instance|BindingFlags.NonPublic)!;
@@ -79,7 +79,7 @@ internal static class ScreenshotResizeDiagnostics
             {
                 events.Enabled=false;
                 RestoreStyles();
-                if(bufferVariant=="FormBufferOpposite")setStyle.Invoke(form,[ControlStyles.OptimizedDoubleBuffer|ControlStyles.DoubleBuffer,!(originalFlags[form][ControlStyles.OptimizedDoubleBuffer]||originalFlags[form][ControlStyles.DoubleBuffer])]);
+                if(bufferVariant=="FormBufferOpposite")setStyle.Invoke(form.LegacyWindow,[ControlStyles.OptimizedDoubleBuffer|ControlStyles.DoubleBuffer,!(originalFlags[form.LegacyWindow][ControlStyles.OptimizedDoubleBuffer]||originalFlags[form.LegacyWindow][ControlStyles.DoubleBuffer])]);
                 if(bufferVariant.StartsWith("Pane",StringComparison.Ordinal))
                 {
                     var resize=bufferVariant.Contains("ResizeRedraw",StringComparison.Ordinal);
@@ -166,7 +166,7 @@ internal static class ScreenshotResizeDiagnostics
         internal bool Enabled;
         internal Instrumentation(MainForm form,Control host,Control screenshot)
         {
-            var roots=new Dictionary<Control,string>{{form,"Form"},{host,"Host"}};
+            var roots=new Dictionary<Control,string>{{form.LegacyWindow,"Form"},{host,"Host"}};
             foreach(Control page in host.Controls)roots[page]=ReferenceEquals(page,screenshot)?"ScreenshotPage":"HiddenPage"+host.Controls.GetChildIndex(page);
             foreach(var field in new[]{"_shotToolbar","_shotBody","_shotSplit","_shotLeft","_shotRight"})roots[FieldControl(form,field)]=field;
             var split=(ScreenshotRebuildSplit)FieldControl(form,"_shotSplit");roots[split.Panel1]="PaneHost0";roots[split.Panel2]="PaneHost1";

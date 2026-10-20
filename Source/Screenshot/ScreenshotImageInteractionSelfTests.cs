@@ -195,7 +195,7 @@ internal static class ScreenshotImageInteractionSelfTests
             }
             foreach(var pane in new[]{main.ScreenshotPaneForSmoke(0),main.ScreenshotPaneForSmoke(1)})
                 pane.SetContent(portrait,portrait,"Synthetic source text","示例译文\nLow / 低\nMedium / 中\nHigh / 高\nEpic / 史诗\nCinematic / 电影级\nCustom / 自定义");
-            var split=Find<ScreenshotRebuildSplit>(main).Single();
+            var split=Find<ScreenshotRebuildSplit>(main.LegacyWindow).Single();
             Bitmap CaptureClient()
             {
                 var bounds=main.RectangleToScreen(main.ClientRectangle);

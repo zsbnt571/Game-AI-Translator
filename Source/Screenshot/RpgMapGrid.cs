@@ -2,7 +2,7 @@ using System.Drawing.Drawing2D;
 using System.Text.Json;
 namespace ScreenshotTranslationUiTester;
 
-internal sealed class RpgMapGrid:Control
+internal sealed partial class RpgMapGrid:Control
 {
     private JsonElement? map;
     private Bitmap? terrainLayer;

@@ -54,7 +54,9 @@ internal static class TextContinuitySelfTests
         Check("damaged suffix requests a fresh translation",!AutomaticTranslationQuality.Valid("Gain 10% for 2 turns","增加10% f或2回合",settings));
         Check("clean percentage cache remains reusable",AutomaticTranslationQuality.Valid("Gain 10% for 2 turns","增加10%，持续2回合",settings));
         Check("other parsers do not acquire the generic cache migration",AutomaticTranslationQuality.Valid("50% chance","50% c几率",settings,syntax:EmbeddedTextSyntax.Renpy)&&AutomaticTranslationQuality.Valid("50% chance","50% c几率",settings,syntax:EmbeddedTextSyntax.Rpg));
-        var translated=RpgTranslationBatch.Translate(["A 50% chance."],settings,settings,async (text,_,_)=>{await Task.Yield();Check("real queue sends the complete percent word",text=="A 50% chance.");return "有50%的几率。";},CancellationToken.None,syntax:EmbeddedTextSyntax.Generic).GetAwaiter().GetResult();
+        // The normal request now protects the complete percentage as one literal.
+        // Keep that token in the mock response, just as a real provider must.
+        var translated=RpgTranslationBatch.Translate(["A 50% chance."],settings,settings,async (text,_,_)=>{await Task.Yield();Check("real queue preserves the complete word after a protected percentage",text=="A ⟦RPG0⟧ chance.");return "有⟦RPG0⟧的几率。";},CancellationToken.None,syntax:EmbeddedTextSyntax.Generic).GetAwaiter().GetResult();
         Check("actual queue returns clean percent text",translated.GetValueOrDefault("A 50% chance.")=="有50%的几率。");
         var multi=RpgTranslationBatch.Translate(["Hello\nWorld","Other\nText"],settings,settings,(text,_,_)=>Task.FromResult("{\"t0\":\"你好⟦RPG0⟧世界\",\"t1\":\"其他文字\"}"),CancellationToken.None,syntax:EmbeddedTextSyntax.Generic).GetAwaiter().GetResult();
         Check("batch retains valid rows and retries only damaged structure",multi.Count==1&&multi["Hello\nWorld"]=="你好\n世界");

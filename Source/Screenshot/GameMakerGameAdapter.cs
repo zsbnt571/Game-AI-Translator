@@ -84,6 +84,7 @@ internal static class GameMakerGameAdapter
         Stopped(exe);var engine=Detect(exe)??throw new IOException("未识别 GameMaker 资源。");
         if(!engine.Candidate)throw new EmbeddedCompatibilityException("此 GameMaker 编译格式尚未接入；当前候选支持 2.3+ 的 VM 脚本格式。");
         string script=Path.Combine(ToolRoot,"GameMakerPatch.csx"),bridge=Path.Combine(ToolRoot,"GameMakerTranslationBridge.gml"),font=Path.Combine(ToolRoot,"bridge-font.otf");
+        GameFontCoverage.RequireChinesePayload(font);
         string bridgeHash=PayloadHash.Value;
         if(HasRecord(exe)){if(IsInstalled(exe)&&ReadLedger(exe).BridgeHash==bridgeHash)return;Restore(exe);}
         foreach(string p in Owned)if(File.Exists(InGame(exe,p)))throw new IOException("游戏已有同名组件文件，已保留，未覆盖。");

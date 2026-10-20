@@ -1,7 +1,7 @@
 namespace ScreenshotTranslationUiTester;
 
 // Retain selection and scroll within the event list, with the same palette as data rows.
-internal sealed class GameEventCommandList:Control
+internal sealed partial class GameEventCommandList:Control
 {
     private string[] items=[];
     private int selected=-1,offset;

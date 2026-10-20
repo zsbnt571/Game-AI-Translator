@@ -1,25 +1,6 @@
 {
-  "version": "0.6.0.179-preview.1",
-  "mainAssemblySha256": "9e0c293f11923d257253cda0e8fa9fddbb8a3effdc42f3e66ae012e8dcf0fcdb",
-  "productSourceEditedForPackaging": false,
-  "excluded": [
-    {
-      "path": "Source/Plugin/References/UnityEngine.dll",
-      "reason": "proprietary codec or game engine compile reference"
-    },
-    {
-      "path": "Source/Plugin/References/UnityEngine.UI.dll",
-      "reason": "proprietary codec or game engine compile reference"
-    },
-    {
-      "path": "Source/UnrealCatalog/Native/oo2core_9_win64.dll",
-      "reason": "proprietary codec or game engine compile reference"
-    },
-    {
-      "path": "Source/UnrealCatalog/Native/PROVENANCE.md",
-      "reason": "private local codec provenance; codec is excluded"
-    }
-  ],
+  "version": "1.0.0-preview.1",
+  "mainAssemblySha256": "a368131bbde8d6c0a4d60c9fa819986a5c48c7185e5f720ee524919fdb0102ea",
   "files": [
     {
       "path": ".gitattributes",
@@ -1092,6 +1073,86 @@
       "bytes": 16208
     },
     {
+      "path": "Dependencies/json.hpp",
+      "sha256": "9bea4c8066ef4a1c206b2be5a36302f8926f7fdc6087af5d20b417d0cf103ea6",
+      "bytes": 919975
+    },
+    {
+      "path": "Dependencies/json.LICENSE.MIT",
+      "sha256": "86b998c792894ccb911a1cb7994f7a9652894e7a094c0b5e45be2f553f45cf14",
+      "bytes": 1076
+    },
+    {
+      "path": "Dependencies/minhook/include/MinHook.h",
+      "sha256": "62dff05e63155c6bf8135c36a0d79dedbdcaaede9da26fe38daf0bea34323e38",
+      "bytes": 7530
+    },
+    {
+      "path": "Dependencies/minhook/LICENSE.txt",
+      "sha256": "d5c2224982b0b95a16b098a561335fa93f3eaf4d0aa964b7843edb986df78dc8",
+      "bytes": 4365
+    },
+    {
+      "path": "Dependencies/minhook/src/buffer.c",
+      "sha256": "0ab484d7870c3a8e7a3a1ee61e2070072cf445ed85b619d4c4207fed34356d99",
+      "bytes": 9814
+    },
+    {
+      "path": "Dependencies/minhook/src/buffer.h",
+      "sha256": "9769702bd625249e59a19ede05c84365fcc7707e1fa0e5df08df42227cee13e3",
+      "bytes": 1820
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/hde32.c",
+      "sha256": "5da4941e9044f7b325c7f952b5840089e365f374740b7fe7318805d08c0d6c32",
+      "bytes": 9318
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/hde32.h",
+      "sha256": "5132de5be8ac7a9d054420f5caef0fb01437faa892f03b3cdc77f795973bf15a",
+      "bytes": 2450
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/hde64.c",
+      "sha256": "824eafa315322e6da105a7ce4ec1fc0e0adeee0106d32152fbb0b59e709bd15c",
+      "bytes": 9507
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/hde64.h",
+      "sha256": "e99aa4997bda14b534c614c3d8cb78a72c4aca91a1212c8b03ec605d1d75e36e",
+      "bytes": 2602
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/pstdint.h",
+      "sha256": "604d1cdf45c5a95bc9cf1bbf39ca05ef83013541101d34971c5cd7577e3d5247",
+      "bytes": 1662
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/table32.h",
+      "sha256": "43bf687a9fff071b5f46070db4d36c846f8e069cdc57485ee897c499aacdde23",
+      "bytes": 3508
+    },
+    {
+      "path": "Dependencies/minhook/src/hde/table64.h",
+      "sha256": "b774446d2f110ce954fb0a710f4693c5562ddbd8d56fe84106f2ee80db8b50a2",
+      "bytes": 3577
+    },
+    {
+      "path": "Dependencies/minhook/src/hook.c",
+      "sha256": "edcce4c81985d7dd5b73feae96d6498c8f749b1bca4c3d2d9926ea9a17a84755",
+      "bytes": 26626
+    },
+    {
+      "path": "Dependencies/minhook/src/trampoline.c",
+      "sha256": "f13a169f803ff5a8e45c58ce668b4377a9878c0fc4452369b8a1325065186b2b",
+      "bytes": 10718
+    },
+    {
+      "path": "Dependencies/minhook/src/trampoline.h",
+      "sha256": "53ed9934492320617a27bfd952ffe7f5b7a4a1d09963d4512447082fe7b727b4",
+      "bytes": 3759
+    },
+    {
       "path": "Dependencies/Python/lupa/__init__.py",
       "sha256": "d1f7d659bbbb804e58cf8eadb6480609858db8680177f4bee81992fa55a6eb8d",
       "bytes": 3067
@@ -1178,13 +1239,13 @@
     },
     {
       "path": "docs/BUILD.en.md",
-      "sha256": "8b700ae1ee9e5c4bfe105b3e683956c6a43f627d51f53ece93f4b2c80281a702",
-      "bytes": 217
+      "sha256": "a3156ef50737f8fe92faf858169daed9de7f02202faad987945f41c5640227aa",
+      "bytes": 4715
     },
     {
       "path": "docs/BUILD.md",
-      "sha256": "4ff47f40dd107d6fab985052213d4173ec659de4ad3cc4d17521380a786cbf7d",
-      "bytes": 173
+      "sha256": "bd374bbd3f0aa1e58d3c2855e3fa2511c526eb867f6ce92a7bde01a6a01a1f60",
+      "bytes": 4182
     },
     {
       "path": "docs/DEPENDENCIES-176.en.md",
@@ -1203,18 +1264,28 @@
     },
     {
       "path": "docs/KNOWN-ISSUES.en.md",
-      "sha256": "aa1011b46e13528a0c325514cc5e7a9ca199bffa4585445e74407581911ee6a4",
-      "bytes": 1945
+      "sha256": "fdbd6c4aacfb0576e74b834d0df68c4b330adaee9e795dcdf1ac4f503912c780",
+      "bytes": 6055
     },
     {
       "path": "docs/KNOWN-ISSUES.md",
-      "sha256": "81428bf0a943949cdaddb3219f272e95b51f0fe16af4816ee220b7965c5147f1",
-      "bytes": 1949
+      "sha256": "f88719e6a2e078d2650612d9e2c020789256e30dc56ade0916c7e5201a976095",
+      "bytes": 5325
+    },
+    {
+      "path": "docs/KNOWN-ISSUES.ru.md",
+      "sha256": "67b045774d4d4f6f0df0ce15a14df58d6fdcdcc6fef84809c75371ed5b056634",
+      "bytes": 10936
     },
     {
       "path": "docs/README.md",
-      "sha256": "0cb78d49d08cafb3a2c7cca30090b3daa02830b132478c786eb9149c4e9b839e",
-      "bytes": 674
+      "sha256": "08f1147b5a4032f471bc191d94b3d923502a5674bd57b882101ae1195c0c7c2b",
+      "bytes": 2629
+    },
+    {
+      "path": "docs/RELEASE-NOTES-1.0.0.md",
+      "sha256": "0bd945144304b5720dfefc45ec93a693d6051d19f84c164f7b930f7c56beb939",
+      "bytes": 32094
     },
     {
       "path": "docs/THIRD-PARTY.md",
@@ -1232,14 +1303,19 @@
       "bytes": 8977
     },
     {
-      "path": "docs/VALIDATION-179.md",
-      "sha256": "46b12ee5c53dd3a967313820f10464f0c86be12a4f4b7e2df0f9ad25ac4c160b",
-      "bytes": 4755
+      "path": "docs/VALIDATION-1.0.0.json",
+      "sha256": "93cd85c1485945a84f7eb0f93a3ba7b5c535c11a0837e3e9e913bf226db5a0bd",
+      "bytes": 2001
     },
     {
-      "path": "GitHub-About.txt",
-      "sha256": "835d64fb6ec5ce4a1f70d4a1110a6523be883a993eede183cd7381c126bcad76",
-      "bytes": 504
+      "path": "docs/VALIDATION-1.0.0.md",
+      "sha256": "8ea5034fa69c51db4d610ef85acdbaa86018cdc99773ab5795ebc21b01a797d7",
+      "bytes": 2246
+    },
+    {
+      "path": "docs/VALIDATION-179.md",
+      "sha256": "b79912491b302b578004f8747a3c63147bfa36fa24bca105299a260897ecf4c0",
+      "bytes": 4713
     },
     {
       "path": "LICENSE",
@@ -2178,13 +2254,23 @@
     },
     {
       "path": "README.en.md",
-      "sha256": "6b2e7693ecb4f92dec70e845b1da383a37c8e11eab3cd6af2aac811e05429e2a",
-      "bytes": 7478
+      "sha256": "43795c645f9f8902e3f807a7b4d091913ddcd1260043946602c5163929423242",
+      "bytes": 11855
     },
     {
       "path": "README.md",
-      "sha256": "5fcd49a9535e810cf50f5ec0a4c6404e5256a2db48b9209b6bbdee50e763ed7e",
-      "bytes": 7145
+      "sha256": "2e4bcf6ead71d036af81bb450546123bfe2441869e416a61999acbaf09b3a866",
+      "bytes": 10460
+    },
+    {
+      "path": "README.ru.md",
+      "sha256": "3d89c3076c4786e01fd6d3cd8fee66bb5554ecdae07e811006b06a5528289d37",
+      "bytes": 20883
+    },
+    {
+      "path": "Source/CoverCapture/CoverClientArea.cs",
+      "sha256": "4ed7bd3f0efc66a26eac1d1c03cb1796bc44dca631f7b8c79bfd2fb79e72d334",
+      "bytes": 2650
     },
     {
       "path": "Source/CoverCapture/FusionCoverCapture.csproj",
@@ -2193,8 +2279,8 @@
     },
     {
       "path": "Source/CoverCapture/Program.cs",
-      "sha256": "7a201eb5e37df8ab95351d5f4aab3924e370e2c289fb9fff9013e67c99719ed8",
-      "bytes": 12935
+      "sha256": "d84377deb6ddbec5e93fcbb04d9dd39edc8f3c8d502901766e3a7237963e4f45",
+      "bytes": 13319
     },
     {
       "path": "Source/Directory.Build.props",
@@ -2443,8 +2529,8 @@
     },
     {
       "path": "Source/Plugin/CloudMeadow/CloudTranslation.cs",
-      "sha256": "610d345e42ec1e6854df1cf24e5fd6fe7c71c7169bdad0e484bced2c478eca2d",
-      "bytes": 32810
+      "sha256": "8328a2a7a420e34950549894e5d2497143140d545e80c84401568f5dca12b787",
+      "bytes": 33409
     },
     {
       "path": "Source/Plugin/CloudMeadow/CloudUiRoles.cs",
@@ -2470,161 +2556,6 @@
       "path": "Source/Plugin/CloudMeadow/FontAssets/OFL.txt",
       "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
       "bytes": 4301
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-00.sdf.gz",
-      "sha256": "403edb965c37126e4bd02527f06d1c73c7b51631f4567c12727620ee6cd52b4c",
-      "bytes": 367017
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-01.sdf.gz",
-      "sha256": "b43cab69e36dee1b0c61663c8a58438b028d2b2d16dddd540f6c159853ce2c37",
-      "bytes": 450538
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-02.sdf.gz",
-      "sha256": "7d43a7f62cac3b9e97e2245aa026a6e6324d2dba0348824f40a8714e37a8aef8",
-      "bytes": 461767
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-03.sdf.gz",
-      "sha256": "9f0f58b9c5a13da96197a808ca169b31a491b00452a34d1f8e5ada9226a77be8",
-      "bytes": 437108
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-04.sdf.gz",
-      "sha256": "5a79e407a704d21b618393c4c271cf73bcf920d82fdc06f0e9a5fe3e1abba264",
-      "bytes": 433019
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-05.sdf.gz",
-      "sha256": "6cf7a578f02da0fbc8214797b27b2f70323201d05d8ef85e128c4c8ccf13a543",
-      "bytes": 427046
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-06.sdf.gz",
-      "sha256": "7921148985bbba716b77e6858bbbe0858ed515e1e5786f53ea6da556aed5e5d0",
-      "bytes": 411036
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-07.sdf.gz",
-      "sha256": "35d573e58ba644a933fe71abf3acd936aec54665f20a950049800fad442d160e",
-      "bytes": 429119
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-08.sdf.gz",
-      "sha256": "159fe60721849e692fb99d54ce51978d39246b2ce2df9131dd2d1cdfe20f7300",
-      "bytes": 416989
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-09.sdf.gz",
-      "sha256": "39ab6d00aea737fdfe93f72847949ae32e87a912b02b140d5e8bb028810b60da",
-      "bytes": 454368
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-10.sdf.gz",
-      "sha256": "92e7d47385fdea4f89cf6689f7378915d0e7f8fa6b58664874936dcf7e334943",
-      "bytes": 448289
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-11.sdf.gz",
-      "sha256": "4df60e06b93048c705225e318046b03e4759201fd7331c7d2db3121f990eda12",
-      "bytes": 464845
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-12.sdf.gz",
-      "sha256": "613ec5bdcee096b1b5a76d83cce5ebd45797e6a449779a6ed0e44d75b13e2901",
-      "bytes": 475388
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-13.sdf.gz",
-      "sha256": "4b8cdbc85a65e5708fff609bd98510779257b38cdc3e33462b9bd62942a9e929",
-      "bytes": 427031
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-14.sdf.gz",
-      "sha256": "bbb5d1a70bb51a76b62362ed61a884e574442d369950a6006233f3831fac76ef",
-      "bytes": 438969
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-15.sdf.gz",
-      "sha256": "5345563932349c36014f6a9a6fa29d1b99db45b33adc1b69f727c3b655eb4dd1",
-      "bytes": 434131
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-16.sdf.gz",
-      "sha256": "ff05121775ff79a19ed378e73bd2317ebc67d757cc3ec050a7158228f6043cba",
-      "bytes": 416457
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-17.sdf.gz",
-      "sha256": "7af35f30aac11e036308f59624485dc3b999b9047dea87740938005dc5361461",
-      "bytes": 440966
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-18.sdf.gz",
-      "sha256": "73508b5ecb5bb44370d6048b5143a6107bc8dd14df8cc082b8b08c74334b8174",
-      "bytes": 428411
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-19.sdf.gz",
-      "sha256": "4d31f82d50333b923ef7b459245b80341fcb7bea670f2f071926b89c9ba933a4",
-      "bytes": 415451
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-20.sdf.gz",
-      "sha256": "4160b06d1fe7149698982158cfff6f79d3bcb2501f7a408d0cb10e11c11a0bdb",
-      "bytes": 435053
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-21.sdf.gz",
-      "sha256": "9ca4b54eb1e56503b6d1cad8827a4541a67b0b61822bf5d886162724ad23beb9",
-      "bytes": 366184
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-22.sdf.gz",
-      "sha256": "0690270ca96717f2a4e82d822a1a628445de120a8d18c54e407ec8403dd349ba",
-      "bytes": 230986
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-23.sdf.gz",
-      "sha256": "7fb4ea2d700f4a708208bd53428d22538934ab55e2078cec00052168429459e3",
-      "bytes": 223474
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-24.sdf.gz",
-      "sha256": "d31f6318d7a4e33b65ec2cf3cf8c74af3c4bbbd5369904587f8e801ff76bfa1f",
-      "bytes": 214998
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-25.sdf.gz",
-      "sha256": "74585c85c9c1588c02d3ae7818a125e11b41085243ea5d8055bc310c48dc7185",
-      "bytes": 229791
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-26.sdf.gz",
-      "sha256": "d2f83cb840e3c36126f7b1ab28897e99bf4534093ff3656b135633b4933942c6",
-      "bytes": 248082
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-27.sdf.gz",
-      "sha256": "d0e03a037298dd77f78e04201331e5f7e98272860556d6fd3d831eb094995699",
-      "bytes": 243489
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-28.sdf.gz",
-      "sha256": "0fdb5b32a71a30d885c65060b32ddcb849066e7298443378459c9a64a34d0c9c",
-      "bytes": 237704
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-29.sdf.gz",
-      "sha256": "02192c90a2e26a547cbb93488bd4bfc7b18bbb173088bab823ea71474a06c7d8",
-      "bytes": 220051
-    },
-    {
-      "path": "Source/Plugin/CloudMeadow/FontAssets/page-30.sdf.gz",
-      "sha256": "658601bc8ff2f7dd4f3eec6c141bdea0f8f625e104833db02a72233012f6cd48",
-      "bytes": 106145
     },
     {
       "path": "Source/Plugin/CloudMeadow/FontAssets/SOURCE.txt",
@@ -2668,18 +2599,18 @@
     },
     {
       "path": "Source/Plugin/MGITranslator.cs",
-      "sha256": "6c6fdd748f26c43fe582f3147dc7eda4b144a65da546b197cf6df9d2e2868e6b",
-      "bytes": 19333
+      "sha256": "daf307e63fd1bc694b78d67265682e2a9a0e807843203a1e377e3efd39d25d6d",
+      "bytes": 20346
     },
     {
       "path": "Source/Plugin/Payload/CloudMeadow.zip",
-      "sha256": "94ad4c33c3381d35cab5042adf5b838d5fb38dbedee279c326b7e11441806ca1",
-      "bytes": 12158136
+      "sha256": "18cd4583de95bcdb0de0f400b3ca8c99ef7fb1a3b15b4706a84b8e1604398fa9",
+      "bytes": 12158263
     },
     {
       "path": "Source/Plugin/Payload/UnityMono.zip",
-      "sha256": "08df9b9050a92220d70f02ad295a431e04004e2590f373a8c289331e502df55a",
-      "bytes": 651562
+      "sha256": "b4d65c4e298a6e008c086cea4a36140190845f21292cb60deef37468bd3c74a6",
+      "bytes": 651864
     },
     {
       "path": "Source/Plugin/References/BepInEx.dll",
@@ -2760,161 +2691,6 @@
       "path": "Source/Plugin/UnityEmbedded/FontAssets/OFL.txt",
       "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2",
       "bytes": 4301
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-00.sdf.gz",
-      "sha256": "403edb965c37126e4bd02527f06d1c73c7b51631f4567c12727620ee6cd52b4c",
-      "bytes": 367017
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-01.sdf.gz",
-      "sha256": "b43cab69e36dee1b0c61663c8a58438b028d2b2d16dddd540f6c159853ce2c37",
-      "bytes": 450538
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-02.sdf.gz",
-      "sha256": "7d43a7f62cac3b9e97e2245aa026a6e6324d2dba0348824f40a8714e37a8aef8",
-      "bytes": 461767
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-03.sdf.gz",
-      "sha256": "9f0f58b9c5a13da96197a808ca169b31a491b00452a34d1f8e5ada9226a77be8",
-      "bytes": 437108
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-04.sdf.gz",
-      "sha256": "5a79e407a704d21b618393c4c271cf73bcf920d82fdc06f0e9a5fe3e1abba264",
-      "bytes": 433019
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-05.sdf.gz",
-      "sha256": "6cf7a578f02da0fbc8214797b27b2f70323201d05d8ef85e128c4c8ccf13a543",
-      "bytes": 427046
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-06.sdf.gz",
-      "sha256": "7921148985bbba716b77e6858bbbe0858ed515e1e5786f53ea6da556aed5e5d0",
-      "bytes": 411036
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-07.sdf.gz",
-      "sha256": "35d573e58ba644a933fe71abf3acd936aec54665f20a950049800fad442d160e",
-      "bytes": 429119
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-08.sdf.gz",
-      "sha256": "159fe60721849e692fb99d54ce51978d39246b2ce2df9131dd2d1cdfe20f7300",
-      "bytes": 416989
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-09.sdf.gz",
-      "sha256": "39ab6d00aea737fdfe93f72847949ae32e87a912b02b140d5e8bb028810b60da",
-      "bytes": 454368
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-10.sdf.gz",
-      "sha256": "92e7d47385fdea4f89cf6689f7378915d0e7f8fa6b58664874936dcf7e334943",
-      "bytes": 448289
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-11.sdf.gz",
-      "sha256": "4df60e06b93048c705225e318046b03e4759201fd7331c7d2db3121f990eda12",
-      "bytes": 464845
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-12.sdf.gz",
-      "sha256": "613ec5bdcee096b1b5a76d83cce5ebd45797e6a449779a6ed0e44d75b13e2901",
-      "bytes": 475388
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-13.sdf.gz",
-      "sha256": "4b8cdbc85a65e5708fff609bd98510779257b38cdc3e33462b9bd62942a9e929",
-      "bytes": 427031
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-14.sdf.gz",
-      "sha256": "bbb5d1a70bb51a76b62362ed61a884e574442d369950a6006233f3831fac76ef",
-      "bytes": 438969
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-15.sdf.gz",
-      "sha256": "5345563932349c36014f6a9a6fa29d1b99db45b33adc1b69f727c3b655eb4dd1",
-      "bytes": 434131
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-16.sdf.gz",
-      "sha256": "ff05121775ff79a19ed378e73bd2317ebc67d757cc3ec050a7158228f6043cba",
-      "bytes": 416457
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-17.sdf.gz",
-      "sha256": "7af35f30aac11e036308f59624485dc3b999b9047dea87740938005dc5361461",
-      "bytes": 440966
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-18.sdf.gz",
-      "sha256": "73508b5ecb5bb44370d6048b5143a6107bc8dd14df8cc082b8b08c74334b8174",
-      "bytes": 428411
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-19.sdf.gz",
-      "sha256": "4d31f82d50333b923ef7b459245b80341fcb7bea670f2f071926b89c9ba933a4",
-      "bytes": 415451
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-20.sdf.gz",
-      "sha256": "4160b06d1fe7149698982158cfff6f79d3bcb2501f7a408d0cb10e11c11a0bdb",
-      "bytes": 435053
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-21.sdf.gz",
-      "sha256": "9ca4b54eb1e56503b6d1cad8827a4541a67b0b61822bf5d886162724ad23beb9",
-      "bytes": 366184
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-22.sdf.gz",
-      "sha256": "0690270ca96717f2a4e82d822a1a628445de120a8d18c54e407ec8403dd349ba",
-      "bytes": 230986
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-23.sdf.gz",
-      "sha256": "7fb4ea2d700f4a708208bd53428d22538934ab55e2078cec00052168429459e3",
-      "bytes": 223474
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-24.sdf.gz",
-      "sha256": "d31f6318d7a4e33b65ec2cf3cf8c74af3c4bbbd5369904587f8e801ff76bfa1f",
-      "bytes": 214998
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-25.sdf.gz",
-      "sha256": "74585c85c9c1588c02d3ae7818a125e11b41085243ea5d8055bc310c48dc7185",
-      "bytes": 229791
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-26.sdf.gz",
-      "sha256": "d2f83cb840e3c36126f7b1ab28897e99bf4534093ff3656b135633b4933942c6",
-      "bytes": 248082
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-27.sdf.gz",
-      "sha256": "d0e03a037298dd77f78e04201331e5f7e98272860556d6fd3d831eb094995699",
-      "bytes": 243489
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-28.sdf.gz",
-      "sha256": "0fdb5b32a71a30d885c65060b32ddcb849066e7298443378459c9a64a34d0c9c",
-      "bytes": 237704
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-29.sdf.gz",
-      "sha256": "02192c90a2e26a547cbb93488bd4bfc7b18bbb173088bab823ea71474a06c7d8",
-      "bytes": 220051
-    },
-    {
-      "path": "Source/Plugin/UnityEmbedded/FontAssets/page-30.sdf.gz",
-      "sha256": "658601bc8ff2f7dd4f3eec6c141bdea0f8f625e104833db02a72233012f6cd48",
-      "bytes": 106145
     },
     {
       "path": "Source/Plugin/UnityEmbedded/FontAssets/SOURCE.txt",
@@ -3297,9 +3073,14 @@
       "bytes": 17284
     },
     {
+      "path": "Source/Screenshot/ApiProfileEditorState.cs",
+      "sha256": "1818440eb67f05647898385af06a734d7216d25a733cf4467cc438e1eca91e74",
+      "bytes": 5142
+    },
+    {
       "path": "Source/Screenshot/AppBranding.cs",
-      "sha256": "174c8f0d40d888ef2b3d93dc1d33a12edc846559b2beb53f1b69fea77d259f25",
-      "bytes": 2371
+      "sha256": "79fe2dabd0ecfa1e00fb49c5cf843dd3fb8574c0a81307a1e46c2b77e563c52d",
+      "bytes": 2578
     },
     {
       "path": "Source/Screenshot/AppDataPaths.cs",
@@ -3308,18 +3089,18 @@
     },
     {
       "path": "Source/Screenshot/AppDialog.cs",
-      "sha256": "58dbed6408879bc1582f940fcdaeac36471b85ce2d7fe29781b2fc777f339209",
-      "bytes": 4624
+      "sha256": "524bb189b38e18437c52296f20e00703c64105e947cc81496465ccf9656a3bfa",
+      "bytes": 5784
     },
     {
       "path": "Source/Screenshot/AppearanceSettings.cs",
-      "sha256": "13b6a16e0cb7b656fd4300c19343dec1cbe7f0d15f8c8b798606e7af90fe4c73",
-      "bytes": 2191
+      "sha256": "ef5ff43c159a661728514f6abf22e91c4e8e702e49a67dcb56b481660a7e40a5",
+      "bytes": 2319
     },
     {
       "path": "Source/Screenshot/AppearanceSettingsDialog.cs",
-      "sha256": "3b70acdfbfe41e63cf25e242ba4b65272485bb9535367b1de319c6d3869af655",
-      "bytes": 7358
+      "sha256": "2156f5e736aedc5549d761b7e97269a1640a75d9d168eb821b88e189d71f3918",
+      "bytes": 7386
     },
     {
       "path": "Source/Screenshot/AppLog.cs",
@@ -3327,9 +3108,19 @@
       "bytes": 1257
     },
     {
+      "path": "Source/Screenshot/ArtworkSearchService.cs",
+      "sha256": "1374dcee506b0a9ba7cafff6dee18415a5c7f4c9517572ba340ed7b51fac92f0",
+      "bytes": 24890
+    },
+    {
+      "path": "Source/Screenshot/ArtworkWebSources.cs",
+      "sha256": "b8eae3d3ce988d68fe66f149d25ba0a2252bbc93e14be4ccc3ae9d280ade6dd1",
+      "bytes": 9628
+    },
+    {
       "path": "Source/Screenshot/AutomaticTranslationQuality.cs",
-      "sha256": "c6ed3cbcb56ec1a96e3e0ff6d9584699f7b692d9210a6aa4728eaf82aee981fd",
-      "bytes": 5180
+      "sha256": "dac7a2c955d634250668e48235cb307d1efd8e434fe65e9cfcdf753a95ae96a2",
+      "bytes": 7325
     },
     {
       "path": "Source/Screenshot/BackgroundIntegrationPhase2Diagnostics.cs",
@@ -3363,8 +3154,8 @@
     },
     {
       "path": "Source/Screenshot/BuildIdentity.cs",
-      "sha256": "8628eab6a17e2b5c4e62fffff1ac48b9153b9324281ff47b5987c6fafe62ad40",
-      "bytes": 2073
+      "sha256": "876ad5ff86a8c056d8d928573a89a88ec843de6148919e0424fa5d577ca23e52",
+      "bytes": 2320
     },
     {
       "path": "Source/Screenshot/CAPTURE-FLASH-DIAGNOSTICS.md",
@@ -3378,8 +3169,13 @@
     },
     {
       "path": "Source/Screenshot/CaptureOverlay.cs",
-      "sha256": "28cd99425726459ed9d8418beb6c0625b973ab6242f9cdc6c1821e1b8513f10e",
-      "bytes": 54903
+      "sha256": "60161ecf973f8c753ccd58ed8ccf90166fb0ecd50e187ce0659e7ca9d32fdb20",
+      "bytes": 55891
+    },
+    {
+      "path": "Source/Screenshot/CaptureToolbarLayout.cs",
+      "sha256": "be2384e47ca1ae2e8a44f9c37c439d2bc6c7f97fac7d60deab0884a27a80b187",
+      "bytes": 1096
     },
     {
       "path": "Source/Screenshot/CatalogCoverage.cs",
@@ -3387,14 +3183,24 @@
       "bytes": 1930
     },
     {
+      "path": "Source/Screenshot/CatalogOrigins.cs",
+      "sha256": "e8bfeb27830fe56babe584d45928f78b0c29e88cb509f9c64f742e30b6f7bb25",
+      "bytes": 4739
+    },
+    {
       "path": "Source/Screenshot/CatalogReadReport.cs",
-      "sha256": "75be4712537863d8ad98f53f9c95cdf085dadc3f0f2160902ca11f49c988b17a",
-      "bytes": 1530
+      "sha256": "2aadf741dd830bacae48ed0a9236be4c4c7baafefa0bd1fedc4a1fa128ec0f08",
+      "bytes": 1666
     },
     {
       "path": "Source/Screenshot/CatalogTranslationPreparation.cs",
-      "sha256": "dabef895d4e288dc968d11623f239dad492b8e70305a4038acd92c3652ff38ff",
-      "bytes": 11667
+      "sha256": "9ccd8fc89c694aa274a75dc2d60b3a49111e1dc35267024359c02062c396361a",
+      "bytes": 19745
+    },
+    {
+      "path": "Source/Screenshot/ChatRequestParameters.cs",
+      "sha256": "8abdf35d85c56ca6659ee2983aec3209fb3be2fad5c53148e9d851373a66f442",
+      "bytes": 4302
     },
     {
       "path": "Source/Screenshot/CHECKPOINT-0.md",
@@ -3447,9 +3253,14 @@
       "bytes": 1415
     },
     {
+      "path": "Source/Screenshot/ClockDisplayTemplate.cs",
+      "sha256": "5da87551b29b90e11cc19ea0bf0f9835c6e48ae30c65c40d03782b29aaf6233e",
+      "bytes": 1956
+    },
+    {
       "path": "Source/Screenshot/ConfigurationManager.cs",
-      "sha256": "2c1fe9a5a19c69d4ab272e51129865ebbac8aa469c970e4481cfcd1751db7ddd",
-      "bytes": 17852
+      "sha256": "ec21cffe5005bbc71c2a5b206fb91f7e5a24b22acfadfd3b7eec0e26b3f4a6cf",
+      "bytes": 18032
     },
     {
       "path": "Source/Screenshot/ConnectedGameLifecycle.cs",
@@ -3503,8 +3314,8 @@
     },
     {
       "path": "Source/Screenshot/CoreTranslationContentValidator.cs",
-      "sha256": "f816df7135a51b9fdfca5329c2c73e6ea8c146d1a15def507fccb971fecf3f47",
-      "bytes": 10002
+      "sha256": "e52425030a83a1f5fb002592d0794b5ad15a337529c5246262d5536f4d8b6e86",
+      "bytes": 10622
     },
     {
       "path": "Source/Screenshot/CoreTranslationItemFactory.cs",
@@ -3520,6 +3331,11 @@
       "path": "Source/Screenshot/CoverageRepairV2.cs",
       "sha256": "ddea98370eb1baae2a91c5dffed96cb2f053ff7cac1e9dbfda596c1e6b34f06b",
       "bytes": 11096
+    },
+    {
+      "path": "Source/Screenshot/CoverFraming.cs",
+      "sha256": "9bd6ea4b13dcde8f5a342d708571e5d8c46e2993fcb74c4f9d4770b199290552",
+      "bytes": 1474
     },
     {
       "path": "Source/Screenshot/CursorCaptureStageDump.cs",
@@ -3543,13 +3359,13 @@
     },
     {
       "path": "Source/Screenshot/DataRootVerification.cs",
-      "sha256": "0bb3de2c608ac12c3d275cb507f4e3ba3d26a8ed23f0e8dc75f55365d06a9734",
-      "bytes": 11086
+      "sha256": "80d7ca077a1d0a5095359ba7397905cb0d2145eca3d9a154676e9a71fae4d59c",
+      "bytes": 11914
     },
     {
       "path": "Source/Screenshot/DefoldArchive.cs",
-      "sha256": "2c0a98dd2c18ed0e7346162afd297b859f9e8e8e4de01dc827b407bd9056bbb6",
-      "bytes": 6104
+      "sha256": "d452983db9a547e51c56e036ff43db1bb9f013aa4393f48efa9b406247c2cdd5",
+      "bytes": 8024
     },
     {
       "path": "Source/Screenshot/DefoldCatalogNotice.txt",
@@ -3558,13 +3374,13 @@
     },
     {
       "path": "Source/Screenshot/DefoldFontBuilder.cs",
-      "sha256": "8317300230d58fe3a717df91ce8b4d3da0c4524874ba19092815c53b0c56170a",
-      "bytes": 6168
+      "sha256": "e46cbba2389e7e965a482876762e9683d2f67a22eef132de34149b3040521cfc",
+      "bytes": 10312
     },
     {
       "path": "Source/Screenshot/DefoldGameAdapter.cs",
-      "sha256": "bb84df83b1f3c7d44bc8fef555a66d60da8038d316c9346ff832b11b16036de3",
-      "bytes": 14806
+      "sha256": "cf24990ff7be12ac11925c2d6dc0783f2b35a7be0decf47e26990f4ec76be5e8",
+      "bytes": 15952
     },
     {
       "path": "Source/Screenshot/DefoldTextCatalog.cs",
@@ -3582,6 +3398,11 @@
       "bytes": 4631
     },
     {
+      "path": "Source/Screenshot/DesktopApplicationController.cs",
+      "sha256": "2da86e87df8628204039ad7f58b3f4af8df1f27d81e9f508290252a825b411fb",
+      "bytes": 21249
+    },
+    {
       "path": "Source/Screenshot/DesktopGlobalUsings.cs",
       "sha256": "526d6d033ac0840d5020a7805791fe398c3848a2e2f09d7e429aa5f703bd5eb4",
       "bytes": 145
@@ -3597,9 +3418,44 @@
       "bytes": 1584
     },
     {
+      "path": "Source/Screenshot/DesktopSettingsDraft.cs",
+      "sha256": "43f80c5bc1785f1d7b2098959ee3c32caa6692b913a5426cc316292f33e8ec31",
+      "bytes": 4297
+    },
+    {
+      "path": "Source/Screenshot/DesktopStatusState.cs",
+      "sha256": "4b8675eb92280ae14cf84b9af66c0d75cb2d17e50feef45a199a1f25465bd54b",
+      "bytes": 530
+    },
+    {
+      "path": "Source/Screenshot/DesktopUiTimer.cs",
+      "sha256": "d347675bb7dcb4beb73f4b28de885731f374c790ea0d0ea5834279a79cd99392",
+      "bytes": 1783
+    },
+    {
+      "path": "Source/Screenshot/DesktopWindowController.cs",
+      "sha256": "f3880dd540d521a16f12fe9857bcb5bb847c64426e3004cf2e3440331d2e935b",
+      "bytes": 7781
+    },
+    {
+      "path": "Source/Screenshot/DesktopWindowEvents.cs",
+      "sha256": "132ba2ba54993794476b62cc54d20d4a034459de71caf67e28babb2288511415",
+      "bytes": 5114
+    },
+    {
+      "path": "Source/Screenshot/DesktopWorkspaceComposition.cs",
+      "sha256": "2fd41f4a7d5f7df695020b333c723bd035e9c2fbfe1fc03451579937e18bfc49",
+      "bytes": 14324
+    },
+    {
+      "path": "Source/Screenshot/DesktopWorkspaceContracts.cs",
+      "sha256": "3b0270431472a2e9540dc92c8f4e28bcd95c017b1106e31eea1187af1cf22c42",
+      "bytes": 8252
+    },
+    {
       "path": "Source/Screenshot/DialogLayout.cs",
-      "sha256": "87b4719350f3829b6b6b5deedcc8b23992c62d096306844688a8d5f364a34d43",
-      "bytes": 4083
+      "sha256": "2c7d9d8a565f9c31a16bf18ae7362500e9c9372be61c5d46b13d8cbd933a2cd4",
+      "bytes": 4164
     },
     {
       "path": "Source/Screenshot/DisplayBoundaryAliases.cs",
@@ -3628,8 +3484,8 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedGameAdapters.cs",
-      "sha256": "1db09fe3a1c36d16a655bdc3bcab11ac4461fcb30b3e5ecd4e50832533c862a2",
-      "bytes": 6651
+      "sha256": "4d6b4ca58de3a394236e2c3d5b0e5155c59bc728b1b6793de3f6b32a3d6490fa",
+      "bytes": 7079
     },
     {
       "path": "Source/Screenshot/EmbeddedLaunchWait.cs",
@@ -3638,8 +3494,8 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedSourceLanguagePolicy.cs",
-      "sha256": "b0ab74835d287dd7c2a6b5f1fffbed658bfd037e780b9678852226651a6e636e",
-      "bytes": 12429
+      "sha256": "58b21b7478ea397e9d50df90dbceb361715ed38ef007e26387a967a3d726c131",
+      "bytes": 12730
     },
     {
       "path": "Source/Screenshot/EmbeddedTextContinuity.cs",
@@ -3648,13 +3504,13 @@
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationOptions.cs",
-      "sha256": "c872383fffcdc2039b12258b3aef4984d8b46caaa3692405fe4c5d41cf738acf",
-      "bytes": 1365
+      "sha256": "815f545657c4e92e4c59b6ee141f4b20e5b52bf22665bbb643abc96f1e93816c",
+      "bytes": 1478
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationQueueSnapshot.cs",
-      "sha256": "9fed81af3713e93f50c8d6876fa59046765bab2a967508a53139cc6ffcf7e56b",
-      "bytes": 2534
+      "sha256": "9380d9455a671c9a9ec03bcaaed967b58f9e9764d330ac610816465798a1f345",
+      "bytes": 4880
     },
     {
       "path": "Source/Screenshot/EmbeddedTranslationText.cs",
@@ -3668,13 +3524,13 @@
     },
     {
       "path": "Source/Screenshot/ExperimentalCatalogForm.cs",
-      "sha256": "ddccb6558672a68ad80cf058a9588cda086958230242e57586dff987dc8c252d",
-      "bytes": 8128
+      "sha256": "553cdb7c9bb75a9b98a3ed91e636bb7f1a22a1a8aa2c485e026abf7796c54fa4",
+      "bytes": 9233
     },
     {
       "path": "Source/Screenshot/ExperimentalRpgCatalog.cs",
-      "sha256": "c262dd17253128788bffc3f0b93056c98ab005a6b9b530fe49cc0afa53ed27bb",
-      "bytes": 14921
+      "sha256": "8239af6fe88832d8ad5ee508165cc5d9699f5f03fe835fe3c516fd50254b6ca6",
+      "bytes": 19979
     },
     {
       "path": "Source/Screenshot/FILE-HASHES.txt",
@@ -3713,28 +3569,28 @@
     },
     {
       "path": "Source/Screenshot/FontManager.cs",
-      "sha256": "5f35a449d2d4bb79ce715f51bdea83ea930df8cba78a13767aba8ea511ff3980",
-      "bytes": 19575
+      "sha256": "fc0f9d488e7ad66e4547973db89c3669ce4b1b7d19e3a1c78dc83f716416051b",
+      "bytes": 20396
     },
     {
       "path": "Source/Screenshot/FusionAdapterInstaller.cs",
-      "sha256": "d3e7317a45569dd3581002494202fdee9a16e24ce14047d1da96e2e12ec7a5c2",
-      "bytes": 7674
+      "sha256": "92064112b26223b672fa62518497bb9239cd81ff9e0cdeed68a41655a56740ad",
+      "bytes": 7921
     },
     {
       "path": "Source/Screenshot/FusionCloudInstaller.cs",
-      "sha256": "e07e0cb8903d9342256d38dbfdb5c5cd87b976b5cd6d488ea387f837994cead8",
-      "bytes": 16118
+      "sha256": "ade36746d9057f276ac6e067e0435e2f8021a52317ccc1d06fc04aa42e9094e3",
+      "bytes": 16479
     },
     {
       "path": "Source/Screenshot/FusionCloudPayload.cs",
-      "sha256": "9d28dcdb7d19a1a2b919013053f02d2059a79f6ad8d6632980589d53b12400b4",
-      "bytes": 8284
+      "sha256": "375c1db68a6977e238fc5a2cbb7fdbac11150982756eae0b3156c9c076784c54",
+      "bytes": 8281
     },
     {
       "path": "Source/Screenshot/FusionConfiguration.cs",
-      "sha256": "14f0c6ec4892ae8336fcfff8f1d0c1f75f773fc155fb81c9b40df7c6df92f654",
-      "bytes": 10664
+      "sha256": "be54276f7204f458afbb3179f5d0306f62d34dbe8d77c45c61051bda2696e2ea",
+      "bytes": 10805
     },
     {
       "path": "Source/Screenshot/FusionCoverQuality.cs",
@@ -3748,23 +3604,23 @@
     },
     {
       "path": "Source/Screenshot/FusionDesktopGameState.cs",
-      "sha256": "a418509117efa30353f0e9e98cd32040b4aa9f75e65e902338815646288bce8d",
-      "bytes": 19615
+      "sha256": "bb8a9c7a656800b355749bbf90fdd8a1be532f2787d7700dbc9c5fb9cb2c37b0",
+      "bytes": 23104
     },
     {
       "path": "Source/Screenshot/FusionDesktopPreparation.cs",
-      "sha256": "ec5473ce2a0c2f88c9c04261c4d78d1fdf928002fbd5e7d53417dd4e9fc4b78d",
-      "bytes": 4934
+      "sha256": "ab20030ff62d0e37a92cceac94ee3fa15125219c6216e79d11f9907c5f8f2557",
+      "bytes": 5394
     },
     {
       "path": "Source/Screenshot/FusionDesktopUi.cs",
-      "sha256": "3b8dcd15bb0727fb046ff0505a657149dd39b1bc90db1a8e0d74fc29eb7a5e91",
-      "bytes": 4182
+      "sha256": "e5b62852a23d82090e05e271bcff0fb33138b133982f9e0dbbdeb5b20ee2a011",
+      "bytes": 5574
     },
     {
       "path": "Source/Screenshot/FusionEmbeddedTranslationWorkspace.cs",
-      "sha256": "bddfc1698d72590bf101ce6573bb30b2ea482c03803b22362039186178a8b87c",
-      "bytes": 9458
+      "sha256": "25b1f0cee961c18724616afa9bbf84354bad970e5643f781cccc149f9666301f",
+      "bytes": 9813
     },
     {
       "path": "Source/Screenshot/FusionGameControls.cs",
@@ -3773,8 +3629,8 @@
     },
     {
       "path": "Source/Screenshot/FusionGameDataLabels.cs",
-      "sha256": "76bfc6cd221d9b4ffa1d3e5bfd05d0fe627795a2da17379ce7352787fb3d8cbf",
-      "bytes": 3974
+      "sha256": "c6712b012ce168dbdc3a7456398f554705a55d14d8956a9c46668f69ffe57344",
+      "bytes": 4139
     },
     {
       "path": "Source/Screenshot/FusionGameDetector.cs",
@@ -3783,18 +3639,18 @@
     },
     {
       "path": "Source/Screenshot/FusionGameDiagnosticsWorkspace.cs",
-      "sha256": "a17a8ea25b4a17ebef74afe5a6c0a8cf3ffd73f6e8b97324ae55a7e8e72aae6e",
-      "bytes": 9417
+      "sha256": "e8336f62d8a8e83b42fe4e19e34593478dcfe69d25a2dbf4f6fc136118c750cd",
+      "bytes": 10497
     },
     {
       "path": "Source/Screenshot/FusionGameEventConditions.cs",
-      "sha256": "6ad7ead983486baf6f7bffad991260c2c1c494a061807e546b33bee637e99b24",
-      "bytes": 12195
+      "sha256": "462b48ccb2d7c45108eb828686654fd9b5db13517ca7e52d82045459abb083a5",
+      "bytes": 12206
     },
     {
       "path": "Source/Screenshot/FusionGameLaunchActions.cs",
-      "sha256": "953e2da028226e72d27bf05b0a2449b61c4f2157c80aafb777c762cb90495d8b",
-      "bytes": 7197
+      "sha256": "8fb913c1350324a708db559170e35a20b352be474d5d2ebd75fdeccbf5d6755c",
+      "bytes": 7203
     },
     {
       "path": "Source/Screenshot/FusionGameLibraryTabs.cs",
@@ -3803,33 +3659,33 @@
     },
     {
       "path": "Source/Screenshot/FusionGameLibraryWorkspace.cs",
-      "sha256": "0bb51c61f99e71fc5223b9aaca1d44361dcb6643aa78478d803bd41025115e37",
-      "bytes": 29314
+      "sha256": "2353333dcfd384c25c5286eb82fc43bbe91c65940bb14d6c2094771df073f1fe",
+      "bytes": 33858
     },
     {
       "path": "Source/Screenshot/FusionGameLifecycle.cs",
-      "sha256": "7d98c3511fbcc0361f005cd5abd3da02e91a3aa318dc2aa78e400daa60d31fc4",
-      "bytes": 8060
+      "sha256": "c0df8833964394467bfae247bf229432270c5c2ec58e9777be7090b7e222e970",
+      "bytes": 8424
     },
     {
       "path": "Source/Screenshot/FusionGameMapSync.cs",
-      "sha256": "d7034fdb88a4eeeb66bf058f7685961ece207d6537414d072a6c1e762bd97141",
-      "bytes": 3467
+      "sha256": "c04d8e740a818fe2cd156f673b829d320e99d420fa8235460ff7defd61715833",
+      "bytes": 3455
     },
     {
       "path": "Source/Screenshot/FusionGameModificationDetails.cs",
-      "sha256": "4508a54fbd2911ca5e2b5b30a14b2def51d19ba4e631872b5494afcd2f2e9d3e",
-      "bytes": 25754
+      "sha256": "1b7dcc8aa791f64386ba730fce79d2a87724145d3d5a8f14e28facc434550ac6",
+      "bytes": 25783
     },
     {
       "path": "Source/Screenshot/FusionGameModificationLayout.cs",
-      "sha256": "2669b8f6034f20ef8ff872239eea1bba82f48af26bdb4bfdc0b241a420203de3",
-      "bytes": 20881
+      "sha256": "9478ffd63de99148605d000718cb1e34df273b29f1e3bd0cc1ad0a3d0e2ef733",
+      "bytes": 21226
     },
     {
       "path": "Source/Screenshot/FusionGameModificationWorkspace.cs",
-      "sha256": "6f7074479f88d16fd281483e9b39aec369f0c5aa8ea657ca5345cd05b91ef74a",
-      "bytes": 34651
+      "sha256": "52b053a33f74ed98121ef0b3fcc9093de74e4ba9ff3c994e1238787d440a6817",
+      "bytes": 35260
     },
     {
       "path": "Source/Screenshot/FusionGameSessions.cs",
@@ -3838,63 +3694,103 @@
     },
     {
       "path": "Source/Screenshot/FusionGameSessionWorkspace.cs",
-      "sha256": "46410eb30516743aae27bb51849a389b1247ecd361e493ff632ede6a8813204e",
-      "bytes": 35146
+      "sha256": "cc703417f5a43f89cdb5b9e42629331f270ed6652d0fad8d7fd42748e0de105c",
+      "bytes": 36488
     },
     {
       "path": "Source/Screenshot/FusionGameWindowCover.cs",
-      "sha256": "8c7d1ebae5ad15a7ae5258c6965d278c7e3d2a70a6bd582beb0920af471c7029",
-      "bytes": 12147
+      "sha256": "2b9405b17c39dcd7f6232865f9f12b5d2519e03949127975e5df0640799bb374",
+      "bytes": 12299
     },
     {
       "path": "Source/Screenshot/FusionLibraryActions.cs",
-      "sha256": "a859d164307e5bc7f3e208f205d571d6906d71d9f28d77b52d1a0861d96a7e67",
-      "bytes": 8836
+      "sha256": "e72962939887aa5fca452a5e26264cf9129359c1f70b715f5a58a33989acd374",
+      "bytes": 9450
     },
     {
       "path": "Source/Screenshot/FusionLibraryCategories.cs",
-      "sha256": "d0e46c424e8d39c07fe8a9e3f6d4d0409141a85e225f431afcecff703e7948e4",
-      "bytes": 3273
+      "sha256": "bed34474dbd10ec1ae60ebee57b0d9428b899c01efb2e94270ace76f4a6c9350",
+      "bytes": 3451
     },
     {
       "path": "Source/Screenshot/FusionLibraryFolders.cs",
-      "sha256": "ba54f543955d63e2c7b3511fb72a834c078c065735bbfdbce5606463f0fd8cbc",
-      "bytes": 7512
+      "sha256": "1c2052b4bf1a7727e69cc9854835d420aaa293c7cf72b25d608ec03c122ad356",
+      "bytes": 7797
     },
     {
       "path": "Source/Screenshot/FusionLibraryMetadata.cs",
-      "sha256": "2cd3632ec8d25167748f513f31aa82d0a4993f3fabde776800486fd6123d6560",
-      "bytes": 8143
+      "sha256": "fe2f7427b12249d448d91b6a546d41cec5642dc93cc296a24dd9eb8b50a21408",
+      "bytes": 10102
     },
     {
       "path": "Source/Screenshot/FusionLibraryNavigation.cs",
-      "sha256": "f1b25373d2e47a109b5501e0c54065498117342739022b9f7538c1980a32f74e",
-      "bytes": 19483
+      "sha256": "54538af5314decee67d8cec25d8037e0b3a02f5777554332ec32201936f0f4ac",
+      "bytes": 21304
     },
     {
       "path": "Source/Screenshot/FusionLibraryOrganizing.cs",
-      "sha256": "2255d7cd27ba07159098e076be2a6779a03f92a046f5f2092fc0951e87c82849",
-      "bytes": 5167
+      "sha256": "1bf242c94c5f1853b353011fb6e59b786ffd64ab66b4496ba8179f44b5838259",
+      "bytes": 5159
     },
     {
       "path": "Source/Screenshot/FusionLibrarySections.cs",
-      "sha256": "86aebaa2b82d52ef8d003ac8b64cbdb09cf9433759d39330b270dfa7f15d5390",
-      "bytes": 7525
+      "sha256": "965a7bdbd98caf6385ec27a02360057f8fe779d5685c85d6fddfd477e9c677df",
+      "bytes": 7840
     },
     {
       "path": "Source/Screenshot/FusionLibrarySettings.cs",
-      "sha256": "592d681c76da2d99653897af6bf8e820addd99202a72f7c70ca99984e89a70c8",
-      "bytes": 8749
+      "sha256": "5b442fdb3ba109e0c9ff589d07b13cbe4d26aad9666472c78a2ae9ac9af7b821",
+      "bytes": 8861
     },
     {
       "path": "Source/Screenshot/FusionMainForm.cs",
-      "sha256": "03bf5d568d50300991b5c6c93edcae6cd921d3d1a58e07e05ccc5d1df4eb03a4",
-      "bytes": 27689
+      "sha256": "49f9c4ff6bb025dc3d75d1e639e87a2eecbd1a89386ecddb03bb1fc93358d249",
+      "bytes": 28784
     },
     {
       "path": "Source/Screenshot/FusionManualScreenTranslationWorkspace.cs",
-      "sha256": "cb0bf2ef628c7b86856920c5668668c406bf9ab1912865a941d8b2a17567c693",
-      "bytes": 8211
+      "sha256": "884fcd87b4f50ed22200fa2b2ed8d09066250bd6d7d4442834b7062f55641462",
+      "bytes": 8345
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeGameActions.cs",
+      "sha256": "3bad9b707b8b564cb87c09708ad636cea9d4379eaebbaabfe127a774d651fcd9",
+      "bytes": 5350
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeGameLabels.cs",
+      "sha256": "cec71d0c3f9156fcf7cd51c0ed9dfc2d78c6059e3afe845e8dae4ecc6a020fc6",
+      "bytes": 1292
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeGameSession.cs",
+      "sha256": "9af53636f76f9c0f8da9e4d0816310827b9091f68e11baa6406e4b2b409d5b59",
+      "bytes": 17342
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeLibrary.cs",
+      "sha256": "6c504846f34be33886a65b806d6b1d0500bfd288ea4460e16618b52ffa81a027",
+      "bytes": 1843
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeScreenshot.cs",
+      "sha256": "364f7dbdc8b40e44869fd21ffc9948b37458d77c84c9abcb028ae37028c7f31a",
+      "bytes": 4990
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeSettings.cs",
+      "sha256": "6be94fa41df4dd51ea721a28ad814815bd4c7b2b4e4454c33e8ee58d00cb5a41",
+      "bytes": 6852
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeShell.cs",
+      "sha256": "eb773d07ee220766d79f30ce9df98d8a88321afa13008bbb6e9ea43a6c793f58",
+      "bytes": 1929
+    },
+    {
+      "path": "Source/Screenshot/FusionNativeShortcuts.cs",
+      "sha256": "9248933d295ec01356dce04c23df2dbf5b1a3948d269f6aa74ec9d9228d6a714",
+      "bytes": 8169
     },
     {
       "path": "Source/Screenshot/FusionNavigation.cs",
@@ -3903,13 +3799,13 @@
     },
     {
       "path": "Source/Screenshot/FusionNovelModificationWorkspace.cs",
-      "sha256": "40cdea7033a6623b75b48d6cae53460fd8ff0d46654da0d89376a6b1802dc2e5",
-      "bytes": 9340
+      "sha256": "9f7fd004f4a9f18564b18bd63d3c017842276450209eee7100f2d60178508dd8",
+      "bytes": 16208
     },
     {
       "path": "Source/Screenshot/FusionNovelStateWorkspace.cs",
-      "sha256": "51d7923d5e5eedb40d268ca5d44f1a48261ea967ad7eafcc3530df4beb524900",
-      "bytes": 5744
+      "sha256": "b5f82d7a187fe3789e1bfe64d0091462155af5ab3400a1a8be383315694a76a4",
+      "bytes": 5666
     },
     {
       "path": "Source/Screenshot/FusionOrdinaryLaunch.cs",
@@ -3918,8 +3814,8 @@
     },
     {
       "path": "Source/Screenshot/FusionPageHistory.cs",
-      "sha256": "1c9fb60c9a2bff153b2d1dc5a1c446c61e42d6802eb11b5635a9783d2583d419",
-      "bytes": 4353
+      "sha256": "7eda6fb6c8f873a10221b75d547139d7e35a0d867c8805352d60654ee3797dd3",
+      "bytes": 4258
     },
     {
       "path": "Source/Screenshot/FusionPluginIdentity.cs",
@@ -3928,68 +3824,73 @@
     },
     {
       "path": "Source/Screenshot/FusionProfileEditor.cs",
-      "sha256": "e094fa05e8f7469165a5faa19c1be44621427b1c8fce5dd394f79eee53d5b7a6",
-      "bytes": 20101
+      "sha256": "39b5e2e7588bf32ff25219ed4813c66848955ef8c76c2c1c258812ffb45dca77",
+      "bytes": 27006
+    },
+    {
+      "path": "Source/Screenshot/FusionProfileEditorState.cs",
+      "sha256": "678130b5a018b69dda4fc8fe52647fbab3df3002f3aedd15558d81bdd0d880fb",
+      "bytes": 3437
     },
     {
       "path": "Source/Screenshot/FusionProfiles.cs",
-      "sha256": "627a3dec1721a512dea4e85f69ab4af2ef52bd344fdc38cdcacaf580b5ff139e",
-      "bytes": 8587
+      "sha256": "bf8d6326bc6caf6b4b0223b3d8ead052b09464744d11867d4fc4227a12593917",
+      "bytes": 9581
     },
     {
       "path": "Source/Screenshot/FusionProfileVerification.cs",
-      "sha256": "42866387d7ccc434bb1e1016afa147240ac1e0bf07c99848ee93f1219663088f",
-      "bytes": 9015
+      "sha256": "e318f6514ef273a27c93d6a726649f146d677b6da780a9029c1f50fab5fb5e92",
+      "bytes": 9103
     },
     {
       "path": "Source/Screenshot/FusionRecentGames.cs",
-      "sha256": "d7be37518e0542b8225e00d8e3126448b9f770f002093fc8fff35f1d40a7e88d",
-      "bytes": 17844
+      "sha256": "66b3f673fbeaaa4cdacd3cbf8bbd184850840031c51aea3489c5de94e7c7259e",
+      "bytes": 20468
     },
     {
       "path": "Source/Screenshot/FusionRecentGamesUi.cs",
-      "sha256": "73f58b0c1bd8c135960ab60752aeaf53df5bb3d0925515ad9dc52888007fa60a",
-      "bytes": 29795
+      "sha256": "c2e91672edb527aef389d2604aed303ff586bc52dc6b48f4311352b596882203",
+      "bytes": 30937
     },
     {
       "path": "Source/Screenshot/FusionRenpyDataNames.cs",
-      "sha256": "bb4eee74352a6760796fccc57acd05857b895697e67325599edab71ec0dfcdd0",
-      "bytes": 5218
+      "sha256": "c1f454119ba3b6764bc217a216bea03ba0f132507ae8bc63d579582917edf7e1",
+      "bytes": 5267
     },
     {
       "path": "Source/Screenshot/FusionRenpyEditing.cs",
-      "sha256": "682e32ec0b49cae223ab370f850285dd2a5f8799d57db697fd86cdd2c7f32981",
-      "bytes": 8888
+      "sha256": "1843776ebb72a616b05b525c09e716c665521fc3c9a43b1eecb6a793a841d02a",
+      "bytes": 9078
     },
     {
       "path": "Source/Screenshot/FusionRenpyModificationWorkspace.cs",
-      "sha256": "192a773628d97479f9e11cee037b91dce9f500aebde099f5acc10d6728bad9fc",
-      "bytes": 26546
+      "sha256": "b07af17429094b771a507fc5f31a64ec733200b38c7c16d71e86f919ec5eeb98",
+      "bytes": 27568
     },
     {
       "path": "Source/Screenshot/FusionRenpyNumericFinderWorkspace.cs",
-      "sha256": "0da06fb94c40d5c3b474f64423801c4272bc37edddaf74a9acff32df10f2aeee",
-      "bytes": 6502
+      "sha256": "c26c2da4572071c3b27d6a4c8c187c4b97f69e3320b6cc34fa8da8537d9918cb",
+      "bytes": 6475
     },
     {
       "path": "Source/Screenshot/FusionRenpyTranslationWorkspace.cs",
-      "sha256": "0aa282ab70fb570b2c1104c1bb7a0e001840778747ba607cfadc687fe7ea69ee",
-      "bytes": 6190
+      "sha256": "465c907adbe3cfaac9f513c6d0530e092ceb82244137a4da83ff97e2c0442154",
+      "bytes": 6194
     },
     {
       "path": "Source/Screenshot/FusionRpgTranslationWorkspace.cs",
-      "sha256": "903e6886da79ba6d4b68220d9420a6c7338773a58bd937751f1d4f5abb5a126a",
-      "bytes": 1940
+      "sha256": "98573ad7979501690b8790b003a88ca4f2bce2026e4ad783392148753274da45",
+      "bytes": 1949
     },
     {
       "path": "Source/Screenshot/FusionScreenshotWorkspace.cs",
-      "sha256": "5ba1bb7d2ba517c1320a9cb3ce26027e387e9feb968da18e9e300e42005cafa1",
-      "bytes": 38880
+      "sha256": "1a7556ec8de2f1b959110a86fd231bba10d116bb441950bba6eebd98001e709b",
+      "bytes": 43100
     },
     {
       "path": "Source/Screenshot/FusionSettingsDesign.cs",
-      "sha256": "4befa0f315f5cf005542cbb8ab60139a7f3816e30c946627c135b7c0d02f1813",
-      "bytes": 12780
+      "sha256": "fb1b64d6ad700f0012bcfe97ab729653df8bb7c1aedf1ca9201f8a214a8f0acf",
+      "bytes": 13190
     },
     {
       "path": "Source/Screenshot/FusionTestSurface.cs",
@@ -3998,23 +3899,23 @@
     },
     {
       "path": "Source/Screenshot/FusionTranslationContentEditor.cs",
-      "sha256": "e43b2fe886f8eebad538d773fee989f4e7b7c373f3f3e6d18d17a2d6df21b986",
-      "bytes": 3970
+      "sha256": "f01327fa868c04fcbbb36d9d5358af4d5531f387f7e95544158f1af6e58cde36",
+      "bytes": 5425
     },
     {
       "path": "Source/Screenshot/FusionTranslationDiagnosticsWorkspace.cs",
-      "sha256": "19a7bdabd29eec1aacb97436b48d4d9c7a9f4ae35e542f3e58a8e81574b43b29",
-      "bytes": 5446
+      "sha256": "3ff07808e03089b88cadc48f3adce870ce4d11c18352507245616293b36cc1f5",
+      "bytes": 5709
     },
     {
       "path": "Source/Screenshot/FusionTranslationManagement.cs",
-      "sha256": "fc102b0cc1c6f66eb924393ec2f15c73483459e8b3d4626f7089d4cc359e4d7a",
-      "bytes": 3484
+      "sha256": "4c801ea0edf83195280a2175c53724da10ff7d5703091d751d21d4fc565e7f9e",
+      "bytes": 4291
     },
     {
       "path": "Source/Screenshot/FusionTranslationResetActions.cs",
-      "sha256": "9e9878dc9545df5dfb7a5246675a8e8e20fe92a1ece38b43aeb09982e29d12e1",
-      "bytes": 2241
+      "sha256": "972b1dd307c786d8a28078ccbeda102d1dfd4f161f742f2e03ef84052d6be105",
+      "bytes": 2273
     },
     {
       "path": "Source/Screenshot/FusionVerification.cs",
@@ -4023,38 +3924,38 @@
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceControls.cs",
-      "sha256": "0196ffe40bb3236d829053d6b1522967407b8c2b96442e6ac5d5a92c11bdcc43",
-      "bytes": 15634
+      "sha256": "e5e72301a02aef99ccc1242a7ec04a567043e2f2dff42b845e77b8b1def8dff0",
+      "bytes": 16938
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceFrame.cs",
-      "sha256": "59e535e8a9c09d18fc9e1247cdefafa03ce37185966f0afbc23c993723f6bf5f",
-      "bytes": 14886
+      "sha256": "b936ec7b3bea2da796e61c3b6c22d9dd37b673e7840435e150832ceeb2685af7",
+      "bytes": 15232
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceMenu.cs",
-      "sha256": "6315e97acb6ae1d563209a32e3427b5f6cc6b1d8588b93c2936fcd75fd23e187",
-      "bytes": 5625
+      "sha256": "87624237872b7390d4e06c75cbd2adc4e77a96966636fd964478b592021bacdf",
+      "bytes": 5955
     },
     {
       "path": "Source/Screenshot/FusionWorkspaceSkin.cs",
-      "sha256": "a18e9605fe98d345607b516a5fc88356ee9cc16881d4810eb9fafa6825804851",
-      "bytes": 13848
+      "sha256": "ccef39312870ec67bfcc82d6a4e407c212073fe8e8ee7e5dd5884bb325d7d667",
+      "bytes": 14502
     },
     {
       "path": "Source/Screenshot/GameArtworkDialog.cs",
-      "sha256": "f09ea02bac19a3745789391ba8e9279031998beb4a96ad9f658291cf237fedf8",
-      "bytes": 17395
+      "sha256": "2bcb2a3c5df9ff87346d78704454af28be37e6125789b16a7c029e4a571802e0",
+      "bytes": 17838
     },
     {
       "path": "Source/Screenshot/GameArtworkService.cs",
-      "sha256": "ad8905a982c480aa43dbf1412003fea6abcae7861d8d0b0811b28ac9820a385b",
-      "bytes": 8274
+      "sha256": "3d97abd0f4e738ea8a67deb68ee983b5d1580540e708c8f7fc3d56afd6d21fe0",
+      "bytes": 10313
     },
     {
       "path": "Source/Screenshot/GameCapabilities.cs",
-      "sha256": "c100ebd1baec68824214c1bdcbc132583f0cc354a5f3fcd239124c3cab871258",
-      "bytes": 1657
+      "sha256": "c3ad338c9bb428743eceeea5d234554dbcfa81b9ab726c5a50aff166703eb68e",
+      "bytes": 1660
     },
     {
       "path": "Source/Screenshot/GameCommonBoard.cs",
@@ -4063,13 +3964,13 @@
     },
     {
       "path": "Source/Screenshot/GameCrashMonitor.cs",
-      "sha256": "a402a46ae7b2c3922ed7695a7b3e18853d70b64181531cd1a00373d218fcef84",
-      "bytes": 33109
+      "sha256": "fb22f070adcb125d5bc8b7c7cc3de8c6ddc5f9d1cb6d8b125246530ac99a60b7",
+      "bytes": 33570
     },
     {
       "path": "Source/Screenshot/GameDataEditors.cs",
-      "sha256": "f94a8cfb470a4afe4442868dea4dd4d09f77aade1b6b091983baabfc526b0829",
-      "bytes": 4731
+      "sha256": "7742a4979dd063e673e19c84900e0e55e11da335c10a3594805c8ebedd6ca384",
+      "bytes": 4739
     },
     {
       "path": "Source/Screenshot/GameDiagnosticLogs.cs",
@@ -4077,24 +3978,34 @@
       "bytes": 20069
     },
     {
+      "path": "Source/Screenshot/GameDialogueContext.cs",
+      "sha256": "daddbfff1c06e5e421a74eaf1d94e39013a00c5baaabc0c11cd4980f8e765a63",
+      "bytes": 7976
+    },
+    {
       "path": "Source/Screenshot/GameEventCommandList.cs",
-      "sha256": "ddbe49b6fe7162add7668157b610cd520a1b201f3a27fcf90823ec1171a72745",
-      "bytes": 5404
+      "sha256": "a18d2188c0eb5b9632867d9d438964272288dc32ec5790cf9996a0aad13ba477",
+      "bytes": 5412
+    },
+    {
+      "path": "Source/Screenshot/GameFontCoverage.cs",
+      "sha256": "7e7039cf636340cabd6427855284584a1a1ec34c8e6b64844282bd500ea67589",
+      "bytes": 7316
     },
     {
       "path": "Source/Screenshot/GameLibraryImages.cs",
-      "sha256": "3a3b9ecfd1c903a9efda9bb77a60d5c5cc06e951c7b48282d4239dca1840e756",
-      "bytes": 3114
+      "sha256": "a4e5ab0bdf28fbac102838de535aa7178ef445cc2304d4ef66bd34966a5da9a8",
+      "bytes": 4844
     },
     {
       "path": "Source/Screenshot/GameLibraryScrolling.cs",
-      "sha256": "ecc3524bb1a97a45da2c1dfbe26d7d14fa3bc929d90f5a8f7719e51b1fb2b828",
-      "bytes": 6224
+      "sha256": "d1303255fbafbdf788b0d0a091498d07bd48095fee8e818f78f299b252a844a1",
+      "bytes": 7491
     },
     {
       "path": "Source/Screenshot/GameLibrarySelection.cs",
-      "sha256": "fc65ee7ec0ba02d2b49e43b5a5d2cb0d8d166c97d8e8f5e9c4290061e2530daf",
-      "bytes": 3108
+      "sha256": "6cafebf0da5b20d9fb7f182c4f7a07c5480d7de02a3e186f20751443094ca451",
+      "bytes": 3157
     },
     {
       "path": "Source/Screenshot/GameLibraryWindowIdentity.cs",
@@ -4108,8 +4019,8 @@
     },
     {
       "path": "Source/Screenshot/GameMakerGameAdapter.cs",
-      "sha256": "1807fa54a93bc898d8a33946da93fb09c9e15498bb9ec2ffc6c8e43d0ddc5e0f",
-      "bytes": 17125
+      "sha256": "314ecdd2411e3e2621744be2477542f4d7ddc16a97817bbf2cb854c2a9b563d8",
+      "bytes": 17179
     },
     {
       "path": "Source/Screenshot/GameMakerPatch.csx",
@@ -4128,8 +4039,8 @@
     },
     {
       "path": "Source/Screenshot/GameScreenTranslationOverlay.cs",
-      "sha256": "e2331fc51728f21ec79e6e06249f9a817a37a6283ff04fffb771084f9125fc11",
-      "bytes": 3140
+      "sha256": "81a67705018d83d7be22bd2f283fec4115d2f44657d84c601c01a24b786039e2",
+      "bytes": 3196
     },
     {
       "path": "Source/Screenshot/GameShortcutButton.cs",
@@ -4138,8 +4049,23 @@
     },
     {
       "path": "Source/Screenshot/GameSourceLanguageTracker.cs",
-      "sha256": "e432dd8ed0f8f90e95c31cb309538de36fe893bb6576a0487cc8f9f30736c55c",
-      "bytes": 4364
+      "sha256": "ca915bb3a0db940c8586c4cae4e69796826768f30ade775d7dca9d53c5fb90d4",
+      "bytes": 5337
+    },
+    {
+      "path": "Source/Screenshot/GameTerminology.cs",
+      "sha256": "06867ba652f6491be581245ceb41737bde49dd9012826fbff8f4f2a7f7bd0fc5",
+      "bytes": 18448
+    },
+    {
+      "path": "Source/Screenshot/GameTerminologyClassification.cs",
+      "sha256": "92d4342ea3e4717c35a735c5b5605b55fe045e9f5713f48f1f9e29ce60cdf6d3",
+      "bytes": 6560
+    },
+    {
+      "path": "Source/Screenshot/GameTerminologyPolicy.cs",
+      "sha256": "effbcb5c51ce1ea40d2a199bc3117e3c6fdeceb81d48d7539dee4304462fc835",
+      "bytes": 2546
     },
     {
       "path": "Source/Screenshot/GameTestCopyEnvironment.cs",
@@ -4147,9 +4073,14 @@
       "bytes": 1363
     },
     {
+      "path": "Source/Screenshot/GameTranslationLiterals.cs",
+      "sha256": "d1ec8355603c6c78bb0b6534b4050beec592f734ae916326db30dbdea0f91a59",
+      "bytes": 5495
+    },
+    {
       "path": "Source/Screenshot/GameWindowNames.cs",
-      "sha256": "20546cc4a3365f7d5f58f241b6497c3b6c812df4e8f889d66dedf8120f9254b3",
-      "bytes": 4671
+      "sha256": "ca4b07ed5177bfb1bf460d9852b910f4c8a6472b4d03abcead272cc6279bc4f5",
+      "bytes": 6014
     },
     {
       "path": "Source/Screenshot/GeneralBackgroundRecovery.cs",
@@ -4163,8 +4094,8 @@
     },
     {
       "path": "Source/Screenshot/GlobalHotKeyHost.cs",
-      "sha256": "33609d04e120e876a2385b050af0f22f2e10c1e84a7d51c2cce5853cb3a9e944",
-      "bytes": 1911
+      "sha256": "60434867fd337561a5cf3705b9ce00c0fdc9f18ebe0f45f7f260222f9ba30ea5",
+      "bytes": 2326
     },
     {
       "path": "Source/Screenshot/GlobalKeyboardBindingHost.cs",
@@ -4212,6 +4143,11 @@
       "bytes": 70849
     },
     {
+      "path": "Source/Screenshot/GoogleArtworkPage.cs",
+      "sha256": "89d040fa79edd6a7889ca4e4f78b189d8c901fe632a491649681e4a98da84eaa",
+      "bytes": 6454
+    },
+    {
       "path": "Source/Screenshot/HistoryGrid.cs",
       "sha256": "a8fd71e4f9b10ad7da834c92a1a388d0cdb825f77e6581975e4077e4b2728700",
       "bytes": 12484
@@ -4243,13 +4179,18 @@
     },
     {
       "path": "Source/Screenshot/HumanTranslationMemory.cs",
-      "sha256": "0ac0cb80f6d65571abe8cc93dfa6f0f6e68a9f1016b8a261d395aefe0dc18d92",
-      "bytes": 4444
+      "sha256": "ffe2cdc53f94198d2cd6ac50460e6d80b759a2f669ec7571ce5eea65910f2786",
+      "bytes": 6440
     },
     {
       "path": "Source/Screenshot/IEmbeddedTranslationConnection.cs",
       "sha256": "ca0e06d253e2a96a2b7a617e6f7dace95cb68ed67536d94e025a64e1ead11fc8",
       "bytes": 888
+    },
+    {
+      "path": "Source/Screenshot/ILibraryGridSession.cs",
+      "sha256": "b75bc15e115a59a875477cae35c6fc0df9a6a8d742b80ed9c4b9082ec22da217",
+      "bytes": 903
     },
     {
       "path": "Source/Screenshot/IMAGE-FIX-REPORT.md",
@@ -4282,6 +4223,11 @@
       "bytes": 15575
     },
     {
+      "path": "Source/Screenshot/InterfaceDisplayLanguage.cs",
+      "sha256": "9165a3d308fe63962ebd2f62d5dc0ecc9a77d9417df4f18849234e2d7212d07e",
+      "bytes": 1848
+    },
+    {
       "path": "Source/Screenshot/LabelDialogueResource.cs",
       "sha256": "85131cde86e66cbc4e40b107903619a9abeb58caf2ec7ff6748773abcbf8013a",
       "bytes": 2647
@@ -4297,6 +4243,11 @@
       "bytes": 5456
     },
     {
+      "path": "Source/Screenshot/LegacyScreenshotStateAdapters.cs",
+      "sha256": "afe2151a3d2cff9ee5995a7af378d52fed11215902879d9599f3be584d94fa5e",
+      "bytes": 4772
+    },
+    {
       "path": "Source/Screenshot/LegacyTranslationMemory.cs",
       "sha256": "d1741929d7247b28bc3bc4f9b0b17d32b364f7b7e115bef3c156a31397159062",
       "bytes": 6185
@@ -4308,13 +4259,23 @@
     },
     {
       "path": "Source/Screenshot/LibraryNameTranslation.cs",
-      "sha256": "068095f8d5264004a825869c7fd780eb24838e98543eae97cae84c96588a65a7",
-      "bytes": 5433
+      "sha256": "202a5ff81bd2f781f1dcd02123c41b8152bf80ec830025dba7678bc7a7d38cb9",
+      "bytes": 6408
+    },
+    {
+      "path": "Source/Screenshot/LibraryNavigationState.cs",
+      "sha256": "1e65114ee1489ac29df8c4dd0731593a15b8d88c470ca351e9d89a4da5ed048e",
+      "bytes": 1837
     },
     {
       "path": "Source/Screenshot/LibraryPreferences.cs",
-      "sha256": "b05025188b55cd74bc888bba30f1849e625a186b6eef10a4ee0dd3055addcf41",
-      "bytes": 2150
+      "sha256": "8576dec7e68e8a3f157fa2641c871644715db7365e7264af651d100a38ef87a9",
+      "bytes": 2283
+    },
+    {
+      "path": "Source/Screenshot/LibraryWorkspaceState.cs",
+      "sha256": "e7f3bb00c6ac6db69558bb728586a0fe15f9981fa99cf05b11837e2a6faf7da5",
+      "bytes": 4684
     },
     {
       "path": "Source/Screenshot/LightweightBackgroundRecovery.cs",
@@ -4328,8 +4289,8 @@
     },
     {
       "path": "Source/Screenshot/MainForm.cs",
-      "sha256": "4c662cf498f0779229d547731f31a6d4dda35cc66b00dc256d4c8296f35c9e2a",
-      "bytes": 137585
+      "sha256": "687b7dc0aaaaa09ebf41ce8e79b409dd5f236e9628c510d7d01c9fca2a14ff57",
+      "bytes": 147659
     },
     {
       "path": "Source/Screenshot/MajorReworkFinalSelfTests.cs",
@@ -4368,8 +4329,8 @@
     },
     {
       "path": "Source/Screenshot/ModelManagerForm.cs",
-      "sha256": "2ad3b5791865c1dd6f6b696517f280ab5bad0b64e757d5e0fce39be766b490e3",
-      "bytes": 8721
+      "sha256": "26dc3c9d591b1b8da9e0f601d024f67c034cbfd2e6322e32e35d63cad388b50c",
+      "bytes": 8837
     },
     {
       "path": "Source/Screenshot/ModelManagerOperations.cs",
@@ -4378,8 +4339,48 @@
     },
     {
       "path": "Source/Screenshot/Models.cs",
-      "sha256": "a64dc39e85a21f2835b8d42edaa70db57b65fc0125c0c122a1c107cf1c223812",
-      "bytes": 26729
+      "sha256": "64e39351d731edcb5a5d37f0c3f80a276ffad7c32dec0bc64071095a3a69306b",
+      "bytes": 27220
+    },
+    {
+      "path": "Source/Screenshot/ModificationCommonCandidates.cs",
+      "sha256": "8c1067988eeca0fb754c30ae62547e65dfe42e9f2a8ce982adf30d8f652a55ce",
+      "bytes": 12046
+    },
+    {
+      "path": "Source/Screenshot/ModificationFieldSemantics.cs",
+      "sha256": "e58c6f73b648d7a620f67aa330bb2c8cc5cbe8a7f5a48217389cc8ed824e160f",
+      "bytes": 6498
+    },
+    {
+      "path": "Source/Screenshot/ModificationPageEntry.cs",
+      "sha256": "6d6c07f33b554e57192d0e3131b118c92aecc9a44b4170510bee9f1e8fdf4d8f",
+      "bytes": 727
+    },
+    {
+      "path": "Source/Screenshot/ModificationSnapshotCache.cs",
+      "sha256": "790c5eda0fd535f1fc66fab66945af7e752cd547135cdb6ab40dfee408709119",
+      "bytes": 5282
+    },
+    {
+      "path": "Source/Screenshot/ModificationSpeedState.cs",
+      "sha256": "38d4014a2ebfbee0198973aa67da4b4eaea940a999d60529e675acc4002bb989",
+      "bytes": 3302
+    },
+    {
+      "path": "Source/Screenshot/NativeAppearanceDialog.cs",
+      "sha256": "ffd0019eac5259c3731314e61cf34aabc8990edf0e4aa16ab7c07ab8bb73c371",
+      "bytes": 6521
+    },
+    {
+      "path": "Source/Screenshot/NativeArtworkCrop.cs",
+      "sha256": "70317d6028a7d35ce621ae36972ab10c9a9e20cf89b60dbb4d8b28d27211d78b",
+      "bytes": 8656
+    },
+    {
+      "path": "Source/Screenshot/NativeCaptureToolbar.cs",
+      "sha256": "18c70433f38abb117f5e0dd2be773fdc750e7a60a7360aec4dc7015baa8a80e5",
+      "bytes": 2198
     },
     {
       "path": "Source/Screenshot/NativeCardCaptionLayout.cs",
@@ -4412,9 +4413,54 @@
       "bytes": 18544
     },
     {
+      "path": "Source/Screenshot/NativeDiagnosticDialogs.cs",
+      "sha256": "ba4a465c5601b62971025c4143e7b35ae98ec003718c495b1e06ec8c8f1bc0e6",
+      "bytes": 4856
+    },
+    {
+      "path": "Source/Screenshot/NativeDialogWindow.cs",
+      "sha256": "2b2633be341317c2aff81e52807e28485d5b90a9b1ead81d07500986e3459957",
+      "bytes": 11426
+    },
+    {
+      "path": "Source/Screenshot/NativeExperimentalCatalog.cs",
+      "sha256": "91ec0565778d05b1f198a8cd9816c41fd342e74fd6d7f9439a84dfe45f115d46",
+      "bytes": 11600
+    },
+    {
       "path": "Source/Screenshot/NativeFootnoteMaterial.cs",
       "sha256": "616309fd4373dc67b08839a4a41c203184fb8e310ffe00024fa75a4d50515924",
       "bytes": 10507
+    },
+    {
+      "path": "Source/Screenshot/NativeGameArtworkDialog.cs",
+      "sha256": "b3dfd8be2dd8fd42bd857d209e7404364205d5004d8e0b2f66e526e2b66e9be3",
+      "bytes": 30640
+    },
+    {
+      "path": "Source/Screenshot/NativeGameLibraryGrid.cs",
+      "sha256": "93f3d6d284795a0d4e1c544139e41e45531932ee72cfde15c85b42374077edc1",
+      "bytes": 7633
+    },
+    {
+      "path": "Source/Screenshot/NativeGameLibraryImages.cs",
+      "sha256": "38684e966cb51d34a9adb6518d03c9da01fb6c64eebde6c2ab0b66725656b517",
+      "bytes": 8548
+    },
+    {
+      "path": "Source/Screenshot/NativeGameLibraryPageScroll.cs",
+      "sha256": "6dc7f660facbe53a1f23b02be4aa1711c7160482a8fdb0f5d2f0ba980a50e829",
+      "bytes": 2727
+    },
+    {
+      "path": "Source/Screenshot/NativeGameLibraryScrolling.cs",
+      "sha256": "c0919fe97274a397312a2dbdb36d68fcfd95d1f2f2fab881f7a9b18d395f2d36",
+      "bytes": 7080
+    },
+    {
+      "path": "Source/Screenshot/NativeGameLibrarySelection.cs",
+      "sha256": "6498d909fad5e8b64a2946d1d1739fad292cfd27627c770c752dc7623c57ed4c",
+      "bytes": 2846
     },
     {
       "path": "Source/Screenshot/NativeGameSessionFiles.cs",
@@ -4427,9 +4473,34 @@
       "bytes": 2717
     },
     {
+      "path": "Source/Screenshot/NativeLibraryDialogs.cs",
+      "sha256": "cda45167141cd6355054e29c11135b92f97a9ad3966770599d587b58122a07e4",
+      "bytes": 6604
+    },
+    {
+      "path": "Source/Screenshot/NativeLibraryNavigation.cs",
+      "sha256": "65da4815502174e756eee39fe97e62eaca9244b9b9b4c581bcc04d1fd0f4cd5c",
+      "bytes": 12707
+    },
+    {
       "path": "Source/Screenshot/NativeMethods.cs",
-      "sha256": "84976b4ac2f86954fd6ff81fd5898b710bb12cba123388219085e28da9e890d9",
-      "bytes": 4267
+      "sha256": "c84e2d2e03ed2271059627e0507dffd833a2a00ed3943ba782e3205ebe79a22d",
+      "bytes": 4398
+    },
+    {
+      "path": "Source/Screenshot/NativeModelManagerWindow.cs",
+      "sha256": "bc866fa07430f0fcf33ab080fb90947b026ae95ad08d5138ccb589fd3962278e",
+      "bytes": 3851
+    },
+    {
+      "path": "Source/Screenshot/NativeNovelNames.cs",
+      "sha256": "4653798017df4dc475437060143717b8b46a4de6ec2f7db116857b095a0ac004",
+      "bytes": 7244
+    },
+    {
+      "path": "Source/Screenshot/NativeNovelWorkspaceState.cs",
+      "sha256": "40d44aad802ad379d276448d0567acaf39f4a75150eb245bd125485584bf2ebd",
+      "bytes": 11076
     },
     {
       "path": "Source/Screenshot/NativeOcrContextSelfTests.cs",
@@ -4447,6 +4518,106 @@
       "bytes": 7866
     },
     {
+      "path": "Source/Screenshot/NativePreviewDialogs.cs",
+      "sha256": "bcdec75b40fec77f4a1f994feb2c07ffadefde1730f9b278369048dcde3e8385",
+      "bytes": 3951
+    },
+    {
+      "path": "Source/Screenshot/NativePreviewElements.cs",
+      "sha256": "249bd675d9d9f38d46a029f43aa933debd99f21cadde7e71aed329777abcc82c",
+      "bytes": 16421
+    },
+    {
+      "path": "Source/Screenshot/NativePreviewWorkspace.cs",
+      "sha256": "d8dbbad1c1091e8bde4726bd90157d64ef294308d9425f427499b255140e2826",
+      "bytes": 7174
+    },
+    {
+      "path": "Source/Screenshot/NativeRecordGrid.cs",
+      "sha256": "590bd8d583c15c3218a01d779c29e25062b19b5e6996623ae9b803a522ba39f7",
+      "bytes": 4408
+    },
+    {
+      "path": "Source/Screenshot/NativeRegionEditorWorkspace.cs",
+      "sha256": "4ed417cfcd6de2500f952043ca56ba98e8c8a00dc1ff2a9c77cf673d68629796",
+      "bytes": 3504
+    },
+    {
+      "path": "Source/Screenshot/NativeRenpyWorkspaceProperties.cs",
+      "sha256": "e29c98d1ea1a84d4d5298e1148ff7ff60053fb70e6814d9f82bb0d5ac9ac9f91",
+      "bytes": 8529
+    },
+    {
+      "path": "Source/Screenshot/NativeRenpyWorkspaceState.cs",
+      "sha256": "62c16f2be1727c80ed7c005d50aaa080aa41d86b192ae13381e0679700170f44",
+      "bytes": 10052
+    },
+    {
+      "path": "Source/Screenshot/NativeResultWindows.cs",
+      "sha256": "9190e9040bd23f1660cff1bc5aed620cecc4a45dac7747d1d5c306b97ff8b519",
+      "bytes": 4739
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgCommonBoard.cs",
+      "sha256": "c2a7ee0878c1275cdc7ede367ea85046d96377d19466020d6f0d9d7c41e13259",
+      "bytes": 27168
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgController.cs",
+      "sha256": "97c5f95eb2d344be28fbd78a972d987834939482e8156fa8635ab2bd9281155c",
+      "bytes": 15762
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgDataLabels.cs",
+      "sha256": "a28c242ac5f9ccd2b1c99188593079484835e6cc71d08b5d54c2c1771146f79d",
+      "bytes": 5135
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgElements.cs",
+      "sha256": "f65d99669ad50382114f4d9d84b2a6ab1b7f058eeafe6762c35eebbc3d3da7d4",
+      "bytes": 11590
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgEventConditions.cs",
+      "sha256": "19c75e4f4fb76bba813cfc607a31a5d4f2fbce000729560c07f26e96d0e5adee",
+      "bytes": 11951
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgGrid.cs",
+      "sha256": "51300b95fd6fef9d540b7a95d5d09b2574feb1ae78dc40f4fe21b5132a3b0514",
+      "bytes": 7640
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgMap.cs",
+      "sha256": "db554d19efeca4cf2eb3ecc45c1600d82108d7f5941a5f96ce62f44922659d64",
+      "bytes": 9505
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgMapSync.cs",
+      "sha256": "15151ae1c4312154f8013bce0512b95ec5c16650bc448de41140a0cff4b17aa5",
+      "bytes": 3693
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgModificationDetails.cs",
+      "sha256": "63dabca3dfb402a6c59695a5ab76e353521c537b4bedb1640fcbdd665b8a8671",
+      "bytes": 26097
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgModificationLayout.cs",
+      "sha256": "75897f2058a78a63b59aec3954d9288f22fe81bbfc7745809242fff7854c9bb4",
+      "bytes": 4265
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgModificationSessionCache.cs",
+      "sha256": "8f98d838119b347f3b1df72a04c73ab7882c0cd8ac6511e95a92b96abd0c2b4c",
+      "bytes": 3125
+    },
+    {
+      "path": "Source/Screenshot/NativeRpgModificationWorkspace.cs",
+      "sha256": "8959f61c13fe408c15806682401af2da637904f58ac55c137b24a992aae27b36",
+      "bytes": 26412
+    },
+    {
       "path": "Source/Screenshot/NativeSemanticCorpusAuditSelfTests.cs",
       "sha256": "96ed08db2d1a0ec01a4f767b89364c3bbcc25754044db0c505eb261003475f8a",
       "bytes": 3078
@@ -4455,6 +4626,21 @@
       "path": "Source/Screenshot/NativeTextMaterial.cs",
       "sha256": "b16f7056324cf620776b0dc319e6a02fda8ea3bad7f84b4d008aee65a7ecc9dc",
       "bytes": 19525
+    },
+    {
+      "path": "Source/Screenshot/NativeTranslationSettingsDialog.cs",
+      "sha256": "2ee1d767134f960c7f63eea94e9e188cf049d84b911a0f7c93d50b5992569513",
+      "bytes": 6669
+    },
+    {
+      "path": "Source/Screenshot/NativeTranslationWorkspace.cs",
+      "sha256": "e7a6862cb941c37e96b4fe766bbac0d2a642df5f98e874d6dc83d00bee75d844",
+      "bytes": 21100
+    },
+    {
+      "path": "Source/Screenshot/NativeTranslationWorkspace.Layout.cs",
+      "sha256": "bdb65d729cb8908df2fe6d98636aad2ec60c237b136daba870a4d2ff00d9933f",
+      "bytes": 13432
     },
     {
       "path": "Source/Screenshot/NativeVisualLayout.cs",
@@ -4472,9 +4658,19 @@
       "bytes": 10560
     },
     {
+      "path": "Source/Screenshot/NativeWolfMapDialog.cs",
+      "sha256": "e29e78f45cf0847e8931e6fc0716644e4ffb52fe8b42a57a401a92ec20e3a9af",
+      "bytes": 9980
+    },
+    {
       "path": "Source/Screenshot/NovelGameData.js",
       "sha256": "4d6bfdb729b7488a285cb73673bca11dc8b91d4f2031c56e86d139494301d4f4",
       "bytes": 6788
+    },
+    {
+      "path": "Source/Screenshot/NovelModificationSessionCache.cs",
+      "sha256": "ced2915a35d4240073a1e6e039cdab80c6207cc1257e85ff5545582b55db2fc3",
+      "bytes": 10378
     },
     {
       "path": "Source/Screenshot/NovelStateBridge.js",
@@ -4487,14 +4683,19 @@
       "bytes": 11343
     },
     {
+      "path": "Source/Screenshot/NovelVariableRow.cs",
+      "sha256": "5405d16a8af1b56739e8242e44fe9df71d72c10de17ad6520b38e6d70ccad787",
+      "bytes": 1567
+    },
+    {
       "path": "Source/Screenshot/NovelWebCatalog.cs",
-      "sha256": "6fae4fc6a66da31bd48cdd44800e869d0d8a3c1a80197d700a23d0d5ad8c4522",
-      "bytes": 7894
+      "sha256": "801fcc626eb31530484352d153c64175ed883715a52d766058a01b6c5fe40ff1",
+      "bytes": 8864
     },
     {
       "path": "Source/Screenshot/NovelWebTranslation.js",
-      "sha256": "66bb7d2e5e22b0fe97ae734938cd59e38114e14e67607a5f0b01d4edb5857a8a",
-      "bytes": 14234
+      "sha256": "f7c388018259a5a5bddce3e6aae385117ae509e1f9a440efb9edbfca1e9a990c",
+      "bytes": 14666
     },
     {
       "path": "Source/Screenshot/NuGet.Config",
@@ -4548,8 +4749,13 @@
     },
     {
       "path": "Source/Screenshot/OcrComparisonForm.cs",
-      "sha256": "c0efa68d007d0fcf2122df8bed9a0e393826e8b9f95540b558057acc57f05db0",
-      "bytes": 16795
+      "sha256": "adc2a740bc96d9be4c7d9c97f28012e80fa15227e8aea8d14df6750e5ee80c75",
+      "bytes": 15764
+    },
+    {
+      "path": "Source/Screenshot/OcrComparisonReport.cs",
+      "sha256": "d5c1f88d3619e4cdcd8b9e60f6b5468747bbcebe799349e90ce161754b439a09",
+      "bytes": 3227
     },
     {
       "path": "Source/Screenshot/OcrEngines.cs",
@@ -4612,6 +4818,11 @@
       "bytes": 15228
     },
     {
+      "path": "Source/Screenshot/PageNavigationController.cs",
+      "sha256": "8c2e8061819148646a89b34e5b995ace18931b8adac055cfe54023cdbc5004ae",
+      "bytes": 2484
+    },
+    {
       "path": "Source/Screenshot/ParagraphAlignmentEvidence.cs",
       "sha256": "e46512fc7014246ab318600fdafbe8a82449702e6ba5ce6ed6c9f9d903f3d242",
       "bytes": 6730
@@ -4658,8 +4869,8 @@
     },
     {
       "path": "Source/Screenshot/PreviewForm.cs",
-      "sha256": "c8fa44c7d2abdee71041bdb49c62e46794cfe5bef41a591ae06635dc8386e920",
-      "bytes": 191384
+      "sha256": "4451295a0d32d6c2acffa63f041c723eaf0f1946e4051d849f32cc875a75c11e",
+      "bytes": 179946
     },
     {
       "path": "Source/Screenshot/PreviewForm.RenderCommit.cs",
@@ -4682,6 +4893,11 @@
       "bytes": 1045
     },
     {
+      "path": "Source/Screenshot/PreviewTextFlow.cs",
+      "sha256": "ca4d9b5ec41821de54bef349dad299463394f3ea2d2e52d22f7ce073dc2dfcf2",
+      "bytes": 2600
+    },
+    {
       "path": "Source/Screenshot/PreviewViewportSelfTests.cs",
       "sha256": "b32f089377c9083dd5d644b3d1cfcdebb41e41208066437d8fb42c261202f1a5",
       "bytes": 4607
@@ -4698,18 +4914,23 @@
     },
     {
       "path": "Source/Screenshot/ProductizationSelfTests.cs",
-      "sha256": "2993467ed361ca89244209a3cb2716e276f5eb78c02690ae37cba7656fe2241a",
-      "bytes": 7979
+      "sha256": "8a697835531340e45c5208d19ed5f305a9fbfdb9a1d04b816b199c6b43cd193c",
+      "bytes": 8046
+    },
+    {
+      "path": "Source/Screenshot/ProfileDeleteDialogForm.cs",
+      "sha256": "1a3ff4af16ff469f750178c47204ac807b345adbe404d89004d8827ef1ad1f78",
+      "bytes": 4076
     },
     {
       "path": "Source/Screenshot/ProfileDialogForm.cs",
-      "sha256": "24300154cad9cd2b701f9c58b7b33f46d51f9376f91c29f2db4279397fc1adf6",
-      "bytes": 3744
+      "sha256": "91aae9761fda88c6cec45766282ba860892f27d95932b12ed901997b33283749",
+      "bytes": 3800
     },
     {
       "path": "Source/Screenshot/Program.cs",
-      "sha256": "9468a919469f6b60c2130e8912956733d2bf02b09bb8fb7c2e680fa9a2416479",
-      "bytes": 76335
+      "sha256": "551123dde779582eb047d0686adeb82f879dbab9ce163b7c49373185259da150",
+      "bytes": 78308
     },
     {
       "path": "Source/Screenshot/PROMPT-BUILDER-REPORT.md",
@@ -4752,6 +4973,11 @@
       "bytes": 1131
     },
     {
+      "path": "Source/Screenshot/ReadableModificationKey.cs",
+      "sha256": "1750627cc9960d3402ac5c1c2f5a05f6e99f9c86924bde4e75830bf6aa13f6a0",
+      "bytes": 1200
+    },
+    {
       "path": "Source/Screenshot/README-0.3.0-RC1.md",
       "sha256": "59bbb324c6cf24dd631f55921de8a47b70e654e3700bbe3963f8090c3ced3d70",
       "bytes": 1837
@@ -4783,8 +5009,8 @@
     },
     {
       "path": "Source/Screenshot/RealExeE2EHarness0610.cs",
-      "sha256": "5706dc9a687875f40cf0a5fe91e5957eb2a1b19930cc0a5036709fe002e6d135",
-      "bytes": 6911
+      "sha256": "83390fa44ee3904fd2d498ded647978d2bce98b7145a6dc0790823c706b4fc2e",
+      "bytes": 6965
     },
     {
       "path": "Source/Screenshot/RealExeE2ETrace.cs",
@@ -4803,8 +5029,8 @@
     },
     {
       "path": "Source/Screenshot/RecognitionRegionEditorForm.cs",
-      "sha256": "3a15374392d24899e31988147c88ff0f5cdb0a7925fb111968b5b0f568acb304",
-      "bytes": 13846
+      "sha256": "c1b08f341c1921ca0ecd38f6eb601f1b2bbebb8b3816df2322b4a02d071fd491",
+      "bytes": 11208
     },
     {
       "path": "Source/Screenshot/RecognitionV2Models.cs",
@@ -4918,8 +5144,8 @@
     },
     {
       "path": "Source/Screenshot/RenpyDataPresentation.cs",
-      "sha256": "84fdb2e753c92cf8835761695ac8b7b6bc7eba20ac5f4c7c3134a807ecb4aede",
-      "bytes": 3726
+      "sha256": "ea7cb0862e3de46c7dbcbfcfedd785fa6d1a84f90c173e1cda9a3b451b687130",
+      "bytes": 3799
     },
     {
       "path": "Source/Screenshot/RenpyGameAdapter.cs",
@@ -4943,13 +5169,13 @@
     },
     {
       "path": "Source/Screenshot/RenpySaveBackups.cs",
-      "sha256": "871dbc4d065c231b1482d76cfd830df5fd02fbd478e2f15bea075e1bfe5afebc",
-      "bytes": 3407
+      "sha256": "f8800ed8e5e72064d37a3d872332cb880ce281d0edb070fbc524d5c0196b7b01",
+      "bytes": 3457
     },
     {
       "path": "Source/Screenshot/RenpyTranslationBridge.rpy",
-      "sha256": "1f6fab8af4aac3b53ed49bf13150f8653d97837c38e209fff5944a916d49a979",
-      "bytes": 66750
+      "sha256": "2bb5bebb073830ea35945432c3dd62349da97f30972de1d8249307a4af85d2dd",
+      "bytes": 70997
     },
     {
       "path": "Source/Screenshot/RenpyTranslationText.cs",
@@ -5117,6 +5343,11 @@
       "bytes": 5615
     },
     {
+      "path": "Source/Screenshot/ResponsiveEqualColumnsPanel.cs",
+      "sha256": "2e37183eeec9c01f95f26a5a07835f298a0710b943b9f914bb868930be6d9d6a",
+      "bytes": 1961
+    },
+    {
       "path": "Source/Screenshot/RestorationStageDiagnostics.cs",
       "sha256": "ae71424de0c8c03c6f0b1160c6ef80e58d5837607030902a522e848f2b12857e",
       "bytes": 10564
@@ -5133,8 +5364,8 @@
     },
     {
       "path": "Source/Screenshot/RgssGameAdapter.cs",
-      "sha256": "c76c8935e589467b58e660be50c06b0013db70dd859a841db8c8c52562016c91",
-      "bytes": 16577
+      "sha256": "3d41e84386474f6158d2d1ab6ce0bdd1efc6ae5cb05f33db05e56a5a5125c28b",
+      "bytes": 16711
     },
     {
       "path": "Source/Screenshot/RgssScriptBundle.cs",
@@ -5142,9 +5373,14 @@
       "bytes": 4027
     },
     {
+      "path": "Source/Screenshot/RgssScriptCatalog.cs",
+      "sha256": "4a23f6f5527d867a9482b9d76af019170d98b8b0741adefefc416f2eb347de4a",
+      "bytes": 19321
+    },
+    {
       "path": "Source/Screenshot/RgssTextCatalog.cs",
-      "sha256": "049aca834e089f0bb57c449858b9e201fa1ad5112c88283a8f1fab000a0d498c",
-      "bytes": 5450
+      "sha256": "6df839bb432966a882414e44e30193463dd2641432b238638a04c6ad1aa8bed5",
+      "bytes": 7920
     },
     {
       "path": "Source/Screenshot/RgssTranslationBridge.rb",
@@ -5163,13 +5399,13 @@
     },
     {
       "path": "Source/Screenshot/RpgLabelTranslations.cs",
-      "sha256": "1a88fb74e8c415e198b46ed4c3df93ee6309670030650a105978f3272ee05fd2",
-      "bytes": 4394
+      "sha256": "4576d3bbf694431dc20bd8116adca67afad2135c70765cd3e618d900997b8f1c",
+      "bytes": 27016
     },
     {
       "path": "Source/Screenshot/RpgMakerAdvancedBridge.js",
-      "sha256": "200539230e00dd4d17567cde0a37c6168234ab42dc1480903c946c8a2b4c48bc",
-      "bytes": 25474
+      "sha256": "1786a4d95410a2d6becb199465872dd8f625eae5714d9d04bff9f97f7913e8f4",
+      "bytes": 25995
     },
     {
       "path": "Source/Screenshot/RpgMakerDataAdapter.cs",
@@ -5183,13 +5419,13 @@
     },
     {
       "path": "Source/Screenshot/RpgMakerTranslationBridge.js",
-      "sha256": "64181f7520e6265a9e9cc1e783b0fc6730649a5e8f2d619ac771c3cf7f9bcb20",
-      "bytes": 18214
+      "sha256": "a9198c34e4ef5375ebb95a8ca9e4fae6fcbe05a3a911ed3b6b2b9ae43fef4175",
+      "bytes": 19493
     },
     {
       "path": "Source/Screenshot/RpgMapGrid.cs",
-      "sha256": "c42f2888d260e219c9d32409cfc0fd6e4170572fb90c408660b36939a199c631",
-      "bytes": 10017
+      "sha256": "367e0fe5076c69d8785b9804d8eb8d9e7996e1f66d05af7cb3bf563372e15ca9",
+      "bytes": 10039
     },
     {
       "path": "Source/Screenshot/RpgScriptCatalog.cs",
@@ -5198,28 +5434,28 @@
     },
     {
       "path": "Source/Screenshot/RpgTextCatalog.cs",
-      "sha256": "fe822d99953f234b4a960074b55f33ec8c0e5f33b44ef8f152a5f6ef05c80c6b",
-      "bytes": 19943
+      "sha256": "0dc97a97cda9590ba69c95c7bfd9bcad9fd9e36fab89a8b84f70463011a62608",
+      "bytes": 20579
     },
     {
       "path": "Source/Screenshot/RpgTranslationBatch.cs",
-      "sha256": "902816d69516e247d334b1f59806015fca64ee61cc3d656948ce1a79250e7ef3",
-      "bytes": 8475
+      "sha256": "14a376cbc9536b829ee4e938855502808115b6622f366716ced54f5b7a900b6a",
+      "bytes": 13425
     },
     {
       "path": "Source/Screenshot/RpgTranslationCache.cs",
-      "sha256": "b9ac66d4f03e68b0c4d39f462e78a924d699ab1fec16a7c784a3c94dbe69bfa4",
-      "bytes": 10171
+      "sha256": "6fba2048acbba0623c76cf595516f65f837b8de7b2f9ee9c061cc138ba52d0de",
+      "bytes": 15305
     },
     {
       "path": "Source/Screenshot/RpgTranslationQueue.cs",
-      "sha256": "a16f1970d6f42788754f6783c61a4e8f4f4c22e757319d9a985780d0aad641eb",
-      "bytes": 78553
+      "sha256": "ec64829ff8b72bdeb17132646528d7e73aa3e3bd97795a04e45a4d85a91ca5a8",
+      "bytes": 101425
     },
     {
       "path": "Source/Screenshot/RpgTranslationSession.cs",
-      "sha256": "132ede02b840263a61dca3084aeb337c0687ed127fc695e5188e21772d904f86",
-      "bytes": 4328
+      "sha256": "8d50472f2581596c0b555e9a5cfea1787ea674b72b67584c21069319327c815c",
+      "bytes": 4561
     },
     {
       "path": "Source/Screenshot/RuntimePerformance0504.cs",
@@ -5228,8 +5464,8 @@
     },
     {
       "path": "Source/Screenshot/RuntimeTranslationWindow.cs",
-      "sha256": "87b4ae846ec357ff0612b475a3d23d1305a9ec21ed5995c29ede88e2c5ac27b5",
-      "bytes": 3409
+      "sha256": "04dc3cc418ad754730e85eb9af848dfda175be7a09c1ea1cb8032f0f1e9bc26b",
+      "bytes": 4048
     },
     {
       "path": "Source/Screenshot/SafeDiagnosticOutput.cs",
@@ -5263,8 +5499,8 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotImageInteractionSelfTests.cs",
-      "sha256": "0d6d8e954dc3c1e40acacac23e490953b7ec0ea75a430afd1085b84e2de591e1",
-      "bytes": 23927
+      "sha256": "efe64bf31c2c70fdf17dd31d7b3627efa572b8227128eed95070a0fbeb96fe35",
+      "bytes": 24214
     },
     {
       "path": "Source/Screenshot/ScreenshotNativeScrollbarTheme.cs",
@@ -5273,13 +5509,13 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildControls.cs",
-      "sha256": "06867b0d43dcad884ae3803260dbf73c8a5897d06ea13a2fefe64c87d97fc6dc",
-      "bytes": 10614
+      "sha256": "3502e2c63d371e3b2054820984c5b31848e9a2221376a6bfa8b08208a093ca1c",
+      "bytes": 10939
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildHistory.cs",
-      "sha256": "ead90afbd3301a2c079b9415a9f549dee3714fcb5bc98410309b59bf86e1df9b",
-      "bytes": 12249
+      "sha256": "07f10e5326c5d484ebbf032be3b9fe0103df2cc4928d681684a32b9f81036f7c",
+      "bytes": 12258
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildLayout.cs",
@@ -5288,13 +5524,13 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildPane.cs",
-      "sha256": "0d668821334220a5802df76a1925b7028dcb03545bb706a917c32d208e78190c",
-      "bytes": 42239
+      "sha256": "ef51419794231f6b4903aa0d4fec2b93760122db57a42843b82e9861a21e1373",
+      "bytes": 42791
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildSelfTests.cs",
-      "sha256": "4d5f3e93e45c14d287f45a1323c2eda515548ef34c040e3c5dc458bd224ab5b7",
-      "bytes": 58072
+      "sha256": "d0b78cfbbf46b2d5992adde429f9785f12b8befc475f28bf0640ab8632e45fa2",
+      "bytes": 58791
     },
     {
       "path": "Source/Screenshot/ScreenshotRebuildSplit.cs",
@@ -5303,18 +5539,28 @@
     },
     {
       "path": "Source/Screenshot/ScreenshotResizeDiagnostics.cs",
-      "sha256": "8c24888f8ff948683a37592231423a3aa0b107c8c814be5f6902e7998e0d9622",
-      "bytes": 19690
+      "sha256": "b1d7e175d3c6494ce21477c59efccba680e29c57202c9f0bfa1b7df96dc0cc04",
+      "bytes": 19963
     },
     {
       "path": "Source/Screenshot/ScreenshotScrollbarThemeSelfTests.cs",
-      "sha256": "b1c7b4975fee31821a3e13f3959f646bd7c881d7b9d1fd3307b53a6f1c27506c",
-      "bytes": 18900
+      "sha256": "791bcb6bbfb9fa8254ff2d1138ce409d4d442822286ca4e72a03c7aa5f3ceb7d",
+      "bytes": 19106
     },
     {
       "path": "Source/Screenshot/ScreenshotTranslationUiTester.csproj",
-      "sha256": "84369f2209e394749b0b6436a53dbcdb8c36d8733899a9c59024fce5521c6d5c",
-      "bytes": 12065
+      "sha256": "d569ab1ddbc4586d27887a2265b5d89c1aa099697bc612dcddea4c7a2050dabb",
+      "bytes": 12908
+    },
+    {
+      "path": "Source/Screenshot/ScreenshotWorkspaceController.cs",
+      "sha256": "39ff43cc49774a9c1168320585fba0c3d64b2d1f7ba5b98627c3d926c822a528",
+      "bytes": 17007
+    },
+    {
+      "path": "Source/Screenshot/ScreenshotWorkspaceState.cs",
+      "sha256": "810daada0b6e065c0bbd93115a68424a515ede8e973c11f293968f5471ba8fbc",
+      "bytes": 9560
     },
     {
       "path": "Source/Screenshot/ScreenTranslationConnection.cs",
@@ -5563,8 +5809,8 @@
     },
     {
       "path": "Source/Screenshot/TargetLanguageDisplay.cs",
-      "sha256": "d42e4bb03ecff232861dfa752f86cb88596735098a006f2ea2a7df4782f4b7b0",
-      "bytes": 2896
+      "sha256": "6a0e5cd0482d4631d09c9777d26ea6f19c0e0b7cf1c1179debd038bfe1eef7ba",
+      "bytes": 3172
     },
     {
       "path": "Source/Screenshot/Task4LayoutProductE2EHarness.cs",
@@ -5588,8 +5834,8 @@
     },
     {
       "path": "Source/Screenshot/TextContinuitySelfTests.cs",
-      "sha256": "6aa491852bf392db8ab901abb18dfd4f87e554a42fe4e4db6220e196d829f924",
-      "bytes": 11647
+      "sha256": "a5d26a6eb511dc0213399837d3e9b53d0bb877fe96fa046e79093300a5b9a72b",
+      "bytes": 11848
     },
     {
       "path": "Source/Screenshot/THINKING-MODE-REPORT.md",
@@ -5598,8 +5844,8 @@
     },
     {
       "path": "Source/Screenshot/ToastNotifier.cs",
-      "sha256": "0786c872abbc352878630fdaff29e8ae40a4c51c7e42a787233f2a15483fdf13",
-      "bytes": 1353
+      "sha256": "50964e25463dd8880a75b4e9bbc980dc0d4da3fafa2532fdd2a63eceeb318e23",
+      "bytes": 1458
     },
     {
       "path": "Source/Screenshot/ToolStructureDetection.cs",
@@ -5633,8 +5879,8 @@
     },
     {
       "path": "Source/Screenshot/TranslationAttemptStatus.cs",
-      "sha256": "bd75e0c8b28fc334d0d64af9d8c65f99629da38595d704d9c9f9e3ef508590a1",
-      "bytes": 1659
+      "sha256": "e3705103143df4195e4d5afe325746a2a0a2c254f8e1b9f5d5a18221c33b33c2",
+      "bytes": 3705
     },
     {
       "path": "Source/Screenshot/TranslationBoundaryDiagnostics.cs",
@@ -5652,14 +5898,19 @@
       "bytes": 2500
     },
     {
+      "path": "Source/Screenshot/TranslationContentEditorState.cs",
+      "sha256": "7a1e0f53bd9af4643d564d88113f6c94614f8baaef29c144b3e7d77a065b6bfd",
+      "bytes": 3459
+    },
+    {
       "path": "Source/Screenshot/TranslationContentSettings.cs",
       "sha256": "08c13d58b526204e653b97015c2f73059295b836a853187fa0620be8eeaebe84",
       "bytes": 1906
     },
     {
       "path": "Source/Screenshot/TranslationDiagnosticReport.cs",
-      "sha256": "933a1aedd7d931630c1408e6b44a7ad889a11910034da53cf74d75b8026566fb",
-      "bytes": 3666
+      "sha256": "5ce430f7ab59256da19c08ed703794941e887f33490833c4fad69fd173f81b64",
+      "bytes": 8674
     },
     {
       "path": "Source/Screenshot/TranslationFlightPool.cs",
@@ -5668,13 +5919,13 @@
     },
     {
       "path": "Source/Screenshot/TranslationGlossary.cs",
-      "sha256": "78ec5b0957b78376fc56d0edf6fa874c6b5a9cf5bd3d726608b217a32ea1173d",
-      "bytes": 2993
+      "sha256": "538b77b2cac36f5d297f942d57303bb09166cafd2c60763832dc082d26699c0f",
+      "bytes": 9188
     },
     {
       "path": "Source/Screenshot/TranslationGlossaryCache.cs",
-      "sha256": "350b039d6e7884cd9005d802d88e2a736fbdeba83f13ff7be76e7101abe6736c",
-      "bytes": 2247
+      "sha256": "93880cb8565b45cf02fc2d8dfc5903f04d20b8e1e303f33c849db7c80fbf486b",
+      "bytes": 3020
     },
     {
       "path": "Source/Screenshot/TranslationImageEffectiveSettingsAudit.cs",
@@ -5693,28 +5944,38 @@
     },
     {
       "path": "Source/Screenshot/TranslationLanguagePolicy.cs",
-      "sha256": "397426e38d9dffbf266652a00f6520a05632b78d756b0b426bda33bd71db9295",
-      "bytes": 16375
+      "sha256": "524e97ea84f4a4991db143d7acd71fceb87fefa1d10a8454ce7db97142bdb1fe",
+      "bytes": 20949
     },
     {
       "path": "Source/Screenshot/TranslationLanguageSpans.cs",
-      "sha256": "10b7ecfa88a862757b08d73c4281b6f2317b76de349e6b7ee0a68698989fa206",
-      "bytes": 12193
+      "sha256": "b478aabc3c5cfe8522f3d71c6f08e4c2bc936ef3d5e830bdd5213c741097f67d",
+      "bytes": 18758
     },
     {
       "path": "Source/Screenshot/TranslationLatency.cs",
-      "sha256": "dc93991199196d520fe993de4a7a00d0f51aa7811310447cc61c6e3d377d2712",
-      "bytes": 4417
+      "sha256": "926b0b8cf31884ece6c134c4de6bc6a003ced95eb7b3aa8da4717e1cf69ecdd5",
+      "bytes": 5689
     },
     {
       "path": "Source/Screenshot/TranslationMemory.cs",
-      "sha256": "e9bb69547fc218e0f3cebd482d13c2b1337adb63256a1a03125f7de80de5f5b4",
-      "bytes": 12134
+      "sha256": "f798d43778a8e183c95ecb046416104163c0f7c28d3702bbf3f446e7806b2ff2",
+      "bytes": 14685
+    },
+    {
+      "path": "Source/Screenshot/TranslationOriginIndex.cs",
+      "sha256": "d425140629ce78fccc8372c436b623f5c6c97ef0c235b11bc7a84ad6b1a72670",
+      "bytes": 2990
+    },
+    {
+      "path": "Source/Screenshot/TranslationPairsHash.js",
+      "sha256": "769a856d6010032120f49ae94f53b5a37361eb8604c0ecb06a9f3e108b09a175",
+      "bytes": 3943
     },
     {
       "path": "Source/Screenshot/TranslationProgressPresentation.cs",
-      "sha256": "a8c98ff297de8c9cc329c32d556957652abbab3311586f8e46dca383091f0a3f",
-      "bytes": 8868
+      "sha256": "76ac164e8807d01d97c9d69bef052c90736d15cdae9767e329df0f0d27df3553",
+      "bytes": 10579
     },
     {
       "path": "Source/Screenshot/TranslationRecovery.cs",
@@ -5733,18 +5994,23 @@
     },
     {
       "path": "Source/Screenshot/TranslationService.cs",
-      "sha256": "305886adcb21187a1669ba37f253552fd2dc7f09be8200bf38a2f8e903bdc001",
-      "bytes": 57778
+      "sha256": "d66c842251c602832a00bf6b97483c4dd231da4bf11e99708fdcbd9287980801",
+      "bytes": 57927
     },
     {
       "path": "Source/Screenshot/TranslationSettingsDialog.cs",
-      "sha256": "468ce39a6ad9d84fb440ba890da463caa3e37958534077a2369f5c1e2dc47baf",
-      "bytes": 11515
+      "sha256": "92650fa2e966da588fb0f0c07e27939a000dded034b32cbbda46875470fc8d33",
+      "bytes": 11512
     },
     {
       "path": "Source/Screenshot/TranslationSettingsFoundation.cs",
-      "sha256": "87f3d755afb03020b88751a96cd6a3881322dddacca87dacd1df3bcbf11c9b92",
-      "bytes": 18281
+      "sha256": "5570e3ec018d71095c02fe629222ac2fd36afee593bc9332aa76326aab040d1a",
+      "bytes": 18601
+    },
+    {
+      "path": "Source/Screenshot/TranslationStorage.cs",
+      "sha256": "7f1feef698e6f698b2d69712dc2aa2f3ecaf653c170027fa556555451c3865e8",
+      "bytes": 4304
     },
     {
       "path": "Source/Screenshot/TranslationStylePolicy.cs",
@@ -5753,8 +6019,8 @@
     },
     {
       "path": "Source/Screenshot/TranslationTemplates.cs",
-      "sha256": "792686994a156331facb4b8dea077643a1b3abf8ef9a35331c79b30bc380e049",
-      "bytes": 3468
+      "sha256": "f79113143c8a6d3f6662f4e1b106d7feafd998db1b970e68c06db8ef1169e6a3",
+      "bytes": 3495
     },
     {
       "path": "Source/Screenshot/TranslationTextColorResolver.cs",
@@ -5768,18 +6034,18 @@
     },
     {
       "path": "Source/Screenshot/TranslationWorkspaceForm.cs",
-      "sha256": "099fa0d6fe214af3b00479b6ac2a301b11691201e602cb5e75e6289d5c63f397",
-      "bytes": 11098
+      "sha256": "1fbfbad0d1252dfb10352a12d60fe634743d35ffc90af94847da6b894d3c15c2",
+      "bytes": 11393
     },
     {
       "path": "Source/Screenshot/TranslationWorkspaceLayout.cs",
-      "sha256": "34e17770e5756378d48b53400eb39871d0c8efba69cc78b83ebf2bd5b37dbc50",
-      "bytes": 11165
+      "sha256": "949588e3da8ad1b0357a383108e14229d0e21d52c5f614ad0499aed9b8ee62b9",
+      "bytes": 11299
     },
     {
       "path": "Source/Screenshot/TranslationWorkspaceStore.cs",
-      "sha256": "811258b441c73b9ab6ef6da1af774edea36472878ccd68ea7a293d5d71c152f6",
-      "bytes": 14266
+      "sha256": "05090091b698f6209eb143fd418d66e29026ac72d6449fb60e1e7a71c5f7277f",
+      "bytes": 20812
     },
     {
       "path": "Source/Screenshot/TranslationWorkspaceUi.cs",
@@ -5802,6 +6068,11 @@
       "bytes": 4506
     },
     {
+      "path": "Source/Screenshot/TyranoTextCatalog.cs",
+      "sha256": "19349b04cd4d5e10908f6bf7d815381ed3ca42097ff1843065bb8b232724a611",
+      "bytes": 6691
+    },
+    {
       "path": "Source/Screenshot/UI-POLISH-REPORT.md",
       "sha256": "79c62789fc43b04963172074ed1d4597f0160201c1ce0d7327dda31dd7093ed2",
       "bytes": 1598
@@ -5813,13 +6084,18 @@
     },
     {
       "path": "Source/Screenshot/UiDarkTheme.cs",
-      "sha256": "62a73907f60eeecab25c9eec10fee7d92b506495bc0430a57cc5730640c2cf1f",
-      "bytes": 5881
+      "sha256": "b3b79ad0fad4b1feedc6fb3bb84e16bbf14deb64e982ea723a80c482bfbb2700",
+      "bytes": 6094
+    },
+    {
+      "path": "Source/Screenshot/UiDiagnosticText.cs",
+      "sha256": "cd7f5cd57e02421a3e8b765c728a407251ee91f4f601ca92f81353063c2cbcbf",
+      "bytes": 5515
     },
     {
       "path": "Source/Screenshot/UiEnglish.json",
-      "sha256": "46df9cf22c5b43c47d0e4490f80113dd1ae9d56e57cd10e349821b3ad23861a6",
-      "bytes": 141786
+      "sha256": "fe27a0d3a924adbc8e866eb818d966e201b228888efe3eba27c3242fc63869d7",
+      "bytes": 338445
     },
     {
       "path": "Source/Screenshot/UiLabelAlignmentEvidence.cs",
@@ -5828,8 +6104,8 @@
     },
     {
       "path": "Source/Screenshot/UiLanguage.cs",
-      "sha256": "79c8823817075f2b9f22212b59ae076bab4e6850f147656b9cf851119a6e6b61",
-      "bytes": 11208
+      "sha256": "dac3ceb8d958cecfaeb3571e7085208ad375b0314c63ae1bc6a3494400ab8f45",
+      "bytes": 19317
     },
     {
       "path": "Source/Screenshot/UiPerformanceTrace.cs",
@@ -5838,8 +6114,13 @@
     },
     {
       "path": "Source/Screenshot/UiRepairVerification.cs",
-      "sha256": "6d40f0f48d8102feed228bd50e9048600a1101155f9f347fada3175f38f9d22a",
-      "bytes": 4664
+      "sha256": "60ae2b7145f8a61e3393ccbd4f11c2503c87f502c7099111469331dbf27980ac",
+      "bytes": 4736
+    },
+    {
+      "path": "Source/Screenshot/UiRussian.json",
+      "sha256": "f612d089b245385f1c3be7185f24a671197ad56ee7a5145c31795382a3ca5a2b",
+      "bytes": 508360
     },
     {
       "path": "Source/Screenshot/UiStrings.cs",
@@ -5848,8 +6129,8 @@
     },
     {
       "path": "Source/Screenshot/UiTheme.cs",
-      "sha256": "a3bf60f2cd615307b8b305f471b21171766eb0c0706c69e1952898fe7e5926bf",
-      "bytes": 3901
+      "sha256": "fbb2ceda21f9d676592237c6dbf28b46cb665fae3640b8a3aaccbe260d219bcd",
+      "bytes": 4207
     },
     {
       "path": "Source/Screenshot/Unity2021ApiOrder.txt",
@@ -5943,8 +6224,8 @@
     },
     {
       "path": "Source/Screenshot/UnityTextResourceLanguageSelection.cs",
-      "sha256": "a8f1d0b1d05c43beb3578b3c31327bf76c467599c4e1df9151fe50a5fbfb5284",
-      "bytes": 27131
+      "sha256": "4129815133471f40b259c913c743edc9f32f49c551be6a7d01e1522063c5add3",
+      "bytes": 31713
     },
     {
       "path": "Source/Screenshot/UnrealBootstrap.cs",
@@ -5983,8 +6264,8 @@
     },
     {
       "path": "Source/Screenshot/VisionV2SelfTests.cs",
-      "sha256": "09a188483ec3b693c0a1c3a9026fb8af1ad8551d0a8e049251834ec74ba5e34e",
-      "bytes": 73134
+      "sha256": "15f88160f227994c83568a93290b688f0b66fa7b113f0a8efef188c18db4c330",
+      "bytes": 73129
     },
     {
       "path": "Source/Screenshot/VisualStyleGrouping.cs",
@@ -5998,13 +6279,13 @@
     },
     {
       "path": "Source/Screenshot/WebGameAdapter.cs",
-      "sha256": "9f0aa2860827b9e6831f3dffc5b3b941b54a5d926f3268a68f98504b92559224",
-      "bytes": 17179
+      "sha256": "fce461826600f01b02fb1868b0b18fb2e5a1f5414e70eccabff6bf4c575c1baa",
+      "bytes": 17246
     },
     {
       "path": "Source/Screenshot/WebGameArchive.cs",
-      "sha256": "896c40732d47cb4094cfb8613bf9edb1309092b67b9587e9cbb74ab783c3f6aa",
-      "bytes": 9829
+      "sha256": "278351db8f33ea7702dc6ed46d075d002d38bd02d25acfa1ea51d872cb9629f8",
+      "bytes": 10172
     },
     {
       "path": "Source/Screenshot/WebGameMain.js",
@@ -6018,8 +6299,8 @@
     },
     {
       "path": "Source/Screenshot/WebGameTranslation.js",
-      "sha256": "fbcd3349b4d255e5f687b8aaefe5a080ce8277b4b95072d7ea847562fae694d4",
-      "bytes": 19139
+      "sha256": "89c61bbb48313ffb2405ae8e114c4a5c27db6779c3fe94a8d749ae22ff3d2990",
+      "bytes": 19531
     },
     {
       "path": "Source/Screenshot/WebGameTransport.js",
@@ -6043,23 +6324,83 @@
     },
     {
       "path": "Source/Screenshot/WindowCaptureExclusion.cs",
-      "sha256": "e8a5a842115011836bc63de54dfe164342d05cd16d6c565b1f9ea08ee5f10e45",
-      "bytes": 9845
+      "sha256": "b5a7adc9a62f1ba66c4ab2513f16fbe659dbb62bb942f5c7162c2c5990dfd1f4",
+      "bytes": 9865
     },
     {
       "path": "Source/Screenshot/WindowStatePolicy.cs",
-      "sha256": "ebfa5349538cba004a628bf01328d409024bfedfbde1d9c7b0828c1e65bfc17a",
-      "bytes": 1449
+      "sha256": "a2ff52c42da989f4536dd3ef0c2e2ddb213cd6adbff008a2c966f625f0f2daec",
+      "bytes": 1592
+    },
+    {
+      "path": "Source/Screenshot/WolfArchive.cs",
+      "sha256": "970a343895c6fff3b74814d3a7f6da622c69a85855f4250c7d7164434ecb2258",
+      "bytes": 10704
+    },
+    {
+      "path": "Source/Screenshot/WolfArchiveCipher.cs",
+      "sha256": "8a4009f830070c4b012263e7b771a068c4aa646259391b11edddf3bb2d886916",
+      "bytes": 12742
+    },
+    {
+      "path": "Source/Screenshot/WolfDatabaseCatalog.cs",
+      "sha256": "430967fc09d5167d2068cb1a0f7d622328654c27076b4b78b6fb9d4c054cd602",
+      "bytes": 10056
+    },
+    {
+      "path": "Source/Screenshot/WolfDatabaseCatalog.LICENSE.txt",
+      "sha256": "89d98c2c6cd43abeca0f2387e88e4b0f87db7cf17b3b29070041c44c7476f2c5",
+      "bytes": 1428
+    },
+    {
+      "path": "Source/Screenshot/WolfDisplayTemplates.cs",
+      "sha256": "382ed539742e8fd396de4921f76418e71a8e27e23ba0d6b313b0cfd283fa460b",
+      "bytes": 11150
+    },
+    {
+      "path": "Source/Screenshot/WolfDisplayWrapping.cs",
+      "sha256": "8aabdb8ac8a353a938b14e70af291ef1d4f68f7a1809439726aceba63bd48bcf",
+      "bytes": 2452
+    },
+    {
+      "path": "Source/Screenshot/WolfEngineCollection.cs",
+      "sha256": "e7e8281bde907c600208c400e3650a086c6ec522cc7773394765f4fb5b8f6e89",
+      "bytes": 25603
     },
     {
       "path": "Source/Screenshot/WolfGameAdapter.cs",
-      "sha256": "8f56d105883bb9284a45d7b84e11995f575e1ba3171d77be5b4e572a0f386aac",
-      "bytes": 10635
+      "sha256": "a3d6e0ea85f04bb44ab2442189ad57131471a85dbfb549388a4d7e9bcf82e0c0",
+      "bytes": 12847
+    },
+    {
+      "path": "Source/Screenshot/WolfLanguageBranches.cs",
+      "sha256": "df7688816b3955041872ade12057960647cf3e09be9e1687f31a9b383e6df993",
+      "bytes": 3016
+    },
+    {
+      "path": "Source/Screenshot/WolfMapCatalog.cs",
+      "sha256": "18024bd5a00b54221c04c5c905fe6f0d9e5de8c34b4086b65bef0a2e7d7d7d7b",
+      "bytes": 2536
+    },
+    {
+      "path": "Source/Screenshot/WolfModificationNames.cs",
+      "sha256": "784ce8d04a2e90e20c41a7742ab54bb3379afc86adf7b5dc4cbc1f1b0aa36c2a",
+      "bytes": 645
+    },
+    {
+      "path": "Source/Screenshot/WolfResources.cs",
+      "sha256": "8f4f1edc4aad23556e6c172db0125fd974314841cfe78e9196e5a57c66b05b41",
+      "bytes": 12036
+    },
+    {
+      "path": "Source/Screenshot/WolfSentenceProfile.cs",
+      "sha256": "5caaea6c1736eb319cea372e10815ec9013e360c693002d986d0efaccab72350",
+      "bytes": 9960
     },
     {
       "path": "Source/Screenshot/WolfTextCatalog.cs",
-      "sha256": "f1d9ef5891c3ae3b61058a4e35239b2508b1da65027891f737f80c1b654f070c",
-      "bytes": 7418
+      "sha256": "3b58b9d449dfb9503b5c513df769f9bd8472ad242d83ed20f96abe2c97545972",
+      "bytes": 15702
     },
     {
       "path": "Source/Screenshot/WolfTextCatalog.LICENSE.txt",
@@ -6068,8 +6409,13 @@
     },
     {
       "path": "Source/Screenshot/WolfTranslationConnection.cs",
-      "sha256": "0d5d91bd8b0fa5188caf9749f7a985531ac1878902205771388231c7fda31e77",
-      "bytes": 7095
+      "sha256": "c095de2842f36199226991eeecb2702c67c526a93e6a3ccacda05f0410a053b7",
+      "bytes": 8767
+    },
+    {
+      "path": "Source/Screenshot/WolfTranslationText.cs",
+      "sha256": "b11eb6e945e6972a29c39c288da4022ec1d27fecef3e54b867f1ded8dbdf7b11",
+      "bytes": 2264
     },
     {
       "path": "Source/Screenshot/workers/background_worker.py",
@@ -6198,8 +6544,8 @@
     },
     {
       "path": "Source/Screenshot/WorkspaceLibrarySplit.cs",
-      "sha256": "6a6f8bcb40a46174e0278d7ea1a96fa3551186b8a8ef24a37aeaa1e02049fcd7",
-      "bytes": 4886
+      "sha256": "da84bd5cf6e702c57a2608828d2a8779766a36b8256079b43323da1d69ae3f3c",
+      "bytes": 4921
     },
     {
       "path": "Source/Screenshot/WorkspacePaintBatch.cs",
@@ -6227,54 +6573,199 @@
       "bytes": 2497
     },
     {
+      "path": "Source/Screenshot/WpfCanvasGraphics.cs",
+      "sha256": "e1abb5e8b40b368fe4b7d9d815197c3403f2f82af8690485d49a1ce1b672d593",
+      "bytes": 4240
+    },
+    {
+      "path": "Source/Screenshot/WpfCaptureOverlay.cs",
+      "sha256": "562fd7ee55b85197f04da4fbe8371ac71480a5cd360dd9d2aaf9302ed819083c",
+      "bytes": 4451
+    },
+    {
       "path": "Source/Screenshot/WpfControlCoordinates.cs",
-      "sha256": "ef70427802628cf274366c2ecc1e528836cf2e0fc4d11377c901cb7a31941edb",
-      "bytes": 1207
+      "sha256": "b74ff38cf489bf5fc2b0eca283771cdd692112e6f3cda8de41e917e247b48a4b",
+      "bytes": 2472
+    },
+    {
+      "path": "Source/Screenshot/WpfCoverCache.cs",
+      "sha256": "17e78d269a8f1947cd76c81debd93b694bf4909165ebc67ff4145b5eb3fc9943",
+      "bytes": 3732
+    },
+    {
+      "path": "Source/Screenshot/WpfDesktopCanvas.cs",
+      "sha256": "9ab0f4d0ec6a898338ac1142544491f3c6c07d37e3a505827916450ba94f1c3f",
+      "bytes": 4009
+    },
+    {
+      "path": "Source/Screenshot/WpfDesktopForm.cs",
+      "sha256": "7028673ef2aec50ecb39de3872754826774c49074851daa821fb268fa5b2f3d5",
+      "bytes": 11967
+    },
+    {
+      "path": "Source/Screenshot/WpfDesktopSettingsPage.cs",
+      "sha256": "c8943894d64bf31c7917b0d2b136b4a544fe8515706fc7d985eaf445d679e6e2",
+      "bytes": 30692
+    },
+    {
+      "path": "Source/Screenshot/WpfDiagnosticCanvases.cs",
+      "sha256": "3ba9af4c39defce4b4cd206a2cc78aac7b2bd2979024047de033b0bf5cd2c0ab",
+      "bytes": 11866
+    },
+    {
+      "path": "Source/Screenshot/WpfGameEditorViews.cs",
+      "sha256": "c20578077a58fa9bb0e7d1fee28129fdf1bd38a967ca243085d01c137a48e302",
+      "bytes": 7604
+    },
+    {
+      "path": "Source/Screenshot/WpfGameHeroSurface.cs",
+      "sha256": "f2751f7156b9f015cc078045e79156ea51e3f168fc98f75ad33a8d2ff0ee2d7e",
+      "bytes": 9337
     },
     {
       "path": "Source/Screenshot/WpfGameLibraryCanvas.cs",
-      "sha256": "eefef66ce771ee9f9b41555340432927add43fb4828722d4ee7fba6b329e48cd",
-      "bytes": 15479
+      "sha256": "492a19ef830cf6e4dc0cdcdbd75775b439d4428fc6ddea5ce88c429b834eb192",
+      "bytes": 20409
     },
     {
       "path": "Source/Screenshot/WpfGameSessionWorkspace.cs",
-      "sha256": "d616fb46ef27c5e5a8afa20389f8064aa48b7346c57e3cb57117df8aba32e65f",
-      "bytes": 7284
+      "sha256": "75775872d40b4267701abfde192daf77a8a915dd474d484ce6d0bf3488aa6078",
+      "bytes": 23944
+    },
+    {
+      "path": "Source/Screenshot/WpfGameSpeedControl.cs",
+      "sha256": "87c1c66f3f894ad2be21aeff76d9e8d0eceabfc7bd15496de6f9dbffa6214105",
+      "bytes": 7957
     },
     {
       "path": "Source/Screenshot/WpfLibraryNavigation.cs",
-      "sha256": "57a46337928bd1c3da6d3ded75fa9c4e95ada4a3c2d66d226f9c2aded51372d9",
-      "bytes": 5349
+      "sha256": "6b91f861249e5fb4500d3ac6f1322101171aed32a9c28a6de1c13bb6ecefbaa5",
+      "bytes": 8587
+    },
+    {
+      "path": "Source/Screenshot/WpfLibraryPageViewport.cs",
+      "sha256": "095f1121ded506c3fe4a57379d5cfd3ba79c070bc9c3b77dbbb41199c64cace1",
+      "bytes": 5828
     },
     {
       "path": "Source/Screenshot/WpfLibraryWorkspace.cs",
-      "sha256": "dced2234a502fc26166ba93a440f7d4ce4c7af2d40a89e4f4df2a553a0ed898b",
-      "bytes": 13692
+      "sha256": "1e52d2d21fe4b2531de6ba23acb94b79bd6bff99db0202b51ccf599aec2cf9a3",
+      "bytes": 16231
+    },
+    {
+      "path": "Source/Screenshot/WpfModificationLayout.cs",
+      "sha256": "076d43faf95130c764ad8ec0537bb68433f534e0eb4948f1d77de217dd6a5a13",
+      "bytes": 8691
+    },
+    {
+      "path": "Source/Screenshot/WpfNativeDataGrid.cs",
+      "sha256": "346d2ebb7fc57c0492b750556b6d37da0995e589590c35224265a9380af5ce68",
+      "bytes": 9020
+    },
+    {
+      "path": "Source/Screenshot/WpfNativeFields.cs",
+      "sha256": "5babb982e9658852823869e61a9fa702f533ba4e0e6437f3c29872b0dbdeedca",
+      "bytes": 28112
+    },
+    {
+      "path": "Source/Screenshot/WpfNativeGameLibraryCanvas.cs",
+      "sha256": "f9e602aeaad6ed4369a66e033987ac18dcc4665eb938ee594d3f8e5853c736bd",
+      "bytes": 32170
+    },
+    {
+      "path": "Source/Screenshot/WpfNativeLibraryNavigation.cs",
+      "sha256": "368b4c2413240f9e2ed0fd0eefb9db1aad4e5727c3c2311d73e8a3c5da0b4ac3",
+      "bytes": 10093
+    },
+    {
+      "path": "Source/Screenshot/WpfNativeMenus.cs",
+      "sha256": "1cc300fbcd7422d94b7c8fe95a3121ff69b45be34efa85245ae14ba8800980b1",
+      "bytes": 4621
+    },
+    {
+      "path": "Source/Screenshot/WpfNovelModificationWorkspace.cs",
+      "sha256": "31f30b9811885a01d02c2b9df8785205eb5cd63fc70b33c85eb8ecfd92abe23e",
+      "bytes": 16376
+    },
+    {
+      "path": "Source/Screenshot/WpfPresentationRecovery.cs",
+      "sha256": "49c3a34491e5d13f27fec055bbcc7733fe77f1b970c6ffc2054255c0d3b7955c",
+      "bytes": 15987
+    },
+    {
+      "path": "Source/Screenshot/WpfProfileEditor.cs",
+      "sha256": "c5e9da621336eb85c9df7c99705e6dc0b16867b2eb3720c17be3d3d41077cb2c",
+      "bytes": 18159
+    },
+    {
+      "path": "Source/Screenshot/WpfRenpyModificationWorkspace.cs",
+      "sha256": "e754ab551f20226a7a584e268b29dcd8de0c1d2824c458a19c2135bcc9af93d1",
+      "bytes": 13785
+    },
+    {
+      "path": "Source/Screenshot/WpfRichTextBridge.cs",
+      "sha256": "946cb31a7c54e641e0efa32cb2490bc49d8a25d68226ca565c95150e5cf3a9c1",
+      "bytes": 1874
+    },
+    {
+      "path": "Source/Screenshot/WpfScreenshotHistory.cs",
+      "sha256": "2f53d68bac7058c06b23209cfdf6e051e3a1e83d9ac15484f01e9c3e5315779c",
+      "bytes": 4355
+    },
+    {
+      "path": "Source/Screenshot/WpfScreenshotModeSwitch.cs",
+      "sha256": "b858572aff5081c8348a55b925c545c1dfd00c14f5b7127ac14e8a29994fc7ed",
+      "bytes": 6866
+    },
+    {
+      "path": "Source/Screenshot/WpfScreenshotPane.cs",
+      "sha256": "24f8700d9e8dcfd2aafd952c26998cc62bf0edb585be762f4e119229a299aadf",
+      "bytes": 14526
     },
     {
       "path": "Source/Screenshot/WpfScreenshotWorkspace.cs",
-      "sha256": "c39f1e334c1b8211bec9e93947396b0535774465b1d81c02c5192a0ce63a215f",
-      "bytes": 9959
+      "sha256": "93a4b464ad483b39289ba6a0d1581913918a3e634fc8e9ae26b174fafd856208",
+      "bytes": 23244
+    },
+    {
+      "path": "Source/Screenshot/WpfScrollRouting.cs",
+      "sha256": "55fcfe3499501a99cbd2f2dff16ab6d9a2b157f42a9ca46d7774009a928abe62",
+      "bytes": 2107
     },
     {
       "path": "Source/Screenshot/WpfSettingsFields.cs",
-      "sha256": "fe353fefb864dbefa30fc8ac80da8883eb083d6b1b2789cd5c3be8db2bfed6e1",
-      "bytes": 18679
+      "sha256": "252a9e19cdceb32add433f5eae34ab78141812a28f96ff8189af53fb0b7f3032",
+      "bytes": 22963
     },
     {
       "path": "Source/Screenshot/WpfSettingsWorkspace.cs",
-      "sha256": "cf0f369fcf05d00790c0cd9b191625e644329d21d3bf920f85247c4e38166f1e",
-      "bytes": 6535
+      "sha256": "6eb17de8ace8d1817805dc685e9ffaa9cbf1488d562b5b3c1514956b8cb97774",
+      "bytes": 7563
     },
     {
       "path": "Source/Screenshot/WpfThemeResources.cs",
-      "sha256": "1165317997763be2108c550a1d63502818016fc1ceaf632228151d5cbe13de27",
-      "bytes": 11437
+      "sha256": "b77fcecb08e933847fdbbf6fbcf1b273877df7a7c82328969694e11a46ba4beb",
+      "bytes": 26794
+    },
+    {
+      "path": "Source/Screenshot/WpfTranslationContentEditor.cs",
+      "sha256": "9edb5b5907ed9abd3558524d38cc6d214bc063db6945d32e2be9f712787fac38",
+      "bytes": 10560
+    },
+    {
+      "path": "Source/Screenshot/WpfUiLanguage.cs",
+      "sha256": "bd0aecfe5859c5aefb350c5ec6537f281a1ef7f34fad6daf5107a421e37b828b",
+      "bytes": 3959
+    },
+    {
+      "path": "Source/Screenshot/WpfViewRefresh.cs",
+      "sha256": "4c82c96c9a8eec035ba432c9724c1390c703da3341258df6aaa40eb60407f713",
+      "bytes": 1379
     },
     {
       "path": "Source/Screenshot/WpfWorkspaceWindow.cs",
-      "sha256": "a2756190636dc4ff30705ad9232276ce0da3e16364ab92d6801900e8da69d3ee",
-      "bytes": 17085
+      "sha256": "901a3af43985660a1825ef3dbebef9f0d81811d13990ab6c6600fe9abd62bbcc",
+      "bytes": 23042
     },
     {
       "path": "Source/Screenshot/XmlDisplayText.cs",
@@ -6542,6 +7033,11 @@
       "bytes": 1395
     },
     {
+      "path": "Source/WolfBridge/Layout31Pattern.txt",
+      "sha256": "ee66dd224db88d56c83ccfb95055ce73a981e6f726f0371cadff46f47a390210",
+      "bytes": 375
+    },
+    {
       "path": "Source/WolfBridge/LayoutPattern.txt",
       "sha256": "b95a106903829194e564db272c9b7356646a690e106c82fba55273cd9cd3789b",
       "bytes": 289
@@ -6573,13 +7069,13 @@
     },
     {
       "path": "Source/WolfBridge/Payload/FusionWolf.dll",
-      "sha256": "a36c186212c561a17d3051be6c007ad04e5de3df1974cef48770246279a0ebe7",
-      "bytes": 444928
+      "sha256": "0c9ac2d0d41eaf76a23886871bf589e06be2c04b73e67ab733e7ea98513caaa1",
+      "bytes": 610304
     },
     {
       "path": "Source/WolfBridge/Payload/FusionWolfLaunch.exe",
-      "sha256": "0c22d8846f0f8b0b0eef9f76822d46a96552c703f164127acb7e692e44ce5543",
-      "bytes": 272384
+      "sha256": "a6621f114ec82b616c2492bb581109f3c94c60e3ac44fe803e6bec8b36896607",
+      "bytes": 275968
     },
     {
       "path": "Source/WolfBridge/README.txt",
@@ -6592,9 +7088,29 @@
       "bytes": 2625
     },
     {
+      "path": "Source/WolfBridge/Tests/Clock34.cpp",
+      "sha256": "bedd84411eca1d30fff4d2d9f5e0bf7a2c6737fd516b151bbc1c7154dbc1f84c",
+      "bytes": 3046
+    },
+    {
+      "path": "Source/WolfBridge/Tests/Data32.cpp",
+      "sha256": "5ef21baf68d3d2d9d9d4f583d7a743211752bb1e6d355a0747de3f2f968d5358",
+      "bytes": 5447
+    },
+    {
+      "path": "Source/WolfBridge/Tests/RenderPreparation8.cpp",
+      "sha256": "870b2ce18bfa0fbdf3bf8a7868bfbdf812735816bcef4d0adc41b15803bcd81f",
+      "bytes": 8042
+    },
+    {
+      "path": "Source/WolfBridge/Tests/Speed40.cpp",
+      "sha256": "9361754debfe30ca84a676487962813616c217fa41b4af393bcdb603d6f1d263",
+      "bytes": 2408
+    },
+    {
       "path": "Source/WolfBridge/WolfBridge.cpp",
-      "sha256": "ba699ab51e190b80088a1b769e184dca7cf5d6453d600dd429abf2693aa0fa26",
-      "bytes": 21695
+      "sha256": "9872ea5cce7d0ce75045408b8eac83fba81c354034f36424ff34e00db0634669",
+      "bytes": 33619
     },
     {
       "path": "Source/WolfBridge/WolfBridge.def",
@@ -6603,18 +7119,33 @@
     },
     {
       "path": "Source/WolfBridge/WolfBridge.rc",
-      "sha256": "bb6e75ec6c205b0aca12a84ef952e65c48212542536090a9077df763203fbbf5",
-      "bytes": 106
+      "sha256": "87c88ccb604e41761351a2e9f380c85d6bf0fd8161824eba841dae870f2aba5c",
+      "bytes": 139
     },
     {
       "path": "Source/WolfBridge/WolfCache.h",
-      "sha256": "07a9111fb77a59a3d14b1966f926eb67aad5159594be9cf82b6c072ad2718115",
-      "bytes": 2737
+      "sha256": "b3409f7ba502fb5b3d24704fe3ecf830a3b2ce213c68903cc08bccaa3699afaf",
+      "bytes": 6036
+    },
+    {
+      "path": "Source/WolfBridge/WolfClockIndex.h",
+      "sha256": "29b8e1cbda83eac18bb2ecacf12120079b05fdcb2f64437ac9c8c2916164bf20",
+      "bytes": 3970
+    },
+    {
+      "path": "Source/WolfBridge/WolfCollect.h",
+      "sha256": "2a81704f9f46def5be585425f88c62547ab298f5b442a40ccade694c3a6a62ce",
+      "bytes": 12702
     },
     {
       "path": "Source/WolfBridge/WolfData.h",
-      "sha256": "cb138e5a63bae3112004aa4ac05a4b62178fe413b7c8102138730f16194e22c4",
-      "bytes": 7507
+      "sha256": "fa03c528439eea3713335e48cc903b5f9b889ee07b65226ac9228422482e2e2a",
+      "bytes": 17190
+    },
+    {
+      "path": "Source/WolfBridge/WolfDatabaseData.h",
+      "sha256": "0285214bbb8bfeb9f8f8dd54ce096dfc3c5ea31e02fd781efe91ab062e21dee3",
+      "bytes": 1874
     },
     {
       "path": "Source/WolfBridge/WolfFont.h",
@@ -6622,9 +7153,14 @@
       "bytes": 2885
     },
     {
+      "path": "Source/WolfBridge/WolfLanguageBranches.h",
+      "sha256": "ff1993306306fbfba4b948c3c4d26bb74f202de5dc093dce6106a10c5eb3d128",
+      "bytes": 2082
+    },
+    {
       "path": "Source/WolfBridge/WolfLauncher.cpp",
-      "sha256": "d1c9c5added5bf1f05987b9793653bdf1910b10e211849bf6a6b123c69d347a4",
-      "bytes": 4179
+      "sha256": "c2fb20b274458b160a7ccbc03c60a161e98f8db717e79323ac058b19d60d6144",
+      "bytes": 4778
     },
     {
       "path": "Source/WolfBridge/WolfLegacyText.h",
@@ -6632,9 +7168,49 @@
       "bytes": 2865
     },
     {
+      "path": "Source/WolfBridge/WolfMainThread.h",
+      "sha256": "d35dd44225fd4e491d2b7aa85b4eab53d939315e19a203c52c2ca52573da02d5",
+      "bytes": 1823
+    },
+    {
+      "path": "Source/WolfBridge/WolfRenderIndex.h",
+      "sha256": "835d9d8e0b3c71b9126e7e0a75f66bdb5fc1bf83e458f860c191cfbc6843a74d",
+      "bytes": 8637
+    },
+    {
+      "path": "Source/WolfBridge/WolfSentence.h",
+      "sha256": "2353d3cfff97f0c5625dd1a627a18d462db0ce23b608a7c4b7cc1b2b380f576a",
+      "bytes": 10387
+    },
+    {
+      "path": "Source/WolfBridge/WolfSentenceProbe.h",
+      "sha256": "e8d3ed2a1502579164f5c5a551cda849e1f91c0e3f4e6c3508ca690be98696bf",
+      "bytes": 4832
+    },
+    {
+      "path": "Source/WolfBridge/WolfSentenceRules.h",
+      "sha256": "bc11dbe4ffda50fa001092c7714e7c5ad3637451953a39276a48df164a891891",
+      "bytes": 3919
+    },
+    {
+      "path": "Source/WolfBridge/WolfSpeed.h",
+      "sha256": "891332bb8d50b2d27b3d531ef839e9e5b99a3a1032b097bcba0717a570d13304",
+      "bytes": 3283
+    },
+    {
+      "path": "Source/WolfBridge/WolfTestInput.h",
+      "sha256": "5ceb9a8e2bdaea122cf1f3c3369474c7dc130e37a2a7188970947fe81812f0ed",
+      "bytes": 17933
+    },
+    {
+      "path": "Source/WolfBridge/WolfTestScreen.h",
+      "sha256": "b9e8430a27c2721bb36bf073011af1686c500003f306efdd93edbc6090415d23",
+      "bytes": 17223
+    },
+    {
       "path": "Source/WolfBridge/WolfText.h",
-      "sha256": "81d0efc367d3ead6bb32b367dd29c7855554d2bc37ad0971ea5c34f9cc3fa3dc",
-      "bytes": 4396
+      "sha256": "01017bebe3da7fc4696de813fad340565328ce46bfabaeccaecc0ba066c41d19",
+      "bytes": 4520
     },
     {
       "path": "Source/YukarBridge/FusionYukarBridge.csproj",
@@ -6673,13 +7249,13 @@
     },
     {
       "path": "third-party-source/ARCHIVES.json",
-      "sha256": "1d8f81220483a4c9cef12d2803b74eb2409e1065902a4ff768158c7c79e7df0a",
-      "bytes": 1159
+      "sha256": "6cd6e86840ca8c075b27d1a59a2d4afc438f78fd1734b67085921e33dfe7d9b5",
+      "bytes": 2243
     },
     {
       "path": "third-party-source/BepInEx-5b766a3-source.zip",
-      "sha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
-      "bytes": 1207906
+      "sha256": "4e53a4650de500b1cd9c5e85669644bd5dc5e1ee40d12a66070a308a1e9eba0e",
+      "bytes": 786491
     },
     {
       "path": "third-party-source/Disarm-8574010-source.zip",
@@ -6693,13 +7269,13 @@
     },
     {
       "path": "third-party-source/README.md",
-      "sha256": "ffc0781bb15c8e964a76ccbda08c833d95f989fb2bde254e286c544f031eb91e",
-      "bytes": 1085
+      "sha256": "6ad5538ddf47554ac45083dbda71798c30567fa8eeb8b3c0297b9943972b030b",
+      "bytes": 2060
     },
     {
       "path": "third-party-source/SOURCES.json",
-      "sha256": "f629246cccca9205dafd2ebdfc41fc220a37937dc9a900aa6eed7f03807c56ae",
-      "bytes": 1029
+      "sha256": "a04411f12000ee3ea2e9548cacfbc2a3c307145238baccd51bc1d0e820fa261e",
+      "bytes": 1914
     },
     {
       "path": "third-party-source/Underanalyzer-4ff50a8-source.zip",
@@ -6722,59 +7298,54 @@
       "bytes": 4151
     },
     {
-      "path": "THIRD_PARTY_NOTICES.txt",
-      "sha256": "101aa70b3f62c3be78469aa8ad3a8df8533d2906b41b805b386169754ebcad56",
-      "bytes": 2038
-    },
-    {
       "path": "tools/Build-Desktop.ps1",
       "sha256": "1348fc191134ea3b2deb5ad144fa9f6d951dd546fe42bae9cae15ce127c526a4",
       "bytes": 2679
     },
     {
       "path": "tools/DesktopAcceptance179/DesktopAcceptance179.csproj",
-      "sha256": "6f867cc408892145a0d1fbecf7d223d87b13955dee8c449082e9db44b068a029",
-      "bytes": 526
-    },
-    {
-      "path": "tools/DesktopAcceptance179/Program.cs",
-      "sha256": "867b275a691096d4b11e9342fbd24890cf26ad155d6fb6ae27c68611ea783436",
-      "bytes": 8857
-    },
-    {
-      "path": "tools/DesktopAcceptance179/README.md",
-      "sha256": "4148b57cca988a650d612720c44d8f8882a00268bf234441d74d5f023db15ca1",
-      "bytes": 517
-    },
-    {
-      "path": "tools/DesktopBenchmark179/DesktopBenchmark179.csproj",
-      "sha256": "e7fd0e23a60ba65bc87e038d15198e60604c907476a805c0266a4997f6e12a62",
-      "bytes": 655
-    },
-    {
-      "path": "tools/DesktopBenchmark179/Program.cs",
-      "sha256": "3a06f8d2d1ec482e1c4d61941f71b2433861a158d7e667fd093cc502924584d2",
-      "bytes": 6560
-    },
-    {
-      "path": "tools/DesktopBenchmark179/README.md",
-      "sha256": "fc09dae564a5d9bad5ade37a9e0cc00022f93c126507f19f2fafacfdf9742f5b",
+      "sha256": "c5f228a60855b40af251a687fe61ff1fc26fc54a83be42c75620b26aa8b1ef13",
       "bytes": 530
     },
     {
+      "path": "tools/DesktopAcceptance179/Program.cs",
+      "sha256": "cba717a08059d68785f9a86229dda3dd70e1c9ae02984d7ea56a78a56c71c6aa",
+      "bytes": 8959
+    },
+    {
+      "path": "tools/DesktopAcceptance179/README.md",
+      "sha256": "e4aece6a06eb05abc939d9ec1e04fd3be0be37653a2706a804a17b006d313283",
+      "bytes": 512
+    },
+    {
+      "path": "tools/DesktopBenchmark179/DesktopBenchmark179.csproj",
+      "sha256": "ddfd726cf3cc08c9323b0d5be063726520e415897325d47bf76bc9f28b626180",
+      "bytes": 660
+    },
+    {
+      "path": "tools/DesktopBenchmark179/Program.cs",
+      "sha256": "74e57f78545ff64405deb584626abf54349e8a8303bdeac75719dc959510084f",
+      "bytes": 6667
+    },
+    {
+      "path": "tools/DesktopBenchmark179/README.md",
+      "sha256": "a25d99f88c4a783adfac1700583b98abbb38351a010715ee771236423fc41f1b",
+      "bytes": 525
+    },
+    {
       "path": "tools/LiveAcceptance179/LiveAcceptance179.csproj",
-      "sha256": "5c5c1ee034e5d7853935076fc46f12435d4bc64b0a347ed816c392b3cbfa4c75",
-      "bytes": 818
+      "sha256": "52e7f0dce110975be877f7e16fec209708dfda2e1cbc383383811dcbb55b3e78",
+      "bytes": 824
     },
     {
       "path": "tools/LiveAcceptance179/Program.cs",
-      "sha256": "ef2a12ae66f28d74e032a339c214b76624e12b2732156cac74f35bacbfc4a653",
-      "bytes": 8806
+      "sha256": "53dcd62196f583fc9f0a73d9317f37068a5cc321fc2e32248e8cb985a71aaee8",
+      "bytes": 8915
     },
     {
       "path": "tools/LiveAcceptance179/README.md",
-      "sha256": "cc89fd19f50d3964b77f60417a4d1d1a6c65674714ea2a53870d0836005cd00f",
-      "bytes": 1288
+      "sha256": "38f2314f805614e32c4f949950ed9279607898ffe6edb3b07eeeb9f9388ef9d0",
+      "bytes": 1279
     },
     {
       "path": "tools/README.md",
@@ -6783,8 +7354,8 @@
     },
     {
       "path": "tools/SourcePretranslation178/Program.cs",
-      "sha256": "57c117304497bf1ae93540c348354a0094c672986bb22751530d1ae05f17e892",
-      "bytes": 14719
+      "sha256": "9682360abbc736bf9ec6e7901d260d40872575cd207ea745532e280a96cf1f82",
+      "bytes": 14893
     },
     {
       "path": "tools/SourcePretranslation178/README.md",
@@ -6793,13 +7364,13 @@
     },
     {
       "path": "tools/SourcePretranslation178/SourcePretranslation178.csproj",
-      "sha256": "c3d5a138d3966e906dfbf2d73bc691a31a93d8e1bae950b8eca64d8c472cd6ae",
-      "bytes": 873
+      "sha256": "0c7198aee4d4f5a3e568f915d9fae801f1f104f25fb28b5b2f9ef3373f76debd",
+      "bytes": 880
     },
     {
       "path": "tools/SourcePretranslation178/TransferredInstallTests.cs",
-      "sha256": "1f4b15ce1362aab13344319b504e4ee09083227093b85be8f019bdbc34d7475c",
-      "bytes": 7801
+      "sha256": "f056e8541134be13c34ede9aa1d26629026f4f5b7822793985069e0203c142a7",
+      "bytes": 7882
     },
     {
       "path": "tools/Test-RenpyCatalog179.py",
@@ -6812,10 +7383,13 @@
       "bytes": 3811
     }
   ],
-  "byteReproducibleBuildClaim": false,
-  "fullFreshSourceRebuildTested": false,
-  "packagingDiscoveredFixes": [
-    "Unicode OCR image file I/O"
+  "excluded": [
+    ".git",
+    "generated build directories",
+    "private data and test reports",
+    "proprietary Oodle codec",
+    "Unity engine compile reference assemblies"
   ],
-  "unicodePathChecks": 15
+  "byteReproducibleBuildClaim": false,
+  "fullFreshSourceRebuildTested": false
 }

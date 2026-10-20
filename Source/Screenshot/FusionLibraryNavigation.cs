@@ -3,7 +3,7 @@ namespace ScreenshotTranslationUiTester;
 internal sealed record LibraryNavigationTarget(string Kind,string Value="");
 // The TreeView below is a data model only: no native window or native scrollbars.
 // All visible rows are composed in one double-buffered paint pass.
-internal sealed partial class LibraryNavigationTree:Control
+internal sealed partial class LibraryNavigationTree:Control,ILibraryNavigationSession
 {
     private readonly TreeView model=new();
     private readonly ToolTip tips=new();
@@ -18,9 +18,9 @@ internal sealed partial class LibraryNavigationTree:Control
     internal TreeNode? SelectedNode {get;private set;}
     internal int ScrollOffset=>offset;
     internal int ItemHeight=>Math.Max(S(28),Font.Height+S(12));
-    internal int ScrollMaximum=>Math.Max(0,rows.Count*ItemHeight-ClientSize.Height);
-    internal event Action<LibraryNavigationTarget>? Navigate;
-    internal event Action<LibraryNavigationTarget,Point>? ContextRequested;
+    internal int ScrollMaximum=>Math.Max(0,rows.Count*ItemHeight-NavigationViewport.Height);
+    public event Action<LibraryNavigationTarget>? Navigate;
+    public event Action<LibraryNavigationTarget,Point>? ContextRequested;
     private sealed record Entry(string Key,string Text,LibraryNavigationTarget Target,string ToolTip="")
     {internal List<Entry> Children {get;}=[];}
     internal LibraryNavigationTree()
@@ -29,10 +29,10 @@ internal sealed partial class LibraryNavigationTree:Control
         SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.ResizeRedraw|ControlStyles.Selectable,true);
     }
     private int S(int n)=>n*DeviceDpi/96;
-    private Rectangle Track=>ScrollMaximum>0?new(Math.Max(0,Width-S(10)),S(3),S(10),Math.Max(0,Height-S(6))):Rectangle.Empty;
+    private Rectangle Track=>ScrollMaximum>0?new(Math.Max(0,NavigationViewport.Width-S(10)),S(3),S(10),Math.Max(0,NavigationViewport.Height-S(6))):Rectangle.Empty;
     private Rectangle Thumb
-    {get{var r=Track;if(r.Height<=0)return Rectangle.Empty;int h=Math.Clamp((int)((long)r.Height*Height/Math.Max(1,rows.Count*ItemHeight)),Math.Min(S(30),r.Height),r.Height);return new(r.X,r.Y+(int)((long)(r.Height-h)*offset/Math.Max(1,ScrollMaximum)),r.Width,h);}}
-    internal void UpdateEntries(RecentGame[] games,LibraryMetadata metadata,Dictionary<string,string> engines,IEnumerable<string> activePaths,string? selectedPath,string scope,LibraryPreferences preferences,Dictionary<string,Bitmap>? newIcons=null)
+    {get{var r=Track;if(r.Height<=0)return Rectangle.Empty;int h=Math.Clamp((int)((long)r.Height*NavigationViewport.Height/Math.Max(1,rows.Count*ItemHeight)),Math.Min(S(30),r.Height),r.Height);return new(r.X,r.Y+(int)((long)(r.Height-h)*offset/Math.Max(1,ScrollMaximum)),r.Width,h);}}
+    public void UpdateEntries(RecentGame[] games,LibraryMetadata metadata,Dictionary<string,string> engines,IEnumerable<string> activePaths,string? selectedPath,string scope,LibraryPreferences preferences,Dictionary<string,Bitmap>? newIcons=null)
     {
         var oldRows=rows.Select(n=>(n.Name,n.Text,n.Level)).ToArray();var oldRunning=running;var oldSelection=SelectedNode?.Name;
         bool imagesChanged=false;
@@ -107,10 +107,10 @@ internal sealed partial class LibraryNavigationTree:Control
     }
     private static IEnumerable<TreeNode> AllNodes(TreeNodeCollection nodes){foreach(TreeNode n in nodes){yield return n;foreach(var child in AllNodes(n.Nodes))yield return child;}}
     private void InvalidateRow(string? key){int i=rows.FindIndex(n=>n.Name==key);if(i>=0)Invalidate(new Rectangle(0,i*ItemHeight-offset,Width,ItemHeight));}
-    internal void UpdateRunning(IEnumerable<string> paths)
+    public void UpdateRunning(IEnumerable<string> paths)
     {var next=paths.ToHashSet(StringComparer.OrdinalIgnoreCase);if(running.SetEquals(next))return;var before=running;running=next;if(Nodes["running"] is {} n){n.Text="正在运行  "+next.Count;InvalidateRow(n.Name);}foreach(var node in rows)if(node.Tag is LibraryNavigationTarget {Kind:"game"} t&&before.Contains(t.Value)!=next.Contains(t.Value))InvalidateRow(node.Name);}
     private void ScrollTo(int value){value=Math.Clamp(value,0,ScrollMaximum);if(offset==value)return;offset=value;tips.SetToolTip(this,null);Invalidate();}
-    private TreeNode? Hit(Point p)=>p.X<0||p.X>=Width||p.Y<0||p.Y>=Height?null:rows.ElementAtOrDefault((p.Y+offset)/ItemHeight);
+    private TreeNode? Hit(Point p)=>p.X<0||p.X>=NavigationViewport.Width||p.Y<0||p.Y>=NavigationViewport.Height?null:rows.ElementAtOrDefault((p.Y+offset)/ItemHeight);
     protected override void OnPaintBackground(PaintEventArgs e){}
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -150,10 +150,10 @@ internal sealed partial class LibraryNavigationTree:Control
     protected override bool IsInputKey(Keys key)=> (key&Keys.KeyCode) is Keys.Up or Keys.Down or Keys.Left or Keys.Right or Keys.Home or Keys.End or Keys.PageDown or Keys.PageUp||base.IsInputKey(key);
     protected override void OnKeyDown(KeyEventArgs e)
     {
-        base.OnKeyDown(e);int at=rows.IndexOf(SelectedNode!);int next=e.KeyCode switch{Keys.Up=>at-1,Keys.Down=>at+1,Keys.Home=>0,Keys.End=>rows.Count-1,Keys.PageDown=>at+Math.Max(1,Height/ItemHeight),Keys.PageUp=>at-Math.Max(1,Height/ItemHeight),_=>at};
+        base.OnKeyDown(e);int at=rows.IndexOf(SelectedNode!);int height=NavigationViewport.Height;int next=e.KeyCode switch{Keys.Up=>at-1,Keys.Down=>at+1,Keys.Home=>0,Keys.End=>rows.Count-1,Keys.PageDown=>at+Math.Max(1,height/ItemHeight),Keys.PageUp=>at-Math.Max(1,height/ItemHeight),_=>at};
         if(e.KeyCode is Keys.Left or Keys.Right&&SelectedNode is {} branch){if(e.KeyCode==Keys.Right)expanded.Add(branch.Name);else expanded.Remove(branch.Name);Flatten();Invalidate();e.Handled=true;return;}
-        if(e.KeyCode is Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageDown or Keys.PageUp){if(rows.Count>0){next=Math.Clamp(next,0,rows.Count-1);SelectNode(rows[next]);if(next*ItemHeight<offset)ScrollTo(next*ItemHeight);else if((next+1)*ItemHeight>offset+Height)ScrollTo((next+1)*ItemHeight-Height);}e.Handled=true;}
-        if(SelectedNode?.Tag is LibraryNavigationTarget t){if(e.KeyCode==Keys.Enter){Navigate?.Invoke(t);e.Handled=true;}if(e.KeyCode==Keys.Apps||e.Shift&&e.KeyCode==Keys.F10){ContextRequested?.Invoke(t,new(S(25),Math.Clamp(at*ItemHeight-offset,0,Math.Max(0,Height-1))));e.Handled=true;}}
+        if(e.KeyCode is Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageUp or Keys.PageDown){if(rows.Count>0){next=Math.Clamp(next,0,rows.Count-1);SelectNode(rows[next]);if(next*ItemHeight<offset)ScrollTo(next*ItemHeight);else if((next+1)*ItemHeight>offset+height)ScrollTo((next+1)*ItemHeight-height);}e.Handled=true;}
+        if(SelectedNode?.Tag is LibraryNavigationTarget t){if(e.KeyCode==Keys.Enter){Navigate?.Invoke(t);e.Handled=true;}if(e.KeyCode==Keys.Apps||e.Shift&&e.KeyCode==Keys.F10){ContextRequested?.Invoke(t,new(S(25),Math.Clamp(at*ItemHeight-offset,0,Math.Max(0,height-1))));e.Handled=true;}}
     }
     protected override void OnResize(EventArgs e){base.OnResize(e);offset=Math.Clamp(offset,0,ScrollMaximum);}
     protected override void OnFontChanged(EventArgs e){base.OnFontChanged(e);if(rows is not null)Flatten();Invalidate();}
@@ -163,11 +163,11 @@ internal sealed partial class LibraryNavigationTree:Control
 
 public sealed partial class MainForm
 {
-    private readonly LibraryNavigationTree _libraryNavigation=new(){Dock=DockStyle.Fill};
+    private readonly ILibraryNavigationSession _libraryNavigation=WpfWorkspace.Enabled?new NativeLibraryNavigation():new LibraryNavigationTree{Dock=DockStyle.Fill};
     private LibraryPreferences _libraryPreferences=new();
     private string _libraryScope="home",_libraryTag="";
     private Control? _libraryNavigationHost;
-    private readonly GameLibraryGrid _recentShelf=new(){Dock=DockStyle.Fill,ShelfMode=true};
+    private readonly ILibraryGridSession _recentShelf=WpfWorkspace.Enabled?new NativeGameLibraryGrid{ShelfMode=true}:new GameLibraryGrid{Dock=DockStyle.Fill,ShelfMode=true};
     private Control? _recentShelfHost;
     private bool _showRecentShelf=true;
     private bool _sizingRecentShelf;
@@ -177,7 +177,7 @@ public sealed partial class MainForm
         if(_sizingRecentShelf||_recentShelfHost is not TableLayoutPanel shelf||shelf.Parent is not TableLayoutPanel parent)return;
         var title=_recentSectionHeading;
         int row=parent.GetRow(shelf);if(row<0||row>=parent.RowStyles.Count)return;
-        int height=_showRecentShelf?_recentShelf.ShelfContentHeight+_recentShelf.Margin.Vertical+title.GetPreferredSize(Size.Empty).Height+title.Margin.Vertical+shelf.Margin.Vertical+shelf.Padding.Vertical:0;
+        int height=_showRecentShelf?_recentShelf.ShelfContentHeight+((GameLibraryGrid)_recentShelf).Margin.Vertical+title.GetPreferredSize(Size.Empty).Height+title.Margin.Vertical+shelf.Margin.Vertical+shelf.Padding.Vertical:0;
         _sizingRecentShelf=true;
         try
         {
@@ -195,14 +195,31 @@ public sealed partial class MainForm
         if(target.Kind=="add-root"){_=ChooseLibraryRootAsync();return;}
         if(target.Kind=="new-category"){AddLibraryCategory();return;}
         if(target.Kind=="game"){_=OpenLibraryGameAsync(target.Value);return;}
-        ShowLibraryHome();_libraryFiltersLoading=true;
+        _libraryNavigationEpoch++;
+        var collection=target.Kind=="collection"?target.Value:"";
+        var scope=target.Kind=="scope"?target.Value:"home";
+        var tag=target.Kind=="tag"?target.Value:"";
+        var engine=target.Kind=="engine"?target.Value:"全部引擎";
+        var folder=target.Kind=="folder"?target.Value:"全部文件夹";
+        if(_libraryCollection==collection&&_libraryScope==scope&&_libraryTag==tag&&LibraryFilterIndex==0&&LibraryEngineChoice==engine&&LibraryFolderChoice==folder)
+        {if(_wpfDetails&&!_libraryHomePending)ShowLibraryHome();return;}
+        // Keep the existing page until the selected category has its first
+        // visible covers ready. Never expose an old list under a new heading.
+        _libraryHomePending=WpfWorkspace.Enabled;
+        if(!WpfWorkspace.Enabled)ShowLibraryHome();_libraryFiltersLoading=true;
         try{_libraryCollection=target.Kind=="collection"?target.Value:"";_libraryScope=target.Kind=="scope"?target.Value:"home";_libraryTag=target.Kind=="tag"?target.Value:"";
-            _libraryFilter.SelectedIndex=0;_libraryEngine.SelectedItem=target.Kind=="engine"?target.Value:"全部引擎";_libraryFolder.SelectedItem=target.Kind=="folder"?target.Value:"全部文件夹";}
+            LibraryFilterIndex=0;LibraryEngineChoice=target.Kind=="engine"?target.Value:"全部引擎";LibraryFolderChoice=target.Kind=="folder"?target.Value:"全部文件夹";}
         finally{_libraryFiltersLoading=false;}
-        ScheduleLibraryRefresh();RecordPageLocation();
+        RefreshLibraryImmediately();RecordPageLocation();
     }
     private void AddLibraryCategory()
     {
+        if(WpfWorkspace.Enabled)
+        {
+            var category=AskNativeLibraryName("新建分类","","分类名称",40);if(category is null)return;
+            try{_libraryPreferences=_libraryPreferences with{Categories=(_libraryPreferences.Categories??[]).Append(category).Distinct().ToArray()};LibraryPreferencesStore.Save(_libraryPreferences);ScheduleLibraryRefresh();}
+            catch(Exception ex){ShowFusionError(ex);}return;
+        }
         using var dialog=new Form{Text="新建分类",StartPosition=FormStartPosition.CenterParent,ClientSize=new(350,150),Font=Font,FormBorderStyle=FormBorderStyle.FixedDialog,MinimizeBox=false,MaximizeBox=false};
         var name=new TextBox{MaxLength=40,Width=280,PlaceholderText=UiLanguage.Text("分类名称")};var content=WorkspaceColumn();content.Padding=new(18);
         WorkspaceAdd(content,WorkspaceRow(name));var save=WorkspaceButton("创建",(_,_)=>{if(!string.IsNullOrWhiteSpace(name.Text))dialog.DialogResult=DialogResult.OK;});

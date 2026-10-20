@@ -116,7 +116,7 @@ internal sealed class LegacyMgiAdapterInstaller
         if(!Uri.TryCreate(settings.ApiUrl,UriKind.Absolute,out var uri)||uri.Scheme is not ("https" or "http"))throw new ArgumentException("请输入有效的 HTTP/HTTPS 接口地址。");
         toggleKey=GameShortcut.Normalize(toggleKey);
         var prompt=Convert.ToBase64String(Encoding.UTF8.GetBytes(FusionConfiguration.PluginPrompt(settings)));
-        var text=$"[General]\nEnabled = true\nToggleKey = {toggleKey}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(settings.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {SingleLine(settings.ApiUrl)}\nApiKey = {SingleLine(settings.ApiKey)}\nModel = {SingleLine(settings.Model)}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(settings.TargetLanguage)}\nPromptBase64 = {prompt}\n";
+        var text=$"[General]\nEnabled = true\nToggleKey = {toggleKey}\nScanIntervalSeconds = 0.6\nConcurrentRequests = 3\nBatchSize = 8\nRequestTimeoutSeconds = {Math.Clamp(settings.RequestTimeoutSeconds,15,90)}\n\n[API]\nEndpoint = {SingleLine(settings.ApiUrl)}\nApiKey = {SingleLine(settings.ApiKey)}\nModel = {SingleLine(settings.Model)}\nRequestParametersBase64 = {ChatRequestParameters.PluginParametersBase64(settings,1200)}\nRequestParametersIdentity = {(string.IsNullOrWhiteSpace(settings.AdvancedApiParameters)?"":TranslationPromptBuilder.Sha256(settings.AdvancedApiParameters))}\n\n[Translation]\nTargetLanguage = {FusionConfiguration.NormalizeLanguage(settings.TargetLanguage)}\nPromptBase64 = {prompt}\n";
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);File.WriteAllText(path,text,new UTF8Encoding(false));
     }
 }

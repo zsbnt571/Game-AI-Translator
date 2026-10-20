@@ -3,28 +3,35 @@ using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
 
-internal sealed record TranslationStageTiming(long Samples,double LastMs,double MaxMs,double MeanMs,long Failures,int Active,double OldestActiveMs);
+internal sealed record TranslationStageTiming(long Samples,double LastMs,double MaxMs,double MeanMs,long Failures,int Active,double OldestActiveMs,double? P50Ms=null,double? P95Ms=null,int WindowSamples=0);
 internal sealed record TranslationLatencySnapshot(TranslationStageTiming ForegroundQueue,TranslationStageTiming Provider,
     TranslationStageTiming BridgePoll,TranslationStageTiming BridgeApply,int WaitingForeground,double OldestForegroundMs,
-    long UntrackedForeground,IReadOnlyDictionary<string,double> Runtime,TranslationStageTiming? CacheSave=null);
+    long UntrackedForeground,IReadOnlyDictionary<string,double> Runtime,TranslationStageTiming? CacheSave=null,TranslationStageTiming? ForegroundProvider=null,TranslationStageTiming? ObservedToReady=null);
 
 // Fixed-size aggregate counters and at most 2048 pending visible source keys.
 // No prompt, source, translation, path, credential or object address is exported.
 internal sealed class TranslationLatency
 {
-    internal enum Stage { ForegroundQueue,Provider,BridgePoll,BridgeApply,CacheSave }
+    internal static readonly string[] RuntimeMetricKeys=["observedToCacheSamples","observedToCacheLastMs","observedToCacheMaxMs","cacheToReadbackSamples","cacheToReadbackLastMs","cacheToReadbackMaxMs","glyphWaitSamples","glyphWaitLastMs","glyphWaitMaxMs","waitingForCache","waitingForFont","waitingForReadback","oldestObservedMs","maxDiscoveryMs","discoverySnapshots","lastPumpAgeMs"];
+    internal enum Stage { ForegroundQueue,Provider,BridgePoll,BridgeApply,CacheSave,ForegroundProvider,ObservedToReady }
     private sealed class Measure
     {
         internal long Count,Failures;internal double Last,Max,Total;
         internal long Next;internal int Active;internal readonly Dictionary<long,long> Starts=new();
+        private readonly double[] recent=new double[256];private int used,position;private long sortedAt=-1;private double? p50,p95;
         internal long Begin(){long id=++Next;Active++;if(Starts.Count<128)Starts[id]=Stopwatch.GetTimestamp();return id;}
         internal void End(long id){Active--;Starts.Remove(id);}
-        internal void Add(double ms,bool failed){Count++;Last=ms;Max=Math.Max(Max,ms);Total+=ms;if(failed)Failures++;}
-        internal TranslationStageTiming Snapshot()=>new(Count,Last,Max,Count==0?0:Total/Count,Failures,Active,Starts.Count==0?0:Ms(Starts.Values.Min()));
+        internal void Add(double ms,bool failed){if(!double.IsFinite(ms)||ms<0)return;Count++;Last=ms;Max=Math.Max(Max,ms);Total+=ms;if(failed)Failures++;recent[position]=ms;position=(position+1)%recent.Length;used=Math.Min(used+1,recent.Length);}
+        internal TranslationStageTiming Snapshot()
+        {
+            if(sortedAt!=Count&&used>0){var sorted=recent.Take(used).Order().ToArray();p50=sorted[(int)Math.Ceiling(used*.50)-1];p95=sorted[(int)Math.Ceiling(used*.95)-1];sortedAt=Count;}
+            return new(Count,Last,Max,Count==0?0:Total/Count,Failures,Active,Starts.Count==0?0:Ms(Starts.Values.Min()),p50,p95,used);
+        }
     }
-    private readonly object gate=new();private readonly Measure[] measures=[new(),new(),new(),new(),new()];
+    private readonly object gate=new();private readonly Measure[] measures=[new(),new(),new(),new(),new(),new(),new()];
     private readonly LinkedList<(string Source,long At)> order=new();
     private readonly Dictionary<string,LinkedListNode<(string Source,long At)>> pending=new(StringComparer.Ordinal);
+    private readonly Dictionary<string,long> awaitingReady=new(StringComparer.Ordinal);
     private long untracked;
     private IReadOnlyDictionary<string,double> runtime=new Dictionary<string,double>();
     private static double Ms(long since)=>(Stopwatch.GetTimestamp()-since)*1000d/Stopwatch.Frequency;
@@ -32,7 +39,8 @@ internal sealed class TranslationLatency
     {
         lock(gate)
         {
-            if(cached){Remove(source,false);return;}
+            if(cached){Remove(source,false);awaitingReady.Remove(source);return;}
+            if(!awaitingReady.ContainsKey(source)){if(awaitingReady.Count==2048)awaitingReady.Remove(awaitingReady.Keys.First());awaitingReady[source]=Stopwatch.GetTimestamp();}
             if(pending.ContainsKey(source))return;
             if(pending.Count==2048){Remove(order.First!.Value.Source,false);untracked++;}
             pending.Add(source,order.AddLast((source,Stopwatch.GetTimestamp())));
@@ -45,6 +53,7 @@ internal sealed class TranslationLatency
         order.Remove(node);
     }
     internal void Dispatched(IEnumerable<string> sources){lock(gate)foreach(var source in sources)Remove(source,true);}
+    internal void Accepted(string source){lock(gate)if(awaitingReady.Remove(source,out long at))measures[(int)Stage.ObservedToReady].Add(Ms(at),false);}
     internal async Task<T> MeasureAsync<T>(Stage stage,Func<Task<T>> action)
     {
         long start=Stopwatch.GetTimestamp(),id;bool failed=true;
@@ -56,12 +65,12 @@ internal sealed class TranslationLatency
     {
         if(receipt.ValueKind!=JsonValueKind.Object||!receipt.TryGetProperty("latency",out var value)||value.ValueKind!=JsonValueKind.Object)return;
         var clean=new Dictionary<string,double>();
-        foreach(string key in new[]{"observedToCacheSamples","observedToCacheLastMs","observedToCacheMaxMs","cacheToReadbackSamples","cacheToReadbackLastMs","cacheToReadbackMaxMs","glyphWaitSamples","glyphWaitLastMs","glyphWaitMaxMs","waitingForCache","waitingForFont","waitingForReadback","oldestObservedMs","maxDiscoveryMs","discoverySnapshots","lastPumpAgeMs"})
+        foreach(string key in RuntimeMetricKeys)
             if(value.TryGetProperty(key,out var number)&&number.ValueKind==JsonValueKind.Number&&number.TryGetDouble(out double result)&&double.IsFinite(result)&&result>=0)clean[key]=result;
         lock(gate)runtime=clean;
     }
     internal TranslationLatencySnapshot Snapshot()
     {
-        lock(gate)return new(measures[0].Snapshot(),measures[1].Snapshot(),measures[2].Snapshot(),measures[3].Snapshot(),pending.Count,order.First is {} first?Ms(first.Value.At):0,untracked,runtime,measures[4].Snapshot());
+        lock(gate)return new(measures[0].Snapshot(),measures[1].Snapshot(),measures[2].Snapshot(),measures[3].Snapshot(),pending.Count,order.First is {} first?Ms(first.Value.At):0,untracked,runtime,measures[4].Snapshot(),measures[5].Snapshot(),measures[6].Snapshot());
     }
 }

@@ -37,7 +37,9 @@ internal sealed partial class FusionAdapterInstaller
     {
         var root=Path.GetDirectoryName(game.ExePath)!;
         var data=game.DataDirectory??Path.Combine(root,Path.GetFileNameWithoutExtension(game.ExePath)+"_Data");
-        var paths=new[]{game.ExePath,Path.Combine(root,"UnityPlayer.dll"),Path.Combine(root,"GameAssembly.dll"),
+        var paths=new[]{game.ExePath,Path.Combine(root,"Data","BasicData","Game.dat"),Path.Combine(root,"Data.wolf"),Path.Combine(root,"Game.ini"),
+            Path.Combine(root,"package.json"),Path.Combine(root,"www","package.json"),Path.Combine(root,"data","System.json"),Path.Combine(root,"www","data","System.json"),
+            Path.Combine(root,"UnityPlayer.dll"),Path.Combine(root,"GameAssembly.dll"),
             Path.Combine(root,"MonoBleedingEdge","EmbedRuntime","mono-2.0-bdwgc.dll"),
             Path.Combine(data,"app.info"),Path.Combine(data,"globalgamemanagers"),Path.Combine(data,"data.unity3d"),
             Path.Combine(data,"Managed","Assembly-CSharp.dll"),Path.Combine(data,"Managed","Game.dll"),
@@ -47,9 +49,17 @@ internal sealed partial class FusionAdapterInstaller
         foreach(var path in paths){var f=new FileInfo(path);stamp.Append('|').Append(f.Exists?f.Length:-1).Append(':').Append(f.Exists?f.LastWriteTimeUtc.Ticks:0);}
         return stamp.ToString();
     }
+    private readonly object selectionCacheGate=new();
+    private readonly Dictionary<string,(GameInfo Game,string Stamp)> selectionCache=new(StringComparer.OrdinalIgnoreCase);
     internal (GameInfo Game,string Stamp) DetectDesktopSelection(string path)
     {
-        var game=GameDetector.Detect(path);return (game,DetectionStamp(game));
+        path=RecentGameStore.Normalize(path);
+        (GameInfo Game,string Stamp) previous;
+        lock(selectionCacheGate)selectionCache.TryGetValue(path,out previous);
+        if(previous.Game is not null&&DetectionStamp(previous.Game)==previous.Stamp)return previous;
+        var game=GameDetector.Detect(path);var current=(game,DetectionStamp(game));
+        lock(selectionCacheGate){if(selectionCache.Count>=64&&!selectionCache.ContainsKey(path))selectionCache.Remove(selectionCache.Keys.First());selectionCache[path]=current;}
+        return current;
     }
     internal DesktopGameState InspectDesktop(GameInfo game,ApiSettings settings,string key,bool force,string? selectionStamp=null)
     {
@@ -134,25 +144,28 @@ public sealed partial class MainForm
     private bool _gameQueryRunning,_gameQueryPending,_gameForceQuery,_gameDetecting;
     private int _gameQueryEpoch,_gameSelectionEpoch;
     private DesktopGameState? _desktopGameState;
-    private readonly Label _gameTitle=new(){AutoSize=true};
-    private readonly Label _gameConfiguration=new(){AutoSize=true};
-    private readonly Label _gameActionHint=new(){AutoSize=true};
-    private readonly Label _gameQueryDetails=new(){AutoSize=true};
-    private readonly Label _gameSelectionHint=new(){AutoSize=true,Text="选择游戏主程序，也可拖入 EXE。"};
+    private readonly Label _gameTitle=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _gameConfiguration=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _gameActionHint=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _gameQueryDetails=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
+    private readonly Label _gameSelectionHint=WpfWorkspace.Enabled ? null! : new(){AutoSize=true,Text="选择游戏主程序，也可拖入 EXE。"};
     private Button? _chooseGameButton;
     private string? _gamePlanIdentity;
     private string _gameQueryError="";
     private DateTime _launchFeedbackUntil;
-    private readonly Label _gameFeedback=new(){AutoSize=true};
+    private readonly Label _gameFeedback=WpfWorkspace.Enabled ? null! : new(){AutoSize=true};
 
     private void InvalidateGameState()
     {
-        _gameQueryEpoch++;_gameForceQuery=true;_desktopGameState=null;_gameQueryError="";
+        // Keep the last coherent observation while rechecking it. Actions still
+        // revalidate the process/files; a background query is not an operation.
+        _gameQueryEpoch++;_gameForceQuery=true;_gameQueryError="";
         RenderGameState();RefreshGameState();
     }
     private string? _selectedDetectionStamp;
     private string? _pendingGamePath;
     private readonly SemaphoreSlim _selectionDetectionGate=new(1,1);
+    private readonly SemaphoreSlim _desktopInspectionGate=new(1,1);
     private Task _selectGameTask=Task.CompletedTask;
     private async void SelectFusionGame(string path,string? relinkId=null,bool recordSelection=true) => await SelectFusionGameAsync(path,relinkId,recordSelection);
     private Task SelectFusionGameAsync(string path,string? relinkId=null,bool recordSelection=true)
@@ -166,9 +179,9 @@ public sealed partial class MainForm
         try{path=RecentGameStore.Normalize(path);}catch(Exception ex){ShowFusionError(ex);return;}
         if(_gameDetecting&&StringComparer.OrdinalIgnoreCase.Equals(path,_pendingGamePath))return;
         _pendingGamePath=path;
-        CancelSelectedMedia();
+        CancelSelectedMedia(preserveArtwork:WpfWorkspace.Enabled);
         var token=_mediaSelectionCancellation!.Token;
-        var selection=++_gameSelectionEpoch;_gameQueryEpoch++;_gameDetecting=true;_desktopGameState=null;RenderGameState();
+        var selection=++_gameSelectionEpoch;_gameQueryEpoch++;_gameDetecting=true;RenderGameState();
         try
         {
             await _selectionDetectionGate.WaitAsync(token);
@@ -177,14 +190,32 @@ public sealed partial class MainForm
             finally{_selectionDetectionGate.Release();}
             token.ThrowIfCancellationRequested();
             var game=detected.Game;
-            var displayRecord=(await RecentStore()).Find(game.ExePath);
+            var store=await RecentStore();
+            var displayRecord=store.Find(game.ExePath);
             game=game with{Name=displayRecord is {NameSource:"window" or "manual"}?displayRecord.Name:GameWindowNames.Fallback(game.ExePath,game.DataDirectory)};
-            if(IsDisposed||Disposing||selection!=_gameSelectionEpoch)return;
+            var artwork=WpfWorkspace.Enabled&&displayRecord is not null?await LoadLibraryArtworkAsync(store,displayRecord):null;
+            if(IsDisposed||Disposing||selection!=_gameSelectionEpoch||token.IsCancellationRequested)return;
+            // Resolve this game's settings without changing the visible game.
+            // Detection, artwork and process/plugin state publish together.
+            var settings=ApiSettingsSnapshot.Copy(_fusion!.GameSettings(UiSettings,game.ExePath));
+            var key=_fusion.State.EmbeddedToggleKey;
+            DesktopGameState inspected;
+            await _desktopInspectionGate.WaitAsync(token);
+            try{inspected=await Task.Run(()=>_adapter.InspectDesktop(game,settings,key,false,detected.Stamp),token);}
+            finally{_desktopInspectionGate.Release();}
+            if(IsDisposed||Disposing||selection!=_gameSelectionEpoch||token.IsCancellationRequested)return;
+            game=inspected.Game with{Name=game.Name};
             _fusion!.PinGameProfile(game.ExePath);
-            _selectedDetectionStamp=detected.Stamp;_selectedGame=game;_gamePath.Text=game.ExePath;
+            _selectedDetectionStamp=null;_selectedGame=game;_desktopGameState=inspected with{Game=game};_gameQueryError="";
+            _gameForceQuery=false;_gamePlanIdentity=FusionConfiguration.EditIdentity(settings)+"|"+key;GamePathText=game.ExePath;
+            // Commit identity and decoded artwork in the same dispatcher turn.
+            // Keep the previous coherent page visible while detection/decode run.
+            if(WpfWorkspace.Enabled){if(displayRecord is not null)ApplyLibraryDetail(displayRecord,artwork,null);else{_libraryArtworkSource=null;_libraryArtworkRecord=null;GameChineseNameText="";GameNoteText="";}}
+            else if(displayRecord is not null)await RefreshLibraryDetailAsync(store,displayRecord);
+            if(IsDisposed||selection!=_gameSelectionEpoch||token.IsCancellationRequested)return;
             _gameSessions.Get(game);PopulateProfiles();RefreshFusionChrome();
-            SetLabelText(_gameTitle,game.Name);SetLabelText(_gameBadge,TranslationPresentation(game).Badge);
-            SetLabelText(_gameInfo,game.Engine+" · "+game.Architecture+"\n"+game.Details);
+            GameTitleText=game.Name;SetGameBadgeText(TranslationPresentation(game).Badge);
+            SetGameInfoText(game.Engine+" · "+game.Architecture+"\n"+game.Details);
             if(_fusion!.State.LastGame!=game.ExePath)_fusion.Change(next=>next.LastGame=game.ExePath);
             _gameOperationResult=_gameSessions.Get(game).Feedback;_launchFeedbackUntil=default;
             _rememberSelectedTask=RememberSelectedGameAsync(game,selection,relinkId,recordSelection);
@@ -198,7 +229,7 @@ public sealed partial class MainForm
         }
         finally
         {
-            if(!IsDisposed&&selection==_gameSelectionEpoch){_pendingGamePath=null;_gameDetecting=false;InvalidateGameState();}
+            if(!IsDisposed&&selection==_gameSelectionEpoch){_pendingGamePath=null;_gameDetecting=false;RenderGameState();}
         }
     }
     private async void RefreshGameState()
@@ -212,12 +243,15 @@ public sealed partial class MainForm
         var force=_gameForceQuery;_gameForceQuery=false;
         try
         {
-            var state=await Task.Run(()=>_adapter.InspectDesktop(game,settings,key,force,selectionStamp));
+            DesktopGameState state;
+            await _desktopInspectionGate.WaitAsync();
+            try{state=await Task.Run(()=>_adapter.InspectDesktop(game,settings,key,force,selectionStamp));}
+            finally{_desktopInspectionGate.Release();}
             if(IsDisposed||Disposing||epoch!=_gameQueryEpoch||_selectedGame!=game||_gameActionRunning)return;
             state=state with{Game=state.Game with{Name=game.Name}};
             _desktopGameState=state;_selectedGame=state.Game;_gameQueryError="";
-            SetLabelText(_gameTitle,state.Game.Name);SetLabelText(_gameBadge,TranslationPresentation(state.Game).Badge);
-            SetLabelText(_gameInfo,state.Game.Engine+" · "+state.Game.Architecture+"\n"+state.Game.Details);
+            GameTitleText=state.Game.Name;SetGameBadgeText(TranslationPresentation(state.Game).Badge);
+            SetGameInfoText(state.Game.Engine+" · "+state.Game.Architecture+"\n"+state.Game.Details);
             RenderGameState();
         }
         catch(Exception ex)
@@ -230,8 +264,15 @@ public sealed partial class MainForm
             if(!IsDisposed&&(_gameQueryPending||epoch!=_gameQueryEpoch)){_gameQueryPending=false;RefreshGameState();}
         }
     }
+    private void SetGameBadgeText(string text)
+    {
+        if(WpfWorkspace.Enabled) GameDetail.Badge.Text=text;
+        else SetLabelText(_gameBadge,text);
+    }
     private void RenderGameState()
     {
+        if(WpfWorkspace.Enabled&&_gameDetecting){GameDetail.SelectionPending=true;NotifyNativeGameDetailChanged();return;}
+        if(WpfWorkspace.Enabled){RenderNativeGameState();return;}
         if(_installGameButton is null)return;
         var game=_selectedGame;var s=_desktopGameState;
         var supported=game?.Engine=="Unity Mono"&&game.Support is SupportLevel.Supported or SupportLevel.Candidate;
@@ -256,14 +297,14 @@ public sealed partial class MainForm
             FusionGameProcessState.Stopped=>"未检测到运行",FusionGameProcessState.Running=>"游戏运行中",_=>"同名进程路径无法确认，暂不能安装、启动或恢复"});
         if(_gameDetecting)status="正在识别游戏…";else if(_gameActionRunning)status="正在处理，请稍候…";
         if(_launchFeedbackUntil!=default&&(DateTime.UtcNow>=_launchFeedbackUntil||s?.Process==FusionGameProcessState.Running)){_gameOperationResult=game is null?"":_gameSessions.Get(game).Feedback;_launchFeedbackUntil=default;}
-        SetLabelText(_gameFeedback,_gameOperationResult);_gameFeedback.Visible=_gameOperationResult.Length>0;
+        SetGameFeedbackText(_gameOperationResult);_gameFeedback.Visible=_gameOperationResult.Length>0;
         if(_gameQueryError.Length>0)status+="\n"+_gameQueryError;
-        SetLabelText(_gameStatus,status);
-        SetLabelText(_gameConfiguration,s?.ConfigurationMatches switch{
+        SetGameFileStatusText(status);
+        SetGameConfigurationText(s?.ConfigurationMatches switch{
             true=>"方案已写入 · 运行时加载尚未确认。",
             false=>"有更改待应用 · 写入后在游戏下次启动时生效。",
             _=>game is null?"方案保存在软件中，选择游戏后可应用。":"方案保存在软件中；游戏配置尚未确认。"});
-        SetLabelText(_gameQueryDetails,s is not null?"实际插件："+s.Plugin+"\n"+s.Detail:"尚无完整核对结果。");
+        SetGameQueryText(s is not null?"实际插件："+s.Plugin+"\n"+s.Detail:"尚无完整核对结果。");
         var hint=s?.ActionHint??"";
         var missing=_desktopReady?FusionConfiguration.Missing(EmbeddedSettings):new List<string>();
         if(missing.Count>0)
@@ -271,7 +312,7 @@ public sealed partial class MainForm
             hint+=(hint.Length>0?"\n":"")+"方案尚缺："+string.Join("、",missing)+"。请在“编辑”中补全后应用。";
             if(_gameSessionPage is null){_installGameButton.Enabled=false;_launchGameButton!.Enabled=false;}
         }
-        SetLabelText(_gameActionHint,hint);_gameActionHint.Visible=hint.Length>0;
+        SetGameHintText(hint);_gameActionHint.Visible=hint.Length>0;
         RenderGameSessionState();
     }
 }

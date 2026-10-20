@@ -11,7 +11,7 @@ internal sealed class EmbeddedSourceLanguagePolicy
     internal GameSourceLanguageTracker Tracker {get;private set;}=new();
     internal EmbeddedSourceLanguagePolicy(ApiSettings value,string? game=null) : this(value.SourceLanguage)
     {settings=ApiSettingsSnapshot.Copy(value);Tracker=new(game);}
-    internal string CatalogHint=>Tracker.Language;
+    internal string CatalogHint=>Tracker.Locale;
     internal void ObserveGameLocale(string? locale)=>Tracker.ObserveDeclared(locale);
     internal bool AllowsSelectedText(string text) => settings is null || TranslationLanguagePolicy.ShouldTranslate(text, settings);
     private readonly HashSet<string> runtimeLanguages=new(StringComparer.Ordinal);
@@ -69,7 +69,10 @@ internal sealed class EmbeddedSourceLanguagePolicy
         if(other is not null)return other;
         if(latin==0&&otherScripts.Count>0)return "und";
         if(latin==0)return "";
-        var words=Words.Matches(text).Select(m=>m.Value).ToArray();
+        // A homograph must not become a definitive runtime/catalogue vote.
+        // The full translation policy retains its alternatives for source scope.
+        if(TranslationLanguagePolicy.IsAmbiguousLatinWord(text))return "latin";
+        var words=Words.Matches(text).Select(m=>m.Value).Where(w=>!TranslationLanguagePolicy.IsAmbiguousLatinToken(w)).ToArray();
         var scores=Evidence.Select(p=>(p.Key,Score:words.Count(p.Value.Contains))).OrderByDescending(p=>p.Score).ToArray();
         if(scores[0].Score>0&&scores[0].Score>scores[1].Score)return scores[0].Key;
         return "latin"; // A proper name or unknown Latin-script label is not proof of English.

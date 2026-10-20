@@ -98,21 +98,31 @@ internal static class TranslationMemory
             foreach(string route in new[]{storage,Path.Combine(storage,"generic-test")})
                 candidates.Add(Path.Combine(route,"translations",scope==TranslationCacheScope.Screen?"screen":"",basename));
             Dictionary<string,string>? merged=null;int imported=0,conflicts=0;
+            var terms=TranslationWorkspaceStore.For(exe,settings).Snapshot().Terms;
+            var receipts=TranslationGlossaryCache.Load(local.Path,local.Receipts);
             long bytes=local.Entries.Sum(p=>Cost(p.Key,p.Value));
-            void Add(KeyValuePair<string,string> pair)
+            void Add(KeyValuePair<string,string> pair,TranslationGlossaryCache? sourceReceipts=null)
             {
                 if(!TranslationWorkspaceStore.Basic(pair.Key,pair.Value))return;
+                if(sourceReceipts is not null?!sourceReceipts.Matches(pair.Key,pair.Value,terms):TranslationGlossary.Applicable(terms,[pair.Key]).Count>0)return;
                 var current=merged??local.Entries;
                 if(current.TryGetValue(pair.Key,out var old)){if(old!=pair.Value)conflicts++;return;}
                 long cost=Cost(pair.Key,pair.Value);if(current.Count>=100000||bytes+cost>60L*1024*1024)return;
                 merged??=new(local.Entries,StringComparer.Ordinal);merged.Add(pair.Key,pair.Value);bytes+=cost;imported++;
+                receipts.Accept(pair.Key,pair.Value,terms);
             }
             foreach(string path in candidates.Distinct(StringComparer.OrdinalIgnoreCase))
             {
                 if(PortableDataStorage.Same(path,local.Path))continue;
-                var entries=RpgTranslationCache.Read(path+".recovered.json")??RpgTranslationCache.Read(path)??RpgTranslationCache.Read(path+".previous");
+                string selected=path+".recovered.json";
+                var entries=RpgTranslationCache.Read(selected);
+                if(entries is null){selected=path;entries=RpgTranslationCache.Read(selected);}
+                if(entries is null){selected=path+".previous";entries=RpgTranslationCache.Read(selected);}
                 if(entries is null)continue;
-                foreach(var pair in entries)Add(pair);
+                // A backup may reuse a primary receipt only when the text hash
+                // matches; no current glossary is retroactively assigned.
+                var sourceReceipts=TranslationGlossaryCache.Load(selected.EndsWith(".previous",StringComparison.Ordinal)?path:selected);
+                foreach(var pair in entries)Add(pair,sourceReceipts);
             }
             if(display&&scope==TranslationCacheScope.Native)
                 foreach(var pair in LegacyTranslationMemory.Read(exe,settings))
@@ -125,13 +135,13 @@ internal static class TranslationMemory
                         TranslationLanguagePolicy.ShouldTranslate(pair.Key,settings)&&TranslationLanguageSpans.Preserved(pair.Key,pair.Value,settings))Add(pair);
                 }
             if(imported>0)AppLog.Write("translation-memory",$"reused={imported} localConflictsKept={conflicts} scope={scope} display={display}");
-            return merged is null?local:new(local.Path,merged,true);
+            return merged is null?local:local with {Entries=merged,NeedsSave=true,Receipts=receipts.Snapshot(merged)};
         }
         catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or ArgumentException)
         {AppLog.Write("translation-memory","Reuse unavailable; local cache remains active.",ex);return local;}
     }
     private static long Cost(string source,string value)=>12L+Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(source))+Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(value));
-    internal static void Publish(string exe,ApiSettings settings,TranslationCacheScope scope,bool display,IReadOnlyDictionary<string,string> entries)
+    internal static void Publish(string exe,ApiSettings settings,TranslationCacheScope scope,bool display,IReadOnlyDictionary<string,string> entries,IReadOnlyDictionary<string,TranslationGlossaryCache.Receipt>? receipts=null)
     {
         if(entries.Count==0)return;
         if(TranslationCacheReset.Read(exe) is not null)return;
@@ -144,24 +154,43 @@ internal static class TranslationMemory
             {
                 try{held=mutex.WaitOne(1000);}catch(AbandonedMutexException){held=true;}
                 if(!held)return;
-                var existing=RpgTranslationCache.Read(path+".recovered.json")??RpgTranslationCache.Read(path);
+                string proofPath=path+".recovered.json";
+                var existing=RpgTranslationCache.Read(proofPath);
+                if(existing is null){proofPath=path;existing=RpgTranslationCache.Read(path);}
                 var previous=existing is null?RpgTranslationCache.Read(path+".previous"):null;
                 if(File.Exists(path+".recovered.json")||existing is null&&File.Exists(path))path+=".recovered.json";
                 var merged=existing??previous??new(StringComparer.Ordinal);bool changed=false;
+                var storedProof=TranslationGlossaryCache.Load(proofPath);
+                // Preserve a damaged sidecar for recovery. Rewriting it as an
+                // empty proof set would silently authorize its old entries.
+                if(!storedProof.Readable)return;
+                var proof=storedProof.ForSources(merged);
+                bool proofChanged=false;
                 long bytes=merged.Sum(p=>Cost(p.Key,p.Value));
                 foreach(var pair in entries)
                 {
                     if(!TranslationWorkspaceStore.Basic(pair.Key,pair.Value)||merged.Count>=100000&&!merged.ContainsKey(pair.Key))continue;
-                    if(merged.GetValueOrDefault(pair.Key)==pair.Value)continue;
+                    // A supplied snapshot is authoritative. Missing or mismatched
+                    // proof must not erase a previously valid receipt.
+                    TranslationGlossaryCache.Receipt? receipt=null;
+                    if(receipts is not null&&(!receipts.TryGetValue(pair.Key,out receipt)||receipt.TextHash!=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(pair.Value)))))continue;
                     long cost=Cost(pair.Key,pair.Value)-(merged.TryGetValue(pair.Key,out var old)?Cost(pair.Key,old):0);
                     if(bytes+cost>60L*1024*1024)continue;
+                    if(receipt is not null)
+                    {if(proof.GetValueOrDefault(pair.Key)!=receipt){proof[pair.Key]=receipt;proofChanged=true;}}
+                    else if(merged.GetValueOrDefault(pair.Key)!=pair.Value&&proof.Remove(pair.Key))proofChanged=true;
+                    if(merged.GetValueOrDefault(pair.Key)==pair.Value)continue;
                     merged[pair.Key]=pair.Value;bytes+=cost;changed=true;
                 }
-                if(changed)
+                if(changed||proofChanged)
                 {
                     if(JsonSerializer.SerializeToUtf8Bytes(merged,new JsonSerializerOptions{WriteIndented=true}).Length>64*1024*1024)
                         throw new IOException("共用译文副本达到大小上限，已保留当前游戏缓存。");
-                    PortableDataStorage.WriteJson(path,merged);
+                    // Receipt first: an interrupted replacement fails closed by
+                    // hash mismatch instead of validating an old translation
+                    // against the new glossary.
+                    TranslationStorage.WriteJson(path+".glossary.json",proof);
+                    if(changed)TranslationStorage.WriteJson(path,merged);
                 }
             }
             finally{if(held)mutex.ReleaseMutex();}

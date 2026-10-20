@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -7,25 +7,25 @@ public sealed partial class MainForm
     private FusionConfiguration? _fusion;
     private string? _editingProfile;
     private bool _loadingFusion;
-    private readonly ComboBox _profileEditor = new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly ComboBox _commonProfile = new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly ComboBox _shotProfile = new GamePlanBox();
-    private readonly GamePlanBox _embeddedProfile = new(){DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly GameShortcutButton _embeddedKey = new();
-    private readonly Label _fusionOcrInfo = new(){AutoSize=true,MaximumSize=new(560,0)};
-    private readonly Label _shotEffective = new(){AutoSize=true,MaximumSize=new(680,0)};
-    private readonly Label _embeddedEffective = new(){AutoSize=true,MaximumSize=new(680,0)};
-    private readonly WorkspaceThemeButton _themeIcon = new();
+    private readonly ComboBox _profileEditor = WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly ComboBox _commonProfile = WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly ComboBox _shotProfile = WpfWorkspace.Enabled ? null! : new GamePlanBox();
+    private readonly GamePlanBox _embeddedProfile = WpfWorkspace.Enabled ? null! : new(){DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly GameShortcutButton _embeddedKey = WpfWorkspace.Enabled ? null! : new();
+    private readonly Label _fusionOcrInfo = WpfWorkspace.Enabled ? null! : new(){AutoSize=true,MaximumSize=new(560,0)};
+    private readonly Label _shotEffective = WpfWorkspace.Enabled ? null! : new(){AutoSize=true,MaximumSize=new(680,0)};
+    private readonly Label _embeddedEffective = WpfWorkspace.Enabled ? null! : new(){AutoSize=true,MaximumSize=new(680,0)};
+    private readonly WorkspaceThemeButton _themeIcon = WpfWorkspace.Enabled ? null! : new();
     private readonly ToolTip _fusionTips = new();
-    private readonly FusionNavigation _settingsNavigation = new();
+    private readonly FusionNavigation _settingsNavigation = WpfWorkspace.Enabled ? null! : new();
     private readonly Dictionary<string,Button> _navigationButtons = new();
     private readonly FusionAdapterInstaller _adapter = new();
     private GameInfo? _selectedGame;
-    private readonly TextBox _gamePath = new(){ReadOnly=true};
-    private readonly Label _gameInfo = new(){AutoSize=true,MaximumSize=new(680,0)};
-    private readonly Label _gameStatus = new(){AutoSize=true,MaximumSize=new(680,0)};
+    private readonly TextBox _gamePath = WpfWorkspace.Enabled ? null! : new(){ReadOnly=true};
+    private readonly Label _gameInfo = WpfWorkspace.Enabled ? null! : new(){AutoSize=true,MaximumSize=new(680,0)};
+    private readonly Label _gameStatus = WpfWorkspace.Enabled ? null! : new(){AutoSize=true,MaximumSize=new(680,0)};
     private Button? _installGameButton,_launchGameButton,_restoreGameButton;
-    private readonly System.Windows.Forms.Timer _gameStateTimer=new(){Interval=2000};
+    private readonly DesktopUiTimer _gameStateTimer=new(){Interval=2000};
     private bool _gameActionRunning => _selectedGame is { } game && _gameSessions.Find(game.ExePath)?.Busy==true;
     private const string FollowCommon = "跟随公共方案";
     public ApiSettings CurrentSettings => _fusion?.Effective(UiSettings,false) ?? UiSettings;
@@ -33,6 +33,8 @@ public sealed partial class MainForm
 
     private void BuildFusionShell()
     {
+        if(WpfWorkspace.Enabled){InitializeNativeShell();return;}
+        var _libraryNavigation=(LibraryNavigationTree)this._libraryNavigation;
         UiLanguage.Preserve(_gameTitle);UiLanguage.Preserve(_libraryChineseName);UiLanguage.Preserve(_libraryNote);UiLanguage.Preserve(_sessionCompactTitle);
         // The one-pixel frame is the only outer inset. Navigation and its
         // background reach the client edges; resizing still uses frame hit tests.
@@ -50,7 +52,7 @@ public sealed partial class MainForm
         _libraryNavigation.ContextRequested+=ShowLibraryFolderContext;
         FormClosed+=(_,_)=>_folderContext.Dispose();
         var content=_mainContentHost;content.Padding=Padding.Empty;content.Margin=Padding.Empty;content.Name="MainPageHost";
-        _workspaceCaption=new WorkspaceCaption(this){Dock=DockStyle.Fill,Margin=Padding.Empty};
+        _workspaceCaption=new WorkspaceCaption(LegacyWindow){Dock=DockStyle.Fill,Margin=Padding.Empty};
         foreach(var pair in new[]{("内嵌翻译","游戏库"),("主页","截图翻译"),("设置","设置")})
         {
             var key=pair.Item1;var button=new WorkspaceTab(pair.Item2){Width=88,Height=40,Margin=Padding.Empty};
@@ -76,7 +78,7 @@ public sealed partial class MainForm
         libraryLayout.WidthCommitted+=width=>{try{var next=LibraryPreferencesStore.Load() with{SidebarWidth=width};LibraryPreferencesStore.Save(next);_libraryPreferences=next;UpdateWorkspaceNavigation();}catch(Exception ex){ShowFusionError(ex);}};
         BuildScreenshotWorkspace(_pages["主页"]);BuildGameLibraryWorkspace(libraryContent);
         _pages["设置"].Padding=new(20,18,12,0);BuildSettingsPage(_pages["设置"]);ReorganizeFusionSettings(_pages["设置"]);
-        _statusLabel.Dock=DockStyle.Fill;_statusLabel.Margin=Padding.Empty;_statusLabel.TextAlign=ContentAlignment.MiddleLeft;_statusLabel.Padding=new(20,0,0,0);_statusLabel.Font=new Font("Microsoft YaHei UI",8);_statusLabel.Text="就绪";
+        _statusLabel.Dock=DockStyle.Fill;_statusLabel.Margin=Padding.Empty;_statusLabel.TextAlign=ContentAlignment.MiddleLeft;_statusLabel.Padding=new(20,0,0,0);_statusLabel.Font=new Font("Microsoft YaHei UI",8);DesktopStatus="就绪";
         root.Controls.Add(content,0,0);root.Controls.Add(_statusLabel,0,1);
         void PlaceStatus()
         {
@@ -93,7 +95,7 @@ public sealed partial class MainForm
         libraryPage.VisibleChanged+=(_,_)=>PlaceStatus();DpiChanged+=(_,_)=>PlaceStatus();
         var frame=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,Margin=Padding.Empty};frame.ColumnStyles.Add(new(SizeType.Percent,100));frame.RowStyles.Add(new(SizeType.Absolute,40));frame.RowStyles.Add(new(SizeType.Percent,100));
         frame.Controls.Add(_workspaceCaption,0,0);frame.Controls.Add(root,0,1);Controls.Add(frame);ShowPage("内嵌翻译");PlaceStatus();
-        _trayIcon.Text="游戏翻译 · Fusion R1";ConfigureFusionInputs(this);
+        _trayIcon.Text="游戏翻译 · Fusion R1";ConfigureFusionInputs(LegacyWindow);
         _gameStateTimer.Tick+=(_,_)=>{UpdateGameDiagnosticSnapshots();if(DesktopVisible&&!_workspaceResizing&&_currentMainPage=="内嵌翻译"){RefreshGameState();_=RefreshOtherGameSessionsAsync();_=RefreshLibraryWindowNamesAsync();_=RefreshGameDataStatusAsync();}};
         _gameStateTimer.Start();FormClosed+=(_,_)=>_gameStateTimer.Dispose();Activated+=(_,_)=>{_gameForceQuery=true;RefreshGameState();};
     }
@@ -147,7 +149,7 @@ public sealed partial class MainForm
         var gameHeader=new TableLayoutPanel{AutoSize=true,ColumnCount=2};
         gameHeader.ColumnStyles.Add(new(SizeType.AutoSize));gameHeader.ColumnStyles.Add(new(SizeType.Percent,100));
         _selectedGameIcon.Margin=new(0,3,12,3);gameHeader.Controls.Add(_selectedGameIcon,0,0);
-        _gameTitle.Text="选择游戏";_gameTitle.Font=new Font("Microsoft YaHei UI",12,FontStyle.Bold);
+        GameTitleText="选择游戏";_gameTitle.Font=new Font("Microsoft YaHei UI",12,FontStyle.Bold);
         _gameTitle.Margin=new(0,2,10,3);_gameBadge.Margin=new(0,4,0,3);
         var gameText=new TableLayoutPanel{AutoSize=true,Dock=DockStyle.Fill,ColumnCount=1};gameText.ColumnStyles.Add(new(SizeType.Percent,100));
         gameText.Controls.Add(Stack(_gameTitle,_gameBadge));
@@ -195,6 +197,11 @@ public sealed partial class MainForm
     }
     private void ReorganizeFusionSettings(Panel page)
     {
+        if (WpfWorkspace.Enabled)
+        {
+            foreach (var box in new[] { _shotProfile, _embeddedProfile }) box.SelectedIndexChanged += (_, _) => PersistChoice(box);
+            return;
+        }
         // Preserve the existing controls and their binding/capture handlers, replace only their layout.
 
         var tabs=new SettingsPageHost{Dock=DockStyle.Fill};
@@ -243,6 +250,7 @@ public sealed partial class MainForm
     }
     private void RefreshFusionChrome()
     {
+        if(WpfWorkspace.Enabled){RefreshNativeFusionChrome();return;}
         _wpfWindow?.RefreshChrome();
         if(_fusion is null)return;
         var day=UiTheme.Current!=ThemePalette.Night;
@@ -267,6 +275,6 @@ public sealed partial class MainForm
         var edit=MakeButton("编辑此方案",Point.Empty,new(135,36));edit.AutoSize=true;edit.MinimumSize=new(135,36);edit.Click+=(_,_)=>EditModeProfile(embedded);AddSettingRow(table,"",Stack(edit));
     }
     private string _gameOperationResult="";
-    private void ShowFusionError(Exception ex){var safe=SafeDiagnosticOutput.ExceptionSummary(ex);_statusLabel.Text=safe;AppLog.Write("fusion",safe);}
+    private void ShowFusionError(Exception ex){var safe=SafeDiagnosticOutput.ExceptionSummary(ex);DesktopStatus=safe;AppLog.Write("fusion",safe);}
 }
 

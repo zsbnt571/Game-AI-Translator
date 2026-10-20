@@ -54,6 +54,18 @@ internal sealed class DefoldArchive : IDisposable
     }
     internal void Write(string folder,IReadOnlyDictionary<string,byte[]> changes)
     {
+        // Equal resource identities may have multiple logical names. Never let
+        // the last replacement silently overwrite a different requested value.
+        var replacements=new Dictionary<string,byte[]>(StringComparer.Ordinal);
+        foreach(var pair in changes)
+        {
+            if(!names.TryGetValue(pair.Key,out int entry))throw new InvalidDataException("替换资源不在原目录中。");
+            if(pair.Value.Length>64*1024*1024)throw new InvalidDataException("翻译资源过大。");
+            string identity=Convert.ToHexString(index.AsSpan(hashOffset+entry*64,hashSize));
+            if(replacements.TryGetValue(identity,out var previous)&&!previous.AsSpan().SequenceEqual(pair.Value))
+                throw new InvalidDataException("共用同一资源的替换内容不一致，未生成封包。");
+            replacements[identity]=pair.Value;
+        }
         byte[] idx=(byte[])index.Clone();using(var output=new FileStream(Path.Combine(folder,"game.arcd"),FileMode.CreateNew,FileAccess.Write,FileShare.None))
         {
             archive.Position=0;archive.CopyTo(output);
@@ -61,7 +73,22 @@ internal sealed class DefoldArchive : IDisposable
                 for(int i=0;i<count;i++)if(index.AsSpan(hashOffset+i*64,hashSize).SequenceEqual(index.AsSpan(hashOffset+original*64,hashSize))){int p=entryOffset+i*16;BinaryPrimitives.WriteUInt32BigEndian(idx.AsSpan(p,4),off);BinaryPrimitives.WriteUInt32BigEndian(idx.AsSpan(p+4,4),(uint)pair.Value.Length);BinaryPrimitives.WriteUInt32BigEndian(idx.AsSpan(p+8,4),uint.MaxValue);BinaryPrimitives.WriteUInt32BigEndian(idx.AsSpan(p+12,4),0);}}
             output.Flush(true);
         }
-        File.WriteAllBytes(Path.Combine(folder,"game.arci"),idx);
+        using(var output=new FileStream(Path.Combine(folder,"game.arci"),FileMode.CreateNew,FileAccess.Write,FileShare.None))
+        {output.Write(idx);output.Flush(true);}
+        if(!File.ReadAllBytes(Path.Combine(folder,"game.arci")).AsSpan().SequenceEqual(idx))throw new IOException("生成索引的读回核对失败。");
+    }
+    internal sealed record WritebackProof(string Resource,string ContentHash,int Bytes);
+    internal static WritebackProof[] VerifyWritten(string exe,IReadOnlyDictionary<string,byte[]> changes)
+    {
+        using var staged=new DefoldArchive(exe);var receipts=new List<WritebackProof>();
+        foreach(var pair in changes)
+        {
+            if(!staged.names.ContainsKey(pair.Key))throw new InvalidDataException("生成封包缺少替换资源。");
+            byte[] actual=staged.Read(pair.Key);
+            if(!actual.AsSpan().SequenceEqual(pair.Value))throw new IOException("生成资源的读回核对失败。");
+            receipts.Add(new(pair.Key,CatalogOrigins.Hash(actual),actual.Length));
+        }
+        return receipts.ToArray();
     }
     public void Dispose()=>archive.Dispose();
 }

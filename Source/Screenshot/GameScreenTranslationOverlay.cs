@@ -1,10 +1,10 @@
 namespace ScreenshotTranslationUiTester;
 
-internal sealed class GameScreenTranslationOverlay : Form
+internal sealed partial class GameScreenTranslationOverlay : DesktopForm
 {
     private readonly ScreenTranslationConnection connection;
     private readonly GameDataSession data;
-    private readonly System.Windows.Forms.Timer refresh=new(){Interval=250};
+    private readonly DesktopUiTimer refresh=new(){Interval=250};
     private ScreenTranslationFrame? current;
     private bool refreshDisposed;
     internal GameScreenTranslationOverlay(ScreenTranslationConnection connection,GameDataSession data)

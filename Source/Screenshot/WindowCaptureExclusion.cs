@@ -17,7 +17,7 @@ internal sealed class TemporaryWindowCaptureExclusion : IDisposable
     public string RestoreError { get; private set; } = string.Empty;
 
     public static bool TryBegin(
-        IEnumerable<Form> windows,
+        IEnumerable<IWin32Window> windows,
         out TemporaryWindowCaptureExclusion? scope,
         out string error)
     {
@@ -28,7 +28,8 @@ internal sealed class TemporaryWindowCaptureExclusion : IDisposable
 
         foreach (var form in candidates)
         {
-            if (form.IsDisposed || !form.IsHandleCreated)
+            var handle = form.Handle;
+            if (handle == IntPtr.Zero || !NativeMethods.IsWindow(handle))
             {
                 error = $"窗口句柄不可用：{form.GetType().Name}";
                 Log($"TemporaryWDA failed form={form.GetType().Name} reason=invalid-handle");
@@ -37,7 +38,6 @@ internal sealed class TemporaryWindowCaptureExclusion : IDisposable
                 return false;
             }
 
-            var handle = ((IWin32Window)form).Handle;
             if (!NativeMethods.GetWindowDisplayAffinity(handle, out var oldAffinity))
             {
                 var win32 = Marshal.GetLastWin32Error();
@@ -119,17 +119,17 @@ internal sealed class TemporaryWindowCaptureAllowance : IDisposable
     public bool RestoreSucceeded { get; private set; } = true;
     public string RestoreError { get; private set; } = string.Empty;
 
-    public static bool TryBegin(Form window, out TemporaryWindowCaptureAllowance? scope, out string error)
+    public static bool TryBegin(IWin32Window window, out TemporaryWindowCaptureAllowance? scope, out string error)
     {
         scope = null;
         error = string.Empty;
-        if (window.IsDisposed || !window.IsHandleCreated)
+        var handle = window.Handle;
+        if (handle == IntPtr.Zero || !NativeMethods.IsWindow(handle))
         {
             error = "Self-capture window handle is unavailable.";
             return false;
         }
 
-        var handle = ((IWin32Window)window).Handle;
         if (!NativeMethods.GetWindowDisplayAffinity(handle, out var oldAffinity))
         {
             var win32 = Marshal.GetLastWin32Error();
@@ -188,7 +188,7 @@ public sealed class TemporaryCaptureVisibility : IDisposable
         try
         {
             TranslationService.DiagnosticLog($"capture visibility begin hideMain={hideMain} hidePreviews={hidePreviews} previewCount={previews.Count}");
-            var excludedWindows = new List<Form>();
+            var excludedWindows = new List<IWin32Window>();
             if (hideMain && main.DesktopVisible) excludedWindows.Add(main);
             else if (main.DesktopVisible)
             {

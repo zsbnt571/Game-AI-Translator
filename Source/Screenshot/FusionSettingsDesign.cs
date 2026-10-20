@@ -1,10 +1,10 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
-    private readonly ComboBox _interfaceLanguageBox=new GamePlanBox(){Name="InterfaceLanguage",DropDownStyle=ComboBoxStyle.DropDownList};
-    private readonly Label _settingsSaveState=new(){AutoSize=true,Name="SettingsSaveState",Text="设置已保存",Margin=new(0,10,12,0)};
-    private readonly GameActionButton _settingsSaveButton=new("保存设置"){Primary=true,Name="SaveDesktopSettings",MinimumLogicalWidth=112};
+    private readonly ComboBox _interfaceLanguageBox=WpfWorkspace.Enabled ? null! : new GamePlanBox(){Name="InterfaceLanguage",DropDownStyle=ComboBoxStyle.DropDownList};
+    private readonly Label _settingsSaveState=WpfWorkspace.Enabled ? null! : new(){AutoSize=true,Name="SettingsSaveState",Text="设置已保存",Margin=new(0,10,12,0)};
+    private readonly GameActionButton _settingsSaveButton=WpfWorkspace.Enabled ? null! : new("保存设置"){Primary=true,Name="SaveDesktopSettings",MinimumLogicalWidth=112};
     private Control? _settingsFooterActions;
 
     private static readonly string[] SettingsDescriptions =
@@ -16,7 +16,7 @@ public sealed partial class MainForm
         "设置文字识别与翻译图片的处理方式。",
         "调整截图结果的默认内容、窗口和文字。",
         "管理截图记录的保留方式与会话缓存。",
-        "设置游戏图片来源、最近记录和中文名称。",
+        "设置游戏图片来源、最近记录和本地化名称。",
         "查看数据位置，或选择新的存储文件夹。",
         "查看使用说明、版本信息和诊断入口。"
     ];
@@ -32,6 +32,11 @@ public sealed partial class MainForm
     }
     private void UpdateSettingsSaveState(string? message=null)
     {
+        if (WpfWorkspace.Enabled)
+        {
+            _nativeSettingsStatus = message ?? (_lastSettingsCategory == 3 ? "API 方案与翻译内容分别保存" : _settingsDirty ? "有未保存的修改" : "设置已保存");
+            NativeSettingsStatusChanged?.Invoke(); return;
+        }
         _settingsSaveState.Text=message??(_settingsNavigation.SelectedIndex==3?"API 方案与翻译内容分别保存":_settingsDirty?"有未保存的修改":"设置已保存");
         _settingsSaveButton.Enabled=_settingsLoadSucceeded;
         if(_settingsFooterActions is not null)_settingsFooterActions.Visible=_settingsNavigation.SelectedIndex!=3;
@@ -40,7 +45,7 @@ public sealed partial class MainForm
     private TableLayoutPanel BuildGeneralSettings()
     {
         var table=SettingsTable();
-        if(_interfaceLanguageBox.Items.Count==0)_interfaceLanguageBox.Items.AddRange(["简体中文","English"]);
+        if(_interfaceLanguageBox.Items.Count==0)_interfaceLanguageBox.Items.AddRange(["简体中文","English","Русский"]);
         _interfaceLanguageBox.SelectedIndex=(int)_translationOptions.InterfaceLanguage;
         _interfaceLanguageBox.SelectedIndexChanged+=SettingsControlChanged;
         AddSettingRow(table,"界面语言",_interfaceLanguageBox);

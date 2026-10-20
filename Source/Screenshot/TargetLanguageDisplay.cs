@@ -11,7 +11,8 @@ public static class TargetLanguageDisplay
         ("한국어", "ko"),
         ("Español", "es"),
         ("Français", "fr"),
-        ("Deutsch", "de")
+        ("Deutsch", "de"),
+        ("Русский", "ru")
     ];
 
     public static IReadOnlyList<string> DisplayNames => Languages.Select(x => x.Display).ToArray();
@@ -32,6 +33,7 @@ public static class TargetLanguageDisplay
             "spanish" => "Español",
             "french" => "Français",
             "german" => "Deutsch",
+            "ru-ru" or "russian" or "русский" or "俄语" => "Русский",
             _ => "中文"
         };
     }
@@ -44,14 +46,15 @@ public static class TargetLanguageDisplay
         if (!string.IsNullOrEmpty(match.Code)) return match.Code;
         var byCode = Languages.FirstOrDefault(x =>
             string.Equals(x.Code, normalized, StringComparison.OrdinalIgnoreCase));
-        return string.IsNullOrEmpty(byCode.Code) ? "zh-CN" : byCode.Code;
+        if (!string.IsNullOrEmpty(byCode.Code)) return byCode.Code;
+        return normalized.ToLowerInvariant() is "ru-ru" or "russian" or "русский" or "俄语" ? "ru" : "zh-CN";
     }
 }
 
 public static class UiTargetLanguageDisplay
 {
-    private static readonly (string Display,string Code)[] Languages=[("中文","zh-CN"),("繁体中文","zh-TW"),("英语","en"),("日语","ja"),("韩语","ko"),("西班牙语","es"),("法语","fr"),("德语","de")];
+    private static readonly (string Display,string Code)[] Languages=[("中文","zh-CN"),("繁体中文","zh-TW"),("英语","en"),("日语","ja"),("韩语","ko"),("西班牙语","es"),("法语","fr"),("德语","de"),("俄语","ru")];
     public static IReadOnlyList<string> DisplayNames=>Languages.Select(x=>x.Display).ToArray();
-    public static string DisplayFromCode(string? value){var normalized=(value??"").Trim();var byCode=Languages.FirstOrDefault(x=>x.Code.Equals(normalized,StringComparison.OrdinalIgnoreCase));if(!string.IsNullOrEmpty(byCode.Display))return byCode.Display;var legacy=TargetLanguageDisplay.DisplayFromCode(value);return legacy switch{"繁體中文"=>"繁体中文","English"=>"英语","日本語"=>"日语","한국어"=>"韩语","Español"=>"西班牙语","Français"=>"法语","Deutsch"=>"德语",_=>legacy};}
+    public static string DisplayFromCode(string? value){var normalized=(value??"").Trim();var byCode=Languages.FirstOrDefault(x=>x.Code.Equals(normalized,StringComparison.OrdinalIgnoreCase));if(!string.IsNullOrEmpty(byCode.Display))return byCode.Display;var legacy=TargetLanguageDisplay.DisplayFromCode(value);return legacy switch{"繁體中文"=>"繁体中文","English"=>"英语","日本語"=>"日语","한국어"=>"韩语","Español"=>"西班牙语","Français"=>"法语","Deutsch"=>"德语","Русский"=>"俄语",_=>legacy};}
     public static string CodeFromDisplay(string? display){var normalized=(display??"").Trim();var match=Languages.FirstOrDefault(x=>x.Display==normalized);return !string.IsNullOrEmpty(match.Code)?match.Code:TargetLanguageDisplay.CodeFromDisplay(display);}
 }

@@ -50,6 +50,10 @@ internal static class WorkspaceSkin
             case "unlock":g.DrawRectangle(p,5,10,14,11);g.DrawArc(p,8,2,8,14,180,170);Line(new(8,8),new(8,10));g.FillEllipse(b,11,14,2,2);break;
             case "close":Line(new(5,5),new(19,19));Line(new(19,5),new(5,19));break;
             case "next":Line(new(9,5),new(16,12),new(9,19));break;
+            case "sidebar-show":
+                g.DrawRectangle(p,3,4,18,16);Line(new(8,4),new(8,20));Line(new(12,8),new(16,12),new(12,16));break;
+            case "sidebar-hide":
+                g.DrawRectangle(p,3,4,18,16);Line(new(8,4),new(8,20));Line(new(17,8),new(13,12),new(17,16));break;
             case "back":Line(new(15,5),new(8,12),new(15,19));break;
             case "grid":foreach(int x in new[]{3,14})foreach(int y in new[]{3,14})g.DrawRectangle(p,x,y,7,7);break;
             case "list":foreach(int y in new[]{5,12,19}){g.FillEllipse(b,2,y-1,2,2);Line(new(7,y),new(21,y));}break;
@@ -58,12 +62,14 @@ internal static class WorkspaceSkin
             case "translate":Line(new(2,5),new(14,5));Line(new(7,2),new(9,5));Line(new(12,5),new(9,12),new(3,17));Line(new(5,8),new(12,16));Line(new(13,21),new(18,10),new(23,21));Line(new(15,17),new(21,17));break;
             case "export":Line(new(3,15),new(3,21),new(21,21),new(21,15));Line(new(12,17),new(12,2));Line(new(6,8),new(12,2),new(18,8));break;
             case "copy":g.DrawRectangle(p,7,7,14,15);Line(new(16,3),new(3,3),new(3,17));break;
+            case "pin":Line(new(8,3),new(16,3));Line(new(9,3),new(9,10),new(6,14),new(18,14),new(15,10),new(15,3));Line(new(12,14),new(12,22));break;
             case "edit":Line(new(3,17),new(3,22),new(8,21),new(22,7),new(17,2),new(3,17));Line(new(14,5),new(19,10));break;
             case "refresh":
                 // One open circular arrow, with a visible head at small sizes.
                 g.DrawArc(p,4,4,16,16,35,290);
                 Line(new(13.2f,7.4f),new(18.6f,7.4f),new(18.6f,2.4f));break;
             case "expand":Line(new(14,3),new(21,3),new(21,10));Line(new(21,3),new(14,10));Line(new(3,14),new(3,21),new(10,21));Line(new(3,21),new(10,14));break;
+            case "restore":Line(new(14,3),new(14,10),new(21,10));Line(new(14,10),new(21,3));Line(new(3,14),new(10,14),new(10,21));Line(new(3,21),new(10,14));break;
             case "calendar":g.DrawRectangle(p,3,5,18,17);Line(new(3,10),new(21,10));Line(new(7,2),new(7,7));Line(new(17,2),new(17,7));break;
             case "tag":Line(new(3,3),new(13,3),new(22,12),new(12,22),new(3,13),new(3,3));g.DrawEllipse(p,7,7,3,3);break;
             case "trash":Line(new(4,6),new(20,6));Line(new(9,6),new(9,3),new(15,3),new(15,6));Line(new(6,6),new(7,22),new(17,22),new(18,6));Line(new(10,10),new(10,18));Line(new(14,10),new(14,18));break;
@@ -164,6 +170,7 @@ internal sealed class WorkspaceTextField:Panel
 {
     private readonly TextBox field;
     private readonly string icon;
+    internal TextBox Field => field;
     internal WorkspaceTextField(TextBox field,string icon)
     {
         this.field=field;this.icon=icon;TabStop=true;AccessibleName=field.PlaceholderText.Length>0?field.PlaceholderText:field.AccessibleName;Cursor=Cursors.IBeam;

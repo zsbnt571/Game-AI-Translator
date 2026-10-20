@@ -17,13 +17,17 @@ internal static class TranslationLanguageSpans
         var entries=new Dictionary<string,string[]>();
         var eligible=new Dictionary<string,string[]>();
         var ambiguous=new Dictionary<string,string[]>();
+        var reviewLatin=new Dictionary<string,string[]>();
         void Add(string key,string value)
         {
             var required=Required(value,settings);if(required.Length>0)entries[key]=required;
-            var translate=EligiblePassages(value,settings,required).ToArray();if(translate.Length>0)eligible[key]=translate;
-            var review=Pieces.Matches(TranslationLanguagePolicy.Plain(value)).Select(m=>m.Value.Trim())
+            var translate=EligiblePassages(value,settings,required,settings.RequestTerms).ToArray();if(translate.Length>0)eligible[key]=translate;
+            var review=Passages(value)
                 .Where(p=>p.Length>=2&&TranslationLanguagePolicy.Languages(p).SetEquals(["han"])&&TranslationLanguagePolicy.ShouldTranslate(p,settings)).ToArray();
             if(review.Length>0)ambiguous[key]=review;
+            var uncertain=Passages(value).Where(p=>TranslationLanguagePolicy.ShouldTranslate(p,settings)&&
+                (TranslationLanguagePolicy.IsAmbiguousLatinWord(p)||TranslationLanguagePolicy.Languages(p).Count>1)).ToArray();
+            if(uncertain.Length>0)reviewLatin[key]=uncertain;
         }
         if(settings.RequestKind==TranslationRequestKind.GameJson)
         {
@@ -39,7 +43,7 @@ internal static class TranslationLanguageSpans
         {
             Add("source",text);
         }
-        if(entries.Count==0&&eligible.Count==0&&ambiguous.Count==0)return "";
+        if(entries.Count==0&&eligible.Count==0&&ambiguous.Count==0&&reviewLatin.Count==0)return "";
         bool endingLabels=eligible.Values.SelectMany(p=>p).Any(TranslationLanguagePolicy.IsOrdinaryEndingLabel);
         string endingGuidance=endingLabels?
             "\nOrdinary game outcome labels listed in translatePassages convey descriptive UI meaning, not a product name or an opaque identifier. Localize their meaning even when they are uppercase beside a Japanese subtitle. Familiarity with English ending labels is not a reason to leave selected foreign words untranslated. Preserve actual target-language subtitles and explicit user glossary exceptions. ":"";
@@ -57,23 +61,86 @@ internal static class TranslationLanguageSpans
             "After identifying its language, apply the source-language scope: "+
             (settings.SourceLanguage==SourceLanguageMode.Auto?"Auto permits any actual source language.":"Only these source languages are selected: "+string.Join(", ",TranslationLanguagePolicy.Selected(settings))+".")+" "+
             "Translate a foreign phrase only when its identified language is allowed by that scope. Preserve a target-language phrase or an unselected-language phrase verbatim. Being foreign to the target does not override the source-language selection. reviewHanPassages="+
-            System.Text.Json.JsonSerializer.Serialize(ambiguous,MessageJson)+endingGuidance;
+            System.Text.Json.JsonSerializer.Serialize(ambiguous,MessageJson)+
+            "\nreviewContextPassages contains uncertain short words or mixed passages without a reliable local boundary. Use the complete item to identify the actual language of each clause or homograph, then apply the selected source languages and preserve target-language or excluded content. This list is NOT an instruction to translate the whole passage. Do not infer a language solely from a shared alphabet, one ambiguous word, or a proper name. reviewContextPassages="+
+            System.Text.Json.JsonSerializer.Serialize(reviewLatin,MessageJson)+endingGuidance+
+            (TranslationLanguagePolicy.Canonical(settings.TargetLanguage)=="zh"&&
+             (settings.SourceLanguage==SourceLanguageMode.Auto||TranslationLanguagePolicy.Selected(settings).Contains("ja"))?
+             "\nFor Japanese dialogue translated into Chinese, also localize readable Japanese names and honorifics consistently with the dialogue. Use the supplied reading and context; do not invent a different identity. Do not leave kana names inside otherwise Chinese sentences merely because they are names. Explicit glossary spellings, verbatim passages, language-menu autonyms and protected variables remain authoritative.":"");
     }
     private static readonly Regex Pieces=new(@"(?:⟦RPG\d+⟧|[A-Za-z\u00c0-\u024f]+(?:[ , '\u2019-]+[A-Za-z\u00c0-\u024f]+)*|[\u3040-\u30ff\uff66-\uff9d\u3400-\u9fff]+|[\uac00-\ud7af\u1100-\u11ff]+(?:[ ,]+[\uac00-\ud7af\u1100-\u11ff]+)*|[\u0400-\u052f]+(?:[ ,]+[\u0400-\u052f]+)*)[,.;:!?。，；：！？]*",RegexOptions.Compiled);
+    private sealed record Projection(string Source,string Plain,int[] Starts,int[] Ends)
+    {
+        internal string Original(int start,int length)
+            =>Source[Starts[start]..Ends[start+length-1]];
+    }
+    private static Projection Project(string source)
+    {
+        // Classification can ignore engine syntax, but verbatim protection must
+        // refer to real source substrings. Retain offsets across removed codes
+        // rather than inventing spans such as "Open the  ," around {door}.
+        var ranges=new List<(int Start,int End)>();int cursor=0;
+        foreach(string code in EmbeddedTranslationText.Protect(source).Codes)
+        {
+            int at=source.IndexOf(code,cursor,StringComparison.Ordinal);
+            if(at<0)continue;
+            ranges.Add((at,at+code.Length));cursor=at+code.Length;
+        }
+        foreach(Match match in Regex.Matches(source,@"⟦RPG\d+⟧|</?[^>]+>|(?:\\|\x1b)[A-Za-z]+\[[^\]]*\]"))
+            ranges.Add((match.Index,match.Index+match.Length));
+        var merged=new List<(int Start,int End)>();
+        foreach(var range in ranges.OrderBy(r=>r.Start).ThenBy(r=>r.End))
+        {
+            if(merged.Count>0&&range.Start<merged[^1].End)
+                merged[^1]=(merged[^1].Start,Math.Max(merged[^1].End,range.End));
+            else merged.Add(range);
+        }
+        var plain=new System.Text.StringBuilder();var starts=new List<int>();var ends=new List<int>();cursor=0;
+        void Add(char value,int start,int end){plain.Append(value);starts.Add(start);ends.Add(end);}
+        foreach(var range in merged)
+        {
+            while(cursor<range.Start){Add(source[cursor],cursor,cursor+1);cursor++;}
+            Add(' ',range.Start,range.End);cursor=range.End;
+        }
+        while(cursor<source.Length){Add(source[cursor],cursor,cursor+1);cursor++;}
+        return new(source,plain.ToString(),starts.ToArray(),ends.ToArray());
+    }
+    private static IEnumerable<string> Passages(string source)
+    {
+        var projection=Project(source);
+        foreach(Match match in Pieces.Matches(projection.Plain))
+        {
+            string passage=match.Value;
+            // A comma is a candidate boundary, not permission to split words,
+            // names or ordinary same-language prose. Both sides need independent
+            // positive evidence and must actually differ in language.
+            var clauseMatches=Regex.Matches(passage,@"[^,]+[,]*").Cast<Match>().ToArray();
+            string[] clauses=clauseMatches.Select(m=>m.Value.Trim()).ToArray();
+            var languages=clauses.Select(TranslationLanguagePolicy.Languages).ToArray();
+            bool distinct=clauses.Length>1&&clauses.All(p=>!TranslationLanguagePolicy.IsAmbiguousLatinWord(p))&&
+                languages.All(l=>l.Count==1&&!l.Overlaps(["han","latin","und"]))&&
+                languages.Select(l=>l.Single()).Distinct(StringComparer.Ordinal).Count()>1;
+            if(distinct)foreach(Match clause in clauseMatches)
+            {
+                int leading=clause.Value.Length-clause.Value.TrimStart().Length;
+                yield return projection.Original(match.Index+clause.Index+leading,clause.Value.Trim().Length);
+            }
+            else yield return projection.Original(match.Index,match.Length);
+        }
+    }
     internal static string[] Required(string source,ApiSettings settings)
     {
         var selected=TranslationLanguagePolicy.Selected(settings).ToHashSet(StringComparer.Ordinal);
-        string target=TranslationLanguagePolicy.Canonical(settings.TargetLanguage);
         var keep=new List<string>();
         // Engine tokens, markup and variable names cannot become language spans.
-        string plain=TranslationLanguagePolicy.Plain(source);
-        foreach(Match match in Pieces.Matches(plain))
+        foreach(string text in Passages(source))
         {
-            string text=match.Value.Trim();if(text.StartsWith("⟦RPG",StringComparison.Ordinal))continue;
+            if(text.StartsWith("⟦RPG",StringComparison.Ordinal))continue;
             var languages=TranslationLanguagePolicy.Languages(text);
             if(languages.Count==0)continue;
-            bool known=languages.All(l=>l is not ("han" or "latin" or "und"));
-            bool targetOnly=known&&languages.SetEquals([target]);
+            // The same script-aware rule drives item and passage protection.
+            // Canonical zh alone cannot lock Hans text under a Hant target.
+            bool targetOnly=TranslationLanguagePolicy.AlreadyTarget(text,settings);
             bool excluded=settings.SourceLanguage!=SourceLanguageMode.Auto&&languages.All(l=>
                 !selected.Contains(l)&&!(l=="han"&&selected.Overlaps(["zh","ja"]))&&
                 !(l=="latin"&&selected.Overlaps(["en","fr","de","es","pt"]))&&l!="und");
@@ -112,6 +179,25 @@ internal static class TranslationLanguageSpans
          Regex.IsMatch(text,@"[\u3400-\u9fff]{2,}の[\u3400-\u9fff]{2,}") ||
          text.Count(c=>c is >= '\u3400' and <= '\u9fff')>=2&&
          Regex.IsMatch(text,@"(?:する|した|して)(?:$|[\u3400-\u9fff]|ください)|(?:です|ます)[。！？!?]*$"));
+
+    // Player-visible Japanese names and labels follow the same readable target
+    // policy as prose. Input cells, variables and explicit keep-original terms
+    // remain protected, and no runtime variable value is rewritten here.
+    internal static bool ResidualJapanese(string source,string translated,ApiSettings settings,
+        IReadOnlyDictionary<string,string>? terms,EmbeddedTextSyntax syntax)
+    {
+        if(TranslationLanguagePolicy.Canonical(settings.TargetLanguage)!="zh"||
+           settings.SourceLanguage!=SourceLanguageMode.Auto&&!TranslationLanguagePolicy.Selected(settings).Contains("ja"))return false;
+        string visibleSource=GameTranslationLiterals.Visible(source,syntax);
+        if(!TranslationLanguagePolicy.ShouldTranslate(visibleSource,settings)||
+           !TranslationLanguagePolicy.Languages(visibleSource).Contains("ja"))return false;
+        string visible=GameTranslationLiterals.Visible(translated,syntax);
+        foreach(string keep in Required(source,settings))visible=visible.Replace(keep,"",StringComparison.Ordinal);
+        if(terms is not null)
+            foreach(var term in terms.OrderByDescending(p=>p.Value.Length))
+                if(term.Value.Length>0&&source.Contains(term.Key,StringComparison.Ordinal))visible=visible.Replace(term.Value,"",StringComparison.Ordinal);
+        return Regex.IsMatch(visible,@"[\u3041-\u3096\u30a1-\u30fa\uff66-\uff9d][\u3041-\u3096\u30a1-\u30fa\uff66-\uff9d\u30fc\uff70]+",RegexOptions.CultureInvariant);
+    }
     // Short Korean questions are ordinary dialogue, even when a longer English
     // clause is beside them. A bare name or isolated Hangul label is not enough.
     private static bool IsOrdinaryKoreanQuestion(string text) =>
@@ -122,25 +208,28 @@ internal static class TranslationLanguageSpans
     {
         var required=(protectedPassages??Required(source,settings)).ToHashSet(StringComparer.Ordinal);
         string target=TranslationLanguagePolicy.Canonical(settings.TargetLanguage);
-        foreach(Match match in Pieces.Matches(TranslationLanguagePolicy.Plain(source)))
+        foreach(string part in Passages(source))
         {
-            string part=match.Value.Trim();
             if(required.Contains(part)||part.StartsWith("⟦RPG",StringComparison.Ordinal)||
                 !TranslationLanguagePolicy.ShouldTranslate(part,settings)||
-                terms is not null&&terms.Any(p=>p.Key.Equals(part,StringComparison.OrdinalIgnoreCase)&&p.Value.Equals(part,StringComparison.OrdinalIgnoreCase)))continue;
+                terms is not null&&TranslationGlossary.IdentityCovers(part,terms))continue;
             var languages=TranslationLanguagePolicy.Languages(part);
-            int words=Regex.Matches(part,@"[\p{L}]+(?:['’][\p{L}]+)?").Count;
-            if(languages.Contains("ja")&&target!="ja"&&IsOrdinaryJapanesePassage(part))yield return part;
-            else if(languages.Contains("ko")&&target!="ko"&&(part.Length>=8||IsOrdinaryKoreanQuestion(part)))yield return part;
+            // A mixed passage with no trustworthy clause boundary goes to
+            // contextual review, never to a mandatory whole-passage rewrite.
+            if(languages.Count!=1||TranslationLanguagePolicy.IsAmbiguousLatinWord(part))continue;
+            string visible=TranslationLanguagePolicy.Plain(part);
+            int words=Regex.Matches(visible,@"[\p{L}]+(?:['’][\p{L}]+)?").Count;
+            if(languages.Contains("ja")&&target!="ja"&&IsOrdinaryJapanesePassage(visible))yield return part;
+            else if(languages.Contains("ko")&&target!="ko"&&(visible.Length>=8||IsOrdinaryKoreanQuestion(visible)))yield return part;
             else if(languages.Contains("ru")&&target!="ru"&&words>=3)yield return part;
             // Shared Han goes only to reviewHanPassages. Marking it as a
             // mandatory translation contradicts source selection before its
             // actual Chinese/Japanese language has been determined.
-            else if(languages.Contains("zh")&&target!="zh"&&part.Length>=6)yield return part;
+            else if(languages.Contains("zh")&&visible.Length>=6)yield return part;
             else if(languages.Any(l=>l is "fr" or "de" or "es" or "pt")&&words>=3)yield return part;
-            else if(languages.SetEquals(["en"])&&target!="en"&&TranslationLanguagePolicy.IsOrdinaryEndingLabel(part))yield return part;
-            else if(languages.Contains("en")&&words>=2&&TranslationLanguagePolicy.HasOrdinaryEnglishPhrase(part))yield return part;
-            else if(languages.SetEquals(["en"])&&target!="en"&&Regex.IsMatch(part,@"^(?:save|load|start|settings|continue|cancel|confirm|resume|quit|inventory)$",RegexOptions.IgnoreCase))yield return part;
+            else if(languages.SetEquals(["en"])&&target!="en"&&TranslationLanguagePolicy.IsOrdinaryEndingLabel(visible))yield return part;
+            else if(languages.Contains("en")&&words>=2&&TranslationLanguagePolicy.HasOrdinaryEnglishPhrase(visible))yield return part;
+            else if(languages.SetEquals(["en"])&&target!="en"&&Regex.IsMatch(visible,@"^(?:save|load|start|settings|continue|cancel|confirm|resume|quit|inventory|character|expression|weapon|weapons|armor|equipment|item|items|skill|skills|jobs|status|help|title|exit|gold|reward|name|weekday|outfit|magic)$",RegexOptions.IgnoreCase))yield return part;
         }
     }
 }
