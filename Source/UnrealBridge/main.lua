@@ -595,6 +595,51 @@ local function poll()
  end
  return texts,readOnly,diagnostics
 end
+local translationCatalogLoaded=false
+local function ensureTranslationCatalog()
+ if translationCatalogLoaded then return end
+  local data=parse('catalog.json',32*1024*1024) or {protocol=76,entries={},skipped=0}
+  assert(data.protocol==76,'Catalog version mismatch')
+  skipped=data.skipped or 0
+  -- Retain conflicts before scheduling any candidate writes. In particular,
+  -- a duplicate row must not silently replace a different source under one ID.
+  local candidateSources={}
+  for _,e in ipairs(data.entries) do
+   if validIdentity(e) then
+    local id=e.ns..'\0'..e.key
+    if candidateSources[id] and candidateSources[id]~=e.source then
+     if not candidateConflicts[id] then integration.conflictingIdentities=integration.conflictingIdentities+1 end
+     candidateConflicts[id]=true;blockedIdentities[id]=true
+    else candidateSources[id]=e.source end
+   else integration.invalidIdentities=integration.invalidIdentities+1
+   end
+  end
+  for _,e in ipairs(data.entries) do
+   enqueue(function()
+    if #entries>=100000 then return end
+    if validIdentity(e) then
+     local id=e.ns..'\0'..e.key
+     if candidateConflicts[id] then skipped=skipped+1;return end
+     if identities[id] then integration.duplicateIdentities=integration.duplicateIdentities+1;return end
+     identities[id]=e
+     if existingChinese(e) then protectedFontTexts[e.source]=true;return end
+     local value=original(e,culture)
+     local source=activeSource(e,culture)
+     if source and (value==source or (isCandidate(e) and value==nil)) then
+      admitEntry(e)
+     else skipped=skipped+1;preserved[#preserved+1]={e=e,value=value};protectDisplay(value) end
+    end
+   end)
+  end
+  -- Display-only strings carry no namespace/key and must never enter native
+  -- registration. Prepare complete dialogue now; the live-widget path still
+  -- validates instance, source and delegate at the moment of display.
+  for _,source in ipairs(data.displaySources or {}) do
+   if type(source)=='string' then enqueue(function()prepareSource(source);textStream.add(source)end) end
+  end
+ translationCatalogLoaded=true
+ enqueue(function() discoverRuntime(true) end)
+end
 local function command(r)
  if r.op=='translationDisable' then resumeAfterCulture=false end
  -- Even an immediate disable after switching language must discover the new
@@ -603,10 +648,11 @@ local function command(r)
  if stopping then enabled=false end
  local cultureChanged=currentCulture()
  if r.op=='translationPrepare' then
+  ensureTranslationCatalog()
   epoch=epoch+1;if not r.retainStartup then if not cultureChanged then restore() end;translations={};displayTranslations={};slate.clear() end
   return {epoch=epoch}
  elseif r.op=='translationDisable' then epoch=epoch+1;if not cultureChanged then restore() end;return {epoch=epoch}
- elseif r.op=='translationEnable' then enabled=true;applyAll();return {epoch=epoch}
+ elseif r.op=='translationEnable' then ensureTranslationCatalog();enabled=true;applyAll();return {epoch=epoch}
  elseif r.op=='translationApply' then
   if r.epoch~=epoch then return {epoch=epoch,stale=true,stored=0,applied=0} end
   if not enabled and not r.prime then return {epoch=epoch,stored=0,applied=0,disabled=true} end
@@ -700,45 +746,7 @@ schedule(function()
   local b=native(probeB,'Fusion runtime shared display',culture)
   runtime.probe({{text=a,ns=probeA.ns,key=probeA.key,source=probeA.source},{text=b,ns=probeB.ns,key=probeB.key,source=probeB.source}})
   native(probeA,probeA.source,culture);native(probeB,probeB.source,culture)
-  local data=parse('catalog.json',32*1024*1024) or {protocol=76,entries={},skipped=0}
-  assert(data.protocol==76,'Catalog version mismatch')
-  skipped=data.skipped or 0
-  -- Retain conflicts before scheduling any candidate writes. In particular,
-  -- a duplicate row must not silently replace a different source under one ID.
-  local candidateSources={}
-  for _,e in ipairs(data.entries) do
-   if validIdentity(e) then
-    local id=e.ns..'\0'..e.key
-    if candidateSources[id] and candidateSources[id]~=e.source then
-     if not candidateConflicts[id] then integration.conflictingIdentities=integration.conflictingIdentities+1 end
-     candidateConflicts[id]=true;blockedIdentities[id]=true
-    else candidateSources[id]=e.source end
-   else integration.invalidIdentities=integration.invalidIdentities+1
-   end
-  end
-  for _,e in ipairs(data.entries) do
-   enqueue(function()
-    if #entries>=100000 then return end
-    if validIdentity(e) then
-     local id=e.ns..'\0'..e.key
-     if candidateConflicts[id] then skipped=skipped+1;return end
-     if identities[id] then integration.duplicateIdentities=integration.duplicateIdentities+1;return end
-     identities[id]=e
-     if existingChinese(e) then protectedFontTexts[e.source]=true;return end
-     local value=original(e,culture)
-     local source=activeSource(e,culture)
-     if source and (value==source or (isCandidate(e) and value==nil)) then
-      admitEntry(e)
-     else skipped=skipped+1;preserved[#preserved+1]={e=e,value=value};protectDisplay(value) end
-    end
-   end)
-  end
-  -- Display-only strings carry no namespace/key and must never enter native
-  -- registration. Prepare complete dialogue now; the live-widget path still
-  -- validates instance, source and delegate at the moment of display.
-  for _,source in ipairs(data.displaySources or {}) do
-   if type(source)=='string' then enqueue(function()prepareSource(source);textStream.add(source)end) end
-  end
+  if os.getenv('FUSION_UNREAL_TRANSLATION')=='1' then ensureTranslationCatalog() end
   local startup=parse('startup.json',32*1024*1024)
   if type(startup)=='table' and startup.secret==secret and type(startup.entries)=='table' then
    for source,text in pairs(startup.entries) do
@@ -752,7 +760,6 @@ schedule(function()
     if bounded(source,24000,false) and bounded(text,48000,false) then displayTranslations[source]=text;textStream.add(source);fontTexts[text]=true;fontUpdateNeeded=true end
    end
   end
-  enqueue(function() discoverRuntime(true) end)
   enqueue(function() enabled=os.getenv('FUSION_UNREAL_TRANSLATION')=='1';if enabled then applyAll() end end)
 end,function(ok,err)
  if not ok then write('hello.json',{protocol=76,secret=secret,error=tostring(err):sub(1,1024)});stopped=true end

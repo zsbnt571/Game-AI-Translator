@@ -22,7 +22,7 @@ internal sealed class WpfRenpyModificationWorkspace : WC.StackPanel, IDisposable
     private bool syncing;
     private bool disposed;
     private RenpyEditSession? edit;
-    internal WpfRenpyModificationWorkspace(IRenpyWorkspaceHost host)
+    internal WpfRenpyModificationWorkspace(IRenpyWorkspaceHost host, System.Windows.FrameworkElement? gameSpeed = null)
     {
         this.host = host; var state = host.NativeRenpy;
         bindings.Add(() => { changedOnly.Content=UiLanguage.Text("只看变化"); boolean.Content=UiLanguage.Text("开启 / 已拥有"); });
@@ -34,9 +34,9 @@ internal sealed class WpfRenpyModificationWorkspace : WC.StackPanel, IDisposable
             var tab=WpfThemeResources.Button(item.Item2,null,()=>host.NativeRenpyScope(item.Item1));tab.Height=36;tab.Margin=new(0,3,8,3);Id(tab,"RenpyScope"+item.Item1);categories.Children.Add(tab);
             bindings.Add(()=>WpfThemeResources.SetButton(tab,item.Item2,null,state.Scope==item.Item1));
         }
+        Add(Row(Button(state.Launch,"play","launch",true),Button(state.Toggle,"play","toggle"),Button(state.Refresh,"refresh","refresh"),Button(state.Undo,"back","undo")));
         Add(categories);
-        Add(Row(Button(state.Launch,"play","launch",true),Button(state.Refresh,"refresh","refresh"),Button(state.Undo,"back","undo")));
-        var speedControl=new WpfGameSpeedControl();Add(speedControl);bindings.Add(()=>{speedControl.SetState(ModificationSpeedState.Unavailable);Show(speedControl,state.Scope==5);});
+        if(gameSpeed is not null){Add(gameSpeed);bindings.Add(()=>Show(gameSpeed,state.Scope==5));}
         var commonHint=Text("常用显示金钱、已收藏的变量及名称明确的属性候选。请核对原始变量路径和当前值；未识别的项目仍可在变量中查找。");Add(commonHint);bindings.Add(()=>Show(commonHint,state.Scope==5));
         Add(Row(Button(state.FinderToggle, "search", "finder"), Label(() => state.Status)));
         var finder = new WC.StackPanel(); finder.Children.Add(Row(finderValue, Button(state.FinderBegin, "search", "begin"), comparison, Button(state.FinderNarrow, "search", "narrow"), Button(state.FinderReset, "back", "reset"))); finder.Children.Add(Label(() => state.FinderStatus)); Add(finder);

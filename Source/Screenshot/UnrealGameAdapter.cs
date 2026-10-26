@@ -206,7 +206,7 @@ internal static class UnrealGameAdapter
         }
         UnrealBuildProfiles.Add(engine,result);return result;
     }
-    internal static void Install(string exe)
+    internal static void Install(string exe,bool prepareCatalog=true)
     {
         var engine=Detect(exe)??throw new IOException("无法确认虚幻的实际游戏入口或引擎版本。");
         if(!Candidate(engine))throw new EmbeddedCompatibilityException("已识别 UE "+engine.Version+"；当前游戏尚未通过内嵌接入所需的结构与接口检查。");
@@ -219,13 +219,13 @@ internal static class UnrealGameAdapter
             {
                 if(UnrealComponentCompatibility.FindConflict(root,ownedPayloadInstalled:true) is {} added)
                     throw new IOException("检测到后来加入的 "+added+"，未叠加加载翻译组件。");
-                PrepareCatalog(exe,engine);return;
+                if(prepareCatalog)PrepareCatalog(exe,engine);return;
             }
         }
         if(HasRecord(exe))Restore(exe);
         if(UnrealComponentCompatibility.FindConflict(root,ownedPayloadInstalled:false) is {} conflict)
             throw new IOException("游戏已有 "+conflict+" 组件；已保留，当前不能叠加安装虚幻翻译。");
-        PrepareCatalog(exe,engine);
+        if(prepareCatalog)PrepareCatalog(exe,engine);
         var record=new Ledger(engine.Runtime,engine.Runtime,payload.ToDictionary(p=>p.Key,p=>Convert.ToHexString(SHA256.HashData(p.Value)),StringComparer.OrdinalIgnoreCase));
         foreach(var p in payload)if(File.Exists(SafePath(root,p.Key)))throw new IOException("游戏已有同名组件，未覆盖。");
         PortableDataStorage.WriteJson(Record(exe),record);

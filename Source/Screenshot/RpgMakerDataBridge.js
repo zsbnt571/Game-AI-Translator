@@ -18,7 +18,7 @@
         function sync() {
             if (party !== g.$gameParty || variables !== g.$gameVariables || switches !== g.$gameSwitches) {
                 party = g.$gameParty; variables = g.$gameVariables; switches = g.$gameSwitches;
-                locks = Object.create(null); history = []; generation++;if(advanced){advanced.disable(false);if(enabled)advanced.enable();}
+                locks = Object.create(null); history = []; generation++;if(advanced){var rate=advanced.descriptor("option:speed").read();advanced.disable(false);if(enabled){advanced.enable();advanced.descriptor("option:speed").write(rate);}}
             }
         }
         function ready() { return !!(party && variables && switches && g.$dataSystem && g.$gameActors && g.$gameMap && g.$gameMap.mapId()>0); }
@@ -138,21 +138,32 @@
             var limit=integer(q.limit||80,1,10000);result.rows=keys.slice(offset,offset+limit).map(row);return result;
         }
         function tick() {
-            sync();if(!enabled || !ready())return;
+            if(!enabled)return;sync();if(!ready())return;
             Object.keys(locks).forEach(function(k){try{var d=descriptor(k),v=locks[k];validate(d,v);if(d.read()!==v){d.write(v);if(d.read()!==v)fail("游戏不再接受此值。");}}catch(e){delete locks[k];lastError="已解除失效锁定："+e.message;}});
             if(advanced)advanced.tick();
         }
-        function disable(){enabled=false;locks=Object.create(null);history=[];if(advanced)advanced.disable();if(timer!==null){g.clearInterval(timer);timer=null;}return {enabled:false};}
+        function disable(){enabled=false;generation++;locks=Object.create(null);history=[];party=variables=switches=undefined;if(advanced)advanced.disable();if(timer!==null){g.clearInterval(timer);timer=null;}return {enabled:false};}
         function command(q) {
-            if(!q || typeof q.op!=="string")fail("请求无效。");sync();
-            if(q.op==="snapshot")return snapshot(q);
-            if(q.op==="status")return {ready:ready(),enabled:enabled,generation:generation,lockCount:Object.keys(locks).length,inBattle:!!(party&&party.inBattle())};
+            if(!q || typeof q.op!=="string")fail("请求无效。");
+            if(q.op==="gameSpeed"){
+                if(!enabled)fail("游戏修改尚未开启。");
+                if(!advanced||!g.Utils||!/^(MV|MZ)$/.test(g.Utils.RPGMAKER_NAME)||!g.SceneManager)fail("当前游戏尚未提供速度控制。");
+                if(Object.prototype.hasOwnProperty.call(q,"rate")){
+                    advanced.descriptor("option:speed").write(integer(q.rate,1,100));
+                }
+                var speedState=advanced.speedStatus();if(!speedState.supported||!speedState.enabled)fail(speedState.reason||"当前游戏尚未提供场景逻辑变速。");return speedState;
+            }
             if(q.op==="disable")return disable();
             if(q.op==="enable"){
                 if(!g.Utils || !/^(MV|MZ)$/.test(g.Utils.RPGMAKER_NAME))fail("当前窗口不是支持的 RPG Maker MV/MZ 游戏。");
-                enabled=true;if(advanced)advanced.enable();if(timer===null)timer=g.setInterval(tick,250);return {enabled:true};
+                try{enabled=true;sync();if(advanced)advanced.enable();if(timer===null)timer=g.setInterval(tick,250);return {enabled:true};}catch(e){disable();throw e;}
             }
-            requireReady();if(!enabled)fail("游戏修改尚未开启。");
+            // A disabled status is transport metadata only, never a game-data read.
+            if(q.op==="status"&&!enabled)return {ready:false,enabled:false,generation:generation,lockCount:0,inBattle:false};
+            if(!enabled)fail("游戏修改尚未开启。");
+            if(q.op==="snapshot")return snapshot(q);
+            if(q.op==="status"){sync();return {ready:ready(),enabled:true,generation:generation,lockCount:Object.keys(locks).length,inBattle:!!(party&&party.inBattle())};}
+            requireReady();
             if(q.generation!==generation)fail("存档或游戏状态已更换，请刷新后重新选择。");
             if(q.op==="eventConditions")return eventConditions(q);
             if(q.op==="describe")return {rows:(q.keys||[]).slice(0,80).map(row)};
@@ -218,7 +229,7 @@
         socket.on("data",function(chunk){
             buffer+=chunk;if(buffer.length>524288){socket.destroy();return;}
             var end;while((end=buffer.indexOf("\n"))>=0){var line=buffer.slice(0,end);buffer=buffer.slice(end+1);var request;
-                try{request=JSON.parse(line);if(request.op==="snapshot")request.lookup=translation.lookup;var result=request.op.indexOf("translation")==0?translation.command(request):adapter.command(request);if(request.op==="snapshot"||request.op==="describe")result.rows.forEach(function(row){row.chinese=translation.lookup(row.name);translation.capture(row.name,null,false);if(row.description){row.descriptionChinese=translation.lookup(row.description);translation.capture(row.description,null,false);}});if(request.op==="maps")result.maps.forEach(function(m){m.chinese=translation.lookup(m.name);translation.capture(m.name,null,false);});if(request.op==="actorDetails")["skills","states"].forEach(function(kind){result[kind].forEach(function(e){e.chinese=translation.lookup(e.name);translation.capture(e.name,null,false);});});socket.write(JSON.stringify({id:request.id,ok:true,result:result})+"\n");}
+                try{request=JSON.parse(line);if(request.op==="snapshot")request.lookup=translation.lookup;var result=(request.op.indexOf("translation")==0||request.op==="fontPreferences")?translation.command(request):adapter.command(request);if(request.op==="snapshot"||request.op==="describe")result.rows.forEach(function(row){row.chinese=translation.lookup(row.name);translation.capture(row.name,null,false);if(row.description){row.descriptionChinese=translation.lookup(row.description);translation.capture(row.description,null,false);}});if(request.op==="maps")result.maps.forEach(function(m){m.chinese=translation.lookup(m.name);translation.capture(m.name,null,false);});if(request.op==="actorDetails")["skills","states"].forEach(function(kind){result[kind].forEach(function(e){e.chinese=translation.lookup(e.name);translation.capture(e.name,null,false);});});if(result&&typeof result.then==="function"){(function(requestId,pending){pending.then(function(value){socket.write(JSON.stringify({id:requestId,ok:true,result:value})+"\n");},function(error){socket.write(JSON.stringify({id:requestId,ok:false,error:String(error.message||error).slice(0,300)})+"\n");});})(request.id,result);}else socket.write(JSON.stringify({id:request.id,ok:true,result:result})+"\n");}
                 catch(error){socket.write(JSON.stringify({id:request && request.id || 0,ok:false,error:String(error.message || error).slice(0,300)})+"\n");}
             }
         });

@@ -86,13 +86,15 @@ internal sealed class WpfWorkspaceWindow : W.Window
     private readonly WC.Grid caption = new() { Height = 40 };
     private readonly WC.StackPanel tabs = new() { Orientation = WC.Orientation.Horizontal };
     private readonly WC.Button pin = new(), theme = new(), minimize = new(), maximize = new(), close = new();
-    private readonly WC.Image themeGlyph = new() { Width = 19, Height = 19 };
-    private static readonly WM.Geometry MaximizeGeometry = CaptionGeometry("M 1,1 H 11 V 11 H 1 Z");
-    private static readonly WM.Geometry RestoreGeometry = CaptionGeometry("M 3,1 H 11 V 9 H 9 M 1,3 H 9 V 11 H 1 Z");
-    private readonly System.Windows.Shapes.Path minimizeGlyph = CaptionGlyph(CaptionGeometry("M 1,6 H 11"));
+    private static readonly WM.Geometry SunGeometry = CaptionGeometry("M 11.5,8 A 3.5,3.5 0 1 1 4.5,8 A 3.5,3.5 0 1 1 11.5,8 M 8,1 V 2.5 M 8,13.5 V 15 M 1,8 H 2.5 M 13.5,8 H 15 M 3,3 L 4.1,4.1 M 11.9,11.9 L 13,13 M 3,13 L 4.1,11.9 M 11.9,4.1 L 13,3");
+    private static readonly WM.Geometry MoonGeometry = CaptionGeometry("M 14,9.1 C 13.3,12.2 11.1,14 8.1,14 C 4.7,14 2,11.3 2,8 C 2,4.9 4,2.7 6.7,2 C 5.6,4.2 6.1,6.7 7.7,8.3 C 9.3,9.9 11.8,10.5 14,9.1 Z");
+    private static readonly WM.Geometry MaximizeGeometry = CaptionGeometry("M 3,3 H 13 V 13 H 3 Z");
+    private static readonly WM.Geometry RestoreGeometry = CaptionGeometry("M 5,2 H 14 V 11 H 12 M 2,5 H 11 V 14 H 2 Z");
+    private readonly System.Windows.Shapes.Path themeGlyph = CaptionGlyph(MoonGeometry);
+    private readonly System.Windows.Shapes.Path minimizeGlyph = CaptionGlyph(CaptionGeometry("M 3,8 H 13"));
     private readonly System.Windows.Shapes.Path maximizeGlyph = CaptionGlyph(MaximizeGeometry);
-    private readonly System.Windows.Shapes.Path closeGlyph = CaptionGlyph(CaptionGeometry("M 1,1 L 11,11 M 11,1 L 1,11"));
-    private readonly System.Windows.Shapes.Path pinGlyph = CaptionGlyph(CaptionGeometry("M 4,1 L 10,1 M 5,1 L 5,5 3,8 11,8 9,5 9,1 M 7,8 L 7,13"));
+    private readonly System.Windows.Shapes.Path closeGlyph = CaptionGlyph(CaptionGeometry("M 3,3 L 13,13 M 13,3 L 3,13"));
+    private readonly System.Windows.Shapes.Path pinGlyph = CaptionGlyph(CaptionGeometry("M 5,2 H 11 L 10.5,7 L 13,10 H 3 L 5.5,7 Z M 8,10 V 14"));
     private readonly Dictionary<string, (WC.Button Button, WC.Border Line)> navigation = [];
     private readonly Dictionary<string, (string Text, Font Font, int Dpi)> navigationMetrics = [];
     private readonly WC.TextBlock product = new() { Text = "FUSION R1", FontFamily = new("Segoe UI"), FontSize = 12, VerticalAlignment = W.VerticalAlignment.Center };
@@ -188,9 +190,9 @@ internal sealed class WpfWorkspaceWindow : W.Window
     private static System.Windows.Shapes.Path CaptionGlyph(WM.Geometry geometry) => new()
     {
         // All caption commands share one viewport and stroke, independent of text fonts.
-        Data = geometry, Width = 12, Height = 12, Stretch = WM.Stretch.None,
-        StrokeThickness = 1.2, StrokeStartLineCap = WM.PenLineCap.Square,
-        StrokeEndLineCap = WM.PenLineCap.Square, StrokeLineJoin = WM.PenLineJoin.Miter,
+        Data = geometry, Width = 16, Height = 16, Stretch = WM.Stretch.None,
+        StrokeThickness = 1.25, StrokeStartLineCap = WM.PenLineCap.Round,
+        StrokeEndLineCap = WM.PenLineCap.Round, StrokeLineJoin = WM.PenLineJoin.Round,
         IsHitTestVisible = false, Focusable = false
     };
     private IntPtr ConstrainMaximizedWindow(IntPtr hwnd,int message,IntPtr wParam,IntPtr lParam,ref bool handled)
@@ -209,7 +211,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
     }
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     private struct WindowLimits { public Point Reserved,MaxSize,MaxPosition,MinTrackSize,MaxTrackSize; }
-    private static void PrepareButton(WC.Button button, string text, double width, Action action)
+    private void PrepareButton(WC.Button button, string text, double width, Action action)
     {
         button.Content = text; button.Width = width; button.Height = 40;
         button.Padding = new W.Thickness(12, 0, 12, 0); button.BorderThickness = new W.Thickness(0);
@@ -225,9 +227,14 @@ internal sealed class WpfWorkspaceWindow : W.Window
         button.Template = new WC.ControlTemplate(typeof(WC.Button)) { VisualTree = panel };
         W.Automation.AutomationProperties.SetName(button, text);
         W.Shell.WindowChrome.SetIsHitTestVisibleInChrome(button, true);
-        button.MouseEnter += (_, _) => button.Background = WpfDrawing.Brush(UiTheme.Current.Control);
-        button.MouseLeave += (_, _) => button.Background = WpfDrawing.Brush(UiTheme.Current.Main);
+        button.MouseEnter += (_, _) => RefreshCaptionButtonBackground(button, true);
+        button.MouseLeave += (_, _) => RefreshCaptionButtonBackground(button, false);
         button.Click += (_, _) => action();
+    }
+    private void RefreshCaptionButtonBackground(WC.Button button, bool hovering)
+    {
+        var palette = UiTheme.Current;
+        button.Background = WpfDrawing.Brush(hovering ? palette.Control : palette.Main);
     }
     internal void RefreshChrome()
     {
@@ -259,14 +266,16 @@ internal sealed class WpfWorkspaceWindow : W.Window
             W.Automation.AutomationProperties.SetName(button, original.Text);
         }
         foreach (var button in new[] { pin, theme, minimize, maximize, close })
-        { button.Background = WpfDrawing.Brush(p.Main); button.Foreground = WpfDrawing.Brush(p.SecondaryText); }
-        themeGlyph.Source = WpfDrawing.Icon(p.Main.GetBrightness() < .5f ? "sun" : "moon", p.SecondaryText);
-        foreach (var glyph in new[] { minimizeGlyph, maximizeGlyph, closeGlyph })
+        { RefreshCaptionButtonBackground(button,button.IsMouseOver); button.Foreground = WpfDrawing.Brush(p.SecondaryText); }
+        bool dark=p.Main.GetBrightness()<.5f;
+        themeGlyph.Data = dark ? SunGeometry : MoonGeometry;
+        foreach (var glyph in new[] { themeGlyph, minimizeGlyph, maximizeGlyph, closeGlyph })
             glyph.Stroke = WpfDrawing.Brush(p.SecondaryText);
         theme.Content = themeGlyph; minimize.Content = minimizeGlyph;
-        pinGlyph.Stroke=WpfDrawing.Brush(Topmost?Color.White:p.SecondaryText);
-        pinGlyph.Fill=Topmost?System.Windows.Media.Brushes.White:System.Windows.Media.Brushes.Transparent;
-        pin.Background=WpfDrawing.Brush(Topmost?p.Accent:p.Main);pin.Content=pinGlyph;
+        var pinColor=Topmost?(dark?Color.White:Color.FromArgb(66,66,66)):p.SecondaryText;
+        pinGlyph.Stroke=WpfDrawing.Brush(pinColor);
+        pinGlyph.Fill=Topmost?WpfDrawing.Brush(pinColor):WM.Brushes.Transparent;
+        pin.Content=pinGlyph;
         pin.ToolTip=UiLanguage.Text(Topmost?"取消置顶":"窗口置顶");
         W.Automation.AutomationProperties.SetName(pin,(string)pin.ToolTip);
         maximize.Content = maximizeGlyph; close.Content = closeGlyph;

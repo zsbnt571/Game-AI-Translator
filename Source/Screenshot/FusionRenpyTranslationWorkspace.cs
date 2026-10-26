@@ -8,7 +8,7 @@ public sealed partial class MainForm
     private async Task ReconnectRenpyAsync(GameInfo game)
     {
         var session=_gameSessions.Get(game);if(session.Busy)return;
-        session.Busy=true;session.Feedback="正在重新连接，游戏可继续运行…";RenderGameSessionState();
+        session.Busy=true;session.TranslationRuntimePending=true;session.Feedback="正在重新连接，游戏可继续运行…";RenderGameSessionState();
         RpgGameDataConnection? pipe=null;
         try
         {
@@ -16,20 +16,22 @@ public sealed partial class MainForm
             if(_scriptTranslationSessions.Remove(game.ExePath,out var old))old.Dispose();
             pipe=new(game.ExePath);pipe.PrepareRenpyReconnect();
             await pipe.AcceptAsync(_desktopLifetime.Token);
+            await pipe.RequestAsync(new(){["op"]="dataDisable"});
             var settings=_fusion.GameSettings(UiSettings,game.ExePath);
             var data=new GameDataSession(pipe);_scriptTranslationSessions[game.ExePath]=data;
             data.Translation=new(pipe,game.ExePath,settings,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text);
             await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback="已重新连接并继续翻译。";
         }
         catch(Exception error){pipe?.Dispose();session.Feedback=SafeDiagnosticOutput.ExceptionSummary(error);}
-        finally{session.Busy=false;if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
+        finally{session.TranslationRuntimePending=false;session.Busy=false;if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
     }
     private async Task LaunchScriptTranslationSessionAsyncFor(GameInfo game,string action)
     {
         if(action is not ("plain" or "launch" or "modify" or "install" or "restore"))throw new ArgumentOutOfRangeException(nameof(action));
+        if(action=="plain"){await LaunchOrdinaryGameSessionAsyncFor(game);return;}
         var session=_gameSessions.Get(game);string root=RecentGameStore.Normalize(Path.GetDirectoryName(game.ExePath)!);
         if(session.Busy||session.LaunchPending||_gameRootOperations.ContainsKey(root))return;
-        session.Busy=true;_gameRootOperations[root]=session;RenderGameSessionState();IGameDataConnection? connection=null;
+        session.Busy=true;session.TranslationRuntimePending=action is "launch" or "modify";_gameRootOperations[root]=session;RenderGameSessionState();IGameDataConnection? connection=null;
         string engine="Ren’Py";
         try
         {
@@ -59,10 +61,11 @@ public sealed partial class MainForm
             // the launcher exiting as proof that the runtime has failed.
             await EmbeddedLaunchWait.AcceptAsync(pipe,process,_desktopLifetime.Token,progress=>
             {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}},observeLaunchedProcessExit:false);
-            if(action is "modify" or "plain")
+            if(action=="modify")
             {
                 await connection.RequestAsync(new(){["op"]="translationDisable"});
-                session.Feedback="";
+                await connection.RequestAsync(new(){["op"]="dataEnable"});data.Enabled=true;
+                session.Feedback="修改已开启，翻译保持独立。";
                 return;
             }
             data.Translation=new(connection,game.ExePath,settings!,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text);
@@ -72,6 +75,6 @@ public sealed partial class MainForm
         {
             connection?.Dispose();session.Feedback=ex is OperationCanceledException?"未收到翻译连接；游戏保持原样运行。":SafeDiagnosticOutput.ExceptionSummary(ex);
         }
-        finally{session.Busy=false;_gameRootOperations.Remove(root);if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
+        finally{session.TranslationRuntimePending=false;session.Busy=false;_gameRootOperations.Remove(root);if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
     }
 }

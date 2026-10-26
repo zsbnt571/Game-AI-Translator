@@ -3,7 +3,7 @@
 public sealed partial class MainForm
 {
     private static bool CanResetMachineTranslations(GameInfo game)=>EmbeddedGameAdapters.Handles(game)
-        ||game.AdapterId=="renpy"||RpgMakerDataAdapter.Detect(game.ExePath) is not null||CatalogTranslationPreparation.Supports(game.Engine);
+        ||game.AdapterId=="renpy"||RpgMakerDataAdapter.Detect(game.ExePath) is not null||CatalogTranslationPreparation.Supports(game);
     private async Task ResetMachineTranslationsAsync(GameInfo game)
     {
         var session=_gameSessions.Get(game);string root=RecentGameStore.Normalize(Path.GetDirectoryName(game.ExePath)!);

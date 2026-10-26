@@ -7,6 +7,29 @@ function createFusionNovelTranslation(g, engine) {
     const hooks=[], nodes=new Map(), attributes=new Map(), dirty=new Set(), settling=new Set();
     let observer=null, observedBody=null, installed=false, applied=0, walk=null, scanAgain=false;
     let watchedFonts=null;
+    const fontLeases=new Map();
+    const customFont=typeof createFusionGameFontPolicy==='function'?createFusionGameFontPolicy(g,g.__fusionGameFontOptions,()=>refresh()):null;
+    function restoreFont(element){
+        const lease=fontLeases.get(element);if(!lease)return;
+        if(element.style&&element.style.getPropertyValue('font-family')===lease.owned&&element.style.getPropertyPriority('font-family')==='important'){
+            if(lease.original)element.style.setProperty('font-family',lease.original,lease.priority);else element.style.removeProperty('font-family');
+        }
+        fontLeases.delete(element);
+    }
+    function applyFont(element,translated){
+        const selected=enabled&&translated&&customFont&&customFont.family();
+        if(!element||!element.style)return;
+        if(!selected){restoreFont(element);return;}
+        let lease=fontLeases.get(element);
+        if(!lease||element.style.getPropertyValue('font-family')!==lease.owned||element.style.getPropertyPriority('font-family')!=='important'){
+            if(!lease&&fontLeases.size>=4096)return;
+            lease={original:element.style.getPropertyValue('font-family'),priority:element.style.getPropertyPriority('font-family')};
+            fontLeases.set(element,lease);
+        }
+        // Set a CSS property rather than generating a stylesheet. Preserve all
+        // authored sizes, styles and line boxes, and release only our own value.
+        element.style.setProperty('font-family',JSON.stringify(selected),'important');lease.owned=element.style.getPropertyValue('font-family');
+    }
     const key=s=>s.replace(/\r\n?/g,'\n');
     const valid=s=>typeof s==='string'&&s.trim().length>0&&s.length<=6000&&!s.includes('\0')&&/[A-Za-z\u00c0-\u2fff\u3040-\u9fff\uac00-\ud7af]/.test(s);
     const tokens=s=>s.match(/<\/?[A-Za-z][^>\r\n]{0,160}>|\[(?:[^\]\r\n]{1,160})\]|\{[^{}\r\n]{1,160}\}|%(?:\([A-Za-z_][A-Za-z_0-9]*\))?[sdif]|\\[A-Za-z]+(?:\[[^\]\r\n]*\])?/g)||[];
@@ -120,6 +143,7 @@ function createFusionNovelTranslation(g, engine) {
         let r=nodes.get(node);
         if(!eligible(node)){
             if(r&&node.nodeValue===r.shown&&r.shown!==r.source)node.nodeValue=r.source;
+            restoreFont(node.parentElement);
             nodes.delete(node);settling.delete(node);return;
         }
         const actual=node.nodeValue,now=Date.now();
@@ -135,6 +159,7 @@ function createFusionNovelTranslation(g, engine) {
         if(r.until>now){settling.add(node);return;}settling.delete(node);
         const wanted=text(r.source);
         if(wanted!==actual){node.nodeValue=wanted;r.shown=wanted;applied++;}
+        applyFont(node.parentElement,wanted!==r.source||outputs.has(key(wanted)));
     }
     function requestScan(){if(!enabled)return;if(walk)scanAgain=true;else if(g.document&&g.document.body){dirty.add(g.document.body);walk=g.document.createTreeWalker(g.document.body,5);}}
     function dom(){
@@ -171,6 +196,7 @@ function createFusionNovelTranslation(g, engine) {
         // Detached scenes must not keep a strong reference or consume the next page's budget.
         for(const [node,r] of nodes)if(node.isConnected===false){if(node.nodeValue===r.shown)node.nodeValue=r.source;nodes.delete(node);settling.delete(node);}
         for(const [node,records] of attributes)if(node.isConnected===false){restoreAttributes(node,records);attributes.delete(node);}
+        for(const element of fontLeases.keys())if(element.isConnected===false)restoreFont(element);
     }
     function install(){
         if(!enabled)return false;
@@ -183,12 +209,17 @@ function createFusionNovelTranslation(g, engine) {
         if(observer)observer.disconnect();observer=null;observedBody=null;walk=null;scanAgain=false;dirty.clear();installed=false;
         for(const [node,r] of nodes)if(node.nodeValue===r.shown&&r.source!==r.shown){node.nodeValue=r.source;r.shown=r.source;}
         for(const [node,records] of attributes)restoreAttributes(node,records);
+        for(const element of fontLeases.keys())restoreFont(element);
         nodes.clear();attributes.clear();
         for(const h of hooks){h.active=false;if(h.owner[h.name]===h.replacement)h.owner[h.name]=h.original;}
         hooks.length=0;
     }
     const status=()=>({enabled,epoch,engine,hooked:installed,live:nodes.size+attributes.size,applied,pending:pending.size});
     function command(q){
+        if(q.op==='fontPreferences'){
+            if(!customFont||!customFont.configure)throw Error('Font switching unavailable');
+            return customFont.configure(q).then(receipt=>Object.assign(receipt,{enabled,writebackPending:enabled,restorePending:enabled&&q.mode==='default'}));
+        }
         if(q.op==='translationPrepare'){restore();epoch++;cache=new Map();outputs.clear();pending.clear();queue=[];retry.clear();refresh();return status();}
         if(q.op==='translationEnable'){if(!q.prepared){restore();epoch++;cache.clear();outputs.clear();pending.clear();queue=[];retry.clear();}enabled=true;install();refresh();pump();return status();}
         if(q.op==='translationDisable'){restore();epoch++;pending.clear();queue=[];return status();}

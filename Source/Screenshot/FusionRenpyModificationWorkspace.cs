@@ -22,7 +22,7 @@ public sealed partial class MainForm
     private Control? _renpyDataValueField;
     private readonly Label _renpyDataSortStatus=WpfWorkspace.Enabled ? null! : WorkspaceLabel("名称 · 自然顺序");
     private TableLayoutPanel? _renpyDataNotesPanel;
-    private Button? _renpyDataLaunch,_renpyDataRefresh,_renpyDataApply,_renpyDataUndo,_renpyDataBackup;
+    private Button? _renpyDataLaunch,_renpyDataToggle,_renpyDataRefresh,_renpyDataApply,_renpyDataUndo,_renpyDataBackup;
     private readonly Dictionary<IGameDataConnection,string> _renpyDataBackups=new();
     private List<JsonElement> _renpyDataRows=new();
     private string? _renpyDataPath,_renpyDataSaveDirectory;
@@ -39,9 +39,11 @@ public sealed partial class MainForm
         var panel=new WorkspaceAdaptiveGridColumn{List=_renpyDataGrid,Padding=new(0,8,0,4),Name="RenpyAdaptiveWorkspace"};
         _renpyDataScope.Items.AddRange(["金钱","物品","CG 解锁记录","全部变量","我的常用"]);RenpyScope=0;
         _renpyDataLaunch=IconButton("修改并启动","play",async(_,_)=>await LaunchScriptTranslationSessionAsync("modify"),true,130);
+        _renpyDataToggle=IconButton("开启修改","play",async(_,_)=>await ToggleRenpyModificationAsync(),false,108);
         _renpyDataRefresh=IconButton("刷新数据","refresh",async(_,_)=>await RefreshRenpyDataAsync(),false,108);
         var search=SearchField(_renpyDataSearch);search.Width=260;
-        WorkspaceAdd(panel,WorkspaceRow(_renpyDataScope,search,WorkspaceLabel("只看变化"),_renpyDataChangedOnly,_renpyDataRefresh,_renpyDataLaunch));
+        WorkspaceAdd(panel,WorkspaceRow(_renpyDataLaunch,_renpyDataToggle,_renpyDataRefresh));
+        WorkspaceAdd(panel,WorkspaceRow(_renpyDataScope,search,WorkspaceLabel("只看变化"),_renpyDataChangedOnly));
         BuildRenpyNumericFinder(panel);
         _renpyDataGrid.Columns.Add("label","译名 / 备注");_renpyDataGrid.Columns.Add("name","原文 / 变量路径");_renpyDataGrid.Columns.Add("value","当前值");_renpyDataGrid.Columns.Add("hint","生效范围");
         _renpyDataGrid.Columns[0].FillWeight=25;_renpyDataGrid.Columns[1].FillWeight=30;_renpyDataGrid.Columns[2].FillWeight=16;_renpyDataGrid.Columns[3].FillWeight=29;
@@ -80,7 +82,11 @@ public sealed partial class MainForm
         {if(c is Panel or TableLayoutPanel)c.MouseDown+=BlankClick;foreach(Control child in c.Controls)HookBlank(child);}
         HookBlank(panel);
         _unsupportedModificationPanel=WorkspaceColumn();_unsupportedModificationPanel.AutoSize=true;
-        WorkspaceAdd((TableLayoutPanel)_unsupportedModificationPanel,WorkspaceLabel("此引擎暂未接入游戏修改。当前支持 RPG Maker MV/MZ，以及 Ren’Py 数值和解锁记录。"));
+        _commonModificationToggle=IconButton("开启修改","play",async(_,_)=>await ToggleCommonModificationAsync(),true,144);
+        _commonModificationStatus=WorkspaceLabel("");
+        WorkspaceAdd((TableLayoutPanel)_unsupportedModificationPanel,_commonModificationToggle);
+        WorkspaceAdd((TableLayoutPanel)_unsupportedModificationPanel,_commonModificationStatus);
+        WorkspaceAdd((TableLayoutPanel)_unsupportedModificationPanel,WorkspaceLabel("此游戏暂未提供可读取的通用修改数据。识别到可用能力后，会在这里显示。"));
         return panel;
     }
 
@@ -100,9 +106,9 @@ public sealed partial class MainForm
         if(_renpyDataSaveNote is not null)_renpyDataSaveNote.Enabled=row is not null;
         RenpyInput=row?.GetProperty("value").ToString()??"";
         RenpyBoolean=row?.GetProperty("value").ValueKind==JsonValueKind.True;
-        _renpyDataValue.Enabled=row is not null&&!_renpyDataBusy;_renpyDataBoolean.Enabled=row is not null&&!_renpyDataBusy;
+        _renpyDataValue.Enabled=SelectedScriptTranslationSession()?.Enabled==true&&row is not null&&!_renpyDataBusy;_renpyDataBoolean.Enabled=SelectedScriptTranslationSession()?.Enabled==true&&row is not null&&!_renpyDataBusy;
         _renpyLoading=false;
-        if(_renpyDataApply is not null)_renpyDataApply.Enabled=row is not null&&!_renpyDataBusy&&SelectedScriptTranslationSession()?.Connection is {Connected:true} selected&&ReferenceEquals(_renpyDataSnapshotConnection,selected);
+        if(_renpyDataApply is not null)_renpyDataApply.Enabled=SelectedScriptTranslationSession()?.Enabled==true&&row is not null&&!_renpyDataBusy&&SelectedScriptTranslationSession()?.Connection is {Connected:true} selected&&ReferenceEquals(_renpyDataSnapshotConnection,selected);
     }
     private void FilterRenpyData()
     {
@@ -146,6 +152,7 @@ public sealed partial class MainForm
     }
     private void UpdateRenpyDataStatus()
     {
+        if(SelectedScriptTranslationSession() is {Enabled:false,Connection.Connected:true}){RenpyStatus="已连接 · 修改关闭";return;}
         string group=RenpyScopes[Math.Max(0,RenpyScope)];
         bool filtered=RenpySearch.Trim().Length>0||RenpyChangedOnly||(_renpyNumericFinder.Active&&RenpyFinderVisible);
         int shown=RenpyVisibleCount;
@@ -189,26 +196,29 @@ public sealed partial class MainForm
         }
         var selectedConnection=SelectedScriptTranslationSession()?.Connection;
         bool connected=selectedConnection?.Connected==true;
+        bool enabled=connected&&SelectedScriptTranslationSession()?.Enabled==true;
         if(!ReferenceEquals(selectedConnection,_renpyDataConnection))
         {
             _renpyDataConnection=selectedConnection;_renpyDataSnapshotConnection=null;_renpyDataGeneration=null;_renpyChangedNames.Clear();_renpyDataRows.Clear();_renpyDataGrid.Rows.Clear();_renpyDataSaveDirectory=null;_renpyUndoCount=0;
             _renpySnapshotFailure=false;_renpyDataTruncated=false;_renpyCgIncomplete=false;_renpyDataState="ready";_renpyCgState="notRecognized";_renpyCgRows=0;RenpyStatus="";
             ClearRenpyNumericSession("连接已变化，请进入游戏后重新开始数值查找。");
         }
-        bool stopped=SameGame(_desktopGameState?.Game.ExePath,path)&&_desktopGameState?.Process==FusionGameProcessState.Stopped;
+        bool stopped=SameGame(_desktopGameState?.Game.ExePath,path)&&_desktopGameState?.Process==FusionGameProcessState.Stopped&&_selectedGame is {} selectedGame&&!_gameSessions.Get(selectedGame).LaunchPending;
         _renpyDataLaunch.Visible=!connected;_renpyDataLaunch.Enabled=stopped&&!_renpyDataBusy&&_selectedGame is {} game&&!_gameSessions.Get(game).Busy;
-        _renpyDataRefresh!.Enabled=connected&&!_renpyDataBusy;_renpyDataUndo!.Enabled=connected&&!_renpyDataBusy&&_renpyUndoCount>0;
+        _renpyDataToggle!.Visible=connected;_renpyDataToggle.Enabled=connected&&!_renpyDataBusy;_renpyDataToggle.Text=enabled?"关闭修改":"开启修改";
+        _renpyDataRefresh!.Enabled=enabled&&!_renpyDataBusy;_renpyDataUndo!.Enabled=enabled&&!_renpyDataBusy&&_renpyUndoCount>0;
         _renpyDataBackup!.Visible=SelectedScriptTranslationSession()?.Connection is {} current&&_renpyDataBackups.ContainsKey(current);
-        if(!connected){_renpyDataSnapshotConnection=null;if(_renpyDataGeneration is not null||_renpyNumericFinder.Active){_renpyDataGeneration=null;_renpyChangedNames.Clear();ClearRenpyNumericSession("游戏已断开连接，请重新连接后开始查找。");}_renpyDataRows.Clear();_renpyDataGrid.Rows.Clear();RenpyStatus=stopped?"点击“修改并启动”，进入游戏或读档后刷新。无需开启翻译。":"当前游戏未连接。保存并退出游戏后，使用“修改并启动”连接。";}
+        if(!connected){_renpyDataSnapshotConnection=null;if(_renpyDataGeneration is not null||_renpyNumericFinder.Active){_renpyDataGeneration=null;_renpyChangedNames.Clear();ClearRenpyNumericSession("游戏已断开连接，请重新连接后开始查找。");}_renpyDataRows.Clear();_renpyDataGrid.Rows.Clear();RenpyStatus=_selectedGame is {} pendingGame&&_gameSessions.Get(pendingGame).LaunchPending?"正在等待游戏启动…":stopped?"点击“修改并启动”，进入游戏或读档后刷新。无需开启翻译。":"当前游戏未连接。保存并退出游戏后，使用“修改并启动”连接。";}
+        else if(!enabled){RenpyStatus="已连接 · 修改关闭";}
         else if(RenpyStatus.Length==0&&!_renpyDataBusy)RenpyStatus="已连接。进入游戏或读档后点击“刷新数据”。";
         ((WorkspaceDataGrid)_renpyDataGrid).ApplyPalette();
-        _renpyDataValue.Enabled=_renpyDataBoolean.Enabled=connected&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
-        _renpyDataApply!.Enabled=connected&&ReferenceEquals(_renpyDataSnapshotConnection,selectedConnection)&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
+        _renpyDataValue.Enabled=_renpyDataBoolean.Enabled=enabled&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
+        _renpyDataApply!.Enabled=enabled&&ReferenceEquals(_renpyDataSnapshotConnection,selectedConnection)&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
         RenderRenpyNumericFinder();
     }
     private async Task RefreshRenpyDataAsync(bool preferCached=false)
     {
-        if(_renpyDataBusy||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection)return;
+        if(_renpyDataBusy||SelectedScriptTranslationSession()?.Enabled!=true||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection)return;
         _renpyDataBusy=true;RenderRenpyModificationState();
         try{await LoadRenpySnapshotAsync(game.ExePath,connection,preferCached);}
         catch(Exception ex){if(IsCurrentRenpyConnection(game.ExePath,connection)){_renpySnapshotFailure=true;UpdateRenpyDataStatus();RenpyHint=SafeDiagnosticOutput.ExceptionSummary(ex);}SelectRenpyData();}
@@ -216,6 +226,7 @@ public sealed partial class MainForm
     }
     private async Task LoadRenpySnapshotAsync(string path,IGameDataConnection connection,bool preferCached=false)
     {
+        if(!IsCurrentRenpyConnection(path,connection))return;
         var request=new JsonObject(){["op"]="dataSnapshot"};JsonElement result;bool revalidate=false;
         if(preferCached&&_renpySnapshotsCache.TryGet(path,connection,request,out result,out bool fresh))
         {
@@ -248,10 +259,35 @@ public sealed partial class MainForm
         UpdateRenpyDataStatus();
         if(revalidate)BeginInvoke(()=>{if(IsCurrentRenpyConnection(path,connection))_=RefreshRenpyDataAsync();});
     }
+    private async Task ToggleRenpyModificationAsync()
+    {
+        if(_renpyDataBusy||_selectedGame is not {} game||SelectedScriptTranslationSession() is not {Connection.Connected:true} state)return;
+        var connection=state.Connection;bool enable=!state.Enabled;
+        _renpyDataBusy=true;RenderRenpyModificationState();
+        try
+        {
+            if(!enable){state.Enabled=false;await RevokeModificationSpeedAsync(game);}
+            _renpySnapshotsCache.Invalidate(connection);
+            var result=await connection.RequestAsync(new(){["op"]=enable?"dataEnable":"dataDisable"});
+            state.Enabled=enable&&result.GetProperty("enabled").GetBoolean();
+            if(!SameGame(_selectedGame?.ExePath,game.ExePath)||!ReferenceEquals(SelectedScriptTranslationSession(),state))return;
+            _renpyDataSnapshotConnection=null;_renpyDataGeneration=null;_renpyUndoCount=0;_renpyDataRows.Clear();_renpyChangedNames.Clear();
+            if(WpfWorkspace.Enabled)ClearNativeRenpyRows();else _renpyDataGrid.Rows.Clear();
+            ClearRenpyNumericSession("");SelectRenpyData();
+            RenpyStatus=state.Enabled?"修改已开启 · 翻译可独立开关":"已连接 · 修改关闭";
+            RenpyHint="";
+            if(state.Enabled)await LoadRenpySnapshotAsync(game.ExePath,connection);
+        }
+        catch(Exception ex)
+        {
+            if(SameGame(_selectedGame?.ExePath,game.ExePath)&&ReferenceEquals(SelectedScriptTranslationSession(),state))RenpyHint=SafeDiagnosticOutput.ExceptionSummary(ex);
+        }
+        finally{_renpyDataBusy=false;RenderRenpyModificationState();}
+    }
     private Task WriteRenpyDataAsync(bool undo)=>WriteRenpyCapturedAsync(undo,SelectedRenpyRow(),RenpyBoolean,RenpyInput,_renpyDataSnapshotConnection);
     private async Task WriteRenpyCapturedAsync(bool undo,JsonElement? row,bool boolean,string input,IGameDataConnection? expected)
     {
-        if(_renpyDataBusy||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection)return;
+        if(_renpyDataBusy||SelectedScriptTranslationSession()?.Enabled!=true||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection)return;
         if(!SameGame(_renpyDataPath,game.ExePath)||!ReferenceEquals(_renpyDataSnapshotConnection,connection)){RenderRenpyModificationState();RenpyHint="游戏连接已变化，请刷新数据后再修改。";return;}
         if(!ReferenceEquals(connection,expected)||!undo&&row is null)return;
         if(!undo&&((row!.Value.GetProperty("kind").GetString()=="bool"&&row.Value.GetProperty("value").ValueKind==(boolean?JsonValueKind.True:JsonValueKind.False))||(row.Value.GetProperty("kind").GetString()!="bool"&&row.Value.GetProperty("value").ToString()==input.Trim())))return;

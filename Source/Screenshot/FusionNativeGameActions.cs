@@ -1,6 +1,6 @@
 namespace ScreenshotTranslationUiTester;
 
-internal enum GameDetailAction { Back, Rename, Cover, Folder, Launch, Return, Restart, Toggle, TranslateLaunch, Install, Retry, PrepareText, Manage, Diagnostics, Report, Keys, Screen, Profile, Files, TranslationTab, ModificationTab, CaptureCover }
+internal enum GameDetailAction { Back, Rename, Cover, Folder, Launch, Return, Restart, Toggle, TranslateLaunch, Install, Retry, PrepareText, Manage, Diagnostics, Report, Keys, Screen, Profile, Files, TranslationTab, ModificationTab, CaptureCover, Exit, Font }
 
 public sealed partial class MainForm
 {
@@ -15,10 +15,17 @@ public sealed partial class MainForm
                 case GameDetailAction.Cover: await EditGameArtworkAsync(); break;
                 case GameDetailAction.CaptureCover: await EditGameArtworkAsync(capture:true); break;
                 case GameDetailAction.Folder: await OpenSelectedGameFolderAsync(); break;
-                case GameDetailAction.Launch: await StartLibraryGameAsync(); break;
+                case GameDetailAction.Launch:
+                    if(!GameDetail.SelectionPending&&GameDetail.Launch.Visible&&GameDetail.Launch.Enabled)
+                        await StartLibraryGameAsync();
+                    break;
                 case GameDetailAction.Return: await ReturnToSelectedGameAsync(); break;
                 case GameDetailAction.Restart: await RestartSelectedGameAsync(); break;
-                case GameDetailAction.Toggle: RequestGameSessionTranslation(); break;
+                case GameDetailAction.Exit:
+                    if(!GameDetail.SelectionPending&&GameDetail.Exit.Visible&&GameDetail.Exit.Enabled&&_selectedGame is {} exitGame)
+                        await RequestGameExitAsync(exitGame);
+                    break;
+                case GameDetailAction.Toggle: await RequestGameSessionTranslationAsync(); break;
                 case GameDetailAction.TranslateLaunch: await RunGameActionAsync("launch"); break;
                 case GameDetailAction.Install: await RunGameActionAsync("install"); break;
                 case GameDetailAction.Retry: RetrySessionTranslationFailures(); break;
@@ -29,6 +36,7 @@ public sealed partial class MainForm
                 case GameDetailAction.Keys: OpenKeysSettings(); break;
                 case GameDetailAction.Screen: await RunGameActionAsync("screen"); break;
                 case GameDetailAction.Profile: EditModeProfile(true); break;
+                case GameDetailAction.Font: if(GameDetail.FontEdit.Enabled)EditGameFont(); break;
                 case GameDetailAction.Files: GameDetail.FileDetails=!GameDetail.FileDetails; break;
                 case GameDetailAction.TranslationTab: SelectGameSessionSection(1); break;
                 case GameDetailAction.ModificationTab: SelectGameSessionSection(2); break;
@@ -40,7 +48,6 @@ public sealed partial class MainForm
     internal void NativeGameMenu(string menu,System.Windows.FrameworkElement anchor)
     {
         if(menu=="launch")ShowGameLaunchMenu(null,anchor);
-        else if(menu=="route")ShowTranslationRoute(null,anchor);
         else ShowSessionMenu(null,anchor);
     }
     internal string NativeGameProfileSummary => _fusion is null ? "" : EmbeddedSettings.Model+" · "+TargetLanguageDisplay.DisplayFromCode(EmbeddedSettings.TargetLanguage);

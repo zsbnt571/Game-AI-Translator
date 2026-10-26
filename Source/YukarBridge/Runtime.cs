@@ -81,23 +81,34 @@ internal static class Runtime
         if(testMuted)System.Threading.Thread.Sleep(25);
         lock(Gate)
         {
-            gameMain=__instance;Data.Sync(Field(gameMain,"data"));
+            if(stopped)return;
+            gameMain=__instance;
             long now=Stopwatch.GetTimestamp();if((now-lastTick)*1000/Stopwatch.Frequency<50)return;lastTick=now;
             try
             {
-                if(stopped)return;
-                if(File.Exists(Path.Combine(folder,"stop"))&&File.ReadAllText(Path.Combine(folder,"stop"))==secret){enabled=false;Data.Stop();stopped=true;return;}
-                Data.Tick();var q=Read("request.json",262144);if(q==null||Get(q,"secret")!=secret)return;
-                int id=Convert.ToInt32(q["id"]);if(id<=lastId)return;lastId=id;object result;
-                try{result=Command(q);Write("response-"+id+".json",new{id,secret,ok=true,result});}
-                catch(Exception e){Write("response-"+id+".json",new{id,secret,ok=false,error=(e.InnerException??e).Message});}
+                if(File.Exists(Path.Combine(folder,"stop"))&&File.ReadAllText(Path.Combine(folder,"stop"))==secret){enabled=false;Data.Stop();gameMain=null;stopped=true;return;}
+                var q=Read("request.json",262144);
+                if(q!=null&&Get(q,"secret")==secret)
+                {
+                    int id=Convert.ToInt32(q["id"]);
+                    if(id>lastId)
+                    {
+                        lastId=id;object result;
+                        try{result=Command(q);Write("response-"+id+".json",new{id,secret,ok=true,result});}
+                        catch(Exception e){Write("response-"+id+".json",new{id,secret,ok=false,error=(e.InnerException??e).Message});}
+                    }
+                }
+                // Process disable before touching game data or enforcing locks.
+                // Sync also gates the provider, so translation-only frames do
+                // not traverse the modification data object.
+                Data.Sync(()=>Field(gameMain,"data"));Data.Tick();
             }catch(Exception e){try{File.WriteAllText(Path.Combine(folder,"runtime-error.txt"),e.ToString());}catch{}}
         }
     }
     static object Status()=>new{enabled,epoch,applied=AppliedSources.Count,drawReplacements,measureReplacements,formattedReplacements,live=enabled&&gameMain!=null?1:0,hooked=true};
     static object Command(Dictionary<string,object> q)
     {
-        string op=Get(q,"op");if(op.StartsWith("data",StringComparison.Ordinal))return Data.Command(q);
+        string op=Get(q,"op");if(op.StartsWith("data",StringComparison.Ordinal))return Data.Command(q,()=>Field(gameMain,"data"));
         if(op=="translationStatus")return Status();
         if(op=="translationPrepare")
         {

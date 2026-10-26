@@ -163,7 +163,7 @@ public sealed class TranslationSettingsDialog : Form
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
             var result = await _tester(CaptureSettings(), timeout.Token);
-            _testStatus.Text = result.Success ? $"成功：{result.Message}" : $"{result.Category}：{result.Message}";
+            _testStatus.Text = result.Success ? UiLanguage.FormatTemplate("成功：{0}", UiLanguage.Text(result.Message)) : $"{UiLanguage.Text(result.Category)}：{UiLanguage.Text(result.Message)}";
         }
         catch (Exception ex) { _testStatus.Text = ClassifyException(ex); }
         finally { button.Enabled = true; }

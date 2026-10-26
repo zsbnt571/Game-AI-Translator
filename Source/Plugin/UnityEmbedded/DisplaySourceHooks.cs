@@ -39,7 +39,7 @@ namespace Fusion.UnityEmbedded
         sealed class Instruction {internal int Offset;internal OpCode Code;internal object Value;}
         sealed class Body {internal MethodBase Method;internal List<Instruction> Instructions;internal readonly HashSet<int> UnsafeEntries=new HashSet<int>();}
         sealed class Proof {internal MethodBase Sink;internal int Depth;}
-        sealed class Site {internal int Id;internal string Source;internal MethodInfo Called;internal OpCode CallCode;internal Proof Proof;internal DynamicMethod Wrapper;}
+        sealed class Site {internal int Id;internal string Source;internal MethodInfo Called;internal OpCode CallCode;internal Proof Proof;internal MethodInfo Wrapper;}
         sealed class Plan {internal readonly List<Site> Sites=new List<Site>();internal bool Installed;}
         sealed class BudgetException : Exception {}
 
@@ -150,10 +150,11 @@ namespace Fusion.UnityEmbedded
                     if(!plan.Installed)throw new InvalidOperationException("Display call shape changed before installation.");
                     MethodsPatched++;CallSitesInstalled+=plan.Sites.Count;
                 }
-                catch
+                catch(Exception error)
                 {
                     Failures++;try{harmony.Unpatch(body.Method,rewrite);}catch{}
                     lock(gate){methodOwners.Remove(body.Method);plans.Remove(body.Method);}
+                    if(log!=null){while(error is TargetInvocationException&&error.InnerException!=null)error=error.InnerException;log("Unity complete display hook failed reason="+error.GetType().Name);}
                 }
             }
         }
@@ -211,14 +212,53 @@ namespace Fusion.UnityEmbedded
             }
             plan.Installed=true;return list;
         }
-        DynamicMethod Wrapper(Site site)
+        MethodInfo Wrapper(Site site)
         {
             var parameters=new List<Type>();if(!site.Called.IsStatic)parameters.Add(site.Called.DeclaringType);foreach(var parameter in site.Called.GetParameters())parameters.Add(parameter.ParameterType);
-            var method=new DynamicMethod("FusionCompleteDisplay"+ownerId+"_"+site.Id,typeof(void),parameters.ToArray(),typeof(DisplaySourceHooks),true);
-            var il=method.GetILGenerator();var token=il.DeclareLocal(typeof(Scope));
-            il.Emit(OpCodes.Ldc_I4,ownerId);il.Emit(OpCodes.Ldc_I4,site.Id);il.Emit(OpCodes.Ldarg,(short)(parameters.Count-1));il.Emit(OpCodes.Call,enter);il.Emit(OpCodes.Stloc,token);
-            il.BeginExceptionBlock();for(int i=0;i<parameters.Count;i++)il.Emit(OpCodes.Ldarg,(short)i);il.Emit(site.CallCode,site.Called);
-            il.BeginFinallyBlock();il.Emit(OpCodes.Ldloc,token);il.Emit(OpCodes.Call,leave);il.EndExceptionBlock();il.Emit(OpCodes.Ret);return method;
+            string name="FusionCompleteDisplay"+ownerId+"_"+site.Id;
+            try
+            {
+                var method=new DynamicMethod(name,typeof(void),parameters.ToArray(),typeof(DisplaySourceHooks),true);
+                EmitWrapper(method.GetILGenerator(),site,parameters.Count);return method;
+            }
+            catch(NotSupportedException)
+            {
+                // Some Unity Mono profiles expose Reflection.Emit but reject
+                // dynamic exception blocks. Harmony already ships a portable
+                // DMD/Cecil generator; keep the same call and finally contract.
+                return PortableWrapper(name,site,parameters.ToArray());
+            }
+        }
+        MethodInfo PortableWrapper(string name,Site site,Type[] parameters)
+        {
+            var type=Type.GetType("MonoMod.Utils.DynamicMethodDefinition, MonoMod.Utils",false);
+            if(type==null)throw new NotSupportedException("Portable display wrapper generator is unavailable.");
+            var constructor=type.GetConstructor(new[]{typeof(string),typeof(Type),typeof(Type[])});
+            var generator=type.GetMethod("GetILGenerator",Type.EmptyTypes);var generate=type.GetMethod("Generate",Type.EmptyTypes);
+            if(constructor==null||generator==null||generate==null)throw new NotSupportedException("Portable display wrapper generator API is unavailable.");
+            object definition=null;
+            try
+            {
+                definition=constructor.Invoke(new object[]{name,typeof(void),parameters});
+                var il=generator.Invoke(definition,null) as ILGenerator;if(il==null)throw new NotSupportedException("Portable display wrapper IL generator is unavailable.");
+                EmitWrapper(il,site,parameters.Length);
+                var method=generate.Invoke(definition,null) as MethodInfo;
+                if(method==null)throw new InvalidOperationException("Portable display wrapper generation returned no method.");
+                return method;
+            }
+            finally
+            {
+                // Generate returns an independently owned runtime method. DMD's
+                // temporary Cecil definition is not retained by each call site.
+                var disposable=definition as IDisposable;if(disposable!=null)disposable.Dispose();
+            }
+        }
+        void EmitWrapper(ILGenerator il,Site site,int parameterCount)
+        {
+            var token=il.DeclareLocal(typeof(Scope));
+            il.Emit(OpCodes.Ldc_I4,ownerId);il.Emit(OpCodes.Ldc_I4,site.Id);il.Emit(OpCodes.Ldarg,(short)(parameterCount-1));il.Emit(OpCodes.Call,enter);il.Emit(OpCodes.Stloc,token);
+            il.BeginExceptionBlock();for(int i=0;i<parameterCount;i++)il.Emit(OpCodes.Ldarg,(short)i);il.Emit(site.CallCode,site.Called);
+            il.BeginFinallyBlock();il.Emit(OpCodes.Ldloc,token);il.Emit(OpCodes.Call,leave);il.EndExceptionBlock();il.Emit(OpCodes.Ret);
         }
         static Scope Enter(int ownerId,int siteId,string source)
         {

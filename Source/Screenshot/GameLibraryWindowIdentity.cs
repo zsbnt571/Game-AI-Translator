@@ -69,7 +69,7 @@ internal static class GameLibraryWindowIdentity
         },IntPtr.Zero);
         return resolution&&quality;
     }
-    internal static (CoverTarget? Target,string Code,string Message) Find(string exe,bool forControl=false)
+    internal static (CoverTarget? Target,string Code,string Message) Find(string exe,bool forControl=false,bool requireSingleProcess=false)
     {
         lock(gate)
         {
@@ -113,7 +113,12 @@ internal static class GameLibraryWindowIdentity
             var children=windows.Where(x=>!StringComparer.OrdinalIgnoreCase.Equals(x.Target.ExePath,exe)).ToArray();
             if(children.Select(x=>x.Target.ExePath).Distinct(StringComparer.OrdinalIgnoreCase).Count()>1)
                 return(null,"ambiguous-child","启动器有多个子窗口，无法确认游戏；请直接选择实际游戏 EXE");
-            var chosen=(children.Length>0?children:windows.ToArray()).OrderByDescending(x=>x.Area).FirstOrDefault().Target;
+            var candidates=children.Length>0?children:windows.ToArray();
+            // Closing is stricter than capture/return: even a visible launcher
+            // alongside a child is ambiguous, so ask the user to close it.
+            if(requireSingleProcess&&windows.Select(x=>x.Target.ProcessId).Distinct().Count()>1)
+                return(null,"ambiguous-process","此游戏有多个运行实例，请返回需要退出的游戏正常退出");
+            var chosen=candidates.OrderByDescending(x=>x.Area).FirstOrDefault().Target;
             if(chosen is not null)return(chosen,"window-ready","");
             if(minimized)return(null,"minimized","游戏窗口已最小化，请恢复后更新");
             if(invalidSize)return(null,"invalid-size","游戏窗口尚无可用尺寸，或超过取图尺寸上限");

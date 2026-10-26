@@ -56,6 +56,7 @@ internal static class ExperimentalRpgCatalog
                 {if(directory==root&&Path.GetFileName(path).Equals("Data",StringComparison.OrdinalIgnoreCase)||directory!=root&&relative.Split(Path.DirectorySeparatorChar).Length<8)pending.Push(path);continue;}
                 string ext=Path.GetExtension(path).ToLowerInvariant();bool archive=ext is ".wolf" or ".rgssad" or ".rgss2a" or ".rgss3a";
                 bool ruby=ext is ".rxdata" or ".rvdata" or ".rvdata2";
+                if(ruby&&RgssTextCatalog.IsSaveFile(path)&&!relative.Replace('\\','/').Equals(configuredScript,StringComparison.OrdinalIgnoreCase))continue;
                 bool evtext=ext==".txt"&&relative.Split(Path.DirectorySeparatorChar).Any(p=>p.Equals("Evtext",StringComparison.OrdinalIgnoreCase));
                 bool binary=engine=="WOLF RPG Editor"&&ext is ".mps" or ".dat" or ".project";
                 if(!archive&&!ruby&&!evtext&&!binary)continue;

@@ -39,6 +39,7 @@ internal sealed class UnityTextResourceLanguageSelection
     internal HashSet<string> TrustedSourceTexts {get;}=new(StringComparer.Ordinal);
     internal HashSet<string> UnlocalizedSourceTexts {get;}=new(StringComparer.Ordinal);
     internal HashSet<UInt128> ExcludedSourceIdentities {get;}=new();
+    internal Action<string,string,string,string?>? ObserveOrigin {get;set;}
     private static readonly Regex DisplayField=new(@"(?:^m_?text$|dialog|speech|subtitle|caption|description|display.?name|localized|localised|(?:^|_)message$|^(?:m_?)?(?:desc|helpText|body|prompt|title|label|text|content|sentence|originalText|sourceText)$)",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex IdentifierField=new(@"^(?:m_)?(?:id|key|guid|path|file|fileName|asset|speakerId|lineId|choiceId|identifier|type|command|locale|language|culture|languageCode|sourceLanguage|originalLanguage|baseLanguage|condition|conditions|script|onClick|callback|eventName|targetId|nextId|expression|variable|variables)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex ResourceContext=new(@"dialog|locali[sz]|language|translation|subtitle|story|scenario|conversation|\.(?:ink|yarn)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
@@ -50,6 +51,14 @@ internal sealed class UnityTextResourceLanguageSelection
         return DisplayField.IsMatch(name)||Regex.IsMatch(name,@"^(?:storyText|narrativeText|randomLines|dialogueLines|textLines|barks|choiceSummary|choiceText|optionText|buttonText|choices|options|responses|replies|lines|paragraphs|textLines|barks)$",RegexOptions.IgnoreCase);
     }
     internal static bool IsIdentifier(string name)=>IdentifierField.IsMatch(name.TrimStart('_'))||Regex.IsMatch(name,@"^_?(?:Tool|Editor)_",RegexOptions.IgnoreCase);
+    // A display-bearing option may also contain executable event arguments.
+    // The option's display permission must not turn those parameters into
+    // dialogue. Keep this contextual: ordinary fields called arguments are
+    // still eligible outside an explicit event/callback container.
+    internal static bool IsActionContainer(string name)=>Regex.IsMatch(name.TrimStart('_'),
+        @"^(?:(?:m_)?(?:events?|callbacks?|onClick|onSubmit|onEnter|onExit|onSelect|onSelected)|[A-Za-z_][A-Za-z_0-9]*Events)$",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
+    internal static bool IsActionArguments(string name)=>Regex.IsMatch(name.TrimStart('_'),
+        @"^(?:m_)?(?:args|arguments|eventArgs|callbackArgs)$",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant);
     internal static string? Locale(string name)
     {
         string value=name.Trim().Replace('_','-').ToLowerInvariant();
@@ -160,7 +169,7 @@ internal sealed class UnityTextResourceLanguageSelection
         string language=EmbeddedSourceLanguagePolicy.Choose(values,allowLatinFallback);
         return language switch {"zh"=>"han",""=>"und",_=>language};
     }
-    internal void AddValue(string familyKey,string? locale,string value,bool original=false)
+    internal void AddValue(string familyKey,string? locale,string value,bool original=false,string location="")
     {
         if(countLimit||!UnityEmbeddedCatalog.IsDisplayText(value))return;
         UInt128 identity=UnityLocalizedTableSelection.Identity(value);
@@ -173,6 +182,7 @@ internal sealed class UnityTextResourceLanguageSelection
         string? declared=original||locale is null?family.OriginalLanguages.Count==1?family.OriginalLanguages.Single():null:locale;
         string? requested=Requested;
         if(requested is not null&&declared is not null&&declared!=requested)return;
+        ObserveOrigin?.Invoke(familyKey,location,value,locale);
         HashSet<string> destination;
         if(original||locale is null)destination=family.Original;
         else if(!family.Localized.TryGetValue(locale,out destination!))family.Localized[locale]=destination=new(StringComparer.Ordinal);
@@ -297,7 +307,7 @@ internal sealed class UnityTextResourceLanguageSelection
 
     internal void Read(string name,string body,CancellationToken cancellation,Action<CatalogIssueKind,string>? reportIssue=null)
         =>ReadCore(name,body,cancellation,reportIssue,0,null);
-    private void ReadCore(string name,string body,CancellationToken cancellation,Action<CatalogIssueKind,string>? reportIssue,int embeddedDepth,string? inheritedLocale)
+    private void ReadCore(string name,string body,CancellationToken cancellation,Action<CatalogIssueKind,string>? reportIssue,int embeddedDepth,string? inheritedLocale,string originPrefix="")
     {
         cancellation.ThrowIfCancellationRequested();
         if(body.Length>16*1024*1024){reportIssue?.Invoke(CatalogIssueKind.Limited,"文本资源超过本次大小上限");return;}
@@ -313,6 +323,8 @@ internal sealed class UnityTextResourceLanguageSelection
             if(!families.TryGetValue(family,out var resourceFamily))families[family]=resourceFamily=new();
             resourceFamily.PossibleLocaleFamily=possible;
         }
+        if(UnityFrameworkText.ReadNaninovel(name,body,(text,path)=>AddValue(family,resourceLocale,text,location:path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))return;
+        if(UnityFrameworkText.ReadTaggedLines(name,body,(text,path)=>AddValue(family,resourceLocale,text,location:originPrefix+path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))return;
         if(XmlDisplayText.Read(name,body,(text,locale)=>AddValue(family,locale??resourceLocale,text),cancellation,reportIssue))return;
         if(StructuredStoryText.ReadSource(name,body,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
         if(LabelDialogueResource.TryRead(body,cancellation,out var dialogue,out bool complete))
@@ -327,18 +339,19 @@ internal sealed class UnityTextResourceLanguageSelection
             try
             {
                 using var document=JsonDocument.Parse(trimmed,new JsonDocumentOptions{MaxDepth=64,CommentHandling=JsonCommentHandling.Skip,AllowTrailingCommas=true});
+                if(UnityFrameworkText.Read(document.RootElement,(text,locale,path)=>AddValue(family,locale??resourceLocale,text,location:originPrefix+path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))return;
                 if(StructuredStoryText.ReadCompiledInk(document.RootElement,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
-                void Visit(JsonElement element,bool context,string parent,string? locale,int depth)
+                void Visit(JsonElement element,bool context,string parent,string? locale,int depth,string path="",bool actionContext=false)
                 {
                     cancellation.ThrowIfCancellationRequested();if(depth>64)return;
                     if(element.ValueKind==JsonValueKind.String)
                     {
                         string value=element.GetString()!;string embedded=value.TrimStart();
                         if(embeddedDepth<2&&parent is "payload" or "json" or "serializedData"&&(embedded.StartsWith('{')||embedded.StartsWith('[')))
-                        {ReadCore(name+".embedded.json",value,cancellation,reportIssue,embeddedDepth+1,locale);return;}
-                        if(context)foreach(var part in SerializedDialogueText.VisibleParts(value))AddValue(family,locale,part);return;
+                        {ReadCore(name+".embedded.json",value,cancellation,reportIssue,embeddedDepth+1,locale,path+"/$embedded");return;}
+                        if(context)foreach(var part in SerializedDialogueText.VisibleParts(value))AddValue(family,locale,part,location:path);return;
                     }
-                    if(element.ValueKind==JsonValueKind.Array){foreach(var child in element.EnumerateArray())Visit(child,context,parent,locale,depth+1);return;}
+                    if(element.ValueKind==JsonValueKind.Array){int index=0;foreach(var child in element.EnumerateArray())Visit(child,context,parent,locale,depth+1,path+"/"+index++,actionContext);return;}
                     if(element.ValueKind!=JsonValueKind.Object)return;
                     var properties=element.EnumerateObject().ToArray();
                     foreach(var property in properties.Where(p=>p.Value.ValueKind==JsonValueKind.String&&(p.Name.Equals("sourceLanguage",StringComparison.OrdinalIgnoreCase)||p.Name.Equals("originalLanguage",StringComparison.OrdinalIgnoreCase)||p.Name.Equals("baseLanguage",StringComparison.OrdinalIgnoreCase))))
@@ -350,21 +363,21 @@ internal sealed class UnityTextResourceLanguageSelection
                     foreach(var property in properties)
                     {
                         string field=property.Name;
-                        if(IsIdentifier(field))continue;
+                        if(IsIdentifier(field)||actionContext&&IsActionArguments(field))continue;
                         if(paired.TryGetValue(field,out bool original))
                         {
                             // Unknown target columns are not an alternate source language.
-                            if(original)AddValue(family,null,property.Value.GetString()!,true);
-                            else if(locale is not null)AddValue(family,locale,property.Value.GetString()!);
+                            if(original)AddValue(family,null,property.Value.GetString()!,true,path+"/"+property.Name.Replace("~","~0").Replace("/","~1"));
+                            else if(locale is not null)AddValue(family,locale,property.Value.GetString()!,location:path+"/"+property.Name.Replace("~","~0").Replace("/","~1"));
                             continue;
                         }
                         if(field.Equals("m_Name",StringComparison.OrdinalIgnoreCase)||field.Equals("name",StringComparison.OrdinalIgnoreCase)&&!UserFacingNameContext(parent))continue;
                         string? fieldLocale=Locale(field);
                         bool listField=Regex.IsMatch(field,@"^(?:choices|options|responses|replies|lines|paragraphs)$",RegexOptions.IgnoreCase);
-                        Visit(property.Value,!IsIdentifier(field)&&(context||IsTextField(field)&&(!listField||property.Value.ValueKind==JsonValueKind.Array)||UserFacingNameContext(parent)&&field.Equals("name",StringComparison.OrdinalIgnoreCase)||fieldLocale is not null),field,fieldLocale??locale,depth+1);
+                        Visit(property.Value,!IsIdentifier(field)&&(context||IsTextField(field)&&(!listField||property.Value.ValueKind==JsonValueKind.Array)||UserFacingNameContext(parent)&&field.Equals("name",StringComparison.OrdinalIgnoreCase)||fieldLocale is not null),field,fieldLocale??locale,depth+1,path+"/"+field.Replace("~","~0").Replace("/","~1"),actionContext||IsActionContainer(field));
                     }
                 }
-                Visit(document.RootElement,resourceContext,"",resourceLocale,0);return;
+                Visit(document.RootElement,resourceContext,"",resourceLocale,0,originPrefix);return;
             }
             catch(JsonException){reportIssue?.Invoke(CatalogIssueKind.Failed,"JSON 文本资源解析失败");return;}
         }
@@ -388,31 +401,34 @@ internal sealed class UnityTextResourceLanguageSelection
             var rows=UnityEmbeddedCatalog.Delimited(body,extension.Equals(".tsv",StringComparison.OrdinalIgnoreCase)?'\t':',').ToArray();if(rows.Length==0)return;
             var paired=PairedStringFields(rows[0]);
             bool sourceColumns=rows[0].Any(label=>OriginalField(label)||label.Equals("source",StringComparison.OrdinalIgnoreCase)||label.Equals("original",StringComparison.OrdinalIgnoreCase));
-            foreach(var row in rows.Skip(1))
+            int rowIndex=0;foreach(var row in rows.Skip(1))
             {
+                rowIndex++;
                 cancellation.ThrowIfCancellationRequested();
                 for(int i=0;i<Math.Min(row.Length,rows[0].Length);i++)
                 {
                     string label=rows[0][i];if(IsIdentifier(label))continue;
                     if(paired.TryGetValue(label,out bool pairedOriginal))
-                    {if(pairedOriginal)AddValue(family,null,row[i],true);else if(resourceLocale is not null)AddValue(family,resourceLocale,row[i]);continue;}
+                    {if(pairedOriginal)AddValue(family,null,row[i],true,"row:"+rowIndex+"/column:"+i);else if(resourceLocale is not null)AddValue(family,resourceLocale,row[i],location:"row:"+rowIndex+"/column:"+i);continue;}
                     if(label.Equals("name",StringComparison.OrdinalIgnoreCase))continue;
                     string? locale=Locale(label);
                     bool original=OriginalField(label)||label.Equals("source",StringComparison.OrdinalIgnoreCase)||label.Equals("original",StringComparison.OrdinalIgnoreCase);
-                    if(original)AddValue(family,null,row[i],true);
-                    else if(locale is not null)AddValue(family,locale,row[i]);
-                    else if(IsTextField(label)&&(!sourceColumns||resourceLocale is not null))AddValue(family,resourceLocale,row[i]);
+                    if(original)AddValue(family,null,row[i],true,"row:"+rowIndex+"/column:"+i);
+                    else if(locale is not null)AddValue(family,locale,row[i],location:"row:"+rowIndex+"/column:"+i);
+                    else if(IsTextField(label)&&(!sourceColumns||resourceLocale is not null))AddValue(family,resourceLocale,row[i],location:"row:"+rowIndex+"/column:"+i);
                 }
             }
             return;
         }
         if(!resourceContext)return;
-        foreach(string line in body.Replace("\r\n","\n").Split('\n'))
+        int lineNumber=0;foreach(string line in body.Replace("\r\n","\n").Split('\n'))
         {
+            lineNumber++;
             cancellation.ThrowIfCancellationRequested();string text=line.Trim();
+            if(text.StartsWith('@')){reportIssue?.Invoke(CatalogIssueKind.Unsupported,"未识别的脚本指令未作为显示文字提取");continue;}
             if(text.Length==0||text.StartsWith("//")||text.StartsWith("#")||text.StartsWith("<<")||text is "===" or "---"||text.StartsWith("title:",StringComparison.OrdinalIgnoreCase))continue;
             if(extension.Equals(".ink",StringComparison.OrdinalIgnoreCase)&&text[0] is '~' or '=' or '-' or '*')continue;
-            AddValue(family,resourceLocale,text);
+            AddValue(family,resourceLocale,text,location:"line:"+lineNumber);
         }
     }
 }

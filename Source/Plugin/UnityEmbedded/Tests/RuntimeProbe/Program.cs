@@ -4,7 +4,10 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 
 string exe=args[0],identity=args[1],evidence=args[2];bool startOff=args.Contains("--start-off");
-string allowed=@"E:\Codex\GameTranslator\Work\Fusion-R1-0.6.0.75\GameCopies\";
+var configuredTestRoot=Environment.GetEnvironmentVariable("FUSION_UNITY_TEST_ROOT");
+if(string.IsNullOrWhiteSpace(configuredTestRoot))throw new InvalidOperationException("Set FUSION_UNITY_TEST_ROOT to a dedicated directory containing isolated game copies.");
+string allowed=Path.GetFullPath(configuredTestRoot).TrimEnd(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar)+Path.DirectorySeparatorChar;
+if(string.Equals(allowed,Path.GetPathRoot(allowed),StringComparison.OrdinalIgnoreCase)||!Directory.Exists(allowed))throw new InvalidOperationException("The isolated test root must be an existing directory below the drive root.");
 if(!Path.GetFullPath(exe).StartsWith(allowed,StringComparison.OrdinalIgnoreCase)||!identity.StartsWith("FusionTest75_",StringComparison.Ordinal))throw new Exception("Isolated copy required.");
 var asm=typeof(ScreenshotTranslationUiTester.GameInfo).Assembly;
 var connectionType=asm.GetType("ScreenshotTranslationUiTester.RpgGameDataConnection")!;

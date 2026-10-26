@@ -36,12 +36,21 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     System.String ILibraryWorkspaceHost.WpfUpperSection { get => WpfUpperSection; }
     IGameDetailsHost ILibraryWorkspaceHost.GameDetails => this;
     ScreenshotTranslationUiTester.GameDetailPresentation IGameDetailsHost.GameDetail { get => GameDetail; }
+    ModificationSpeedState IGameDetailsHost.NativeGameSpeedState => NativeGameSpeedState;
+    Task IGameDetailsHost.NativeSetGameSpeed(double rate) => SetIndependentGameSpeedAsync(rate);
+    bool IGameDetailsHost.NativeStorySkipVisible => _selectedGame?.AdapterId=="renpy";
+    bool IGameDetailsHost.NativeStorySkipEnabled => _selectedGame is {} game&&game.AdapterId=="renpy"&&ModificationAuthorized(game)&&!_independentSpeedBusy.Contains(game.ExePath);
+    Task IGameDetailsHost.NativeStorySkip(bool stop) => StorySkipAsync(stop);
+    DesktopActionState IGameDetailsHost.NativeCommonModificationAction => NativeCommonModificationAction;
+    string IGameDetailsHost.NativeCommonModificationStatus => NativeCommonModificationStatus;
+    Task IGameDetailsHost.NativeToggleCommonModification() => ToggleCommonModificationAsync();
     System.String IGameDetailsHost.GamePathText { get => GamePathText; }
     System.Boolean IGameDetailsHost.IsDisposed { get => IsDisposed; }
     void IGameDetailsHost.NativeGameAction(ScreenshotTranslationUiTester.GameDetailAction action) => NativeGameAction(action);
     void IGameDetailsHost.NativeGameMenu(System.String menu, System.Windows.FrameworkElement anchor) => NativeGameMenu(menu, anchor);
     System.String IGameDetailsHost.NativeGameProfileSummary { get => NativeGameProfileSummary; }
     System.Windows.FrameworkElement IGameDetailsHost.NativeRpgView { get => NativeRpgView; }
+    System.Windows.Controls.ContentControl? IGameDetailsHost.NativeRpgCommonSpeedSlot => (nativeRpg ??= new(this)).CommonSpeedSlot;
     void IGameDetailsHost.NativeSelectWorkspaceProfile(System.Boolean embedded, System.String id) => NativeSelectWorkspaceProfile(embedded, id);
     System.String IGameDetailsHost.NativeWorkspaceProfileId(System.Boolean embedded) => NativeWorkspaceProfileId(embedded);
     ScreenshotTranslationUiTester.WorkspaceProfileChoice[] IGameDetailsHost.NativeWorkspaceProfiles(System.Boolean embedded) => NativeWorkspaceProfiles(embedded);
@@ -57,6 +66,7 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     ScreenshotTranslationUiTester.NativeNovelWorkspaceState INovelWorkspaceHost.NativeNovel { get => NativeNovel; }
     event System.Action? INovelWorkspaceHost.NativeNovelChanged { add => NativeNovelChanged += value; remove => NativeNovelChanged -= value; }
     System.Threading.Tasks.Task INovelWorkspaceHost.NativeNovelCommand(System.String command) => NativeNovelCommand(command);
+    System.Threading.Tasks.Task INovelWorkspaceHost.NativeNovelBatch(System.String operation,System.Collections.Generic.IReadOnlyList<NovelVariableRow> selected,System.String value) => NativeNovelBatch(operation,selected,value);
     System.Threading.Tasks.Task INovelWorkspaceHost.NativeNovelMapVariables(int? map,int eventId,string[] ids) => SelectNativeWolfMapVariables(map,eventId,ids);
     void INovelWorkspaceHost.NativeNovelSearch(System.String text) => NativeNovelSearch(text);
     void INovelWorkspaceHost.NativeNovelSelect(ScreenshotTranslationUiTester.NovelVariableRow? row) => NativeNovelSelect(row);
@@ -93,6 +103,7 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     void IDesktopSettingsHost.NativeBeginGameShortcut() => NativeBeginGameShortcut();
     System.String IDesktopSettingsHost.NativeBindingText(ScreenshotTranslationUiTester.InputActionId action) => NativeBindingText(action);
     System.String? IDesktopSettingsHost.NativeChooseStorageLocation() => NativeChooseStorageLocation();
+    System.String? IDesktopSettingsHost.NativeChooseMigrationSource() => NativeChooseMigrationSource();
     void IDesktopSettingsHost.NativeChooseThemeColor(System.String property) => NativeChooseThemeColor(property);
     System.String IDesktopSettingsHost.NativeCredentialStatus { get => NativeCredentialStatus; }
     ScreenshotTranslationUiTester.InputBinding IDesktopSettingsHost.NativeDefaultBinding(ScreenshotTranslationUiTester.InputActionId action) => NativeDefaultBinding(action);

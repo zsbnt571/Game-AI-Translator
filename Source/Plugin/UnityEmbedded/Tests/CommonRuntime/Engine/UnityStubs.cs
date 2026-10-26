@@ -24,11 +24,16 @@ namespace Il2CppInterop.Runtime.InteropTypes {public class Il2CppObjectBase {pub
 namespace Il2CppInterop.Runtime.InteropTypes.Arrays {public class Il2CppStringArray {public string[] Values;public Il2CppStringArray(string[] values){Values=values;}}public class Il2CppStructArray<T> {readonly T[] values;public Il2CppStructArray(T[] source){values=source;}public int Length=>values.Length;public T this[int index]=>values[index];}}
 namespace UnityEngine
 {
+    public static class Time {static float scale=1;public static int Reads,Writes;public static float timeScale{get{Reads++;return scale;}set{Writes++;scale=value;}}}
+    public class Material:Object {public string Label;}
     public struct Vector2 {public float x,y;public Vector2(float x,float y){this.x=x;this.y=y;}}
     public enum FindObjectsSortMode {None,InstanceID}
     public class Object:Il2CppInterop.Runtime.InteropTypes.Il2CppObjectBase
     {
         static int next;readonly int id=++next;public bool destroyed;public int GetInstanceID()=>id;
+        public static readonly List<Object> Destroyed=new();public static bool DeferDestroy;static readonly List<Object> PendingDestroy=new();
+        public static void Destroy(Object value){Destroyed.Add(value);if(DeferDestroy)PendingDestroy.Add(value);else value.destroyed=true;}
+        public static void FlushDestroy(){foreach(var value in PendingDestroy)value.destroyed=true;PendingDestroy.Clear();}
         public static implicit operator bool(Object o)=>o!=null&&!o.destroyed;
         public static readonly List<Object> Scene=new();public static int Queries;public static bool WrapResults,ModernUnavailable,EnumerationUnavailable;
         sealed class BadSequence:System.Collections.IEnumerable,System.Collections.IEnumerator {public System.Collections.IEnumerator GetEnumerator()=>this;public bool MoveNext()=>throw new System.Reflection.TargetInvocationException(new InvalidOperationException("DO_NOT_WRITE_EXCEPTION_TEXT"));public object Current=>null;public void Reset(){}}
@@ -60,6 +65,7 @@ namespace UnityEngine
         public bool GetCharacterInfo(char c,out CharacterInfo info,int size,FontStyle style){info=new CharacterInfo{maxY=(int)(size*(c=='H'?0.75:1.0))};return !AtlasFull&&HasCharacter(c)&&Allocated.Contains(c+"|"+size+"|"+(int)style);}
 #endif
         public static int Factories;public static bool FailFactory,ManagedArrayAllowed;
+        public static string[] GetOSInstalledFontNames()=>new[]{"Fixture Sans","Fixture Serif","Fixture Next","First Session","Retained Face","Not Loadable","Later Scene","Working Later Scene","Unavailable Face"};
         public readonly HashSet<char> ExtraCharacters=new HashSet<char>(); public bool HasCharacter(char c)=>c<256||Chinese||ExtraCharacters.Contains(c);
         public static Font CreateDynamicFontFromOSFont(string name,int size)=>throw new NotSupportedException("Method unstripping failed");
         public static Font CreateDynamicFontFromOSFont(string[] names,int size){if(!ManagedArrayAllowed||FailFactory)throw new NotSupportedException();return new Font{Chinese=true};}
@@ -109,6 +115,7 @@ namespace TMPro
     public enum AtlasPopulationMode {Static,Dynamic}
     public class TMP_FontAsset:UnityEngine.Object
     {
+        public UnityEngine.Material material{get;set;}=new UnityEngine.Material();
         public bool Chinese,FallbackChinese;public bool isMultiAtlasTexturesEnabled{get;set;}public static int Factories,FullFactories,OutAdds;
         public static bool FailHasString,FailHasFallbacks,FailSimpleFactory,FailSimplePopulate,FailAllGlyphs,EmptyFactory;
         public bool HasCharacters(string text){if(FailHasString)throw new NotSupportedException();return !FailAllGlyphs&&text.All(c=>c<256||Chinese);}
@@ -124,6 +131,7 @@ namespace TMPro
     public enum TextOverflowModes {Overflow,Truncate,Page,Linked}
     public class TMP_TextInfo {public int characterCount;public object characterInfo=new TMP_CharacterInfo[0];}
     public enum TextInputSources {Text,SetText,SetTextArray}
+    public interface ITextPreprocessor {string PreprocessText(string text);}
     public class TMP_Text:UnityEngine.Component
     {
         string value;public string Backing;public TextInputSources m_inputSource;public bool m_IsTextBackingStringDirty;
@@ -133,7 +141,10 @@ namespace TMPro
         public void ParseMesh(){textInfo=new TMP_TextInfo{characterCount=value.Length,characterInfo=value.Select(c=>new TMP_CharacterInfo{character=c}).ToArray()};}
         public string text{get=>value;set{this.value=value;Backing=value;m_inputSource=TextInputSources.Text;m_IsTextBackingStringDirty=false;}}
         public string InternalTextBackingArrayToString(){m_IsTextBackingStringDirty=false;return Backing;}
-        public TMP_FontAsset font{get;set;}=new();
+        TMP_FontAsset currentFont=new();UnityEngine.Material currentMaterial;
+        public bool IgnoreMaterialWrites;public ITextPreprocessor textPreprocessor{get;set;}
+        public TMP_FontAsset font{get=>currentFont;set{currentFont=value;currentMaterial=value.material;}}
+        public UnityEngine.Material fontSharedMaterial{get=>currentMaterial??currentFont.material;set{if(!IgnoreMaterialWrites)currentMaterial=value;}}
     }
     public class TMP_InputField:UnityEngine.Component{}
     public class TextMeshProUGUI:TMP_Text
@@ -142,7 +153,8 @@ namespace TMPro
         public bool enableAutoSizing{get;set;}public bool autoSizeTextContainer{get;set;}public bool enableWordWrapping{get;set;}
         public bool raycastTarget{get;set;}public bool interactable{get;set;}=true;
         public UnityEngine.UI.RectTransform rectTransform{get;set;}=new();
-        public SizePair GetPreferredValues(string text,float width,float height)=>new(){x=300,y=fontSize*2};
+        public bool MeasureByCharacters;
+        public SizePair GetPreferredValues(string text,float width,float height)=>MeasureByCharacters?new SizePair{x=enableWordWrapping?Math.Min(width,text.Length*fontSize):text.Length*fontSize,y=fontSize*(enableWordWrapping?(float)Math.Ceiling(text.Length*fontSize/width):1)}:new SizePair{x=300,y=fontSize*2};
     }
 }
 namespace UnityEngine.TextCore.LowLevel {public enum GlyphRenderMode {SDFAA}}

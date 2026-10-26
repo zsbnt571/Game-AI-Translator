@@ -4,11 +4,12 @@
 #include <fstream>
 #include "json.hpp"
 #include "RemoteLibrary.h"
+#include "WolfSessionFiles.h"
 using nlohmann::json;
 namespace fs=std::filesystem;
 static std::wstring Env(const wchar_t* key){wchar_t b[32768];DWORD n=GetEnvironmentVariableW(key,b,32768);return n>0&&n<32768?std::wstring(b,n):std::wstring();}
 static std::string Ascii(const std::wstring& value){std::string result;for(wchar_t c:value)result.push_back((char)c);return result;}
-static bool Publish(const fs::path& path,const json& value){auto tmp=path;tmp+=L".tmp";auto text=value.dump();{std::ofstream f(tmp,std::ios::binary);if(!f.write(text.data(),text.size()))return false;}return MoveFileExW(tmp.c_str(),path.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=FALSE;}
+static bool Publish(const fs::path& path,const json& value){return WolfSessionFiles::WriteAtomic(path,value.dump());}
 static DWORD Remote(HANDLE process,void* entry,void* param){HANDLE thread=CreateRemoteThread(process,nullptr,0,(LPTHREAD_START_ROUTINE)entry,param,0,nullptr);if(!thread)return 0;DWORD code=0;if(WaitForSingleObject(thread,15000)==WAIT_OBJECT_0)GetExitCodeThread(thread,&code);CloseHandle(thread);return code;}
 int wmain(int argc,wchar_t** argv){
     if(argc!=3)return 2;

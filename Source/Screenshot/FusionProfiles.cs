@@ -83,11 +83,7 @@ internal sealed partial class FusionConfiguration
     }
     internal static List<string> MissingConnection(ApiSettings p)
     {
-        var missing=new List<string>();
-        if(!Uri.TryCreate(p.ApiUrl,UriKind.Absolute,out var uri)||uri.Scheme is not ("http" or "https"))missing.Add("有效的 http/https 接口地址");
-        if(string.IsNullOrWhiteSpace(p.Model))missing.Add("模型");
-        if(!p.AllowEmptyApiKey&&string.IsNullOrWhiteSpace(p.ApiKey))missing.Add("API 密钥");
-        return missing;
+        return ApiConnectionPolicy.Missing(p);
     }
     internal static string EditIdentity(ApiSettings p)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(TranslationIdentity(p)+"|"+p.AllowEmptyApiKey+"|"+p.FirstByteTimeoutSeconds+"|"+p.RequestTimeoutSeconds)));
     internal static string ConnectionIdentity(ApiSettings p)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
@@ -148,6 +144,5 @@ internal sealed partial class FusionConfiguration
     {
         var id=SelectedId(embedded);var p=Effective(new ApiSettings(),embedded);var missing=Missing(p);
         if(missing.Count>0)throw new InvalidOperationException(Name(id)+" 尚未配置完成："+string.Join("、",missing)+"。请点击“编辑此方案”。");
-        if(embedded&&string.IsNullOrEmpty(p.ApiKey))throw new InvalidOperationException("当前 MGI 插件仍需密钥；无鉴权方案可用于截图，请为内嵌选择带密钥的方案。");
     }
 }

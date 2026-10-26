@@ -20,25 +20,33 @@ internal static class AutomaticTranslationQuality
     }
     internal static string Reason(string source,string text,ApiSettings settings,IReadOnlyDictionary<string,string>? terms=null,EmbeddedTextSyntax syntax=EmbeddedTextSyntax.Generic)
     {
+        using var analysis=new TranslationAnalysisScope();
         if(!TranslationWorkspaceStore.Valid(source,text,syntax))return "placeholder-mismatch";
         if(!GameTranslationLiterals.NumbersPreserved(source,text,settings,syntax))return "numeric-mismatch";
         if(!GameTranslationLiterals.IdentityPreserved(source,text,terms??settings.RequestTerms,syntax))return "protected-term-mismatch";
-        if(!TranslationLanguagePolicy.MenuNamesPreserved(source,text))return "menu-name-mismatch";
-        if(!TranslationLanguageSpans.Preserved(source,text,settings))return "language-boundary";
-        if(TranslationLanguagePolicy.Canonical(settings.TargetLanguage)=="zh"&&TranslationLanguagePolicy.ShouldTranslate(source,settings)
-            &&ClockDisplayTemplate.TrySource(source.Trim(),out _)&&source.Trim()==text.Trim()
+        // Requests protect each engine's control syntax before translation. Check
+        // that same visible projection after restoring it: code such as Ren'Py
+        // [decorate('ordinary words')] must stay exact, not become a demand to
+        // translate a function argument. Its rendered output is a separate source.
+        // Validate original codes above, so this never hides altered/missing tokens.
+        string visibleSource=GameTranslationLiterals.Visible(source,syntax);
+        string visibleText=GameTranslationLiterals.Visible(text,syntax);
+        if(!TranslationLanguagePolicy.MenuNamesPreserved(visibleSource,visibleText))return "menu-name-mismatch";
+        if(!TranslationLanguageSpans.Preserved(visibleSource,visibleText,settings))return "language-boundary";
+        if(TranslationLanguagePolicy.Canonical(settings.TargetLanguage)=="zh"&&TranslationLanguagePolicy.ShouldTranslate(visibleSource,settings)
+            &&ClockDisplayTemplate.TrySource(visibleSource.Trim(),out _)&&visibleSource.Trim()==visibleText.Trim()
             &&!((terms??settings.RequestTerms) is {} clockTerms&&TranslationGlossary.IdentityCovers(source,clockTerms)))return "untranslated-content";
-        if(IntroducesWrongScript(source,text,settings,terms))return "target-script-mismatch";
+        if(IntroducesWrongScript(visibleSource,visibleText,settings,terms))return "target-script-mismatch";
         // Machine explanations are not game text. Do not reject the same words
         // when they were already authored in the source or entered manually.
-        string trimmed=text.TrimStart();
-        if(!source.TrimStart().StartsWith("```")&&trimmed.StartsWith("```"))return "nontranslation-output";
+        string trimmed=visibleText.TrimStart();
+        if(!visibleSource.TrimStart().StartsWith("```")&&trimmed.StartsWith("```"))return "nontranslation-output";
         const string introduction=@"^(?:here(?:'s| is) (?:the |your )?translation\s*[:：]|(?:translation|translated text|译文|翻译结果|以下是翻译|这是翻译)\s*[:：]|(?:sorry[,，]?\s*)?I (?:cannot|can't|am unable to) (?:translate|assist|help)\b|(?:抱歉[，,。]?\s*)?(?:我无法|我不能)(?:翻译|协助|帮助))";
         if(Regex.IsMatch(trimmed,introduction,RegexOptions.IgnoreCase|RegexOptions.CultureInvariant)
-            &&!Regex.IsMatch(source.TrimStart(),introduction,RegexOptions.IgnoreCase|RegexOptions.CultureInvariant))return "nontranslation-output";
+            &&!Regex.IsMatch(visibleSource.TrimStart(),introduction,RegexOptions.IgnoreCase|RegexOptions.CultureInvariant))return "nontranslation-output";
         if(syntax==EmbeddedTextSyntax.Generic&&EmbeddedTextContinuity.HasFormatArtifact(source,text))return "format-artifact";
         if(TranslationGlossary.MissingTranslation(source,text,terms??settings.RequestTerms,settings,syntax))return "term-mismatch";
-        if(TranslationLanguageSpans.UnchangedEligibleText(source,text,settings,terms:terms))return "untranslated-content";
+        if(TranslationLanguageSpans.UnchangedEligibleText(visibleSource,visibleText,settings,terms:terms))return "untranslated-content";
         if(TranslationLanguageSpans.ResidualJapanese(source,text,settings,terms??settings.RequestTerms,syntax))return "untranslated-content";
         if(!FusionConfiguration.NormalizeLanguage(settings.TargetLanguage).StartsWith("zh",StringComparison.OrdinalIgnoreCase))return "";
         if(syntax==EmbeddedTextSyntax.Rpg)
@@ -50,13 +58,12 @@ internal static class AutomaticTranslationQuality
                 // as part of that command. Retry only affected automatic entries.
                 if(text.Contains(effect.Value,StringComparison.Ordinal))return "untranslated-content";
             }
-        string visible=EmbeddedTranslationText.Protect(source).Text;
-        foreach(Match match in Stammer.Matches(visible))
+        foreach(Match match in Stammer.Matches(visibleSource))
         {
             string word=match.Groups["word"].Value;
             if(char.ToLowerInvariant(match.Groups["first"].Value[0])!=word[0])continue;
             if(terms is not null&&terms.Any(p=>p.Key.Equals(word,StringComparison.OrdinalIgnoreCase)&&p.Value.Contains(word,StringComparison.OrdinalIgnoreCase)))continue;
-            if(text.Contains(match.Value,StringComparison.OrdinalIgnoreCase))return "untranslated-content";
+            if(visibleText.Contains(match.Value,StringComparison.OrdinalIgnoreCase))return "untranslated-content";
         }
         return "";
     }

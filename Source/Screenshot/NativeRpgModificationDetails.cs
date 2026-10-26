@@ -91,7 +91,7 @@ public sealed partial class MainForm
                     string scope=section==1?"skills":"states";var entries=detail.GetProperty(scope).EnumerateArray().Select(e=>e.Clone()).ToArray();
                     var query=new NativeRpgText{PlaceholderText=UiLanguage.Text("搜索名称或编号"),Width=200};
                     var choice=new NativeRpgChoice{Width=245};
-                    var value=new NativeRpgToggle{Text=section==1?"已学会":"生效中",Height=36,Width=115,AccessibleName=section==1?"技能是否已学会":"状态是否生效"};
+                    var value=new NativeRpgToggle{Text=section==1?"已学会":"生效中",Height=36,Width=115,LocalizedAccessibleName=section==1?"技能是否已学会":"状态是否生效"};
                     var visible=new List<JsonElement>();
                     void Filter()
                     {

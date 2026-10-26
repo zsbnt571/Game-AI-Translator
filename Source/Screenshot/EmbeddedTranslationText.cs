@@ -26,6 +26,12 @@ internal static class EmbeddedTranslationText
     internal static (string Text,string[] Codes) Protect(string value,bool lineBreaks=false,bool yukar=false)
     {
         var codes=new List<string>();var text=new StringBuilder();
+        // The display cache and provider protection must recognize the same
+        // simple variables. These are literal tokens only: no game expression
+        // is evaluated, and escaped/nested brackets or BBCode remain separate.
+        var squareVariables=Fusion.UnityEmbedded.DisplayTemplateTokens.Matches(value)
+            .Where(match=>Fusion.UnityEmbedded.DisplayTemplateTokens.IsSquareVariable(match.Value))
+            .ToDictionary(match=>match.Index,match=>match.Value);
         string Token(string source){var token="⟦RPG"+codes.Count+"⟧";codes.Add(source);return token;}
         for(int i=0;i<value.Length;)
         {
@@ -54,6 +60,7 @@ internal static class EmbeddedTranslationText
             }
             var match=Markup.Match(value,i);
             if(match.Success&&match.Index==i){text.Append(Token(match.Value));i+=match.Length;}
+            else if(squareVariables.TryGetValue(i,out string? variable)){text.Append(Token(variable));i+=variable.Length;}
             else{text.Append(value[i]);i++;}
         }
         return(text.ToString(),codes.ToArray());

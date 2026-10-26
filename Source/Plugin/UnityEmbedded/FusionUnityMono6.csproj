@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net35</TargetFramework><EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <AssemblyName>FusionUnityEmbedded</AssemblyName><Version>0.6.0.134</Version><Nullable>disable</Nullable>
+    <AssemblyName>FusionUnityEmbedded</AssemblyName><Version>1.1.0.123</Version><Nullable>disable</Nullable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo><EnableNETAnalyzers>false</EnableNETAnalyzers>
     <AutomaticallyUseReferenceAssemblyPackages>false</AutomaticallyUseReferenceAssemblyPackages>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute><DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences><NoStdLib>true</NoStdLib>
@@ -10,7 +10,7 @@
     <FrameworkPathOverride>$(FrameworkReferenceDirectory)</FrameworkPathOverride>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="BridgeJson.cs;TextLookup.cs;UnityPipeStream.cs;UnityBridgeRuntime.cs;LegacyTextProjection.cs;BufferedTmpProjection.cs;CjkTextLayout.cs;LegacyTextRegion.cs;StaticTmpFonts.cs;NativeTmpPreprocessor.cs;IncrementalTextState.cs;DisplaySourceHooks.cs;Mono6Plugin.cs" />
+    <Compile Include="BridgeJson.cs;TextLookup.cs;UnityPipeStream.cs;UnityBridgeRuntime.cs;LegacyTextProjection.cs;BufferedTmpProjection.cs;CjkTextLayout.cs;LegacyTextRegion.cs;StaticTmpFonts.cs;FontGlyphs.cs;NativeTmpPreprocessor.cs;IncrementalTextState.cs;DisplaySourceHooks.cs;Mono6Plugin.cs" />
     <Reference Include="BepInEx.Core"><HintPath>$(LoaderDirectory)\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx.Unity.Mono"><HintPath>$(LoaderDirectory)\BepInEx.Unity.Mono.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(LoaderDirectory)\0Harmony.dll</HintPath><Private>false</Private></Reference>

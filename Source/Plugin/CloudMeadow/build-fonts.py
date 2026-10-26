@@ -1,7 +1,9 @@
 """Build legacy TMP SDF fallback assets, without loading Unity or any game code."""
 from pathlib import Path
-import sys,json,gzip,hashlib,shutil
-phase=Path('E:/Codex/GameTranslator/Work/CloudMeadow-0.6.0.4')
+import sys,json,gzip,hashlib,shutil,argparse
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--workspace', required=True, type=Path, help='Explicit font-build workspace containing Tools/font-build-python and FontSource; source assets are not bundled.')
+phase=parser.parse_args().workspace.expanduser().resolve(strict=True)
 sys.path.insert(0,str(phase/'Tools/font-build-python'))
 import numpy as np
 from scipy.ndimage import distance_transform_edt

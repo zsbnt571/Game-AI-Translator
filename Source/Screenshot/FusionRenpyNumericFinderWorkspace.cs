@@ -1,4 +1,4 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 public sealed partial class MainForm
 {
@@ -28,7 +28,7 @@ public sealed partial class MainForm
         WorkspaceAdd(_renpyFinderPanel,_renpyFinderStatus);WorkspaceAdd(panel,_renpyFinderPanel);
     }
     private bool IsCurrentRenpyConnection(string path,IGameDataConnection connection)=>!IsDisposed&&!Disposing&&SameGame(_selectedGame?.ExePath,path)&&
-        connection.Connected&&ReferenceEquals(SelectedScriptTranslationSession()?.Connection,connection);
+        connection.Connected&&SelectedScriptTranslationSession()?.Enabled==true&&ReferenceEquals(SelectedScriptTranslationSession()?.Connection,connection);
 
     private void ClearRenpyNumericSession(string reason)
     {
@@ -39,19 +39,19 @@ public sealed partial class MainForm
     {
         if(WpfWorkspace.Enabled){RenderNativeRenpyFinder();return;}
         if(IsDisposed||Disposing||_renpyFinderBegin is null)return;
-        bool ready=SelectedScriptTranslationSession()?.Connection.Connected==true&&!_renpyDataBusy;
+        bool ready=SelectedScriptTranslationSession() is {Enabled:true,Connection.Connected:true}&&!_renpyDataBusy;
         _renpyFinderBegin.Enabled=ready;
         _renpyFinderNarrow!.Enabled=ready&&_renpyNumericFinder.Active;
         _renpyFinderReset!.Enabled=!_renpyDataBusy&&_renpyNumericFinder.Active;
         _renpyFinderComparison.Enabled=!_renpyDataBusy;
         _renpyFinderValue.Enabled=!_renpyDataBusy;
-        _renpyFinderToggle!.Text=RenpyFinderVisible?"返回全部变量":_renpyNumericFinder.Active?$"数值查找（{_renpyNumericFinder.Count} 项）":"数值查找";
+        _renpyFinderToggle!.Text=RenpyFinderVisible?"返回全部变量":_renpyNumericFinder.Active?UiLanguage.FormatTemplate("数值查找（{0} 项）",_renpyNumericFinder.Count):"数值查找";
         if(_renpyNumericFinder.Active)RenpyFinderStatus=$"候选 {_renpyNumericFinder.Count} / {_renpyNumericFinder.InitialCount} 项 · 已筛选 {_renpyNumericFinder.Round} 次 · 普通刷新不改变比较基准"+
             (_renpyNumericFinder.Truncated?" · 仅在已读取的数据中查找":"");
     }
     private async Task RunRenpyNumericFinderAsync(bool begin)
     {
-        if(_renpyDataBusy||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection)return;
+        if(_renpyDataBusy||SelectedScriptTranslationSession()?.Enabled!=true||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection)return;
         string input=RenpyFinderInput.Trim();RenpyNumericFinder.Number? value=null;
         var comparison=(RenpyNumericComparison)Math.Max(0,RenpyComparison);
         if((begin&&input.Length>0)||(!begin&&comparison==RenpyNumericComparison.Equal))

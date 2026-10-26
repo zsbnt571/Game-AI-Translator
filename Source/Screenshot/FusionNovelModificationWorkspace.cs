@@ -59,9 +59,9 @@ public sealed partial class MainForm
         bool changed=!SameGame(_novelPath,game?.ExePath);
         if(changed){_novelPath=game?.ExePath;_novelRows=[];_novelDataGrid.Rows.Clear();NovelDataFeedback="";}
         var session=NovelSession();bool connected=session?.Connection.Connected==true,active=connected&&session!.Enabled;
-        _novelDataStatus.Text=connected?active?"修改已开启 · 翻译可独立开关":"已连接 · 修改关闭":"从本软件启动并连接游戏后，可以读取变量。";
+        _novelDataStatus.Text=NovelConnectionStatus(game,connected,active);
         _novelStart.Text=connected?active?"关闭修改":"开启修改":"修改并启动";
-        _novelStart.Enabled=NovelModification(game)&&!_novelBusy&&!_gameActionRunning;
+        _novelStart.Enabled=CanStartNovelModification(game,connected);
         _novelRefresh!.Enabled=active&&!_novelBusy;_novelUndo!.Enabled=active&&!_novelBusy;
         bool selected=active&&!_novelBusy&&_novelDataGrid.CurrentRow?.Tag is JsonElement;
         _novelApply!.Enabled=selected;_novelLock!.Enabled=selected;_novelUnlock!.Enabled=selected;_novelDataValue.Enabled=selected;
@@ -91,6 +91,7 @@ public sealed partial class MainForm
     private async Task NovelCommandAsync(string operation)
     {
         if(_selectedGame is not {} game||!NovelModification(game))return;
+        if(operation=="start"&&!CanStartNovelModification(game,NovelSession()?.Connection.Connected==true))return;
         if(WpfWorkspace.Enabled)EnsureNovelSessionView(game);
         if((operation is "maps" or "events")&&game.AdapterId=="wolf")
         {
@@ -110,22 +111,28 @@ public sealed partial class MainForm
             if(operation=="start"&&(session is null||!session.Connection.Connected))
             {await RunGameActionForAsync(game,"modify");session=_embeddedTranslationSessions.GetValueOrDefault(game.ExePath);if(session?.Connection.Connected!=true)return;if(WpfWorkspace.Enabled)EnsureNovelSessionView(game);operationId=++_novelOperation;_novelBusy=true;_novelRequestKey=signature;}
             else if(operation=="start"&&session is not null)
-            {bool next=!session.Enabled;_novelSnapshotsCache.Invalidate(session.Connection);await session.Connection.RequestAsync(new(){["op"]=next?"dataEnable":"dataDisable"});session.Enabled=next;if(!next)ResetNovelSpeed(session.Connection);}
+            {
+                bool next=!session.Enabled;
+                if(!next){session.Enabled=false;await RevokeModificationSpeedAsync(game);}
+                _novelSnapshotsCache.Invalidate(session.Connection);
+                await session.Connection.RequestAsync(new(){["op"]=next?"dataEnable":"dataDisable"});
+                session.Enabled=next;if(!next)ResetNovelSpeed(session.Connection);
+            }
             if(session?.Connection.Connected!=true)throw new IOException("游戏未连接。");
             if(!session.Enabled){if(Current()){_novelRows=[];ClearNovelGrid();}return;}
+            if(game.AdapterId=="wolf")
+            {
+                await EnsureWolfNovelNamesAsync(game);
+                if(!Current()||viewScope!=NativeNovel.Scope)return;
+                snapshotRequest=NovelSnapshotRequest(game);requestKey=snapshotRequest.ToJsonString();signature=viewScope+"|"+requestKey;_novelRequestKey=signature;
+            }
             if(operation.StartsWith("speed:",StringComparison.Ordinal))
             {
                 var capability=game.AdapterId=="wolf"?ModificationSpeedState.ForWolf(NovelSpeed(session.Connection),true,false,session.Connection):ModificationSpeedState.Unavailable;
                 if(!capability.Supported)throw new IOException(capability.Reason);
                 if(!double.TryParse(operation[6..],System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out double rate)||!capability.Accepts(rate))throw new IOException("变速范围为 0.25 到 100 倍，请填写有效数字。");
                 if(!Current())return;
-                var speed=await session.Connection.RequestAsync(new(){["op"]="dataSpeed",["rate"]=rate});
-                double actual=speed.GetProperty("speed").GetDouble();
-                if(!capability.Accepts(actual))throw new IOException("游戏未返回有效的当前速度。");
-                // A late reply may update its own still-connected session, but
-                // never the speed of a replacement process at the same path.
-                if(session.Connection.Connected&&ReferenceEquals(session,_embeddedTranslationSessions.GetValueOrDefault(game.ExePath)))
-                    _novelSpeeds.GetValue(session.Connection,_=>new()).Value=actual;
+                await SetIndependentGameSpeedAsync(rate);
                 return;
             }
             if(operation.StartsWith("data",StringComparison.Ordinal))
@@ -139,8 +146,7 @@ public sealed partial class MainForm
                     request["entry"]=selected.GetProperty("id").GetString();request["expected"]=JsonNode.Parse(selected.GetProperty("value").GetRawText());
                     if(operation!="dataUnlock")
                     {
-                        string type=selected.GetProperty("type").GetString()!;string value=NovelValueInput;
-                        request["value"]=type switch{"string"=>JsonValue.Create(value),"boolean"=>bool.TryParse(value,out bool flag)?JsonValue.Create(flag):throw new IOException("开关请填写 true 或 false。"),"number"=>double.TryParse(value,System.Globalization.NumberStyles.Float,System.Globalization.CultureInfo.InvariantCulture,out double number)&&double.IsFinite(number)?JsonValue.Create(number):throw new IOException("请填写有效数字。"),_=>throw new IOException("此数据类型不可修改。")};
+                        request["value"]=NovelModificationWrites.Value(selected,NovelValueInput);
                     }
                 }
                 _novelSnapshotsCache.Invalidate(session.Connection);
@@ -160,6 +166,10 @@ public sealed partial class MainForm
                 NativeNovel.Selected=projection.Rows.FirstOrDefault(row=>row.Source.GetProperty("id").GetString()==selectedKey);
             FilterNovelRows();
             if(operation is "start" or "refresh" or "navigate")NovelDataFeedback=result.GetProperty("truncated").GetBoolean()?"本次列出部分变量。可切换分类，或输入当前数值后刷新以查找更多。":$"已读取 {_novelRows.Length} 项变量。";
+            if(game.AdapterId=="wolf"&&_wolfNameWarnings.TryGetValue(game.ExePath,out var nameWarning))
+                NovelDataFeedback+=" "+UiLanguage.Text("部分字段名称未能读取，常用分类可能不完整。")+" "+nameWarning;
+            if(game.AdapterId=="wolf"&&_wolfCategoryEntries.TryGetValue(game.ExePath,out var categoryEntries)&&categoryEntries.TryGetValue(viewScope,out var classified)&&classified.Length>20000)
+                NovelDataFeedback+=" "+UiLanguage.Format($"此分类识别到 {classified.Length} 项，本次最多读取 20000 项。");
             if(game.AdapterId=="wolf"&&NativeNovel.Scope=="db"&&result.TryGetProperty("databaseAvailable",out var database)&&!database.GetBoolean())
                 NovelDataFeedback="当前版本的可变数据库尚未识别；仍可查看已读取的普通变量。";
             if(game.AdapterId=="wolf"&&_wolfMapId>=0&&result.TryGetProperty("mapAvailable",out var available)&&!available.GetBoolean())

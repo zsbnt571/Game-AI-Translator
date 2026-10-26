@@ -2,12 +2,14 @@
   {
     "component": "SharpGen.Runtime/2.4.2-beta",
     "files": [
+      "licenses/NuGet/SharpGen.Runtime/2.4.2-beta/LICENSE.txt",
       "licenses/NuGet/SharpGen.Runtime/2.4.2-beta/sharpgen.runtime.nuspec"
     ]
   },
   {
     "component": "SharpGen.Runtime.COM/2.4.2-beta",
     "files": [
+      "licenses/NuGet/SharpGen.Runtime.COM/2.4.2-beta/LICENSE.txt",
       "licenses/NuGet/SharpGen.Runtime.COM/2.4.2-beta/sharpgen.runtime.com.nuspec"
     ]
   },
@@ -38,31 +40,36 @@
   {
     "component": "Vortice.Direct3D11/3.8.3",
     "files": [
+      "licenses/NuGet/Vortice.Direct3D11/3.8.3/LICENSE",
       "licenses/NuGet/Vortice.Direct3D11/3.8.3/vortice.direct3d11.nuspec"
     ]
   },
   {
     "component": "Vortice.DirectX/3.8.3",
     "files": [
+      "licenses/NuGet/Vortice.DirectX/3.8.3/LICENSE",
       "licenses/NuGet/Vortice.DirectX/3.8.3/vortice.directx.nuspec"
     ]
   },
   {
     "component": "Vortice.DXGI/3.8.3",
     "files": [
+      "licenses/NuGet/Vortice.DXGI/3.8.3/LICENSE",
       "licenses/NuGet/Vortice.DXGI/3.8.3/vortice.dxgi.nuspec"
     ]
   },
   {
     "component": "Vortice.Mathematics/2.1.0",
     "files": [
+      "licenses/NuGet/Vortice.Mathematics/2.1.0/LICENSE",
       "licenses/NuGet/Vortice.Mathematics/2.1.0/vortice.mathematics.nuspec"
     ]
   },
   {
     "component": "Blake3/3.0.2",
     "files": [
-      "licenses/NuGet/Blake3/3.0.2/blake3.nuspec"
+      "licenses/NuGet/Blake3/3.0.2/blake3.nuspec",
+      "licenses/NuGet/Blake3/3.0.2/license.txt"
     ]
   },
   {
@@ -82,6 +89,8 @@
   {
     "component": "CUE4Parse/1.2.2.202609",
     "files": [
+      "licenses/NuGet/CUE4Parse/1.2.2.202609/LICENSE",
+      "licenses/NuGet/CUE4Parse/1.2.2.202609/NOTICE",
       "licenses/NuGet/CUE4Parse/1.2.2.202609/cue4parse.nuspec"
     ]
   },
@@ -97,66 +106,78 @@
   {
     "component": "Fmod5Sharp/3.1.0",
     "files": [
+      "licenses/NuGet/Fmod5Sharp/3.1.0/LICENSE",
+      "licenses/NuGet/Fmod5Sharp/3.1.0/NOTICE",
       "licenses/NuGet/Fmod5Sharp/3.1.0/fmod5sharp.nuspec"
     ]
   },
   {
     "component": "GenericReader/2.3.0",
     "files": [
+      "licenses/NuGet/GenericReader/2.3.0/LICENSE",
       "licenses/NuGet/GenericReader/2.3.0/genericreader.nuspec"
     ]
   },
   {
     "component": "IndexRange/1.1.0",
     "files": [
+      "licenses/NuGet/IndexRange/1.1.0/LICENSE",
       "licenses/NuGet/IndexRange/1.1.0/indexrange.nuspec"
     ]
   },
   {
     "component": "Infrablack.UE4Config/0.7.2.97",
     "files": [
+      "licenses/NuGet/Infrablack.UE4Config/0.7.2.97/LICENSE",
       "licenses/NuGet/Infrablack.UE4Config/0.7.2.97/infrablack.ue4config.nuspec"
     ]
   },
   {
     "component": "K4os.Compression.LZ4/1.3.8",
     "files": [
+      "licenses/NuGet/K4os.Compression.LZ4/1.3.8/LICENSE",
       "licenses/NuGet/K4os.Compression.LZ4/1.3.8/k4os.compression.lz4.nuspec"
     ]
   },
   {
     "component": "K4os.Compression.LZ4.Streams/1.3.8",
     "files": [
+      "licenses/NuGet/K4os.Compression.LZ4.Streams/1.3.8/LICENSE",
       "licenses/NuGet/K4os.Compression.LZ4.Streams/1.3.8/k4os.compression.lz4.streams.nuspec"
     ]
   },
   {
     "component": "K4os.Hash.xxHash/1.0.8",
     "files": [
+      "licenses/NuGet/K4os.Hash.xxHash/1.0.8/LICENSE",
       "licenses/NuGet/K4os.Hash.xxHash/1.0.8/k4os.hash.xxhash.nuspec"
     ]
   },
   {
     "component": "LZMA-SDK/22.1.1",
     "files": [
+      "licenses/NuGet/LZMA-SDK/22.1.1/LICENSE",
       "licenses/NuGet/LZMA-SDK/22.1.1/lzma-sdk.nuspec"
     ]
   },
   {
     "component": "MemoryPack/1.21.4",
     "files": [
+      "licenses/NuGet/MemoryPack/1.21.4/LICENSE.md",
       "licenses/NuGet/MemoryPack/1.21.4/memorypack.nuspec"
     ]
   },
   {
     "component": "MemoryPack.Core/1.21.4",
     "files": [
+      "licenses/NuGet/MemoryPack.Core/1.21.4/LICENSE.md",
       "licenses/NuGet/MemoryPack.Core/1.21.4/memorypack.core.nuspec"
     ]
   },
   {
     "component": "MemoryPack.Generator/1.21.4",
     "files": [
+      "licenses/NuGet/MemoryPack.Generator/1.21.4/LICENSE.md",
       "licenses/NuGet/MemoryPack.Generator/1.21.4/memorypack.generator.nuspec"
     ]
   },
@@ -171,18 +192,23 @@
   {
     "component": "Microsoft.NETCore.Platforms/1.1.0",
     "files": [
+      "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/ThirdPartyNotices.txt",
+      "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/dotnet_library_license.txt",
       "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/microsoft.netcore.platforms.nuspec"
     ]
   },
   {
     "component": "NAudio.Core/2.2.1",
     "files": [
+      "licenses/NuGet/NAudio.Core/2.2.1/license.txt",
       "licenses/NuGet/NAudio.Core/2.2.1/naudio.core.nuspec"
     ]
   },
   {
     "component": "NETStandard.Library/1.6.1",
     "files": [
+      "licenses/NuGet/NETStandard.Library/1.6.1/ThirdPartyNotices.txt",
+      "licenses/NuGet/NETStandard.Library/1.6.1/dotnet_library_license.txt",
       "licenses/NuGet/NETStandard.Library/1.6.1/netstandard.library.nuspec"
     ]
   },
@@ -196,42 +222,49 @@
   {
     "component": "OffiUtils/3.2.0",
     "files": [
+      "licenses/NuGet/OffiUtils/3.2.0/LICENSE",
       "licenses/NuGet/OffiUtils/3.2.0/offiutils.nuspec"
     ]
   },
   {
     "component": "OggVorbisEncoder/1.2.2",
     "files": [
+      "licenses/NuGet/OggVorbisEncoder/1.2.2/LICENSE",
       "licenses/NuGet/OggVorbisEncoder/1.2.2/oggvorbisencoder.nuspec"
     ]
   },
   {
     "component": "Oodle.NET/2.2.0",
     "files": [
+      "licenses/NuGet/Oodle.NET/2.2.0/LICENSE",
       "licenses/NuGet/Oodle.NET/2.2.0/oodle.net.nuspec"
     ]
   },
   {
     "component": "OodleSharp/0.0.1",
     "files": [
+      "licenses/NuGet/OodleSharp/0.0.1/LICENSE",
       "licenses/NuGet/OodleSharp/0.0.1/oodlesharp.nuspec"
     ]
   },
   {
     "component": "Serilog/4.3.1",
     "files": [
+      "licenses/NuGet/Serilog/4.3.1/LICENSE",
       "licenses/NuGet/Serilog/4.3.1/serilog.nuspec"
     ]
   },
   {
     "component": "Serilog.Sinks.Console/6.1.1",
     "files": [
+      "licenses/NuGet/Serilog.Sinks.Console/6.1.1/LICENSE",
       "licenses/NuGet/Serilog.Sinks.Console/6.1.1/serilog.sinks.console.nuspec"
     ]
   },
   {
     "component": "SubstreamSharp/1.0.3",
     "files": [
+      "licenses/NuGet/SubstreamSharp/1.0.3/Licence.txt",
       "licenses/NuGet/SubstreamSharp/1.0.3/substreamsharp.nuspec"
     ]
   },
@@ -252,37 +285,171 @@
   {
     "component": "VGAudio/2.2.1",
     "files": [
+      "licenses/NuGet/VGAudio/2.2.1/LICENSE",
       "licenses/NuGet/VGAudio/2.2.1/vgaudio.nuspec"
     ]
   },
   {
     "component": "Zlib-ng.NET/1.2.0",
     "files": [
+      "licenses/NuGet/Zlib-ng.NET/1.2.0/LICENSE",
       "licenses/NuGet/Zlib-ng.NET/1.2.0/zlib-ng.net.nuspec"
     ]
   },
   {
     "component": "ZstdSharp.Port/0.8.8",
     "files": [
+      "licenses/NuGet/ZstdSharp.Port/0.8.8/LICENSE",
       "licenses/NuGet/ZstdSharp.Port/0.8.8/zstdsharp.port.nuspec"
     ]
   },
   {
     "component": "AssetsTools.NET/3.0.5",
     "files": [
+      "licenses/NuGet/AssetsTools.NET/3.0.5/LICENSE.txt",
       "licenses/NuGet/AssetsTools.NET/3.0.5/assetstools.net.nuspec"
     ]
   },
   {
     "component": "AssetsTools.NET.MonoCecil/3.0.4",
     "files": [
+      "licenses/NuGet/AssetsTools.NET.MonoCecil/3.0.4/LICENSE.txt",
       "licenses/NuGet/AssetsTools.NET.MonoCecil/3.0.4/assetstools.net.monocecil.nuspec"
     ]
   },
   {
     "component": "Mono.Cecil/0.11.3",
     "files": [
+      "licenses/NuGet/Mono.Cecil/0.11.3/LICENSE.txt",
       "licenses/NuGet/Mono.Cecil/0.11.3/mono.cecil.nuspec"
+    ]
+  },
+  {
+    "component": "Microsoft.Web.WebView2/1.0.2849.39",
+    "files": [
+      "licenses/NuGet/Microsoft.Web.WebView2/1.0.2849.39/LICENSE.txt",
+      "licenses/NuGet/Microsoft.Web.WebView2/1.0.2849.39/Microsoft.Web.WebView2.nuspec",
+      "licenses/NuGet/Microsoft.Web.WebView2/1.0.2849.39/NOTICE.txt"
+    ]
+  },
+  {
+    "component": "SkiaSharp/3.119.4",
+    "files": [
+      "licenses/NuGet/SkiaSharp/3.119.4/SkiaSharp.nuspec",
+      "licenses/NuGet/SkiaSharp/3.119.4/LICENSE.txt"
+    ]
+  },
+  {
+    "component": "SkiaSharp.NativeAssets.Win32/3.119.4",
+    "files": [
+      "licenses/NuGet/SkiaSharp.NativeAssets.Win32/3.119.4/SkiaSharp.NativeAssets.Win32.nuspec",
+      "licenses/NuGet/SkiaSharp.NativeAssets.Win32/3.119.4/LICENSE.txt",
+      "licenses/NuGet/SkiaSharp.NativeAssets.Win32/3.119.4/THIRD-PARTY-NOTICES.txt"
+    ]
+  },
+  {
+    "component": "Magick.NET-Q8-AnyCPU/14.16.0",
+    "files": [
+      "licenses/NuGet/Magick.NET-Q8-AnyCPU/14.16.0/License.txt",
+      "licenses/NuGet/Magick.NET-Q8-AnyCPU/14.16.0/Magick.NET-Q8-AnyCPU.nuspec",
+      "licenses/NuGet/Magick.NET-Q8-AnyCPU/14.16.0/Notice.txt"
+    ]
+  },
+  {
+    "component": "Magick.NET.Core/14.16.0",
+    "files": [
+      "licenses/NuGet/Magick.NET.Core/14.16.0/Copyright.txt",
+      "licenses/NuGet/Magick.NET.Core/14.16.0/License.txt",
+      "licenses/NuGet/Magick.NET.Core/14.16.0/Magick.NET.Core.nuspec"
+    ]
+  },
+  {
+    "component": "Microsoft.CodeAnalysis.Common/5.9.0",
+    "files": [
+      "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/License.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/Microsoft.CodeAnalysis.Common.nuspec",
+      "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/ThirdPartyNotices.rtf"
+    ]
+  },
+  {
+    "component": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+    "files": [
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/License.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/Microsoft.CodeAnalysis.CSharp.nuspec",
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/ThirdPartyNotices.rtf"
+    ]
+  },
+  {
+    "component": "Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0",
+    "files": [
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/License.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/Microsoft.CodeAnalysis.CSharp.Scripting.nuspec",
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/ThirdPartyNotices.rtf"
+    ]
+  },
+  {
+    "component": "Microsoft.CodeAnalysis.Scripting.Common/5.9.0",
+    "files": [
+      "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/License.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/Microsoft.CodeAnalysis.Scripting.Common.nuspec",
+      "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/ThirdPartyNotices.rtf"
+    ]
+  },
+  {
+    "component": "SharpZipLib/1.4.2",
+    "files": [
+      "licenses/NuGet/SharpZipLib/1.4.2/LICENSE.txt",
+      "licenses/NuGet/SharpZipLib/1.4.2/SharpZipLib.nuspec"
+    ]
+  },
+  {
+    "component": "System.CommandLine/2.0.11",
+    "files": [
+      "licenses/NuGet/System.CommandLine/2.0.11/LICENSE.TXT",
+      "licenses/NuGet/System.CommandLine/2.0.11/System.CommandLine.nuspec",
+      "licenses/NuGet/System.CommandLine/2.0.11/THIRD-PARTY-NOTICES.txt"
+    ]
+  },
+  {
+    "component": "runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128",
+    "files": [
+      "licenses/NuGet/runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128/LICENSE",
+      "licenses/NuGet/runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128/runtime.osx.10.10-x64.CoreCompat.System.Drawing.nuspec"
+    ]
+  },
+  {
+    "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+    "files": [
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.11/LICENSE.TXT",
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.11/Microsoft.NETCore.App.Runtime.win-x64.nuspec",
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.11/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.14",
+    "files": [
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.14/LICENSE.TXT",
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.14/THIRD-PARTY-NOTICES.TXT",
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.14/Microsoft.NETCore.App.Runtime.win-x64.nuspec"
+    ]
+  },
+  {
+    "component": "Microsoft.NETCore.App.Runtime.win-x64/8.0.33",
+    "files": [
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/8.0.33/Microsoft.NETCore.App.Runtime.win-x64.nuspec",
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/8.0.33/LICENSE.TXT",
+      "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/8.0.33/THIRD-PARTY-NOTICES.TXT"
+    ]
+  },
+  {
+    "component": "Microsoft.WindowsDesktop.App.Runtime.win-x64/8.0.33",
+    "files": [
+      "licenses/NuGet/Microsoft.WindowsDesktop.App.Runtime.win-x64/8.0.33/Microsoft.WindowsDesktop.App.Runtime.win-x64.nuspec",
+      "licenses/NuGet/Microsoft.WindowsDesktop.App.Runtime.win-x64/8.0.33/LICENSE"
     ]
   }
 ]

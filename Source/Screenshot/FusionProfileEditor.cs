@@ -7,14 +7,16 @@ public sealed partial class MainForm
     private sealed record ProfileChoice(string? Id,string Label){public override string ToString()=>Label;}
     internal static string InterfaceItemText(object? item)
     {
+        if(item is InterfaceLanguageChoice language)return language.ToString();
         if(item is ProfileChoice {Id:not null} profile)
         {
             if(!UiLanguage.IsTranslated)return profile.Label;
-            foreach(var suffix in new[]{("（未配置完成）",UiLanguage.IsEnglish?" (incomplete)":" (не настроен)"),("（未保存）",UiLanguage.IsEnglish?" (unsaved)":" (не сохранено)")})
-                if(profile.Label.EndsWith(suffix.Item1,StringComparison.Ordinal))return profile.Label[..^suffix.Item1.Length]+suffix.Item2;
+            foreach(var suffix in new[]{"（未配置完成）","（未保存）"})
+                if(profile.Label.EndsWith(suffix,StringComparison.Ordinal))return profile.Label[..^suffix.Length]+UiLanguage.Exact(suffix);
             return profile.Label;
         }
-        return item?.ToString()=="关闭"?UiLanguage.Choose("关闭","Off","Выкл."):UiLanguage.Text(item?.ToString());
+        return item?.ToString()=="关闭"?(UiLanguage.Current is ApplicationLanguage.SimplifiedChinese or ApplicationLanguage.English or ApplicationLanguage.Russian
+            ?UiLanguage.Choose("关闭","Off","Выкл."):UiLanguage.SwitchText(false)):UiLanguage.Text(item?.ToString());
     }
     private readonly TextBox _schemeName=WpfWorkspace.Enabled ? null! : new(){Name="ProfileName",AccessibleName="方案名称"};
     private readonly CheckBox _noCredential=WpfWorkspace.Enabled ? null! : new(){Text="无需密钥（本地／免鉴权）",AutoSize=true};
@@ -62,7 +64,7 @@ public sealed partial class MainForm
         AddSettingRow(table,"",Stack(create,more));AddSettingRow(table,"方案名称",_schemeName);
         AddSettingRow(table,"来源与使用范围",Stack(_profileOrigin,_profileUsage));
         AddSettingRow(table,"接口地址",_apiUrlBox);AddSettingRow(table,"API 密钥",_apiKeyBox);
-        AddSettingRow(table,"",_noCredential);AddSettingRow(table,"模型",_modelBox);
+        AddSettingRow(table,"",_noCredential);AddSettingRow(table,"",Info(ApiConnectionPolicy.NoCredentialHelp));AddSettingRow(table,"模型",_modelBox);
         AddSettingRow(table,"首响应 / 总超时（秒）",Stack(_firstByteTimeoutBox,_requestTimeoutBox));
         var examples=MakeButton("常用参数示例 ▾",Point.Empty,new(145,36));examples.AutoSize=true;examples.Visible=false;
         var parameterMenu=new LocalizedContextMenuStrip();

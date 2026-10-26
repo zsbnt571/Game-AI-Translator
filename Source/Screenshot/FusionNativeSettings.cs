@@ -88,6 +88,17 @@ public sealed partial class MainForm
     internal async Task NativeRetryLibraryNames()
     { _libraryNameAttempts.Clear(); var store = await RecentStore(); await FillLibraryChineseNamesAsync(store.SnapshotAll(), true); }
     internal Task NativeEditLibraryRetention() => EditLibraryRetentionAsync();
+    internal string? NativeChooseMigrationSource()
+    {
+        using var picker = new FolderBrowserDialog
+        {
+            Description = UiLanguage.Text("选择旧版软件文件夹或其中的 data 文件夹"),
+            UseDescriptionForTitle = true,
+            ShowNewFolderButton = false
+        };
+        return picker.ShowDialog(this) == DialogResult.OK ? picker.SelectedPath : null;
+    }
+
     internal string? NativeChooseStorageLocation()
     {
         using var picker = new FolderBrowserDialog { Description = UiLanguage.Text("选择独立的空文件夹。下次启动复制数据，原目录保留。") };

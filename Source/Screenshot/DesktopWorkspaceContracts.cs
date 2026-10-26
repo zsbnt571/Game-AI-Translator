@@ -39,6 +39,14 @@ internal interface ILibraryWorkspaceHost
 
 internal interface IGameDetailsHost
 {
+    ModificationSpeedState NativeGameSpeedState => ModificationSpeedState.Unavailable;
+    Task NativeSetGameSpeed(double rate) => Task.CompletedTask;
+    bool NativeStorySkipVisible => false;
+    bool NativeStorySkipEnabled => false;
+    Task NativeStorySkip(bool stop) => Task.CompletedTask;
+    DesktopActionState NativeCommonModificationAction => new("开启修改"){Text="开启修改",Enabled=false};
+    string NativeCommonModificationStatus => "修改未开启。开启后才能调整游戏速度。";
+    Task NativeToggleCommonModification() => Task.CompletedTask;
     ScreenshotTranslationUiTester.GameDetailPresentation GameDetail { get; }
     System.String GamePathText { get; }
     System.Boolean IsDisposed { get; }
@@ -46,6 +54,7 @@ internal interface IGameDetailsHost
     void NativeGameMenu(System.String menu, System.Windows.FrameworkElement anchor);
     System.String NativeGameProfileSummary { get; }
     System.Windows.FrameworkElement NativeRpgView { get; }
+    System.Windows.Controls.ContentControl? NativeRpgCommonSpeedSlot => null;
     void NativeSelectWorkspaceProfile(System.Boolean embedded, System.String id);
     System.String NativeWorkspaceProfileId(System.Boolean embedded);
     ScreenshotTranslationUiTester.WorkspaceProfileChoice[] NativeWorkspaceProfiles(System.Boolean embedded);
@@ -65,6 +74,7 @@ internal interface INovelWorkspaceHost
     ScreenshotTranslationUiTester.NativeNovelWorkspaceState NativeNovel { get; }
     event System.Action? NativeNovelChanged;
     System.Threading.Tasks.Task NativeNovelCommand(System.String command);
+    System.Threading.Tasks.Task NativeNovelBatch(System.String operation,System.Collections.Generic.IReadOnlyList<NovelVariableRow> selected,System.String value);
     System.Threading.Tasks.Task NativeNovelMapVariables(int? map,int eventId,string[] ids);
     void NativeNovelSearch(System.String text);
     void NativeNovelSelect(ScreenshotTranslationUiTester.NovelVariableRow? row);
@@ -113,6 +123,7 @@ internal interface IDesktopSettingsHost
     void NativeBeginGameShortcut();
     System.String NativeBindingText(ScreenshotTranslationUiTester.InputActionId action);
     System.String? NativeChooseStorageLocation();
+    System.String? NativeChooseMigrationSource();
     void NativeChooseThemeColor(System.String property);
     System.String NativeCredentialStatus { get; }
     ScreenshotTranslationUiTester.InputBinding NativeDefaultBinding(ScreenshotTranslationUiTester.InputActionId action);

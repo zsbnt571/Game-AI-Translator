@@ -19,6 +19,13 @@ internal sealed partial class NativeLibraryNavigation:ILibraryNavigationSession
     public event Action<LibraryNavigationTarget,Point>? ContextRequested;
     private sealed record Entry(string Key,string Text,LibraryNavigationTarget Target,string ToolTip="")
     {internal List<Entry> Children {get;}=[];}
+    // Names and paths belong to the library owner. Only software navigation
+    // captions opt into interface translation, even when a custom name equals
+    // a catalog key such as "设置" or "最近使用".
+    internal static string DisplayText(LibraryNavigationNode node)=>node.Tag is LibraryNavigationTarget target&&
+        (target.Kind is "scope" or "heading" or "add-root" or "new-folder" or "new-category" || target.Kind=="engine"&&target.Value=="待识别")
+        ?UiLanguage.Text(node.Text):node.Text;
+    internal static string DisplayToolTip(LibraryNavigationNode node)=>DisplayText(node)+(node.ToolTipText.Length>0?"\n"+(node.ToolTipText=="库内收纳文件夹"?UiLanguage.Text(node.ToolTipText):node.ToolTipText):"");
     internal NativeLibraryNavigation(){}
     private int S(int n)=>n*DeviceDpi/96;
     private Rectangle Track=>ScrollMaximum>0?new(Math.Max(0,NavigationViewport.Width-S(10)),S(3),S(10),Math.Max(0,NavigationViewport.Height-S(6))):Rectangle.Empty;
@@ -126,7 +133,7 @@ internal sealed partial class NativeLibraryNavigation:ILibraryNavigationSession
     }
     private void MoveThumb(int y){var track=Track;var thumb=Thumb;ScrollTo((int)((long)(y-track.Y-grab)*ScrollMaximum/Math.Max(1,track.Height-thumb.Height)));}
     private void OnMouseMove(MouseEventArgs e)
-    {if(dragging){MoveThumb(e.Y);return;}bool hot=Track.Contains(e.Location);var node=hot?null:Hit(e.Location);if(hot!=overScroll){overScroll=hot;Invalidate(Track);}if(hoverKey!=node?.Name){var old=hoverKey;hoverKey=node?.Name;InvalidateRow(old);InvalidateRow(hoverKey);SetTip(node is null?null:node.Text+(node.ToolTipText.Length>0?"\n"+node.ToolTipText:""));}}
+    {if(dragging){MoveThumb(e.Y);return;}bool hot=Track.Contains(e.Location);var node=hot?null:Hit(e.Location);if(hot!=overScroll){overScroll=hot;Invalidate(Track);}if(hoverKey!=node?.Name){var old=hoverKey;hoverKey=node?.Name;InvalidateRow(old);InvalidateRow(hoverKey);SetTip(node is null?null:DisplayToolTip(node));}}
     private void OnMouseLeave(EventArgs e){var old=hoverKey;hoverKey=null;overScroll=false;InvalidateRow(old);Invalidate(Track);}
     private void OnMouseUp(MouseEventArgs e){if(e.Button==MouseButtons.Left&&dragging){dragging=false;Capture=false;Invalidate(Track);}}
     private void OnMouseCaptureChanged(EventArgs e){if(!Capture)dragging=false;}

@@ -67,7 +67,8 @@ public sealed partial class MainForm
         tabbar.ColumnStyles.Add(new(SizeType.Percent,100));tabbar.ColumnStyles.Add(new(SizeType.AutoSize));tabbar.RowStyles.Add(new(SizeType.Percent,100));
         var tabActions=new WorkspaceControlRow{AutoSize=true,AutoSizeMode=AutoSizeMode.GrowAndShrink,WrapContents=false,Anchor=AnchorStyles.Top|AnchorStyles.Right,Margin=Padding.Empty};
         foreach(var action in new[]{_dataLaunch,_dataToggle,_dataRefresh}){action.Margin=new(0,0,8,0);tabActions.Controls.Add(action);}
-        tabbar.Controls.Add(tabs,0,0);tabbar.Controls.Add(tabActions,1,0);WorkspaceAdd(page,tabbar,SizeType.Absolute,44);
+        WorkspaceAdd(page,tabActions);
+        tabbar.Controls.Add(tabs,0,0);tabbar.SetColumnSpan(tabs,2);WorkspaceAdd(page,tabbar,SizeType.Absolute,44);
         tabs.SizeChanged+=(_,_)=>{int lines=1,x=0;foreach(Control c in tabs.Controls){if(x>0&&x+c.Width+c.Margin.Horizontal>tabs.Width){lines++;x=0;}x+=c.Width+c.Margin.Horizontal;}int row=page.GetRow(tabbar);if(row>=0){float h=(lines*40+4)*DeviceDpi/96f+tabbar.Margin.Vertical;if(Math.Abs(page.RowStyles[row].Height-h)>1)page.RowStyles[row].Height=h;}};
         _dataEventKind.Items.AddRange(["地图事件","公共事件","运行中事件"]);_dataEventKind.SelectedIndex=0;
         _dataMapLabel=WorkspaceLabel("浏览地图");

@@ -52,7 +52,15 @@ public sealed partial class MainForm
             string profileName=_fusion.Name(_fusion.GameProfileId(game.ExePath));
             session.Busy=true;_gameRootOperations[root]=session;ownsRoot=true;
             _manualScreenFeedback[game.ExePath]="正在开启屏幕翻译…";RenderGameSessionState();
-            int? launched=await ManualScreenTranslationLaunch.EnsureRunningAsync(game,_gameLaunchOperations,_desktopLifetime.Token);
+            // Restoring owned plug-ins for a stopped target must not disturb
+            // another running executable in the same installation. A running
+            // target only opens screen capture and does not alter those files.
+            var shared=_gameSessions.Snapshot().Where(x=>!ReferenceEquals(x,session)&&StringComparer.OrdinalIgnoreCase.Equals(Path.GetDirectoryName(x.Game.ExePath),Path.GetDirectoryName(game.ExePath))).Select(x=>x.Game).ToArray();
+            int? launched=await ManualScreenTranslationLaunch.EnsureRunningAsync(game,_gameLaunchOperations,_desktopLifetime.Token,()=>
+            {
+                foreach(var other in shared)if(_gameLaunchOperations.ProcessState(other)!=FusionGameProcessState.Stopped)
+                    throw new InvalidOperationException("此目录中的另一个游戏仍在运行，未更改共享插件文件。");
+            });
             if(launched is {} pid)
             {
                 session.Launched(GameLaunchMode.Ordinary,null);

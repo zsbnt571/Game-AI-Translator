@@ -1,43 +1,47 @@
-# Fusion R1 1.0.0 Preview 1 — Known issues and validation limits
+# Known issues and retained ledger — 1.1.0.127
 
-[简体中文](KNOWN-ISSUES.md) | [Русский](KNOWN-ISSUES.ru.md) | [Home](../README.en.md)
+The original 24 tracking IDs are retained and updated through 125–127. Some have scoped fixes; the table neither labels every item wholly unfixed nor treats a partial fix as complete original-game acceptance. Fixes use shared workflows and engine adapters, not game-name or exact-line exceptions.
 
-**Game modification is experimental. Detecting an engine, reading data, completing a write and sustained gameplay are separate validation stages.**
+| ID | Item | Current state and boundary |
+| --- | --- | --- |
+| 1 | Godot name prompts and speaker placement | 124 fixed clipping bounds and original-text restoration when translated text cannot be drawn. Neutral engine evidence does not certify every original game's layout. |
+| 2 | Godot imported resources and catalog gaps | Import/remap reading was extended. Godot 3 compiled scripts, unknown formats and dynamic text still have coverage limits. |
+| 3 | Original text before cached translation; missed lines | 125/126 fixed a production Godot preparation race, with first-enabled-frame cache hits in a neutral scene. Full Towns Charm gameplay and all causes of missed text across engines remain unverified. |
+| 4 | Two Towns Charm soft-quality records | The component-description cache passes the revised generic rule and can retire the old issue with a history receipt; this is not an API retranslation. The sponsor list retains untranslated-content evidence and four failures. Both successfully retranslated is an unsupported claim. |
+| 5 | Same-process toggling after normal launch | Shared preparation and connected toggling exist, with some historical actual checks. External unbridged processes, old resident components and the cross-engine original-game matrix remain limited. |
+| 6 | Default font fidelity | Controlled preservation/restoration checks exist. They do not establish that all native-Chinese or pixel-rendering defects are fixed. |
+| 7 | Live custom fonts and restoration | Implemented for supported adapters. Older Unity atlases/TMP factories, some TTC faces and complex shaping remain limited. A protective refusal is not a successful font change. |
+| 8 | System language and UI localization | 126 added nine languages; 127 fixes order and stable-value saving. Older missing-field settings retain compatibility behavior. Native-speaker review of every entry and every display scale is not claimed. |
+| 9 | No-key and local compatible models | Keyless validation is shared, but the service must run and support the request format. HTTP 200 does not certify structure, translation quality or game display. |
+| 10 | Ren’Py pre-read and menu/exit text gaps | Language fallback, explicit menu text and safe format extraction improved. Later story, dynamic/image text and cached-but-untranslated menus still need source-to-display checks. |
+| 11 | Waifu Academy CG/Replay closing | Seen-image records and replay labels are distinguished. The original immediate-close cause is unconfirmed; persistent data and saves must not be altered blindly. |
+| 12 | Large old cache with empty term/name lists | Static names now enter shared sources and persistence. Backfilling existing user caches and restoring the actual list remain incompletely verified. |
+| 13 | Failures, retries and 100% progress | Syntax/variable false positives and queued/pending-write accounting improved. Progress covers discovered text only. Failure reasons, attempt counts and useful old translations must remain. |
+| 14 | Unity expanded variables and reused controls | 123 fixed player-name templates and source identity, with actual-engine/neutral-canvas evidence. Complete original stories and every template are not certified. |
+| 15 | Traveller’s Tale old TMP and name entry | Historical isolated first-three-screen and disable/restore checks passed. Evidence is limited to that Mono runtime and those scenes, not the entire story or all Unity runtimes. |
+| 16 | Unity later-story and minigame UI coverage | Naninovel catalogs and read-only fields were expanded. Catalogs can remain incomplete; dynamic, custom-drawn and image text need separate handling. |
+| 17 | MansionDays native Chinese and rough/missing glyphs | Original/default/custom/restored pixel comparisons remain incomplete for reported scenes. Replacing the default font is not an accepted substitute for diagnosis. |
+| 18 | Yes, Master! 0xC0000005 | Only the exception location is known. Root cause and a fix are unconfirmed; safe comparison evidence is insufficient. No attribution to Fusion, Steam or the game is made. |
+| 19 | Repeated WOLF value edits | Generic revision handling and re-read recovery passed controlled checks. The Imperial Gatekeeper's original repeated-edit scenario remains unverified. |
+| 20 | WOLF map differs from the current game view | The page is a static resource/event-location schematic. Live map and tile rendering are not implemented. |
+| 21 | Speed after Ctrl skipping, animation or app switching | User rate and temporary game control are separated. Original-story and physical foreground/background input coverage remain limited. Fixed steps, media and network waits may ignore the multiplier. |
+| 22 | Legacy MGI/Cloud Meadow migration | The general Unity route replaces the old version selector. Only identified old components may be handled; original-install migration coverage is limited and unknown mods must be preserved. |
+| 23 | Shared actions, layout and focus | Shared controls and later UI checks exist. Uncovered pages, keyboard paths, DPI combinations and reported screenshots remain tracked; aggregate counts do not close them. |
+| 24 | Other retained requests and research | Limited character grammar support is now implemented in 126. Major UI redesign, package reduction, complete translation import/sharing and Gulovacka adaptation have no complete delivery evidence here. Deployment, Android and external-tool studies are not product integrations. |
 
-## Translation and text coverage
+## Runtime maintenance boundary
 
-- Pretranslation covers text with identifiable provenance that was actually read and belongs to the selected language scope. Runtime-generated text, image text, custom drawing, unknown archives and some scripts may remain missing. 100% refers only to the currently discovered scope.
-- Eligible original display-text collection is improved for Ren’Py and Godot. This does not guarantee every hidden control, plugin or inactive language pack. Some GameMaker resources still require sufficient evidence of the language actually in use.
-- WOLF resources, paired databases, deep-folder collection and some custom typewriter paths have fixes. Custom typewriter support requires verified resource combinations and does not cover every version. Some currently displayed sentences need to be displayed again or the game restarted before using a new translation.
-- Small untranslated fragments or naming mismatches keep usable translations and receive limited repair attempts. Automatic requests stop at the retry limit; inspect the reason in translation management. Damaged formatting, numbers or placeholders, and explanation/refusal-only answers are still rejected as text.
-- Automatic naming depends on provenance. Unusual titles, different entities sharing a name, multilingual aliases and short words can remain ambiguous. Ordinary words should not become fixed wording for every context. Manual corrections and imported rules are retained and existing conflicts need review.
-- Changing style, instructions or target language does not rewrite all old caches. Targets are managed separately, and updating related automatic translations after a name edit takes processing time.
-- New translations depend on API latency, quota and model output. API success does not validate fonts, wrapping, display or narrative meaning. Historical reports of missing glyphs, delayed display or unexpected game exits are not all established as resolved by this interface check.
+The .NET 8/10 servicing scope covers six locations: the desktop, cover helper, UnitySchema, UnrealCatalog, and the separate GameMaker copies in the source and application packages. UnityEmbeddedIl2Cpp64.zip and the same loader embedded in the main assembly still contain .NET 6.0.7. That runtime is out of support and is not fixed by this servicing work. It is retained for compatibility with the legacy loader, rather than replaced across major versions. Updating the six .NET 8/10 locations does not establish that every embedded runtime has been updated. Post-servicing validation is recorded separately.
 
-## Game modification — Experimental
+## Paused work and shared limits
 
-- Money, attributes, relationships and CG/replay groups can contain candidates requiring review. A field name alone does not prove its purpose. There is no automatic unlock-all-gallery operation.
-- Only readable categories are displayed. Different game structures mean WOLF, RPG Maker, Ren’Py, Unreal and other engines do not gain identical tools. Unity IL2CPP, Unreal, Godot 3 and versions not covered here retain compatibility limits.
-- The current WOLF speed interface accepts 0.25–100×; RPG Maker MV/MZ accepts 1–100× integer acceleration. Requesting 100× does not guarantee actual speed, audiovisual synchronization or extended stability. Other engines lack universal support. Speed does not change Fusion's interface frame rate.
-- Readable RPG Maker item icons remain available. Generic WOLF icon mapping is incomplete. Maps display readable cells/events rather than a complete textured map or editor.
-- Category changes and background updates preserve selection, scrolling and unsaved input, but initial collection/name preparation for large databases can remain slow. Reproduced waits and duplicate-key paths were fixed; not every wait in every game is eliminated.
-- Keep a save backup before editing. Runtime edits may not persist to saves; loading a save, switching objects or rebuilding game data may require a refresh. Locking, undo and persistence depend on the specific interface.
-- RPG Maker component recovery only adopts Fusion files confirmed by installation records, component hashes and backup hashes. Other mods, modified components and inconsistent backups still trigger protection.
+The deeper FLife2 crash investigation remains paused; a new build or publication does not resume it automatically. An unexplained crash is not assigned a cause without evidence.
 
-## Interface, performance and dependencies
+Speed controls are under Game modification → Common and require explicit modification permission for that game. Translation has a separate switch. High rates, fixed steps, animation, media and click-gated dialogue need not advance proportionally. The WOLF schematic is not a live map.
 
-- Stable 60 FPS is not promised; high-resolution maximized windows can remain significantly slower. Reduced redraws and cover/category caches address identified paths, not every physical display-frame scenario.
-- English/Russian checks cover recent real WPF controls, dynamic text, narrow layouts and language switching. Game translations use the chosen target; interface localization does not certify Russian fonts and wrapping in every game.
-- Specialized viewers, helpers and compatibility entry points may still use existing controls/platform components. The WPF update does not rewrite every underlying component.
-- If WPF display fails on a particular machine, close Fusion and use `GameTranslator.exe --legacy-ui` for the compatibility interface. Do not run two versions writing to the same data directory.
-- Screenshot OCR, image background processing and embedded translation have different coverage. Translated-image background processing remains experimental and can leave background/layout artifacts.
-- Optional NVIDIA dependencies reuse the 178 asset without new all-hardware inference acceptance. Proprietary Oodle, some heavy optional models and GPU drivers are excluded. Legacy helpers still use Windows platform components.
-- No complete clean-Windows-VM, all-DPI/theme/monitor, accessibility or all-engine extended-gameplay validation is claimed.
+Current automatic character evidence is limited to reliable static Ren’Py bindings and explicit English statements. Unknown, conflicting or dynamic bindings, and sources already carrying unresolved issues at session start, retain the old path. Chinese users receive no additional setup and ordinary caches are not bulk-cleared.
 
-## This release build
+This 127 round launched 0 original games and made 0 translation API calls. The final 126 provider sample passed 8 definite expectations; 2 unknown-addressee cases were observations only. The first round's 2 failures remain recorded. Historical actual-game or neutral-engine checks are not fresh 127 acceptance.
 
-This release build passed **615 of 615 controlled checks**: 342 interface/localization checks and 273 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance.
+[Changes and evidence](RELEASE-NOTES-1.1.0.127.en.md) · [Home](../README.en.md)
 
-Historical checks do not substitute for validating this release. Controlled tests, resource checks, real-control screenshots and actual game runs are recorded separately. See the [three-language release notes](RELEASE-NOTES-1.0.0.md).
-
-Reports should include the version, engine, interface/target languages and steps. Remove credentials and personal information from logs. Public uploads of games or saves are not required.

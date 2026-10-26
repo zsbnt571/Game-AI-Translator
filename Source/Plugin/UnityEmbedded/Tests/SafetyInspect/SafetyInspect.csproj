@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><CoreDir>E:\Codex\GameTranslator\Work\Fusion-R1-0.6.0.73\Tools\UnityEmbedded\BepInEx6-IL2CPP\BepInEx\core</CoreDir></PropertyGroup>
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup>
     <Reference Include="LibCpp2IL"><HintPath>$(CoreDir)\LibCpp2IL.dll</HintPath></Reference>
     <Reference Include="AssetRipper.Primitives"><HintPath>$(CoreDir)\AssetRipper.Primitives.dll</HintPath></Reference>
@@ -7,4 +7,7 @@
     <Reference Include="WasmDisassembler"><HintPath>$(CoreDir)\WasmDisassembler.dll</HintPath></Reference>
     <Reference Include="Cpp2IL.Core"><HintPath>$(CoreDir)\Cpp2IL.Core.dll</HintPath></Reference>
   </ItemGroup>
+  <Target Name="ValidateCoreDir" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(CoreDir)' == '' Or !Exists('$(CoreDir)\LibCpp2IL.dll')" Text="Set CoreDir to the explicitly supplied BepInEx IL2CPP core dependencies." />
+  </Target>
 </Project>

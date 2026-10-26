@@ -4,9 +4,17 @@ namespace ScreenshotTranslationUiTester;
 internal static class InterfaceDisplayLanguage
 {
     internal static string Code(ApplicationLanguage language) => language switch
-    { ApplicationLanguage.English => "en", ApplicationLanguage.Russian => "ru", _ => "zh" };
+    {
+        ApplicationLanguage.English=>"en",ApplicationLanguage.Russian=>"ru",ApplicationLanguage.TraditionalChinese=>"zh-TW",
+        ApplicationLanguage.Japanese=>"ja",ApplicationLanguage.Korean=>"ko",ApplicationLanguage.Spanish=>"es",ApplicationLanguage.French=>"fr",ApplicationLanguage.German=>"de",
+        ApplicationLanguage.FollowSystem=>Code(UiLanguage.Resolve(language)),_=>"zh"
+    };
     internal static string Name(ApplicationLanguage language) => language switch
-    { ApplicationLanguage.English => "English", ApplicationLanguage.Russian => "Russian", _ => "Simplified Chinese" };
+    {
+        ApplicationLanguage.English=>"English",ApplicationLanguage.Russian=>"Russian",ApplicationLanguage.TraditionalChinese=>"Traditional Chinese",
+        ApplicationLanguage.Japanese=>"Japanese",ApplicationLanguage.Korean=>"Korean",ApplicationLanguage.Spanish=>"Spanish",ApplicationLanguage.French=>"French",ApplicationLanguage.German=>"German",
+        ApplicationLanguage.FollowSystem=>Name(UiLanguage.Resolve(language)),_=>"Simplified Chinese"
+    };
     internal static ApiSettings Settings(ApiSettings source, ApplicationLanguage? language = null)
     {
         var copy = ApiSettingsSnapshot.Copy(source);
@@ -15,8 +23,13 @@ internal static class InterfaceDisplayLanguage
         copy.SourceLanguages = [];
         return copy;
     }
-    internal static bool Matches(string target, ApplicationLanguage? language = null) =>
-        TranslationLanguagePolicy.Canonical(target) == Code(language ?? UiLanguage.Current);
+    internal static bool Matches(string target, ApplicationLanguage? language = null)
+    {
+        var code=Code(language??UiLanguage.Current);
+        return TranslationLanguagePolicy.Canonical(target)==TranslationLanguagePolicy.Canonical(code)
+            &&(code is not ("zh" or "zh-TW")||TranslationLanguagePolicy.ChineseTargetScript(target)==TranslationLanguagePolicy.ChineseTargetScript(code));
+    }
+    internal static bool KnownLocalizedCode(string code)=>UiLanguage.Supported.Where(x=>x!=ApplicationLanguage.SimplifiedChinese).Any(x=>Code(x)==code);
 }
 
 public sealed partial class MainForm

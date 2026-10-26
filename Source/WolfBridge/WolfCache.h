@@ -52,6 +52,11 @@ public:
         }
         render.Publish();clocks.Publish();return copied;
     }
+    std::string Exact(const std::string& key)const{
+        auto shard=std::atomic_load(&published[Index(key)]);
+        if(shard){auto found=shard->find(key);if(found!=shard->end())return found->second;}
+        return {};
+    }
     std::string Single(const std::string& key,HitKind* kind=nullptr)const{
         if(kind)*kind=HitKind::Miss;
         auto shard=std::atomic_load(&published[Index(key)]);
@@ -83,9 +88,36 @@ public:
         }
         return answer;
     }
+    std::string LabelValue(const std::string& key)const{
+        // A complete cached label INCLUDING its colon, followed by a complete
+        // cached value. Never substitute ordinary words or translate only part
+        // of a sentence. This path does not create persisted source entries.
+        if(key.size()>24000||key.find_first_of("\\\r\n\t")!=key.npos||key.find('\0')!=key.npos)return {};
+        std::string answer;unsigned candidates=0;
+        for(size_t at=1;at<key.size();at++){
+            size_t length=key[at]==':'?1:key.compare(at,3,"\xef\xbc\x9a")==0?3:0;
+            if(!length)continue;if(++candidates>16)return {};
+            size_t end=at+length,start=end;while(start<key.size()&&key[start]==' ')start++;
+            if(start==key.size())continue;
+            auto left=Exact(Key(key.substr(0,end))),right=Exact(Key(key.substr(start)));
+            left=Key(left);right=Key(right);
+            bool colon=!left.empty()&&(left.back()==':'||(left.size()>=3&&left.compare(left.size()-3,3,"\xef\xbc\x9a")==0));
+            if(!colon||right.empty()||left.find_first_of("\\\r\n\t")!=left.npos||right.find_first_of("\\\r\n\t")!=right.npos)continue;
+            auto value=left+key.substr(end,start-end)+right;
+            if(value.size()>48000||(!answer.empty()&&answer!=value))return {};answer=std::move(value);
+            at=end-1;
+        }
+        return answer;
+    }
+    std::string ComposedLine(const std::string& key)const{
+        if(key.size()>24000||key.find('\\')!=key.npos||key.find('\0')!=key.npos)return {};
+        auto columns=Columns(key),label=LabelValue(key);
+        if(!columns.empty()&&!label.empty()&&columns!=label)return {};
+        return columns.empty()?label:columns;
+    }
     std::string Find(const std::string& source,HitKind* kind=nullptr)const{
         auto key=Key(source),whole=Single(key,kind);if(!whole.empty())return whole;
-        if(key.find('\n')==key.npos){auto value=Columns(key);if(!value.empty()&&kind)*kind=HitKind::Derived;return value;}
+        if(key.find('\n')==key.npos){auto value=ComposedLine(key);if(!value.empty()&&kind)*kind=HitKind::Derived;return value;}
         // Choice arrays are extracted individually but rendered as one string.
         // Join only fully known single-line translations. Never partially
         // translate a paragraph or consume line separators used by its cursor.
@@ -95,7 +127,7 @@ public:
             auto line=key.substr(at,end-at),normalized=Key(line);
             if(normalized.empty())joined+=line;
             else{
-                auto value=Single(normalized);if(value.empty())value=Columns(normalized);if(value.empty()||value.find_first_of("\r\n")!=value.npos)return {};
+                auto value=Single(normalized);if(value.empty())value=ComposedLine(normalized);if(value.empty()||value.find_first_of("\r\n")!=value.npos)return {};
                 auto start=line.find_first_not_of(" \t\r"),last=line.find_last_not_of(" \t\r");
                 joined+=line.substr(0,start)+value+line.substr(last+1);
             }

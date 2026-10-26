@@ -32,6 +32,7 @@ internal static class RpgTranslationText
             EmbeddedTextSyntax.Renpy=>code.StartsWith('[')&&!code.StartsWith("[[",StringComparison.Ordinal),
             EmbeddedTextSyntax.Wolf=>WolfTranslationText.Variable(code),
             EmbeddedTextSyntax.Generic or EmbeddedTextSyntax.Yukar=>Regex.IsMatch(code,@"^\{(?:[A-Za-z_][A-Za-z_0-9]*|\d+)(?:[, :][^{}]*)?\}$")
+                ||Fusion.UnityEmbedded.DisplayTemplateTokens.IsSquareVariable(code)
                 ||Regex.IsMatch(code,@"^%\([A-Za-z_][A-Za-z_0-9]*\)"),
             _=>Regex.IsMatch(code,@"^(?:\\|\x1b)[VN]\[\d+\]$",RegexOptions.IgnoreCase)
         };

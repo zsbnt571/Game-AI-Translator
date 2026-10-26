@@ -11,3 +11,6 @@ licenses/** -text
 tools/Build-Desktop.ps1 -text
 SOURCE-MANIFEST.json -text
 third-party-source/SOURCES.json -text
+
+# Preserve every reviewed export byte; no checkout normalization.
+* -text

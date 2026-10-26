@@ -275,6 +275,7 @@ internal sealed partial class WpfSettingsFields : IDisposable
         edit.Background = System.Windows.Media.Brushes.Transparent;
         W.Automation.AutomationProperties.SetName(minus, UiLanguage.Choose("减小", "Decrease"));
         W.Automation.AutomationProperties.SetName(plus, UiLanguage.Choose("增大", "Increase"));
+        WpfUiLanguage.Property(minus,W.Automation.AutomationProperties.NameProperty,"减小");WpfUiLanguage.Property(plus,W.Automation.AutomationProperties.NameProperty,"增大");
         row.Children.Add(minus); WC.Grid.SetColumn(edit, 1); row.Children.Add(edit); WC.Grid.SetColumn(plus, 2); row.Children.Add(plus);
         void Sync() { updating = true; try { edit.Text = model.Value.ToString("F" + model.DecimalPlaces, System.Globalization.CultureInfo.CurrentCulture); minus.IsEnabled = model.Value > model.Minimum; plus.IsEnabled = model.Value < model.Maximum; } finally { updating = false; } }
         edit.TextChanged += (_, _) => { if (!updating && decimal.TryParse(edit.Text, out var value) && value >= model.Minimum && value <= model.Maximum) model.Value = value; };

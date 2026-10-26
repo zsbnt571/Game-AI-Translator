@@ -12,13 +12,13 @@ internal sealed class RgssTranslationConnection : IEmbeddedTranslationConnection
     private readonly string exe,folder,secret=Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
     private readonly SemaphoreSlim gate=new(1,1);private readonly CancellationTokenSource lifetime=new();
     private Process? peer;private int id;private bool ready,disposed;
-    private readonly bool native;private readonly Func<int,bool> foreground;
+    private readonly bool native;private readonly Func<int,bool> foreground,activateForSpeed;
     private readonly TimeSpan responseBudget;
     private sealed record PendingRequest(int Id,string Operation,string Published,string Response);
     private PendingRequest? pending;
-    internal RgssTranslationConnection(string exe,Func<int,bool>? foreground=null,TimeSpan? responseBudget=null)
+    internal RgssTranslationConnection(string exe,Func<int,bool>? foreground=null,TimeSpan? responseBudget=null,Func<int,bool>? activateForSpeed=null)
     {
-        this.exe=Path.GetFullPath(exe);native=RgssGameAdapter.Detect(exe)?.Mkxp==false;this.foreground=foreground??Foreground;
+        this.exe=Path.GetFullPath(exe);native=RgssGameAdapter.Detect(exe)?.Mkxp==false;this.foreground=foreground??Foreground;this.activateForSpeed=activateForSpeed??ActivateOwnedWindow;
         this.responseBudget=responseBudget??TimeSpan.FromSeconds(15);
         if(this.responseBudget<=TimeSpan.Zero)throw new ArgumentOutOfRangeException(nameof(responseBudget));
         folder=NativeGameSessionFiles.Create(exe,"rgss",compact:true);if(folder.Length>225)throw new EmbeddedCompatibilityException("数据目录路径过长，旧版 RPG 无法读取通信文件。请使用较短的数据目录。");
@@ -34,6 +34,8 @@ internal sealed class RgssTranslationConnection : IEmbeddedTranslationConnection
     {
         if(!RgssGameAdapter.IsInstalled(exe))throw new IOException("翻译组件不完整或游戏已更新，请重新应用翻译。");
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe),WindowStyle=ProcessWindowStyle.Normal};
+        GameLaunchEnvironment.ClearSession(info);
+        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup);
         GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
         info.Environment["FUSION_RGSS_SESSION"]=folder;info.Environment["FUSION_RGSS_SECRET"]=secret;
         info.Environment["FUSION_RGSS_TRANSLATION"]=translationAtStartup?"1":"0";info.Environment["FUSION_RGSS_OWNER_PID"]=Environment.ProcessId.ToString();return info;
@@ -41,7 +43,22 @@ internal sealed class RgssTranslationConnection : IEmbeddedTranslationConnection
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]private static extern bool QueryFullProcessImageName(IntPtr process,uint flags,StringBuilder path,ref uint length);
     [DllImport("user32.dll")]private static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")]private static extern uint GetWindowThreadProcessId(IntPtr window,out uint pid);
+    [DllImport("user32.dll")]private static extern bool IsWindowVisible(IntPtr window);
+    [DllImport("user32.dll")]private static extern bool IsIconic(IntPtr window);
+    [DllImport("user32.dll")]private static extern bool ShowWindow(IntPtr window,int command);
+    [DllImport("user32.dll")]private static extern bool SetForegroundWindow(IntPtr window);
     private static bool Foreground(int pid){GetWindowThreadProcessId(GetForegroundWindow(),out uint active);return active==(uint)pid;}
+    private bool ActivateOwnedWindow(int pid)
+    {
+        // The stored Process was bound to this exact executable at launch.
+        // Never discover a similarly named game or activate a different PID.
+        if(!Connected||peer is null||peer.Id!=pid)return false;
+        peer.Refresh();IntPtr window=peer.MainWindowHandle;
+        if(window==IntPtr.Zero||!IsWindowVisible(window))return false;
+        GetWindowThreadProcessId(window,out uint owner);if(owner!=(uint)pid||peer.HasExited)return false;
+        if(IsIconic(window))ShowWindow(window,9);
+        return SetForegroundWindow(window);
+    }
     public void Launched(int pid){var process=Process.GetProcessById(pid);try{var image=new StringBuilder(32768);uint length=(uint)image.Capacity;if(process.HasExited||!QueryFullProcessImageName(process.Handle,0,image,ref length)||!Path.GetFullPath(image.ToString()).Equals(exe,StringComparison.OrdinalIgnoreCase))throw new IOException("RGSS 游戏进程验证失败。");peer=process;}catch{process.Dispose();throw;}}
     public async Task AcceptAsync(CancellationToken cancellation=default)
     {
@@ -59,14 +76,28 @@ internal sealed class RgssTranslationConnection : IEmbeddedTranslationConnection
             await Task.Delay(25,ct.Token);
         }
     }
-    public Task<JsonElement> RequestAsync(JsonObject request,CancellationToken cancellation=default)=>
-        UnityRequestRecovery.ExecuteAsync(token=>SendAsync(request,token),request["op"]?.GetValue<string>()=="translationDisable",request["deferIfPaused"]?.GetValue<bool>()==true,cancellation,TimeSpan.FromSeconds(30));
+    public async Task<JsonElement> RequestAsync(JsonObject request,CancellationToken cancellation=default)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        string? operation=request["op"]?.GetValue<string>();
+        bool explicitSpeed=request["activateForSpeed"]?.GetValue<bool>()==true&&
+            (operation is "speedEnable" or "speedDisable"||operation=="gameSpeed"&&request.ContainsKey("rate"));
+        // Once per explicit user action only. Read-only heartbeats and deferred
+        // retries must never continually pull focus away from another game.
+        if(native&&explicitSpeed&&Connected&&!foreground(peer!.Id))activateForSpeed(peer.Id);
+        using var deadline=CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        if(explicitSpeed)deadline.CancelAfter(TimeSpan.FromSeconds(30));
+        try{return await UnityRequestRecovery.ExecuteAsync(token=>SendAsync(request,token),operation is "translationDisable" or "speedDisable",request["deferIfPaused"]?.GetValue<bool>()==true,deadline.Token,TimeSpan.FromSeconds(30)).ConfigureAwait(false);}
+        catch(OperationCanceledException)when(explicitSpeed&&deadline.IsCancellationRequested&&!cancellation.IsCancellationRequested&&!lifetime.IsCancellationRequested)
+        {throw new IOException("等待游戏确认速度超时，尚未确认是否应用。请返回游戏后再次应用倍率。");}
+    }
     private async Task<JsonElement> SendAsync(JsonObject request,CancellationToken cancellation=default)
     {
         using var ct=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);await gate.WaitAsync(ct.Token);
         try
         {
             if(!Connected)throw new IOException("游戏连接已关闭。");
+            if(native&&request["deferIfPaused"]?.GetValue<bool>()==true&&!foreground(peer!.Id))throw new UnityMainThreadPausedException();
             // A caller can cancel after publication (for example when turning
             // translation off). Consume that exact receipt before publishing
             // anything else, so the bridge cannot skip an older request ID.
@@ -74,7 +105,7 @@ internal sealed class RgssTranslationConnection : IEmbeddedTranslationConnection
             // Native RGSS suspends the Ruby interpreter when inactive. A request
             // deferred here has not been published and can be retried safely.
             if(native&&!foreground(peer!.Id))throw new UnityMainThreadPausedException();
-            int current=++id;var q=(JsonObject)request.DeepClone();q.Remove("deferIfPaused");q["id"]=current;q["secret"]=secret;
+            int current=++id;var q=(JsonObject)request.DeepClone();q.Remove("deferIfPaused");q.Remove("activateForSpeed");q["id"]=current;q["secret"]=secret;
             string text=q.ToJsonString();if(Encoding.UTF8.GetByteCount(text)>262144)throw new IOException("翻译请求超过限制。");
             var sent=new PendingRequest(current,request["op"]?.GetValue<string>()??"",Path.Combine(folder,"request-"+current+".json"),Path.Combine(folder,"response-"+current+".json"));
             pending=sent;

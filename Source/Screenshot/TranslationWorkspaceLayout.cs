@@ -12,12 +12,12 @@ internal sealed partial class TranslationWorkspaceForm
         var root=TranslationWorkspaceUi.Column(new(SizeType.AutoSize),new(SizeType.AutoSize),new(SizeType.Percent,100),new(SizeType.AutoSize));
         root.Padding=new(20,12,20,12);Controls.Add(root);
         var title=TranslationWorkspaceUi.Label("译文管理");title.Font=new(Font.FontFamily,14,FontStyle.Bold);title.Margin=new(0,0,0,4);root.Controls.Add(title,0,0);
-        var context=TranslationWorkspaceUi.Label(game.Name+"  ·  "+UiTargetLanguageDisplay.DisplayFromCode(settings.TargetLanguage)+"  ·  "+(TranslationRoute.GenericTest(game.ExePath)?"通用测试独立缓存":"当前游戏译文"),true);root.Controls.Add(context,0,1);
+        var context=TranslationWorkspaceUi.Label(game.Name+"  ·  "+UiTargetLanguageDisplay.DisplayFromCode(settings.TargetLanguage)+"  ·  "+("当前游戏译文"),true);root.Controls.Add(context,0,1);
         UiLanguage.Preserve(context);
         void RefreshContext(object? sender,EventArgs e)
         {
             Text=UiLanguage.Text("译文管理")+" · "+game.Name;
-            context.Text=game.Name+"  ·  "+UiLanguage.Text(UiTargetLanguageDisplay.DisplayFromCode(settings.TargetLanguage))+"  ·  "+UiLanguage.Text(TranslationRoute.GenericTest(game.ExePath)?"通用测试独立缓存":"当前游戏译文");
+            context.Text=game.Name+"  ·  "+UiLanguage.Text(UiTargetLanguageDisplay.DisplayFromCode(settings.TargetLanguage))+"  ·  "+UiLanguage.Text("当前游戏译文");
         }
         UiLanguage.LanguageChanged+=RefreshContext;Disposed+=(_,_)=>UiLanguage.LanguageChanged-=RefreshContext;RefreshContext(null,EventArgs.Empty);
         root.Controls.Add(tabs,0,2);feedback.Tag="translation-muted";feedback.Padding=new(0,8,0,0);feedback.Margin=Padding.Empty;root.Controls.Add(feedback,0,3);

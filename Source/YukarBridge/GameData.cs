@@ -16,12 +16,16 @@ internal sealed class GameData
     sealed class Change {internal Entry Entry;internal object Before,After;}
     object root,party,system;int generation,serial;bool enabled;readonly Dictionary<string,Entry> entries=new Dictionary<string,Entry>();
     readonly Dictionary<string,Change> locks=new Dictionary<string,Change>();readonly List<Change> history=new List<Change>();
-    internal void Sync(object next)
+    // The provider itself reads the engine's data field. Keep it lazy so that
+    // disabled updates and delayed IPC requests never even fetch that field.
+    internal void Sync(Func<object> currentData)
     {
+        if(!enabled||currentData==null)return;
+        object next=currentData();
         var p=Runtime.Field(next,"party");var s=Runtime.Field(next,"system");
         if(!ReferenceEquals(root,next)||!ReferenceEquals(party,p)||!ReferenceEquals(system,s)){root=next;party=p;system=s;generation++;entries.Clear();locks.Clear();history.Clear();}
     }
-    internal void Stop(){enabled=false;locks.Clear();entries.Clear();history.Clear();}
+    internal void Stop(){enabled=false;root=party=system=null;generation++;locks.Clear();entries.Clear();history.Clear();}
     internal void Tick(){if(!enabled)return;foreach(var pair in locks.ToArray())try{var e=pair.Value.Entry;Validate(e);object now=e.Read();if(!Equal(now,pair.Value.After))Write(e,pair.Value.After,now);}catch{locks.Remove(pair.Key);}}
     static bool Equal(object a,object b)=>a is string||a is bool?Equals(a,b):a!=null&&b!=null&&Convert.ToDouble(a,CultureInfo.InvariantCulture)==Convert.ToDouble(b,CultureInfo.InvariantCulture);
     void Validate(Entry e){if(e.Generation!=generation||root==null)throw new InvalidOperationException("游戏数据已更换，请刷新。");}
@@ -82,13 +86,18 @@ internal sealed class GameData
         }
         return new{enabled,ready=root!=null,generation,rows,truncated,locks=locks.Count};
     }
-    internal object Command(Dictionary<string,object> q)
+    internal object Command(Dictionary<string,object> q,Func<object> currentData=null)
     {
         string op=Runtime.Get(q,"op");
-        if(op=="dataEnable"){enabled=true;return new{enabled,ready=root!=null,generation};}
+        if(op=="dataEnable"){
+            enabled=true;
+            try{Sync(currentData);}catch{Stop();throw;}
+            return new{enabled,ready=root!=null,generation};
+        }
         if(op=="dataDisable"){Stop();return new{enabled};}
         if(op=="dataStatus")return new{enabled,ready=root!=null,generation,locks=locks.Count};
         if(!enabled)throw new InvalidOperationException("请先开启修改。");
+        Sync(currentData);
         if(op=="dataSnapshot")return Snapshot();
         if(op=="dataUndo"){if(history.Count==0)throw new InvalidOperationException("没有可撤销的修改。");var h=history[history.Count-1];Write(h.Entry,h.Before,h.After);locks.Remove(h.Entry.Name);history.RemoveAt(history.Count-1);return new{restored=true};}
         if(!q.TryGetValue("generation",out object gen)||Convert.ToInt32(gen)!=generation||!entries.TryGetValue(Runtime.Get(q,"entry"),out Entry e))throw new InvalidOperationException("列表已过期，请刷新。");

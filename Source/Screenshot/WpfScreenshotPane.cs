@@ -67,6 +67,7 @@ internal sealed class WpfScreenshotPane : WC.Grid, IDisposable
         model.NativeViewChanged += Refresh; model.NativeStateApplied = ApplyState; model.NativeStateRequested = () => state;
         model.NativeImageCommand = command => { if (command == "actual") { state = state with { FitMode = ScreenshotPaneFitMode.Manual, Zoom = 1 }; panX = panY = 0; ArrangeImage(); SaveState(); } else if (command == "width") Fit(ScreenshotPaneFitMode.Width); else if (command == "in") Zoom(1.2); else if (command == "out") Zoom(1 / 1.2); else Fit(ScreenshotPaneFitMode.Window); };
         W.Automation.AutomationProperties.SetName(text, "截图文字内容"); W.Automation.AutomationProperties.SetName(viewport, "截图图片查看器");
+        WpfUiLanguage.Property(text,W.Automation.AutomationProperties.NameProperty,"截图文字内容");WpfUiLanguage.Property(viewport,W.Automation.AutomationProperties.NameProperty,"截图图片查看器");
         ApplyState(state); Refresh();
     }
     private void BuildContextMenu()

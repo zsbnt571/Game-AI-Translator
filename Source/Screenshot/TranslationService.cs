@@ -13,6 +13,7 @@ public sealed class TranslationService
 {
     // Optional bounded validation observer; production requests have no observer.
     internal static Action? RequestStartingForDiagnostics { get; set; }
+    internal static Action<bool>? AuthorizationHeaderForDiagnostics { get; set; }
     private sealed record ValidatedCachedTranslation(string FullText,TranslationAllocationSegment[]? Allocations);
     private readonly ConcurrentDictionary<string,ValidatedCachedTranslation> _validatedRecoveryCache=new(StringComparer.Ordinal);
     private sealed class RequestStats
@@ -154,9 +155,17 @@ public sealed class TranslationService
         {
             using var request = BuildPlainRequest(text, settings);
             var raw = await SendAsync(request, 1, text.Length, settings, null, stats, timeout.Token, "plain-test");
-            using var json = JsonDocument.Parse(raw.Body);
-            var translated = json.RootElement.GetProperty("choices")[0]
-                .GetProperty("message").GetProperty("content").GetString()?.Trim();
+            string? translated;
+            try
+            {
+                using var json = JsonDocument.Parse(raw.Body);
+                translated = json.RootElement.GetProperty("choices")[0]
+                    .GetProperty("message").GetProperty("content").GetString()?.Trim();
+            }
+            catch (Exception ex) when (ex is JsonException or KeyNotFoundException or InvalidOperationException or IndexOutOfRangeException)
+            {
+                throw new InvalidDataException("服务已响应，但响应格式不是兼容 OpenAI 的聊天补全结果。请核对接口地址、模型及服务协议。", ex);
+            }
             if (string.IsNullOrWhiteSpace(translated)) throw new InvalidOperationException("API返回了空译文。");
             if(plain&&(!TranslationLanguageSpans.Preserved(text,translated,settings)||!TranslationLanguagePolicy.MenuNamesPreserved(text,translated)||
                 TranslationLanguageSpans.UnchangedEligibleText(text,translated,settings)||
@@ -219,7 +228,7 @@ public sealed class TranslationService
             stats.CompletionTokens+=metadata.CompletionTokens;
             stats.TotalTokens+=metadata.TotalTokens;
             if (!response.IsSuccessStatusCode)
-                throw new TranslationHttpException((int)response.StatusCode,$"API 返回 {(int)response.StatusCode}：{ExtractApiError(body)}");
+                throw new TranslationHttpException((int)response.StatusCode,ApiConnectionPolicy.HttpFailure((int)response.StatusCode,ApiConnectionPolicy.HasKey(settings),ExtractApiError(body)));
             progress?.Report(new(TranslationStage.ParsingResponse, number, stats.WaitMs, "正在解析翻译结果"));
             return new RawResponse(body, (int)response.StatusCode);
         }
@@ -245,11 +254,16 @@ public sealed class TranslationService
         try
         {
             RequestStartingForDiagnostics?.Invoke();
+            AuthorizationHeaderForDiagnostics?.Invoke(request.Headers.Authorization is not null);
             return await Client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
         }
         catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
             throw new TranslationConnectionTimeoutException("连接服务器超时。", ex);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode is null)
+        {
+            throw new HttpRequestException("无法连接翻译服务。请确认服务已启动、接口地址和端口正确，并检查网络连接。", ex);
         }
     }
 
@@ -455,7 +469,7 @@ public sealed class TranslationService
     private static HttpRequestMessage BuildRequest(ApiSettings settings, object[] messages)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, NormalizeUrl(settings.ApiUrl));
-        if(!string.IsNullOrEmpty(settings.ApiKey)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
+        if(ApiConnectionPolicy.HasKey(settings)) request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey);
         var body=new JsonObject
         {
             ["model"] = settings.Model,
@@ -829,9 +843,7 @@ public sealed class TranslationService
     private static void ValidateSettings(ApiSettings settings)
     {
         SafeDiagnosticOutput.RegisterCredential(settings.ApiKey);
-        if (string.IsNullOrWhiteSpace(settings.ApiUrl)) throw new InvalidOperationException("API地址不能为空。");
-        if (!settings.AllowEmptyApiKey && string.IsNullOrWhiteSpace(settings.ApiKey)) throw new InvalidOperationException("API Key不能为空。");
-        if (string.IsNullOrWhiteSpace(settings.Model)) throw new InvalidOperationException("模型名称不能为空。");
+        ApiConnectionPolicy.Validate(settings);
         ChatRequestParameters.Parse(settings.AdvancedApiParameters);
     }
 

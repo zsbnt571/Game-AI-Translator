@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace ScreenshotTranslationUiTester;
@@ -218,7 +218,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
 
     private ApiSettings UiSettings => WpfWorkspace.Enabled ? ReadNativeUiSettings() : new()
     {
-        InterfaceLanguage = _interfaceLanguageBox.SelectedIndex>=0?(ApplicationLanguage)_interfaceLanguageBox.SelectedIndex:_translationOptions.InterfaceLanguage,
+        InterfaceLanguage = _interfaceLanguageBox.SelectedItem is InterfaceLanguageChoice language?language.Value:_translationOptions.InterfaceLanguage,
         TypographyConfigVersion = FontManager.CurrentConfigVersion,
         ApiUrl = WpfWorkspace.Enabled ? _profileDraft.ApiUrl.Trim() : _apiUrlBox.Text.Trim(),
         ApiKey = WpfWorkspace.Enabled ? _profileDraft.ApiKey : _apiKeyBox.Text,
@@ -827,9 +827,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         var ppModel = Path.Combine(visionRoot, "paddlex", "official_models", "PP-DocLayout-S");
         var visionPython = Path.Combine(visionRoot, "venv", "Scripts", "python.exe");
         var ppInstalled = Directory.Exists(ppModel) && File.Exists(visionPython);
-        var providerReady = !string.IsNullOrWhiteSpace(CurrentSettings.ApiUrl)
-            && !string.IsNullOrWhiteSpace(CurrentSettings.ApiKey)
-            && !string.IsNullOrWhiteSpace(CurrentSettings.Model);
+        var providerReady = ApiConnectionPolicy.IsConfigured(CurrentSettings);
         var rapidReady = rapid.Ready && rapidProbe.Ready;
         if (_homeOcrStatus is not null)
             _homeOcrStatus.Text = $"本地环境：RapidOCR {(rapidReady ? "正常" : "需恢复")} · 快捷键 {(AppDataPaths.DisableGlobalInput ? "本次启动禁用" : _hotKeyRegistered ? "正常" : "未注册")}";
@@ -908,11 +906,11 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
             _translationOptions = ApiSettingsSnapshot.Copy(settings); _desktopDraft.Load(settings);
             _contentDraft.Load(TranslationContentSettings.From(settings));
             _profileDraft.Load(settings, _profileDraft.Name, resetDisclosure: false);
-            RefreshBindingEditors(); UpdateConfigStatus(settings.ApiKey); UpdateTypographyStatus(settings);
+            RefreshBindingEditors(); UpdateConfigStatus(settings); UpdateTypographyStatus(settings);
             ApplyDesktopAppearance(settings); return;
         }
         _translationOptions = ApiSettingsSnapshot.Copy(settings);
-        if(_interfaceLanguageBox.Items.Count>0)_interfaceLanguageBox.SelectedIndex=(int)settings.InterfaceLanguage;
+        if(_interfaceLanguageBox.Items.Count>0)_interfaceLanguageBox.SelectedItem=UiLanguage.Options.FirstOrDefault(x=>x.Value==settings.InterfaceLanguage);
         RefreshBindingEditors();
         if (!WpfWorkspace.Enabled)
         { _apiUrlBox.Text = settings.ApiUrl; _apiKeyBox.Text = settings.ApiKey; _modelBox.Text = settings.Model; }
@@ -958,9 +956,9 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         _modifierBox.SelectedItem = _modifierBox.Items.Contains(settings.HotKeyModifiers) ? settings.HotKeyModifiers : "Ctrl + Alt";
         _keyBox.SelectedItem = _keyBox.Items.Contains(settings.HotKeyKey) ? settings.HotKeyKey : "Z";
         if (_homeOcrStatus is not null) _homeOcrStatus.Text = $"OCR引擎：{settings.OcrEngine} · {(settings.OcrEngine == OcrEngineKind.Windows ? "Ready" : "按需检查")}";
-        if (_homeApiStatus is not null) _homeApiStatus.Text = string.IsNullOrWhiteSpace(settings.ApiKey)
+        if (_homeApiStatus is not null) _homeApiStatus.Text = !ApiConnectionPolicy.IsConfigured(settings)
             ? "API：Not configured（仅OCR仍可用）" : $"API：Configured · {settings.Model}";
-        UpdateConfigStatus(settings.ApiKey);
+        UpdateConfigStatus(settings);
         _previewSizingBox.SelectedIndex=(int)settings.PreviewWindowSizingMode;_fixedPreviewWidthBox.Value=settings.FixedPreviewWidth;_fixedPreviewHeightBox.Value=settings.FixedPreviewHeight;_uiFontModeBox.SelectedIndex=(int)settings.UiFontMode;SelectFont(_uiFontBox,settings.UiFontFamily);_uiFontSizeBox.Value=(decimal)settings.UiFontSize;_previewFontModeBox.SelectedIndex=(int)settings.PreviewTextFontMode;SelectFont(_previewFontBox,settings.PreviewTextFontFamily);_previewFontSizeBox.Value=(decimal)settings.PreviewTextFontSize;_overlayFontModeBox.SelectedIndex=(int)settings.OverlayFontMode;SelectFont(_overlayFontBox,settings.OverlayFontFamily);_overlayFontSizeBox.Value=(decimal)settings.OverlayFontSize;_overlayBackgroundBox.SelectedIndex=(int)settings.OverlayBackgroundStyle;_overlayOpacityBox.Value=settings.OverlayBackgroundOpacity;UpdateAppearanceEnabled();
         // Apply appearance only after all saved values have been bound.
         ApplyDesktopAppearance(settings);
@@ -986,7 +984,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         DesktopStatus="预览、字体与译图设置已保存；现有译图仅重新渲染，不会重新识别或调用翻译 API。";
     }
     private void ApplyAppearanceControls(ApiSettings s){if(WpfWorkspace.Enabled){ApplyNativeAppearance(s);return;}_previewSizingBox.SelectedIndex=(int)s.PreviewWindowSizingMode;_fixedPreviewWidthBox.Value=s.FixedPreviewWidth;_fixedPreviewHeightBox.Value=s.FixedPreviewHeight;_uiFontModeBox.SelectedIndex=(int)s.UiFontMode;SelectFont(_uiFontBox,s.UiFontFamily);_uiFontSizeBox.Value=(decimal)s.UiFontSize;_previewFontModeBox.SelectedIndex=(int)s.PreviewTextFontMode;SelectFont(_previewFontBox,s.PreviewTextFontFamily);_previewFontSizeBox.Value=(decimal)s.PreviewTextFontSize;_overlayFontModeBox.SelectedIndex=(int)s.OverlayFontMode;SelectFont(_overlayFontBox,s.OverlayFontFamily);_overlayFontSizeBox.Value=(decimal)s.OverlayFontSize;_overlayBackgroundBox.SelectedIndex=(int)s.OverlayBackgroundStyle;_overlayOpacityBox.Value=s.OverlayBackgroundOpacity;UpdateTypographyStatus(s);UpdateAppearanceEnabled();}
-    private void UpdateTypographyStatus(ApiSettings s){if(WpfWorkspace.Enabled)return;var ui=FontManager.ResolveUiProfile(s);var preview=FontManager.ResolvePreviewProfile(s);_typographyStatus.Text=$"UI: {ui.PrimaryFamily}  |  Preview: {preview.PrimaryFamily}  |  安全回退已启用";}
+    private void UpdateTypographyStatus(ApiSettings s){if(WpfWorkspace.Enabled)return;var ui=FontManager.ResolveUiProfile(s);var preview=FontManager.ResolvePreviewProfile(s);_typographyStatus.Text=UiLanguage.FormatTemplate("UI: {0}  |  Preview: {1}  |  安全回退已启用",ui.PrimaryFamily,preview.PrimaryFamily);}
 
     private void ShowGlobalTranslationSettings()
     {
@@ -1124,7 +1122,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
             _settingsLoadCompleted = true;
             _settingsLoadSucceeded = true;
             _settingsDirty = false;UpdateSettingsSaveState();
-            UpdateConfigStatus(current.ApiKey);
+            UpdateConfigStatus(current);
             if(_currentMainPage=="主页")RefreshHistory();
             if (show) DesktopStatus = "设置已保存。截图设置用于新任务；游戏内设置需应用后在下次启动时生效。";
         }
@@ -1132,13 +1130,14 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         finally{if(!WpfWorkspace.Enabled&&selectedCategory>=0&&selectedCategory<_settingsNavigation.Items.Count){_settingsNavigation.SelectedIndex=selectedCategory;_settingsTabs!.SelectedIndex=selectedCategory;}ValidateUiInvariants("SettingsSave");RestorePosition(this);if(!WpfWorkspace.Enabled)_settingsNavigation.Commit(_settingsTabs?.SelectedIndex??-1);}
     }
 
-    private void UpdateConfigStatus(string? key)
+    private void UpdateConfigStatus(ApiSettings settings)
     {
-        _nativeCredentialStatus = "API Key：" + ConfigurationManager.KeyStatus(key);
+        _nativeCredentialStatus = settings.AllowEmptyApiKey && !ApiConnectionPolicy.HasKey(settings)
+            ? "API 密钥：无需密钥" : "API Key：" + ConfigurationManager.KeyStatus(settings.ApiKey);
         if (WpfWorkspace.Enabled) return;
         _configPathLabel.Text = "配置文件：" + _settingsPath;
         _configPathLabel.Tag = _settingsPath;
-        _keyStatusLabel.Text = "API Key：" + ConfigurationManager.KeyStatus(key);
+        _keyStatusLabel.Text = _nativeCredentialStatus;
     }
 
     private void PublishBindingInputLease()

@@ -35,7 +35,7 @@ internal sealed class NativeRuntimeTranslationWindow : NativeDialogWindow
     {
         var sources=Session.ReadOnlyTexts;var output=new StringBuilder();int translated=0;
         foreach(var source in sources){string value=Session.Lookup(source);if(value.Length>0){translated++;output.AppendLine(value);output.AppendLine(source);}else{output.AppendLine(source);output.AppendLine(UiLanguage.Text(Session.Enabled?"正在等待译文…":"翻译已停止"));}output.AppendLine();}
-        state.Text=UiLanguage.Text(!Session.Enabled?"翻译已停止，已有译文仍可查看。":sources.Length==0?"等待游戏中可读取的文字…":$"最近读取 {sources.Length} 条 · 已有译文 {translated} 条");
+        state.Text=!Session.Enabled?UiLanguage.Text("翻译已停止，已有译文仍可查看。"):sources.Length==0?UiLanguage.Text("等待游戏中可读取的文字…"):UiLanguage.FormatTemplate("最近读取 {0} 条 · 已有译文 {1} 条",sources.Length,translated);
         string next=output.ToString();if(text.Text==next)return;int selection=text.SelectionStart,length=text.SelectionLength;double scroll=text.VerticalOffset;text.Text=next;text.Select(Math.Min(selection,next.Length),Math.Min(length,Math.Max(0,next.Length-selection)));text.ScrollToVerticalOffset(scroll);
     }
 }

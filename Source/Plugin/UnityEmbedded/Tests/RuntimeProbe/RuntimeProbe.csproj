@@ -1,4 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net8.0-windows</TargetFramework><OutputType>Exe</OutputType><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><UseWindowsForms>true</UseWindowsForms></PropertyGroup>
-  <ItemGroup><Reference Include="GameTranslator"><HintPath>E:\Codex\GameTranslator\Build\Fusion-R1-0.6.0.75\Desktop\ScreenshotTranslationUiTester\bin\Release\net8.0-windows\GameTranslator.dll</HintPath></Reference><PackageReference Include="System.Text.Json" Version="9.0.6" /></ItemGroup>
+  <ItemGroup><Reference Include="GameTranslator"><HintPath>$(FusionAppDirectory)\GameTranslator.dll</HintPath></Reference><PackageReference Include="System.Text.Json" Version="9.0.6" /></ItemGroup>
+  <Target Name="ValidateFusionAppDirectory" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(FusionAppDirectory)' == '' Or !Exists('$(FusionAppDirectory)\GameTranslator.dll')" Text="Set FusionAppDirectory to an isolated Fusion build directory containing GameTranslator.dll." />
+  </Target>
 </Project>

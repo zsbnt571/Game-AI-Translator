@@ -21,7 +21,8 @@ internal sealed record EmbeddedTranslationQueueSnapshot(
     int RetryScheduledTexts=0,int RetryStoppedTexts=0,bool BridgePaused=false,bool CatalogRetryPending=false,
     int? ActiveRenderedBindings=null,int? ActiveCachedWaitingBindings=null,string[]? FailureCodes=null,string RuntimeNote="",
     int CatalogDiscoveredTexts=0,int CatalogDeferredTexts=0,bool CatalogLocaleUnconfirmed=false,
-    int TerminologyPendingNames=0,bool TerminologyPreparing=false);
+    int TerminologyPendingNames=0,bool TerminologyPreparing=false,
+    int? FontDeferredComponents=null,string FontWarning="");
 
 internal static class EmbeddedWritebackReceipt
 {

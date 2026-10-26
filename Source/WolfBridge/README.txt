@@ -26,6 +26,29 @@ calls run in the game. Captures, cache bytes, bindings, strings, fonts and
 nesting have explicit limits. Disabling restores original display on the next
 game layout; disposal never terminates a successfully launched game.
 
+Speed authorization and coverage
+-------------------------------
+Translation startup initializes clock metadata but installs no speed hooks.
+dataEnable (or explicit speedEnable) authorizes this process session; the first
+authorized non-1 gameSpeed/dataSpeed request installs the scoped clock hooks.
+dataDisable, speedDisable, stop and owner exit revoke authorization and restore
+1x. The worker revokes speed before waiting for a main-thread dataDisable.
+Status reads do not install hooks, inspect game variables or grant permission.
+Restoring 1x is allowed without authorization and keeps previously virtualized
+clocks continuous; dormant hooks remain until process exit to avoid clock jumps.
+
+This is main-executable QPC/GetTickCount/GetTickCount64/timeGetTime/Sleep scaling,
+not WOLF event-loop or engine timeScale control. Calls originating in other DLLs
+stay on wall time; timeGetTime is covered when winmm is loaded at installation.
+An existing FusionSpeed module prevents a second clock installation. Clock-call
+counts show scoped activity only and do not prove plot, animation or audio speed.
+
+Tests/RunSpeed113.ps1 compiles the full bridge and exercises these production
+clock/protocol headers in owned x86 neutral processes and a separate DLL. It
+checks deferred hook installation, authorization, cross-module clocks, normal
+restoration and concurrent process independence. Synthetic data tests remain
+separate; this does not constitute actual WOLF game, renderer or save acceptance.
+
 Build: run Build.ps1 with Visual Studio C++ Build Tools (x86 target). All output
 is within this candidate's Build/Wolf and Source/WolfBridge/Payload directories.
 MinHook and nlohmann-json are distributed with their licenses. The CJK font and
@@ -36,3 +59,23 @@ They capture the owned test game's render buffer and are not shipped in the
 application. Native tests use isolated game copies and a local mock provider.
 No extracted game source, executable, asset, save or screenshot is included in
 the source package.
+
+Session file paths
+------------------
+WolfSessionFiles.h converts validated ordinary absolute local-drive paths to
+extended Win32 paths only at the file I/O boundary. This supports deeply nested
+Unicode data directories without relying on the launcher or host game's
+manifest. Session identity, ownership tokens and marked-copy checks continue
+to use their original strings. UNC/device namespaces, ADS, relative paths and
+ambiguous dot/trailing-space components are rejected, consistent with the
+managed data-root contract.
+
+Launcher results, startup data, hello, requests, responses, stop markers and
+resource-collection messages all use this shared file reader/writer. Test-only
+bitmap output uses the same path conversion while retaining its private
+desktop, explicit test-copy marker, no-reparse and CREATE_NEW requirements.
+
+Tests/RunSessionFiles.ps1 compiles an x86 controlled test and checks synthetic
+short, 264-, 500- and 2000-character Unicode session paths, atomic replacement,
+bounded reads and rejected path forms. It preserves its isolated fixtures and
+does not launch a game, access real user data or capture the desktop.

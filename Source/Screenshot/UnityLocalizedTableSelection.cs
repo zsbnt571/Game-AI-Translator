@@ -19,6 +19,7 @@ internal sealed class UnityLocalizedTableSelection
     internal bool LimitReached=>selectedLimit;
     internal bool Seen {get;private set;}
     internal IReadOnlySet<string> Texts=>texts;
+    internal Action<string,string?,string>? ObserveOrigin {get;set;}
     private static int Rank(string locale)=>locale=="en"?0:locale=="ja"?1:2;
     private static bool Better(string candidate,string current)=>current.Length==0||Rank(candidate)<Rank(current)||Rank(candidate)==Rank(current)&&StringComparer.Ordinal.Compare(candidate,current)<0;
     internal void ObserveLocale(string? code)
@@ -33,7 +34,7 @@ internal sealed class UnityLocalizedTableSelection
         if(!Better(locale,SelectedLanguage))return;
         SelectedLanguage=locale;texts.Clear();chosen.Clear();characters=0;selectedLimit=false;
     }
-    internal void Add(string? code,string value)
+    internal void Add(string? code,string value,string path="")
     {
         if(!UnityEmbeddedCatalog.IsDisplayText(value))return;
         SelectLocale(code);
@@ -41,6 +42,7 @@ internal sealed class UnityLocalizedTableSelection
         if(all.Count<2_000_000)all.Add(identity);else if(!all.Contains(identity))countLimit=true;
         string locale=UnityTextResourceLanguageSelection.DeclaredLocale(code);
         if(mode!=SourceLanguageMode.Mixed&&(SelectedLanguage.Length==0||locale!=SelectedLanguage))return;
+        ObserveOrigin?.Invoke(value,locale,path);
         if(chosen.Count<2_000_000)chosen.Add(identity);else if(!chosen.Contains(identity))countLimit=true;
         if(texts.Contains(value))return;
         if(texts.Count>=150000||characters+value.Length>64L*1024*1024){selectedLimit=true;return;}

@@ -10,7 +10,6 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
     private readonly IGameDetailsHost host;
     private readonly WpfViewRefresh refreshQueue;
     private readonly WC.StackPanel content = new() { Margin = new(24,14,24,16) };
-    private readonly List<W.FrameworkElement> modules = [];
     private readonly List<Action> bindings = [];
     private readonly WpfNovelModificationWorkspace novel;
     private readonly WpfRenpyModificationWorkspace renpy;
@@ -24,7 +23,7 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
     private WorkspaceProfileChoice[] profileChoices=[];
     private bool refreshing;
     private (string Path,bool Modifying)? displayedSection;
-    private readonly Dictionary<(string Path,bool Modifying),(double Page,double[] Modules)> sectionScroll = new();
+    private readonly Dictionary<(string Path,bool Modifying),double> sectionScroll = new();
     private int sectionRevision;
     private bool disposed;
     internal W.FrameworkElement View(string id) => views[id];
@@ -43,14 +42,15 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
         PreviewTextInput+=(_,e)=>{if(host.GameDetail.SelectionPending)e.Handled=true;};
         VerticalScrollBarVisibility=WC.ScrollBarVisibility.Auto;HorizontalScrollBarVisibility=WC.ScrollBarVisibility.Disabled;
         var state=host.GameDetail;
-        var compact=Row(Action("返回游戏库","back",GameDetailAction.Back,"GameBack"),Label(state.CompactTitle),Action(state.CompactRename,"edit",GameDetailAction.Rename,"GameCompactRename"),Action(state.CompactReturn,"play",GameDetailAction.Return,"GameCompactReturn"),Action(state.CompactRestart,"refresh",GameDetailAction.Restart,"GameCompactRestart"),Menu("···",null,"more","GameCompactMore"));
+        var compactCapture=Action("截取游戏画面","image",GameDetailAction.CaptureCover,"GameCompactCapture");
+        var compactActions=Row(Action(state.CompactLaunch,"play",GameDetailAction.Launch,"GameCompactLaunch",true),Menu("","down","launch","GameCompactLaunchArrow",true),Action(state.CompactReturn,"play",GameDetailAction.Return,"GameCompactReturn",true),Action(state.CompactRestart,"refresh",GameDetailAction.Restart,"GameCompactRestart"),Action(state.CompactExit,"close",GameDetailAction.Exit,"GameCompactExit"),Menu("···",null,"more","GameCompactMore"));
+        var compact=Row(Action("返回游戏库","back",GameDetailAction.Back,"GameBack"),Label(state.CompactTitle),Action(state.CompactRename,"edit",GameDetailAction.Rename,"GameCompactRename"),compactCapture,compactActions);
         var more=views["GameCompactMore"];bindings.Add(()=>Visible(more,state.Modifying));Add(compact);
-        var compactCapture=Action("截取游戏画面","image",GameDetailAction.CaptureCover,"GameCompactCapture");compactCapture.Margin=new(0,0,12,8);compact.Children.Insert(3,compactCapture);
-        bindings.Add(()=>{Visible(compactCapture,state.Modifying);compactCapture.IsEnabled=state.CoverEdit.Enabled;});
+        bindings.Add(()=>{Visible(compactActions,state.Modifying);Visible(compactCapture,state.Modifying);compactCapture.IsEnabled=state.CoverEdit.Enabled;Visible(views["GameCompactLaunchArrow"],state.CompactLaunchArrow.Visible);views["GameCompactLaunchArrow"].IsEnabled=state.CompactLaunchArrow.Enabled;});
         var hero=Hero();Add(hero);bindings.Add(()=>Visible(hero,!state.Modifying));
         var status=new WC.Grid();status.ColumnDefinitions.Add(new(){Width=W.GridLength.Auto});status.ColumnDefinitions.Add(new(){Width=new(1,W.GridUnitType.Star)});
         var statusLabels=Row(Label(state.Status),Label(state.Badge));statusLabels.HorizontalAlignment=W.HorizontalAlignment.Right;WC.Grid.SetColumn(statusLabels,1);status.Children.Add(statusLabels);
-        var launches=Row(Action(state.Launch,"play",GameDetailAction.Launch,"GameLaunch",true),Menu("","down","launch","GameLaunchArrow",true),Action(state.Return,"play",GameDetailAction.Return,"GameReturn",true),Action(state.Restart,"refresh",GameDetailAction.Restart,"GameRestart"),Menu("···",null,"more","GameMore"));
+        var launches=Row(Action(state.Launch,"play",GameDetailAction.Launch,"GameLaunch",true),Menu("","down","launch","GameLaunchArrow",true),Action(state.Return,"play",GameDetailAction.Return,"GameReturn",true),Action(state.Restart,"refresh",GameDetailAction.Restart,"GameRestart"),Action(state.Exit,"close",GameDetailAction.Exit,"GameExit"),Menu("···",null,"more","GameMore"));
         WC.Grid.SetColumn(launches,0);status.Children.Add(launches);Add(status);
         bindings.Add(()=>{Visible(status,!state.Modifying);Visible(views["GameLaunchArrow"],state.LaunchArrow.Visible);views["GameLaunchArrow"].IsEnabled=state.LaunchArrow.Enabled;});
         Add(Row(Tab(state.TranslationTab,GameDetailAction.TranslationTab,"translate","GameTranslationTab"),Tab(state.ModificationTab,GameDetailAction.ModificationTab,"tool","GameModificationTab")));
@@ -66,16 +66,28 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
         left.Children.Add(Row(Action(state.ToggleTranslation,"translate",GameDetailAction.Toggle,"GameTranslationToggle",true),Action(state.TranslateLaunch,"play",GameDetailAction.TranslateLaunch,"GameTranslateLaunch",true),Action(state.Retry,"refresh",GameDetailAction.Retry,"GameRetry"),Action(state.Install,"refresh",GameDetailAction.Install,"GameInstall"),Action(state.PrepareText,"translate",GameDetailAction.PrepareText,"GamePrepare")));
         left.Children.Add(Label(state.TranslationStatus));left.Children.Add(Row(Action("译文与术语","edit",GameDetailAction.Manage,"GameManage"),Action("翻译状态",null,GameDetailAction.Diagnostics,"TranslationDiagnostics")));
         var display=new WC.StackPanel();display.Children.Add(Heading("显示设置"));
+        display.Children.Add(Row(Text("游戏内字体"),Label(state.FontPreference),Action(state.FontEdit,"edit",GameDetailAction.Font,"GameFontEdit")));
         display.Children.Add(Row(Text("字体大小"),Label(state.FontCapability)));display.Children.Add(Row(Text("译文显示"),Label(state.RenderingCapability)));display.Children.Add(Row(Text("扫描开关"),Label(state.ScanKey),Action(state.ScanKeyEdit,"edit",GameDetailAction.Keys,"GameScanKeyEdit")));
         display.Children.Add(Row(Action(state.ScreenTranslation,"translate",GameDetailAction.Screen,"GameScreenTranslation")));display.Children.Add(Label(state.ScreenStatus));
         columns.Children.Add(Card(left));columns.Children.Add(Card(display));Add(columns);bindings.Add(()=>Visible(columns,!state.Modifying));
-        novel=new(host.Novel);var novelScroll=new WC.ScrollViewer{Content=novel,VerticalScrollBarVisibility=WC.ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=WC.ScrollBarVisibility.Disabled,Height=500};modules.Add(novelScroll);
-        renpy=new(host.Renpy);var renpyScroll=new WC.ScrollViewer{Content=renpy,VerticalScrollBarVisibility=WC.ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=WC.ScrollBarVisibility.Disabled,Height=500};modules.Add(renpyScroll);
-        var rpgScroll=new WC.ScrollViewer{Content=host.NativeRpgView,VerticalScrollBarVisibility=WC.ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=WC.ScrollBarVisibility.Disabled,Height=500};modules.Add(rpgScroll);Add(rpgScroll);bindings.Add(()=>Visible(rpgScroll,state.RpgModification));
-        Add(novelScroll);bindings.Add(()=>Visible(novelScroll,state.NovelModification));
-        Add(renpyScroll);bindings.Add(()=>Visible(renpyScroll,state.RenpyModification));
+        // The page owns vertical scrolling. Tables and detail panes retain
+        // their bounded viewports, but an entire editor needs no second shell.
+        // Speed is a common modification tool for every engine. Keep its
+        // independent backend, but let each editor own its category visibility.
+        novel=new(host.Novel,CommonSpeed("NovelCommonSpeed"));renpy=new(host.Renpy,CommonSpeed("RenpyCommonSpeed"));
+        var rpg=host.NativeRpgView;Add(rpg);bindings.Add(()=>Visible(rpg,state.RpgModification));
+        if(host.NativeRpgCommonSpeedSlot is {} speedSlot)speedSlot.Content=CommonSpeed("RpgCommonSpeed");
+        Add(novel);bindings.Add(()=>Visible(novel,state.NovelModification));
+        Add(renpy);bindings.Add(()=>Visible(renpy,state.RenpyModification));
         var unsupported=new WC.StackPanel();var common=WpfThemeResources.Button("常用",null,()=>{},true);common.HorizontalAlignment=W.HorizontalAlignment.Left;common.Margin=new(0,0,0,12);
-        unsupported.Children.Add(common);unsupported.Children.Add(Text("此游戏暂未提供可读取的通用修改数据。识别到可用能力后，会在这里显示。"));
+        Register("CommonModificationCategories",common);
+        var commonToggle=Register("CommonModificationToggle",WpfThemeResources.Button("开启修改","play",async()=>{if(!host.GameDetail.SelectionPending)await host.NativeToggleCommonModification();},true));
+        commonToggle.HorizontalAlignment=W.HorizontalAlignment.Left;commonToggle.Height=36;
+        unsupported.Children.Add(commonToggle);
+        var commonStatus=Register("CommonModificationStatus",TextView(""));unsupported.Children.Add(commonStatus);
+        unsupported.Children.Add(common);
+        bindings.Add(()=>{var action=host.NativeCommonModificationAction;commonToggle.IsEnabled=action.Enabled;WpfThemeResources.SetButton(commonToggle,action.Text,"play",true);commonStatus.Text=UiLanguage.Text(host.NativeCommonModificationStatus);});
+        unsupported.Children.Add(CommonSpeed("UnsupportedCommonSpeed"));unsupported.Children.Add(Text("此游戏暂未提供可读取的通用修改数据。识别到可用能力后，会在这里显示。"));
         Add(unsupported);bindings.Add(()=>Visible(unsupported,state.UnsupportedModification));
         var diagnostic=Row(Label(state.Diagnostic),Action("查看诊断报告",null,GameDetailAction.Report,"GameDiagnosticReport"));Add(diagnostic);bindings.Add(()=>{Visible(diagnostic,!state.Modifying);views["GameDiagnosticReport"].IsEnabled=state.CanOpenDiagnostic;});
         var files=CreateAction("游戏文件与存档","folder",GameDetailAction.Files,"GameFiles");files.HorizontalAlignment=W.HorizontalAlignment.Left;Add(files);
@@ -90,6 +102,23 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
             new System.Windows.Input.MouseWheelEventHandler((_,e)=>WpfScrollRouting.BubbleAtBoundary(this,e)),true);
     }
     private T Register<T>(string id,T view) where T:W.FrameworkElement {views.Add(id,view);WA.AutomationProperties.SetAutomationId(view,id);return view;}
+    private W.FrameworkElement CommonSpeed(string id)
+    {
+        var speed=Register(id,new WpfGameSpeedControl{Margin=new(0,8,0,12)});
+        speed.Commit=async rate=>
+        {
+            await host.NativeSetGameSpeed(rate);
+            // The page refresh is coalesced. Confirm before the control leaves
+            // its pending state, instead of briefly restoring the old rate.
+            speed.SetState(host.NativeGameSpeedState);
+        };
+        var panel=new WC.StackPanel();panel.Children.Add(speed);
+        var skip=Register(id+"StorySkip",WpfThemeResources.Button("快进到下一处选择","play",async()=>await host.NativeStorySkip(false)));
+        var stop=Register(id+"StorySkipStop",WpfThemeResources.Button("停止快进",null,async()=>await host.NativeStorySkip(true)));
+        var story=Row(skip,stop);panel.Children.Add(story);
+        var hint=Text("剧情快进会跳过未读对白，遇到选择时停止。倍速无效时可使用此功能。");panel.Children.Add(hint);
+        bindings.Add(()=>{speed.SetState(host.NativeGameSpeedState);Visible(story,host.NativeStorySkipVisible);Visible(hint,host.NativeStorySkipVisible);skip.IsEnabled=stop.IsEnabled=host.NativeStorySkipEnabled;});return panel;
+    }
     private void Add(W.FrameworkElement view){view.Margin=new(0,0,0,12);content.Children.Add(view);}
     private static void Visible(W.FrameworkElement view,bool show)=>view.Visibility=show?W.Visibility.Visible:W.Visibility.Collapsed;
     private static WC.TextBlock TextView(string value) => new(){Text=UiLanguage.Text(value),TextWrapping=W.TextWrapping.Wrap,VerticalAlignment=W.VerticalAlignment.Center,Margin=new(0,4,0,5)};
@@ -147,11 +176,6 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
         heroSurface=new(artwork,text,edit){SaveFrame=host.NativeSaveCoverFrame};
         var border=Register("GameHero",new WC.Border{Child=heroSurface,CornerRadius=new(8)});return border;
     }
-    protected override W.Size MeasureOverride(W.Size availableSize)
-    {
-        if(double.IsFinite(availableSize.Height)){double height=Math.Max(430,availableSize.Height-115);foreach(var module in modules)if(module.Height!=height)module.Height=height;}
-        return base.MeasureOverride(availableSize);
-    }
     internal void Refresh()
     {
         if(refreshing||host.IsDisposed||!IsVisible)return;refreshing=true;
@@ -162,15 +186,14 @@ internal sealed class WpfGameSessionWorkspace : WC.ScrollViewer, IDisposable
             var section=(host.GamePathText.ToUpperInvariant(),host.GameDetail.Modifying);
             if(displayedSection!=section)
             {
-                if(displayedSection is {} previous)sectionScroll[previous]=(VerticalOffset,modules.Select(module=>module is WC.ScrollViewer scroll?scroll.VerticalOffset:0).ToArray());
+                if(displayedSection is {} previous)sectionScroll[previous]=VerticalOffset;
                 if(sectionScroll.Count>128)sectionScroll.Remove(sectionScroll.Keys.First());
                 displayedSection=section;int revision=++sectionRevision;
-                var saved=sectionScroll.GetValueOrDefault(section,(0,new double[modules.Count]));
+                var saved=sectionScroll.GetValueOrDefault(section);
                 Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded,new Action(()=>
                 {
                     if(disposed||revision!=sectionRevision||displayedSection!=section)return;
-                    ScrollToVerticalOffset(saved.Item1);
-                    for(int i=0;i<modules.Count&&i<saved.Item2.Length;i++)if(modules[i] is WC.ScrollViewer scroll)scroll.ScrollToVerticalOffset(saved.Item2[i]);
+                    ScrollToVerticalOffset(saved);
                 }));
             }
             foreach(var binding in bindings)binding();title.Text=host.WpfSessionTitle;title.ToolTip=title.Text;subtitle.Text=host.WpfSessionSubtitle;path.Text=host.GamePathText;

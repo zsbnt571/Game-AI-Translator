@@ -52,12 +52,15 @@ internal static partial class UnityEmbeddedAdapter
     {
         var game=Detect(exe)??throw new IOException("未识别 Unity 桌面游戏。");EnsureStopped(game);
         RecoverUpdate(game); CheckCompatibility(game);
+        UnityLegacyMigration.Recover(game.ExePath,IsInstalled(game.ExePath));
+        using var migration=UnityLegacyMigration.Begin(game.ExePath);
         string pluginRoot=Path.Combine(game.Root,"BepInEx","plugins");
         if(Directory.Exists(pluginRoot)&&Directory.EnumerateFiles(pluginRoot,"*.dll",SearchOption.AllDirectories).Any(p=>Regex.IsMatch(Path.GetFileName(p),"AutoTranslator|MGITranslator|CloudMeadowTranslator|FusionUnityEmbedded",RegexOptions.IgnoreCase)&&
             !(HasRecord(exe)&&string.Equals(p,Path.Combine(pluginRoot,"FusionUnityEmbedded","FusionUnityEmbedded.dll"),StringComparison.OrdinalIgnoreCase))))
             throw new EmbeddedCompatibilityException("此游戏已有其他内嵌翻译插件，请在独立干净副本中使用通用翻译，避免同时替换文字。");
         if(Directory.Exists(Path.Combine(game.Root,"ReiPatcher"))||Directory.EnumerateFiles(game.Root,"*AutoTranslator*.ini",SearchOption.TopDirectoryOnly).Any())throw new EmbeddedCompatibilityException("检测到 ReiPatcher／自动翻译安装痕迹；为保留已有汉化，本次未接入。请使用独立干净副本；反复重启不能消除此冲突。");
         InstallPayload(game);
+        migration.Commit();
     }
     internal static void Restore(string exe)
     {

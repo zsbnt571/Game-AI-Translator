@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections.Frozen;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -98,8 +99,12 @@ internal static class TranslationLanguagePolicy
 
     internal static string Plain(string source)
     {
+        var analysis=TranslationAnalysisScope.Current;
+        if(analysis is not null&&analysis.Plain.TryGetValue(source,out var cached))return cached;
         var protectedText = EmbeddedTranslationText.Protect(source).Text;
-        return Regex.Replace(protectedText, @"⟦RPG\d+⟧|</?[^>]+>|(?:\\|\x1b)[A-Za-z]+\[[^\]]*\]", " ").Trim();
+        string result=Regex.Replace(protectedText, @"⟦RPG\d+⟧|</?[^>]+>|(?:\\|\x1b)[A-Za-z]+\[[^\]]*\]", " ").Trim();
+        if(analysis is not null&&analysis.Plain.Count<TranslationAnalysisScope.Limit)analysis.Plain[source]=result;
+        return result;
     }
     internal static bool IsLanguageChoice(string source)
     {
@@ -127,6 +132,8 @@ internal static class TranslationLanguagePolicy
     // label cannot distinguish Chinese from Japanese.
     internal static IReadOnlySet<string> Languages(string source)
     {
+        var analysis=TranslationAnalysisScope.Current;
+        if(analysis is not null&&analysis.Languages.TryGetValue(source,out var cached))return cached;
         string text = Plain(source);
         // Autonyms describe choices, not the language of the menu itself.
         // An English menu containing a Japanese option remains English.
@@ -195,6 +202,10 @@ internal static class TranslationLanguagePolicy
         {
             var identified = EmbeddedSourceLanguagePolicy.Identify(text);
             found.Add(identified.Length == 0 ? "und" : identified);
+        }
+        if(analysis is not null&&analysis.Languages.Count<TranslationAnalysisScope.Limit)
+        {
+            var immutable=found.ToFrozenSet(StringComparer.Ordinal);analysis.Languages[source]=immutable;return immutable;
         }
         return found;
     }

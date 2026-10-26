@@ -81,6 +81,7 @@ init 999 python hide:
                 self.nonoriginal_nodes = set()
                 self.ahead = []
                 self.last_current = None
+                self.catalog_requested = startup_translation
                 self.collect_catalog()
                 self.previous_periodic = config.periodic_callback
                 self.original_tags = renpy.text.text.Text.apply_custom_tags
@@ -94,8 +95,17 @@ init 999 python hide:
                 korean_font = os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts', 'malgun.ttf').replace('\\', '/')
                 self.fallback_fonts = [font for font in (self.font, korean_font) if font and os.path.isfile(font)]
                 self.glyph_fallback = os.environ.get('FUSION_RENPY_GLYPH_FALLBACK','1') != '0'
+                # Explicit per-game selection only. Empty means the existing
+                # original-font/missing-glyph behavior, including style metrics.
+                self.custom_font = os.environ.get('FUSION_GAME_FONT_PATH', '').replace('\\', '/')
+                if not self.custom_font or not os.path.isfile(self.custom_font):
+                    self.custom_font = None
                 self.font_maps = {}
                 self.glyph_maps = {}
+                self.font_pending = None
+                self.font_connection = 0
+                self.font_peer_check = None
+                self.font_request_seconds = 5.0
                 self.load_startup_cache()
 
             def load_startup_cache(self):
@@ -199,6 +209,11 @@ init 999 python hide:
                 if isinstance(node, renpy.ast.Menu):
                     return [item[0] for item in node.items]
                 if isinstance(node, renpy.ast.TranslateString):
+                    # String translations have no child Say node. The selected
+                    # language displays new; absent entries fall back to old.
+                    language = getattr(node, 'language', None)
+                    if language is not None:
+                        return [node.new] if language == self.active_text_language else []
                     return [node.old]
                 if isinstance(node, renpy.ast.UserStatement):
                     # show/call screen arguments are not Say nodes. Read the parsed
@@ -225,6 +240,140 @@ init 999 python hide:
                             if self.valid(value) and len(value) > 1 and not re.search(r'[/\\\\#{}\[\]]', value):
                                 yield value
 
+            def active_inline_literals(self, text):
+                # Only a statically proven text-preserving decorator grants bulk
+                # provenance. Unknown functions' arguments still wait for display.
+                for code in self.text_codes(text):
+                    if not code.startswith('[') or code.startswith('[['): continue
+                    try: tree = ast.parse(code[1:-1], mode='eval').body
+                    except Exception: continue
+                    if not isinstance(tree, ast.Call) or not isinstance(tree.func, ast.Name) or tree.func.id not in self.text_decorators or not tree.args: continue
+                    try: value = ast.literal_eval(tree.args[0])
+                    except Exception: continue
+                    if self.valid(value) and len(value) > 1 and not re.search(r'[/\\\\#{}\[\]]', value): yield value
+
+            def decorator_preserves_text(self, function, known):
+                # Abstract syntax only: no eval, function invocation, attribute
+                # lookup or game variable reading. Every return must preserve its
+                # first argument once, adding only formatting tags around it.
+                marker = '\x01TEXT\x01'
+                names = [getattr(arg, 'arg', getattr(arg, 'id', '')) for arg in function.args.args]
+                if not names or function.decorator_list or getattr(function.args, 'vararg', None) or getattr(function.args, 'kwarg', None): return False
+                if getattr(function.args, 'posonlyargs', None) or getattr(function.args, 'kwonlyargs', None): return False
+                if len(names) > 16: return False
+                if any(index > 2048 for index, unused in enumerate(ast.walk(function))): return False
+                def literal(expression):
+                    try: return ast.literal_eval(expression)
+                    except Exception: return None
+                def condition(expression, env):
+                    if isinstance(expression, ast.Name): return expression.id in env or expression.id in ('True','False','None')
+                    if isinstance(expression, (ast.Str, ast.Num)) or type(expression).__name__ in ('Constant','NameConstant'): return True
+                    if isinstance(expression, (ast.Compare, ast.BoolOp, ast.UnaryOp)):
+                        return all(condition(child, env) for child in ast.iter_child_nodes(expression) if not isinstance(child, (ast.cmpop, ast.boolop, ast.unaryop)))
+                    if isinstance(expression, ast.Call) and isinstance(expression.func, ast.Name) and expression.func.id == 'isinstance' and len(expression.args) == 2 and not expression.keywords:
+                        return 'isinstance' not in env and condition(expression.args[0], env) and isinstance(expression.args[1], ast.Name) and expression.args[1].id in ('str','int','float','bool') and expression.args[1].id not in env
+                    return False
+                def values(expression, env):
+                    value = literal(expression)
+                    if isinstance(value, string_type): return [value]
+                    if isinstance(value, (int, float, bool)) or isinstance(expression, ast.Name) and expression.id in ('True','False','None') or type(expression).__name__ in ('Constant','NameConstant') and value is None: return ['FUSION_VALUE']
+                    if isinstance(expression, ast.Name): return env.get(expression.id)
+                    if isinstance(expression, ast.BinOp) and isinstance(expression.op, ast.Add):
+                        left, right = values(expression.left, env), values(expression.right, env)
+                        if left is None or right is None or len(left) * len(right) > 64: return None
+                        result = [a + b for a in left for b in right]
+                        return result if all(len(item) < 4096 for item in result) else None
+                    if isinstance(expression, ast.IfExp) and condition(expression.test, env):
+                        left, right = values(expression.body, env), values(expression.orelse, env)
+                        return left + right if left is not None and right is not None else None
+                    if isinstance(expression, ast.Call) and isinstance(expression.func, ast.Name) and not expression.keywords:
+                        name = expression.func.id
+                        if name in env: return None
+                        if name == 'str' and len(expression.args) == 1: return values(expression.args[0], env)
+                        if name in known and expression.args:
+                            first = values(expression.args[0], env)
+                            other = [values(arg, env) for arg in expression.args[1:]]
+                            if first is not None and all(item is not None and all(marker not in s for s in item) for item in other):
+                                return ['{fusion}' + s + '{/fusion}' for s in first]
+                    return None
+                returns = []
+                def statements(body, states, depth=0):
+                    if depth > 12: return None
+                    for statement in body:
+                        if isinstance(statement, ast.Expr) and isinstance(literal(statement.value), string_type): continue
+                        upcoming = []
+                        for env in states:
+                            if isinstance(statement, ast.Assign) and len(statement.targets) == 1 and isinstance(statement.targets[0], ast.Name):
+                                result = values(statement.value, env)
+                                if result is None: return None
+                                copy = dict(env); copy[statement.targets[0].id] = result; upcoming.append(copy)
+                            elif isinstance(statement, ast.Return):
+                                result = values(statement.value, env)
+                                if result is None: return None
+                                returns.extend(result)
+                            elif isinstance(statement, ast.If) and condition(statement.test, env):
+                                yes = statements(statement.body, [dict(env)], depth + 1)
+                                no = statements(statement.orelse, [dict(env)], depth + 1)
+                                if yes is None or no is None: return None
+                                upcoming.extend(yes + no)
+                            else: return None
+                        states = upcoming
+                        if len(states) > 64 or len(returns) > 512: return None
+                    return states
+                env = dict((name, [marker if index == 0 else 'FUSION_VALUE']) for index, name in enumerate(names))
+                remaining = statements(function.body, [env])
+                return remaining == [] and bool(returns) and all(re.sub(r'\{[^{}]*\}', '', value).strip() == marker for value in returns)
+
+            def collect_text_decorators(self, nodes):
+                functions, overwritten = {}, set()
+                for node in nodes:
+                    try:
+                        filename = getattr(node, 'filename', '').replace('\\', '/')
+                        if '/renpy/common/' in '/' + filename or '/tl/' in '/' + filename or id(node) in self.nonoriginal_nodes: continue
+                        code = getattr(node, 'code', None)
+                        source = getattr(code, 'source', None)
+                        if not isinstance(source, string_type) or len(source) > 500000: continue
+                        if getattr(node, 'store', 'store') not in ('store', None): continue
+                        tree = ast.parse(source, mode=getattr(code, 'mode', 'exec'))
+                        for statement in getattr(tree, 'body', ()) if isinstance(tree, ast.Module) else ():
+                            if isinstance(statement, ast.FunctionDef):
+                                if statement.name in functions: overwritten.add(statement.name)
+                                if len(functions) < 1024: functions[statement.name] = statement
+                            elif isinstance(statement, ast.Assign):
+                                for target in statement.targets:
+                                    if isinstance(target, ast.Name): overwritten.add(target.id)
+                        # Rebinding under if/try/for still changes the module's
+                        # symbol. Skip nested function/class scopes entirely;
+                        # their local assignments cannot authorize global calls.
+                        top_functions = set(id(statement) for statement in getattr(tree, 'body', ()) if isinstance(statement, ast.FunctionDef)) if isinstance(tree, ast.Module) else set()
+                        pending = [tree]
+                        while pending:
+                            item = pending.pop()
+                            if isinstance(item, (ast.FunctionDef, ast.ClassDef)):
+                                if id(item) not in top_functions: overwritten.add(item.name)
+                                continue
+                            if isinstance(item, ast.Lambda): continue
+                            if isinstance(item, ast.Name) and isinstance(item.ctx, (ast.Store, ast.Del)): overwritten.add(item.id)
+                            if isinstance(item, (ast.Import, ast.ImportFrom)):
+                                for alias in item.names: overwritten.add(alias.asname or alias.name.split('.')[0])
+                            pending.extend(ast.iter_child_nodes(item))
+                        if type(node).__name__ in ('Define', 'Default'): overwritten.add(getattr(node, 'varname', ''))
+                    except Exception: pass
+                    yield None
+                known = set()
+                self.character_constructor_trusted = 'Character' not in overwritten and 'Character' not in functions
+                # Rebinding Python builtins invalidates the narrow proof.
+                if not overwritten.union(functions).intersection(('str','isinstance','int','float','bool')):
+                    for unused in range(8):
+                        additions = set()
+                        for name, function in functions.items():
+                            if name not in overwritten and name not in known and self.decorator_preserves_text(function, known): additions.add(name)
+                            yield None
+                        if not additions: break
+                        known.update(additions)
+                        yield None
+                self.text_decorators = known
+
             def walk_story(self, roots, limit):
                 # Inspect graph links only: never evaluate conditions, calls or Python.
                 todo = list(reversed(roots))
@@ -234,24 +383,27 @@ init 999 python hide:
                     if node is None or id(node) in seen:
                         continue
                     seen.add(id(node))
-                    if id(node) in self.nonoriginal_nodes:
-                        # Translated blocks can be outside /tl/. Their next link
-                        # points into the translated body; only after is original.
-                        todo.append(getattr(node, 'after', None))
-                        continue
-                    yield node
-                    todo.append(getattr(node, 'next', None))
-                    for item in reversed(getattr(node, 'entries', ())):
-                        if isinstance(item, (tuple, list)) and len(item) > 1 and isinstance(item[1], list):
-                            todo.extend(reversed(item[1]))
-                    if isinstance(node, renpy.ast.Menu):
-                        for item in reversed(node.items):
-                            if item[2]: todo.extend(reversed(item[2]))
-                    block = getattr(node, 'block', None)
-                    if isinstance(block, list): todo.extend(reversed(block))
-                    if isinstance(node, (renpy.ast.Jump, renpy.ast.Call)) and not getattr(node, 'expression', True):
-                        target = getattr(node, 'target', getattr(node, 'label', None))
-                        todo.append(renpy.game.script.namemap.get(target))
+                    try:
+                        if id(node) in self.nonoriginal_nodes:
+                            # A covered original or an inactive translation must
+                            # not lead the walk back into its excluded body.
+                            todo.append(getattr(node, 'after', None))
+                            continue
+                        yield node
+                        todo.append(getattr(node, 'next', None))
+                        for item in reversed(getattr(node, 'entries', ()) or ()):
+                            if isinstance(item, (tuple, list)) and len(item) > 1 and isinstance(item[1], (list, tuple)):
+                                todo.extend(reversed(item[1]))
+                        if isinstance(node, renpy.ast.Menu):
+                            for item in reversed(node.items or ()):
+                                if len(item) > 2 and item[2]: todo.extend(reversed(item[2]))
+                        block = getattr(node, 'block', None)
+                        if isinstance(block, (list, tuple)): todo.extend(reversed(block))
+                        if isinstance(node, (renpy.ast.Jump, renpy.ast.Call)) and not getattr(node, 'expression', True):
+                            target = getattr(node, 'target', getattr(node, 'label', None))
+                            todo.append(renpy.game.script.namemap.get(target))
+                    except Exception as error:
+                        self.catalog_issue('story-links', node, error)
 
             def locale_language(self, key):
                 if not isinstance(key, string_type): return ''
@@ -297,6 +449,19 @@ init 999 python hide:
                 for keyword in tree.keywords:
                     if keyword.arg == 's': return keyword.value
                 return None
+
+            def selected_string(self, source):
+                # Match StringTranslator's lookup without calling translate(),
+                # which can record unknown strings in the game's language data.
+                if not isinstance(source, string_type): return source
+                translator = getattr(renpy.game.script, 'translator', None)
+                languages = getattr(translator, 'strings', None)
+                selected = languages.get(self.active_text_language) if isinstance(languages, dict) else None
+                translations = getattr(selected, 'translations', None)
+                if not isinstance(translations, dict): return source
+                result = translations.get(source)
+                if result is None: result = translations.get(re.sub(r'\{\#.*?\}', '', source))
+                return result if isinstance(result, string_type) else source
 
             def literal_values(self, tree, select_language=True):
                 # Only evaluate Python literals. Conditions, variables and function
@@ -361,7 +526,7 @@ init 999 python hide:
                             if isinstance(node, ast.Call) or ((any(c.isspace() for c in text) or any(c in text for c in u'。！？')) and not re.search(r'[/\\\\]|https?:', text)):
                                 yield text
 
-            def screen_texts(self, root):
+            def screen_texts(self, root, marked=False):
                 todo, seen = [root], set()
                 while todo and len(seen) < 50000:
                     node = todo.pop()
@@ -371,59 +536,249 @@ init 999 python hide:
                     text_types = (renpy.text.text.Text, getattr(renpy.ui, '_textbutton', None), getattr(renpy.ui, '_label', None))
                     if displayable is not None and displayable in text_types:
                         for expression in getattr(node, 'positional', ())[:1]:
-                            for text in self.expression_texts(expression): yield text
+                            for text in self.expression_texts(expression):
+                                text = self.selected_string(text)
+                                yield (text, True) if marked else text
                     for key, expression in getattr(getattr(node, 'arguments', None), 'arguments', ()):
-                        for text in self.expression_texts(expression): yield text
-                    for text in self.python_texts(getattr(node, 'code', None)): yield text
+                        for text in self.expression_texts(expression): yield (text, False) if marked else text
+                    for text in self.python_texts(getattr(node, 'code', None)): yield (text, False) if marked else text
                     todo.extend(getattr(node, 'children', ()) or ())
                     for entry in getattr(node, 'entries', ()):
                         if isinstance(entry, (tuple, list)) and len(entry) > 1: todo.append(entry[1])
+                if todo: self.catalog_issue('screen-limit', root, RuntimeError('screen traversal limit'))
+
+            def common_ui_texts(self, code):
+                # Common contains much more than UI. Read only explicit _()/Text
+                # markers in its module-level statements, never a function body,
+                # arbitrary assignments or a language table's unused values.
+                source = getattr(code, 'source', None)
+                if not isinstance(source, string_type): return
+                try: tree = ast.parse(source, mode=getattr(code, 'mode', 'exec'))
+                except Exception: return
+                todo = [tree]
+                while todo:
+                    node = todo.pop()
+                    if isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.Lambda)): continue
+                    localized = self.locale_values(node)
+                    if localized is not None:
+                        todo.extend(localized)
+                        continue
+                    marker = self.translation_source(node)
+                    if marker is not None:
+                        for text in self.literal_values(node): yield self.selected_string(text)
+                        continue
+                    if isinstance(node, ast.Call):
+                        func = node.func
+                        name = func.id if isinstance(func, ast.Name) else ''
+                        if name in ('Text', 'text', 'textbutton', 'label', 'notify'):
+                            for expression in node.args[:1]:
+                                for text in self.literal_values(expression): yield self.selected_string(text)
+                            continue
+                    todo.extend(ast.iter_child_nodes(node))
+
+            def display_names(self, node):
+                # Character declarations are explicit names. Variables, custom
+                # constructors and player-entered/interpolated names are not.
+                code = getattr(node, 'code', None)
+                if not self.character_constructor_trusted or getattr(node, 'store', 'store') not in ('store', None): return
+                source = getattr(code, 'source', None)
+                if not isinstance(source, string_type): return
+                try: tree = ast.parse(source, mode=getattr(code, 'mode', 'exec'))
+                except Exception: return
+                declarations = []
+                if isinstance(tree, ast.Expression) and type(node).__name__ == 'Define':
+                    declarations.append((getattr(node, 'varname', ''), tree.body))
+                elif isinstance(tree, ast.Module):
+                    for statement in tree.body:
+                        if isinstance(statement, ast.Assign) and len(statement.targets) == 1 and isinstance(statement.targets[0], ast.Name):
+                            declarations.append((statement.targets[0].id, statement.value))
+                for binding, expression in declarations:
+                    if not isinstance(binding, string_type) or not re.match(r'^[A-Za-z_]\w{0,117}$', binding): continue
+                    if not isinstance(expression, ast.Call) or not isinstance(expression.func, ast.Name) or expression.func.id != 'Character': continue
+                    if any(keyword.arg == 'dynamic' and not (isinstance(keyword.value, ast.Name) and keyword.value.id == 'False' or getattr(keyword.value, 'value', None) is False) for keyword in expression.keywords): continue
+                    value = expression.args[0] if expression.args else next((keyword.value for keyword in expression.keywords if keyword.arg == 'name'), None)
+                    if value is None: continue
+                    names = list(self.literal_values(value))
+                    if len(names) != 1: continue
+                    name = self.selected_string(names[0])
+                    if not self.valid(name) or not 2 <= len(name) <= 80 or any(c in name for c in '[]\r\n\x00'): continue
+                    filename = getattr(node, 'filename', '').replace('\\', '/')
+                    if '/game/' in filename: filename = filename.split('/game/', 1)[1]
+                    elif filename.startswith('game/'): filename = filename[5:]
+                    if len(filename) > 512 or filename.startswith('/') or ':' in filename or any(part in ('','..','.') for part in filename.split('/')): filename = ''
+                    yield {'source': name, 'kind': 'display-name', 'path': filename,
+                        'key': 'character:' + binding, 'context': 'character-display-name'}
 
             def collect_catalog(self):
                 self.catalog = []
                 self.catalog_set = set()
                 self.catalog_active_sources = set()
+                self.catalog_name_origins = {}
+                self.text_decorators = set()
+                self.character_constructor_trusted = False
                 self.catalog_skipped = 0
                 self.language_excluded = set()
                 self.nonoriginal_nodes = set()
                 self.catalog_marked = False
+                self.catalog_finished = False
+                self.catalog_errors = []
+                self.catalog_error_keys = set()
+                self.catalog_error_count = 0
                 self.dialogue_contexts = {}
-                self.catalog_iter = self.catalog_steps()
+                self.dialogue_roles = {}
+                self.dialogue_speakers = set()
+                self.dialogue_roles_ready = False
+                self.catalog_iter = self.catalog_steps() if self.catalog_requested else None
+
+            def catalog_issue(self, stage, node, error):
+                # A malformed/custom node must not silently end the directory.
+                # Keep diagnostics bounded and omit dialogue and Python contents.
+                key = (stage, id(node), type(error).__name__)
+                if key in self.catalog_error_keys: return
+                self.catalog_error_keys.add(key)
+                self.catalog_error_count += 1
+                if len(self.catalog_errors) >= 32: return
+                try: filename = getattr(node, 'filename', '')
+                except Exception: filename = ''
+                if not isinstance(filename, string_type): filename = ''
+                self.catalog_errors.append({'stage': stage, 'nodeType': type(node).__name__,
+                    'file': filename.replace('\\', '/')[-240:], 'error': type(error).__name__})
+
+            def catalog_node_texts(self, node):
+                try: return self.node_texts(node)
+                except Exception as error:
+                    self.catalog_issue('node-text', node, error)
+                    return []
+
+            def collect_dialogue_speakers(self, nodes):
+                # A static, unique standard Character declaration is attribution,
+                # never evidence of gender. Do not eval who/conditions or inspect
+                # saves. Rebound/dynamic/custom bindings keep the existing path.
+                declarations, writes, unsafe = {}, {}, False
+                for node in nodes:
+                    try:
+                        filename = getattr(node, 'filename', '').replace('\\', '/')
+                        if '/renpy/common/' in '/' + filename or '/tl/' in '/' + filename or id(node) in self.nonoriginal_nodes: continue
+                        if filename.rsplit('/', 1)[-1] in ('zz_fusion_translation.rpy', 'zz_fusion_translation.rpyc'): continue
+                        if getattr(node, 'store', 'store') not in ('store', None): continue
+                        node_bindings = []
+                        for origin in self.display_names(node):
+                            binding = origin['key'][len('character:'):]
+                            node_bindings.append(binding)
+                            declarations[binding] = declarations.get(binding, 0) + 1
+                        if type(node).__name__ in ('Define', 'Default'):
+                            binding = getattr(node, 'varname', '')
+                            writes[binding] = writes.get(binding, 0) + 1
+                        code = getattr(node, 'code', None)
+                        source = getattr(code, 'source', None)
+                        if isinstance(source, string_type):
+                            # Ren'Py wraps python hide in a function; its source
+                            # still has exec grammar. Scan conservatively for
+                            # possible writes instead of treating hide as an
+                            # invalid Python parse mode or skipping the block.
+                            mode = getattr(code, 'mode', 'exec')
+                            tree = ast.parse(source, mode='exec' if mode == 'hide' else mode)
+                            for item in ast.walk(tree):
+                                if isinstance(item, ast.Name) and isinstance(item.ctx, (ast.Store, ast.Del)):
+                                    writes[item.id] = writes.get(item.id, 0) + 1
+                                elif isinstance(item, (ast.FunctionDef, ast.ClassDef)) or type(item).__name__ == 'AsyncFunctionDef':
+                                    writes[item.name] = writes.get(item.name, 0) + 1
+                                elif isinstance(item, (ast.Import, ast.ImportFrom)):
+                                    for alias in item.names:
+                                        name = alias.asname or alias.name.split('.')[0]
+                                        writes[name] = writes.get(name, 0) + 1
+                                        if name == '*': unsafe = True
+                                elif isinstance(item, ast.Attribute) and isinstance(item.ctx, (ast.Store, ast.Del)):
+                                    writes[item.attr] = writes.get(item.attr, 0) + 1
+                                elif isinstance(item, ast.Call):
+                                    name = item.func.id if isinstance(item.func, ast.Name) else ''
+                                    if name in ('exec', 'execfile', 'eval', 'setattr', 'delattr', 'globals', 'locals', 'vars'): unsafe = True
+                                    if name == 'Character':
+                                        # Custom kinds/callbacks/dynamic arguments
+                                        # cannot establish a fixed standard actor.
+                                        safe = len(item.args) <= 1
+                                        for keyword in item.keywords:
+                                            if keyword.arg == 'name': continue
+                                            if keyword.arg not in ('dynamic','color','who_color','what_color','who_style','what_style','window_style','image','voice_tag','who_prefix','who_suffix','what_prefix','what_suffix'):
+                                                safe = False; break
+                                            try: value = ast.literal_eval(keyword.value)
+                                            except Exception: safe = False; break
+                                            if keyword.arg == 'dynamic' and value is not False: safe = False; break
+                                            if not isinstance(value, (string_type, bool, int, float, type(None))): safe = False; break
+                                        if not safe:
+                                            for binding in node_bindings: writes[binding] = writes.get(binding, 0) + 1
+                                elif type(item).__name__ == 'Exec': unsafe = True
+                                elif isinstance(item, ast.Subscript) and isinstance(item.ctx, (ast.Store, ast.Del)):
+                                    owner = item.value
+                                    if isinstance(owner, ast.Call) and isinstance(owner.func, ast.Name) and owner.func.id in ('globals', 'locals', 'vars'): unsafe = True
+                                    if isinstance(owner, ast.Attribute) and owner.attr == '__dict__': unsafe = True
+                    except Exception:
+                        # Unreadable Python cannot prove immutable attribution.
+                        unsafe = True
+                    yield None
+                self.dialogue_speakers = set(binding for binding in declarations
+                    if declarations[binding] == 1 and writes.get(binding, 0) == 1) if not unsafe and self.character_constructor_trusted and 'Character' not in writes else set()
+
+            def dialogue_speaker(self, node):
+                who = getattr(node, 'who', None)
+                if who is None: return 'narrator'
+                if isinstance(who, string_type) and who in getattr(self, 'dialogue_speakers', set()): return who
+                return None
 
             def build_dialogue_contexts(self, nodes):
                 # Fixed AST neighbours, not traversal order or predicted branches.
                 # Repeated strings and multiple incoming edges remain context-free.
                 parents, counts = {}, {}
                 for node in nodes:
-                    for text in self.node_texts(node):
-                        if isinstance(text, string_type): counts[text] = counts.get(text, 0) + 1
-                    successor = getattr(node, 'next', None)
-                    if successor is not None:
-                        key = id(successor)
-                        parents[key] = node if key not in parents else None
+                    try:
+                        for text in self.catalog_node_texts(node):
+                            if isinstance(text, string_type): counts[text] = counts.get(text, 0) + 1
+                        successor = getattr(node, 'next', None)
+                        if successor is not None:
+                            key = id(successor)
+                            parents[key] = node if key not in parents else None
+                    except Exception as error:
+                        self.catalog_issue('context-links', node, error)
                     yield None
-                contexts = {}
+                contexts, roles = {}, {}
                 transparent = ('Show', 'Hide', 'With', 'Voice', 'Pass', 'Window', 'Translate', 'EndTranslate')
                 for node in nodes:
-                    if not isinstance(node, renpy.ast.Say): continue
-                    source = getattr(node, 'what', None)
-                    if not isinstance(source, string_type) or not self.valid(source) or counts.get(source) != 1: continue
-                    previous, current, seen = [], node, set()
-                    for step in range(32):
-                        current = parents.get(id(current))
-                        if current is None or id(current) in seen: break
-                        seen.add(id(current))
-                        if getattr(current, 'filename', '') != getattr(node, 'filename', ''): break
-                        if isinstance(current, renpy.ast.Say):
-                            text = getattr(current, 'what', None)
-                            if not isinstance(text, string_type) or not self.valid(text) or len(text) > 600: break
-                            previous.append(text)
-                            if len(previous) == 3: break
-                        elif type(current).__name__ not in transparent: break
-                    if previous and sum(len(text) for text in previous) <= 1200:
-                        contexts[source] = list(reversed(previous))
+                    try:
+                        if not isinstance(node, renpy.ast.Say): continue
+                        source = getattr(node, 'what', None)
+                        if not isinstance(source, string_type) or not self.valid(source) or counts.get(source) != 1: continue
+                        previous, previous_speakers, current, seen = [], [], node, set()
+                        for step in range(32):
+                            current = parents.get(id(current))
+                            if current is None or id(current) in seen: break
+                            seen.add(id(current))
+                            if getattr(current, 'filename', '') != getattr(node, 'filename', ''): break
+                            if isinstance(current, renpy.ast.Say):
+                                text = getattr(current, 'what', None)
+                                if not isinstance(text, string_type) or not self.valid(text) or len(text) > 600: break
+                                previous.append(text)
+                                previous_speakers.append(self.dialogue_speaker(current))
+                                if len(previous) == 3: break
+                            elif type(current).__name__ not in transparent: break
+                        if previous and sum(len(text) for text in previous) <= 1200:
+                            contexts[source] = list(reversed(previous))
+                            speaker = self.dialogue_speaker(node)
+                            # At least one earlier line must belong to this exact
+                            # static binding. Unknown speakers are not merged.
+                            if speaker and speaker != 'narrator' and speaker in previous_speakers:
+                                bindings = {speaker: 'r0'}
+                                def opaque(value):
+                                    if value is None: return 'unknown'
+                                    if value == 'narrator': return value
+                                    if value not in bindings: bindings[value] = 'r' + str(len(bindings))
+                                    return bindings[value]
+                                roles[source] = {'contract': 'renpy-ast-speaker-v1', 'speaker': 'r0',
+                                    'previousSpeakers': [opaque(value) for value in reversed(previous_speakers)]}
+                    except Exception as error:
+                        self.catalog_issue('context-neighbours', node, error)
                     yield None
                 self.dialogue_contexts = contexts
+                self.dialogue_roles = roles
 
             def context_fields(self, texts):
                 rows, size, seen = [], 0, set()
@@ -433,11 +788,17 @@ init 999 python hide:
                     previous = self.dialogue_contexts.get(source)
                     if not previous: continue
                     row = {'source': source, 'unique': True, 'previous': previous}
+                    attribution = getattr(self, 'dialogue_roles', {}).get(source)
+                    if attribution and getattr(self, 'dialogue_roles_requested', False): row['speakerAttribution'] = attribution
                     cost = len(json.dumps(row, ensure_ascii=True))
                     if size + cost > 12000: continue
                     rows.append(row); size += cost
                     if len(rows) == 8: break
-                return {'dialogueContextContract': 'renpy-static-unique-1', 'dialogueContexts': rows}
+                result = {'dialogueContextContract': 'renpy-static-unique-1', 'dialogueContexts': rows}
+                if getattr(self, 'dialogue_roles_requested', False):
+                    result.update({'speakerAttributionContract': 'renpy-ast-speaker-v1',
+                        'speakerAttributionReady': self.dialogue_roles_ready})
+                return result
 
             def catalog_steps(self):
                 def add(text, active_source=False):
@@ -451,15 +812,58 @@ init 999 python hide:
                             self.catalog.append(text)
                 script = renpy.game.script
                 nodes = list(getattr(script, 'all_stmts', None) or script.namemap.values())
-                translated_types = tuple(t for t in (getattr(renpy.ast, name, None) for name in ('Translate','TranslateSay','TranslateBlock','TranslateEarlyBlock','TranslatePython')) if t is not None)
+                translated_types = tuple(t for t in (getattr(renpy.ast, name, None) for name in ('Translate','TranslateSay','TranslateBlock','TranslateEarlyBlock','TranslatePython','TranslateString')) if t is not None)
                 # all_stmts also contains translated children, even when their
                 # filename is an ordinary script. Mark structural descendants
                 # without following next/call/jump links into original statements.
                 todo, active_nodes, marked = [], set(), set()
+                selected_roots = set()
                 active_language = self.active_text_language
+                # Ren'Py selects a translation for each identifier, then falls
+                # back to that identifier's default block when the pack lacks it.
+                # A saved language preference alone does not prove translated
+                # text exists (partial packs and removed packs are both valid).
+                translator = getattr(script, 'translator', None)
+                language_translates = getattr(translator, 'language_translates', None)
+                default_translates = getattr(translator, 'default_translates', None)
+                if not isinstance(language_translates, dict):
+                    language_translates = {}
+                    for node in nodes:
+                        try:
+                            identifier = getattr(node, 'identifier', None)
+                            language = getattr(node, 'language', None)
+                            if identifier is not None and language is not None:
+                                language_translates[(identifier, language)] = node
+                        except Exception as error: self.catalog_issue('language-index', node, error)
+                        yield None
+                if not isinstance(default_translates, dict):
+                    default_translates = {}
+                    for node in nodes:
+                        try:
+                            identifier = getattr(node, 'identifier', None)
+                            if identifier is not None and getattr(node, 'language', None) is None:
+                                default_translates[identifier] = node
+                        except Exception as error: self.catalog_issue('default-index', node, error)
+                        yield None
+                if active_language is not None:
+                    for identifier, original in list(default_translates.items()):
+                        try:
+                            key = identifier.replace('.', '_') if isinstance(identifier, string_type) else identifier
+                            selected = language_translates.get((key, active_language))
+                            if selected is None:
+                                alternate = getattr(original, 'alternate', None)
+                                if alternate: selected = language_translates.get((key, alternate))
+                            if selected is not None and selected is not original:
+                                selected_roots.add(id(selected))
+                                todo.append((original, False))
+                                todo.append((selected, True))
+                        except Exception as error: self.catalog_issue('translation-selection', original, error)
+                        yield None
                 for node in nodes:
-                    if isinstance(node, translated_types) and getattr(node, 'language', None) is not None:
-                        todo.append((node, getattr(node, 'language', None) == active_language))
+                    try:
+                        if isinstance(node, translated_types) and getattr(node, 'language', None) is not None:
+                            todo.append((node, id(node) in selected_roots or getattr(node, 'language', None) == active_language))
+                    except Exception as error: self.catalog_issue('translation-roots', node, error)
                     yield None
                 while todo and len(marked) < 1000000:
                     node, is_active = todo.pop()
@@ -467,16 +871,20 @@ init 999 python hide:
                     marked.add(id(node))
                     if is_active: active_nodes.add(id(node))
                     else: self.nonoriginal_nodes.add(id(node))
-                    block = getattr(node, 'block', None)
-                    if isinstance(block, (list, tuple)): todo.extend((child, is_active) for child in block)
-                    for entry in getattr(node, 'entries', ()):
-                        if isinstance(entry, (list, tuple)) and len(entry) > 1 and isinstance(entry[1], (list, tuple)):
-                            todo.extend((child, is_active) for child in entry[1])
-                    if isinstance(node, renpy.ast.Menu):
-                        for item in node.items:
-                            if len(item) > 2 and item[2]: todo.extend((child, is_active) for child in item[2])
+                    try:
+                        block = getattr(node, 'block', None)
+                        if isinstance(block, (list, tuple)): todo.extend((child, is_active) for child in block)
+                        for entry in getattr(node, 'entries', ()) or ():
+                            if isinstance(entry, (list, tuple)) and len(entry) > 1 and isinstance(entry[1], (list, tuple)):
+                                todo.extend((child, is_active) for child in entry[1])
+                        if isinstance(node, renpy.ast.Menu):
+                            for item in node.items or ():
+                                if len(item) > 2 and item[2]: todo.extend((child, is_active) for child in item[2])
+                    except Exception as error: self.catalog_issue('translation-children', node, error)
                     yield None
+                if todo: self.catalog_issue('translation-limit', None, RuntimeError('translation traversal limit'))
                 self.catalog_marked = True
+                for step in self.collect_text_decorators(nodes): yield None
                 # The opening graph goes first. The remaining loaded scripts include
                 # unvisited branches and compiled/archive scripts, without playing them.
                 import itertools
@@ -485,8 +893,13 @@ init 999 python hide:
                 for node in itertools.chain(self.walk_story([script.namemap.get('start')], 3000), nodes):
                     if id(node) in seen or id(node) in self.nonoriginal_nodes: continue
                     seen.add(id(node))
-                    filename = getattr(node, 'filename', '').replace('\\', '/')
-                    if active_language is not None and id(node) not in active_nodes: continue
+                    try:
+                        filename = getattr(node, 'filename', '')
+                        if not isinstance(filename, string_type): raise TypeError('node filename')
+                        filename = filename.replace('\\', '/')
+                    except Exception as error:
+                        self.catalog_issue('node-source', node, error)
+                        continue
                     if '/tl/' in '/' + filename and id(node) not in active_nodes: continue
                     # These are actual Say/Menu statements in the selected AST
                     # view. The engine's default language is None, not an ISO
@@ -494,28 +907,48 @@ init 999 python hide:
                     # Arbitrary Python/screen data and interpolation arguments
                     # remain unproven and wait for their own runtime evidence.
                     active_source = isinstance(node, (renpy.ast.Say, renpy.ast.Menu))
-                    for text in self.node_texts(node):
+                    for text in self.catalog_node_texts(node):
+                        if not isinstance(text, string_type): continue
                         add(text, active_source)
-                        for fragment in self.inline_literals(text): add(fragment)
+                        active_fragments = set(self.active_inline_literals(text)) if active_source else set()
+                        for fragment in self.inline_literals(text): add(fragment, fragment in active_fragments)
                         yield None
                     extras.append(node)
                     yield None
+                if getattr(self, 'dialogue_roles_requested', False):
+                    for step in self.collect_dialogue_speakers(nodes): yield None
+                else:
+                    self.dialogue_speakers = set()
                 for step in self.build_dialogue_contexts(extras): yield None
+                self.dialogue_roles_ready = True
                 # Publish all ordinary dialogue/choices before expensive screen
                 # expressions and Python data tables. They need no event execution.
                 for node in extras:
-                    filename = getattr(node, 'filename', '').replace('\\', '/')
-                    if isinstance(node, renpy.ast.Screen):
-                        for text in self.screen_texts(node.screen):
-                            add(text)
-                            yield None
-                    if '/renpy/common/' not in '/' + filename and filename.rsplit('/', 1)[-1] not in ('zz_fusion_translation.rpy', 'zz_fusion_translation.rpyc'):
-                        for text in self.python_texts(getattr(node, 'code', None)):
-                            add(text)
-                            yield None
+                    try:
+                        filename = getattr(node, 'filename', '').replace('\\', '/')
+                        if isinstance(node, renpy.ast.Screen):
+                            for text, active_source in self.screen_texts(node.screen, True):
+                                add(text, active_source)
+                                yield None
+                        if '/renpy/common/' in '/' + filename:
+                            for text in self.common_ui_texts(getattr(node, 'code', None)):
+                                add(text, True)
+                                yield None
+                        elif filename.rsplit('/', 1)[-1] not in ('zz_fusion_translation.rpy', 'zz_fusion_translation.rpyc'):
+                            for text in self.python_texts(getattr(node, 'code', None)):
+                                add(text)
+                                yield None
+                            for origin in self.display_names(node):
+                                text = origin['source']
+                                add(text, True)
+                                if text in self.catalog_set and len(self.catalog_name_origins) < 10000:
+                                    self.catalog_name_origins.setdefault(text, origin)
+                                yield None
+                    except Exception as error: self.catalog_issue('node-expressions', node, error)
                     yield None
 
             def advance_catalog(self, budget=0.004):
+                if not self.catalog_requested or not (self.enabled or self.preparing): return
                 # Only the game thread reads engine AST objects. Small batches
                 # allow UI and the transport to start before a large scan ends.
                 deadline = time.time() + budget
@@ -526,9 +959,12 @@ init 999 python hide:
                             next(self.catalog_iter)
                             if time.time() >= deadline: break
                     except StopIteration:
+                        self.dialogue_roles_ready = True
+                        self.catalog_finished = True
                         self.catalog_iter = None
-                    except Exception:
-                        self.catalog_skipped += 1
+                    except Exception as error:
+                        self.catalog_issue('catalog-scan', None, error)
+                        self.dialogue_roles_ready = True
                         self.catalog_iter = None
 
             def register_template(self, source):
@@ -831,6 +1267,23 @@ init 999 python hide:
                 # Local glyph fallback only. Never assign style.font or style.size:
                 # Ren'Py shares styles between unrelated controls, including menu buttons.
                 for original, value in self.original_subsegment(segment, text):
+                    if self.enabled and self.custom_font:
+                        # Clone only this render segment. Styles, saves, font size,
+                        # bold/italic and the game's reusable segment stay intact.
+                        # Keep icon/unsupported glyph runs in their original face.
+                        start = 0
+                        while start < len(value):
+                            use_custom = self.has_glyph(original, value[start], font=self.custom_font) is True
+                            end = start + 1
+                            while end < len(value) and (self.has_glyph(original, value[end], font=self.custom_font) is True) == use_custom:
+                                end += 1
+                            selected = original
+                            if use_custom:
+                                selected = renpy.text.text.TextSegment(original)
+                                selected.font = self.custom_font
+                            yield selected, value[start:end]
+                            start = end
+                        continue
                     if not self.glyph_fallback or not self.fallback_fonts:
                         yield original, value
                         continue
@@ -949,6 +1402,7 @@ init 999 python hide:
                     except Exception: pass
 
             def periodic(self):
+                self.pump_font_preferences()
                 latest_language = getattr(renpy.game.preferences, 'language', None)
                 if latest_language != self.active_text_language:
                     with self.lock:
@@ -959,7 +1413,8 @@ init 999 python hide:
                         self.last_current = None
                         self.refresh_all = True
                 self.advance_catalog()
-                self.cursor_health()
+                if self.enabled:
+                    self.cursor_health()
                 if self.previous_periodic is not None:
                     self.previous_periodic()
                 current = getattr(renpy.game.context(), 'current', None)
@@ -968,7 +1423,7 @@ init 999 python hide:
                     root = renpy.game.script.namemap.get(current)
                     texts = []
                     for node in self.walk_story([root], 800):
-                        for text in self.node_texts(node):
+                        for text in self.catalog_node_texts(node):
                             if self.valid(text):
                                 texts.append(text)
                                 texts.extend(self.inline_literals(text))
@@ -988,7 +1443,108 @@ init 999 python hide:
                         displayable.kill_layout()
                         renpy.display.render.redraw(displayable, 0)
 
+            def cancel_font_request(self, job, message):
+                with self.lock:
+                    if job is None or job.get('result') is not None:
+                        return
+                    job['cancelled'] = True
+                    job['error'] = message
+                    if self.font_pending is job:
+                        self.font_pending = None
+                    job['done'].set()
+
+            def font_request_current(self, job):
+                if (job['cancelled'] or self.font_pending is not job or not self.connected
+                    or job['connection'] != self.font_connection or time.time() >= job['deadline']):
+                    return False
+                try:
+                    return self.font_peer_check is not None and self.font_peer_check()
+                except Exception:
+                    return False
+
+            def request_font_preferences(self, request):
+                # The pipe worker never touches the renderer's font/glyph caches.
+                with self.lock:
+                    if not self.connected or self.font_peer_check is None or not self.font_peer_check():
+                        raise Exception('Font connection unavailable')
+                    if self.font_pending is not None:
+                        raise Exception('A font request is already pending')
+                    job = {'request': dict(request), 'connection': self.font_connection,
+                        'deadline': time.time() + self.font_request_seconds, 'done': threading.Event(),
+                        'cancelled': False, 'processing': False, 'result': None, 'error': None}
+                    self.font_pending = job
+                while not job['done'].wait(0.05):
+                    with self.lock:
+                        if not self.font_request_current(job):
+                            self.cancel_font_request(job, 'Font request expired or connection closed')
+                if job['error'] is not None:
+                    raise Exception(job['error'])
+                return job['result']
+
+            def load_custom_font(self, selected):
+                # These named arguments match the shipped Ren'Py 7/8 font.py
+                # APIs (9, 12 and 13 parameters); unknown variants fail closed.
+                loader = renpy.text.font.get_font
+                code = getattr(loader, '__code__', getattr(loader, 'func_code', None))
+                if code is None:
+                    raise Exception('RenPy font loader signature unavailable')
+                names = code.co_varnames[:code.co_argcount]
+                values = {'fn': selected, 'size': 24, 'bold': False, 'italics': False,
+                    'outline': 0, 'antialias': True, 'vertical': False, 'hinting': True,
+                    'scale': 1.0, 'shaper': 'freetype', 'instance': None, 'axis': None, 'features': None}
+                if not names or names[0] != 'fn' or any(name not in values for name in names):
+                    raise Exception('Unsupported RenPy font loader signature')
+                face = loader(**dict((name, values[name]) for name in names))
+                if face is None or not callable(getattr(face, 'glyphs', None)):
+                    raise Exception('RenPy did not load a usable font face')
+                face.glyphs(u'A\u0410\u4e2d')
+
+            def pump_font_preferences(self):
+                # Called only by Ren'Py's periodic main-thread callback. Load
+                # first; commit only if the requesting connection still exists.
+                with self.lock:
+                    job = self.font_pending
+                    if job is None or job['processing']:
+                        return
+                    if not self.font_request_current(job):
+                        self.cancel_font_request(job, 'Font request expired or connection closed')
+                        return
+                    job['processing'] = True
+                try:
+                    request = job['request']
+                    mode = request.get('mode')
+                    if mode not in ('default', 'custom'):
+                        raise Exception('Invalid font mode')
+                    selected = None
+                    if mode == 'custom':
+                        selected = request.get('path', '').replace('\\', '/')
+                        if not selected or not os.path.isabs(selected) or not os.path.isfile(selected):
+                            raise Exception('Font file unavailable')
+                        if os.path.getsize(selected) <= 0 or os.path.getsize(selected) > 33554432:
+                            raise Exception('Font file exceeds size limit')
+                        with open(selected, 'rb') as font_file:
+                            if font_file.read(4) not in (b'\x00\x01\x00\x00', b'OTTO', b'ttcf', b'true'):
+                                raise Exception('Unsupported font file')
+                        self.load_custom_font(selected)
+                    with self.lock:
+                        if not self.font_request_current(job):
+                            self.cancel_font_request(job, 'Font request expired or connection closed')
+                            return
+                        self.custom_font = selected
+                        self.glyph_maps.clear()
+                        if self.enabled:
+                            self.refresh_all = True
+                        job['result'] = {'accepted': True, 'mode': mode, 'enabled': self.enabled,
+                            'fontLoaded': selected is not None, 'writebackPending': self.enabled,
+                            'restorePending': self.enabled and mode == 'default', 'restartRequired': False}
+                        self.font_pending = None
+                        job['done'].set()
+                except Exception as error:
+                    self.cancel_font_request(job, 'Font load failed: ' + type(error).__name__)
+
             def command(self, request):
+                if request.get('op') == 'fontPreferences':
+                    return self.request_font_preferences(request)
                 if request.get('op', '').startswith('data') or request.get('op') in ('lifecycleState','prepareRestart'):
                     data = getattr(renpy, '_fusion_data', None)
                     if data is None:raise Exception('此游戏的修改数据尚未适配，游戏和翻译可继续使用。')
@@ -996,6 +1552,12 @@ init 999 python hide:
                 with self.lock:
                     op = request.get('op')
                     if op == 'translationPrepare':
+                        roles_requested = request.get('speakerAttributionContract') == 'renpy-ast-speaker-v1'
+                        newly_requested_roles = roles_requested and not getattr(self, 'dialogue_roles_requested', False)
+                        self.dialogue_roles_requested = roles_requested
+                        if not self.catalog_requested or newly_requested_roles:
+                            self.catalog_requested = True
+                            self.collect_catalog()
                         preserve = self.startup_loaded and request.get('preserveStartup') is True
                         self.startup_loaded = False
                         self.preparing = True
@@ -1018,6 +1580,9 @@ init 999 python hide:
                         self.refresh_all = True
                         return {'epoch': self.epoch}
                     if op == 'translationEnable':
+                        if not self.catalog_requested:
+                            self.catalog_requested = True
+                            self.collect_catalog()
                         if self.preparing:
                             self.cache = self.staged_cache
                             self.staged_cache = {}
@@ -1042,14 +1607,31 @@ init 999 python hide:
                         self.refresh_all = True
                         return {'epoch': self.epoch}
                     if op == 'translationCatalog':
+                        if getattr(self, 'dialogue_roles_requested', False) and not self.dialogue_roles_ready:
+                            # New role-aware hosts wait for attribution before
+                            # dispatching early story pages. Legacy hosts and
+                            # unaffected targets retain their existing paging.
+                            response = {'texts': [], 'next': 0, 'total': 0, 'scanning': True, 'skipped': 0,
+                                'epoch': self.epoch, 'catalogComplete': False, 'catalogErrorCount': self.catalog_error_count}
+                            response.update(self.context_fields([]))
+                            return response
                         offset = max(0, min(len(self.catalog), int(request.get('cursor', 0))))
                         texts, size = [], 0
                         for text in self.catalog[offset:offset + 512]:
                             cost = len(json.dumps(text, ensure_ascii=True))
                             if texts and size + cost > 42000: break
+                            if texts and getattr(self, 'dialogue_roles_requested', False) and self.context_fields([text])['dialogueContexts']:
+                                # A bounded context page must not omit the role
+                                # of a source dispatched in that same page.
+                                trial = self.context_fields(texts + [text])['dialogueContexts']
+                                if not any(row['source'] == text for row in trial): break
                             texts.append(text)
                             size += cost
                         response = {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded), 'epoch': self.epoch, 'activeSourceTexts': [text for text in texts if text in self.catalog_active_sources]}
+                        response.update({'catalogComplete': self.catalog_finished and self.catalog_error_count == 0,
+                            'catalogErrorCount': self.catalog_error_count, 'catalogErrors': list(self.catalog_errors)})
+                        response.update({'nameOriginContract': 'fusion-display-names-1', 'nameOriginEngine': 'renpy',
+                            'nameOrigins': [self.catalog_name_origins[text] for text in texts if text in self.catalog_name_origins]})
                         response.update(self.context_fields(texts))
                         return response
                     if op == 'translationPoll':
@@ -1108,6 +1690,17 @@ init 999 python hide:
                 fd = None
                 try:
                     fd = os.open('\\\\.\\pipe\\' + pipe, os.O_RDWR | os.O_BINARY)
+                    peer_check = None
+                    try:
+                        import ctypes, msvcrt
+                        peek = ctypes.windll.kernel32.PeekNamedPipe
+                        peek.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint32,
+                            ctypes.c_void_p, ctypes.c_void_p, ctypes.c_void_p]
+                        peek.restype = ctypes.c_int
+                        handle = msvcrt.get_osfhandle(fd)
+                        peer_check = lambda: bool(peek(ctypes.c_void_p(handle), None, 0, None, None, None))
+                    except Exception:
+                        pass
                     def send(value):
                         data = (json.dumps(value, ensure_ascii=True) + '\n').encode('utf8')
                         while data:
@@ -1116,7 +1709,10 @@ init 999 python hide:
                                 raise IOError('Connection closed')
                             data = data[written:]
                     send({'hello': 1, 'secret': secret, 'pid': os.getpid(), 'reconnect': 156})
-                    with self.lock: self.connected = True
+                    with self.lock:
+                        self.connected = True
+                        self.font_connection += 1
+                        self.font_peer_check = peer_check
                     pending = b''
                     while True:
                         while b'\n' not in pending and len(pending) <= 262144:
@@ -1131,7 +1727,8 @@ init 999 python hide:
                         try:
                             response = {'id': request['id'], 'ok': True, 'result': self.command(request)}
                         except Exception as ex:
-                            message = ex.args[0] if request.get('op','').startswith('data') and ex.args else 'Translation request failed'
+                            detailed = request.get('op','').startswith('data') or request.get('op') == 'fontPreferences'
+                            message = ex.args[0] if detailed and ex.args else 'Translation request failed'
                             response = {'id': request.get('id'), 'ok': False, 'error': message}
                         send(response)
                 except Exception:
@@ -1139,7 +1736,12 @@ init 999 python hide:
                 finally:
                     if fd is not None:
                         os.close(fd)
+                    data = getattr(renpy, '_fusion_data', None)
+                    if data is not None:data.revoke()
                     with self.lock:
+                        self.cancel_font_request(self.font_pending, 'Font connection closed')
+                        self.font_peer_check = None
+                        self.font_connection += 1
                         was_active = self.connected or self.enabled
                         self.enabled = False
                         self.epoch += 1

@@ -9,6 +9,12 @@ namespace ScreenshotTranslationUiTester;
 internal sealed record ModificationSpeedState(bool Supported,bool Enabled,bool Busy,double Value,
     double Minimum,double Maximum,double Step,IReadOnlyList<double> Presets,string Reason,string ContextKey,bool IntegerOnly=false)
 {
+    // These describe the selected mechanism and its acknowledgement, never a
+    // measured gameplay speed. Detailed evidence stays behind user disclosure.
+    internal string BackendLabel { get; init; } = "";
+    internal bool RateConfirmed { get; init; }
+    internal string Feedback { get; init; } = "";
+    internal string Diagnostics { get; init; } = "";
     private sealed class Context { internal readonly string Key=Guid.NewGuid().ToString("N"); }
     private static readonly ConditionalWeakTable<object,Context> contexts=new();
     internal static string ContextFor(object? connection)=>connection is null?"":contexts.GetValue(connection,_=>new()).Key;

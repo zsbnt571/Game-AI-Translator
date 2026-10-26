@@ -18,16 +18,19 @@ internal static class WpfThemeResources
     }
     private sealed record ButtonPresentation(string Text,string? Icon,bool Primary,ThemePalette Palette,bool Trailing,bool Compact,bool CoverOverlay);
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<WC.Button,ButtonPresentation> ButtonPresentations=new();
-    internal static W.ResourceDictionary Create() => (W.ResourceDictionary)W.Markup.XamlReader.Parse("""
+    internal static W.ResourceDictionary Create()
+    {
+        WpfFocusCues.Initialize();
+        var resources=(W.ResourceDictionary)W.Markup.XamlReader.Parse("""
         <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
           <Style x:Key="{x:Static SystemParameters.FocusVisualStyleKey}" TargetType="Control">
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Control">
-              <Border BorderBrush="{DynamicResource Fusion.Accent}" BorderThickness="1" CornerRadius="3" Margin="1" IsHitTestVisible="False"/>
+              <Border BorderBrush="{DynamicResource Fusion.Text}" BorderThickness="1" CornerRadius="3" Margin="1" IsHitTestVisible="False"/>
             </ControlTemplate></Setter.Value></Setter>
           </Style>
           <Style TargetType="ScrollViewer"><Setter Property="FocusVisualStyle" Value="{x:Null}"/></Style>
           <Style TargetType="Button">
-            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="FocusVisualStyle" Value="{DynamicResource {x:Static SystemParameters.FocusVisualStyleKey}}"/>
             <Setter Property="Background" Value="{DynamicResource Fusion.Main}"/>
             <Setter Property="Foreground" Value="{DynamicResource Fusion.Text}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Fusion.Border}"/>
@@ -40,7 +43,6 @@ internal static class WpfThemeResources
               </Border>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Outline" Property="BorderBrush" Value="{DynamicResource Fusion.Accent}"/></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Outline" Property="BorderBrush" Value="{DynamicResource Fusion.Accent}"/><Setter TargetName="Outline" Property="BorderThickness" Value="2"/></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate></Setter.Value></Setter>
@@ -52,7 +54,6 @@ internal static class WpfThemeResources
               </Border>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Fusion.Control}"/></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource Fusion.Accent}"/></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.5"/></Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate></Setter.Value></Setter>
@@ -68,7 +69,6 @@ internal static class WpfThemeResources
               </Border>
               <ControlTemplate.Triggers>
                 <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Fusion.Control}"/></Trigger>
-                <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Surface" Property="Background" Value="{DynamicResource Fusion.Control}"/><Setter TargetName="Surface" Property="BorderThickness" Value="1"/><Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource Fusion.Accent}"/></Trigger>
                 <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.4"/></Trigger>
               </ControlTemplate.Triggers>
             </ControlTemplate></Setter.Value></Setter>
@@ -192,6 +192,11 @@ internal static class WpfThemeResources
           </Style>
         </ResourceDictionary>
         """);
+        WpfFocusCues.Gate((W.Style)resources[W.SystemParameters.FocusVisualStyleKey]);
+        foreach(W.Setter setter in ((W.Style)resources[typeof(WC.CheckBox)]).Setters)
+            if(setter.Property==WC.Control.TemplateProperty)WpfFocusCues.GateFocusTriggers((WC.ControlTemplate)setter.Value);
+        return resources;
+    }
 
     internal static void Apply(W.ResourceDictionary resources)
     {
@@ -242,5 +247,6 @@ internal static class WpfThemeResources
             row.Effect=new System.Windows.Media.Effects.DropShadowEffect{Color=WM.Colors.Black,BlurRadius=3,ShadowDepth=1,Opacity=.85};
         }
         W.Automation.AutomationProperties.SetName(button,UiLanguage.Text(text));
+        WpfUiLanguage.Property(button,W.Automation.AutomationProperties.NameProperty,UiLanguage.Original(text));
     }
 }

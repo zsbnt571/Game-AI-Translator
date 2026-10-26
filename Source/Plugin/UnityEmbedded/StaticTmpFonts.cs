@@ -54,7 +54,7 @@ namespace Fusion.UnityEmbedded
             var parsedPages=parsed["pages"] as IList;var rows=parsed["glyphs"] as IList;
             if(parsedPages==null||parsedPages.Count>32||rows==null||rows.Count>50000)throw new InvalidDataException();
             var validated=new Dictionary<int,IList>();
-            foreach(var item in rows){var row=item as IList;if(row==null||row.Count!=9)throw new InvalidDataException();int code=N(row[0]),page=N(row[1]);if(code<0||code>0xffff||page<0||page>=parsedPages.Count||N(row[2])<0||N(row[3])<0||N(row[4])<0||N(row[5])<0||N(row[2])+N(row[4])>2048||N(row[3])+N(row[5])>2048)throw new InvalidDataException();validated.Add(code,row);}
+            foreach(var item in rows){var row=item as IList;if(row==null||row.Count!=9)throw new InvalidDataException();int code=N(row[0]),page=N(row[1]);if(code<0||code>0x10ffff||code>=0xd800&&code<=0xdfff||page<0||page>=parsedPages.Count||N(row[2])<0||N(row[3])<0||N(row[4])<0||N(row[5])<0||N(row[2])+N(row[4])>2048||N(row[3])+N(row[5])>2048)throw new InvalidDataException();validated.Add(code,row);}
             foreach(var pair in validated)glyphs.Add(pair.Key,pair.Value);pageIndex=parsedPages;index=parsed;
         }
         object Cast(object value,Type type)
@@ -245,8 +245,8 @@ namespace Fusion.UnityEmbedded
                 var material=T("UnityEngine.Material");var manager=T("TMPro.TMP_MaterialManager");
                 var fallback=manager==null||material==null?null:manager.GetMethod("GetFallbackMaterial",BindingFlags.Public|BindingFlags.Static,null,new[]{material,material},null);
                 if(fallback==null)return true;
-                var needed=new HashSet<int>();bool tag=false;
-                foreach(char c in text){if(c=='<'){tag=true;continue;}if(c=='>'){tag=false;continue;}IList row;if(!tag&&c>=0x2e80&&glyphs.TryGetValue(c,out row))needed.Add(N(row[1]));}
+                var needed=new HashSet<int>();
+                foreach(int code in FontGlyphs.Visible(text)){IList row;if(code>=0x80&&glyphs.TryGetValue(code,out row))needed.Add(N(row[1]));}
                 foreach(int number in needed)
                 {
                     int origin;string pageKey=font.GetType().GetProperty("glyphTable")==null&&cloneOrigins.TryGetValue(id(font),out origin)?origin+":"+number:"modern:"+number;
@@ -273,7 +273,7 @@ namespace Fusion.UnityEmbedded
             if(ctor==null)throw new NotSupportedException();object ch=ctor.Invoke(ctor.GetParameters().Length==3?new object[]{(uint)code,page.Font,g}:new object[]{(uint)code,g});
             page.Glyphs.GetType().GetMethod("Add",new[]{glyph}).Invoke(page.Glyphs,new[]{g});page.Characters.GetType().GetMethod("Add",new[]{character}).Invoke(page.Characters,new[]{ch});page.Codes.Add(code);
         }
-        internal object Prepare(object original,string text)
+        internal object Prepare(object original,string text,string source=null)
         {
             if(!alive(original)||original.GetType().FullName!="TMPro.TMP_FontAsset")return null;
             bool legacy=original.GetType().GetProperty("glyphTable")==null;
@@ -283,8 +283,8 @@ namespace Fusion.UnityEmbedded
             string stage="index";
             try
             {
-                Index();var needed=new HashSet<int>();bool tag=false;
-                foreach(char c in text){if(c=='<'){tag=true;continue;}if(c=='>'){tag=false;continue;}if(!tag&&c>=0x2e80){if(char.IsSurrogate(c)||!glyphs.ContainsKey(c)){Status="static-glyph-unavailable";return null;}needed.Add(c);}}
+                Index();var needed=new HashSet<int>();
+                foreach(int code in FontGlyphs.Visible(FontGlyphs.Required(text,source))){if(!glyphs.ContainsKey(code)){Status="static-glyph-unavailable-U+"+code.ToString("X4");return null;}needed.Add(code);}
                 if(needed.Count==0||needed.Count>512)return null;
                 var pageFonts=new List<object>();stage="page";
                 foreach(var group in needed.GroupBy(c=>N(glyphs[c][1])))

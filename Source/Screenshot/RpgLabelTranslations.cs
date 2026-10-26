@@ -309,7 +309,7 @@ internal sealed class RpgLabelTranslations:IDisposable
                     RestoreSoft(p.Key,p.Value,savedDocument?.Terms);
                 }
                 NotifyChanged();
-                bool configured=!string.IsNullOrWhiteSpace(settings.ApiUrl)&&!string.IsNullOrWhiteSpace(settings.Model)&&(settings.AllowEmptyApiKey||!string.IsNullOrWhiteSpace(settings.ApiKey));
+                bool configured=ApiConnectionPolicy.IsConfigured(settings);
                 while(!lifetime.IsCancellationRequested)
                 {
                     await signal.WaitAsync(lifetime.Token);

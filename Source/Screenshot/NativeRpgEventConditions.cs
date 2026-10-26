@@ -78,11 +78,12 @@ public sealed partial class MainForm
                                 update(value);
                                 string original=value.GetProperty("name").GetString()??"",chinese=DataChinese(value),name=chinese.Length>0?chinese:original;
                                 string shown=key.StartsWith("event:")?"":name.Length>16?name[..16]+"…":name;
-                                string actual=type=="unavailable"?"未读取":ConditionPlainValue(value.GetProperty("value"));
+                                string actual=type=="unavailable"?UiLanguage.Text("未读取"):ConditionPlainValue(value.GetProperty("value"));
                                 string text=ReadableDataKey(key)+(shown.Length>0?" · "+shown:"")+"："+actual;
                                 if(chip.Text!=text)chip.Text=text;
-                                string requirement=(value.GetProperty("condition").GetString()=="atLeast"?"至少 ":"")+ConditionPlainValue(value.GetProperty("target"));
-                                string tip=ReadableDataKey(key)+" · "+name+(chinese.Length>0&&chinese!=original?"\n"+original:"")+"\n当前："+actual+"；出现要求："+requirement+"\n点击修改当前值";
+                                string requirement=ConditionPlainValue(value.GetProperty("target"));
+                                if(value.GetProperty("condition").GetString()=="atLeast")requirement=UiLanguage.FormatTemplate("至少 {0}",requirement);
+                                string tip=UiLanguage.FormatTemplate("{0}\n当前：{1}；出现要求：{2}\n点击修改当前值",ReadableDataKey(key)+" · "+name+(chinese.Length>0&&chinese!=original?"\n"+original:""),actual,requirement);
                                 chip.AccessibleName=text;chip.View.ToolTip=tip;
                             });
                         }
@@ -107,7 +108,7 @@ public sealed partial class MainForm
 
     private static string ConditionPlainValue(JsonElement value)=>value.ValueKind switch
     {
-        JsonValueKind.True=>"开",JsonValueKind.False=>"关",JsonValueKind.Null=>"未读取",_=>value.ToString()
+        JsonValueKind.True=>UiLanguage.Text("开"),JsonValueKind.False=>UiLanguage.Text("关"),JsonValueKind.Null=>UiLanguage.Text("未读取"),_=>value.ToString()
     };
 
     private Action<JsonElement> AddEventConditionField(NativeRpgColumn host,JsonElement initial,int page)
@@ -123,7 +124,8 @@ public sealed partial class MainForm
         NativeRpgToggle? toggle=null;NativeRpgNumber? number=null;
         if(type=="boolean")
         {
-            toggle=new NativeRpgToggle{Height=28,Width=100,AccessibleName="条件值 "+key};
+            toggle=new NativeRpgToggle{Height=28,Width=100,AccessibleName=UiLanguage.FormatTemplate("条件值 {0}",key)};
+            WpfUiLanguage.Property(toggle.View,System.Windows.Automation.AutomationProperties.NameProperty);
             toggle.CheckedChanged+=async(_,_)=>{
                 if(updating||_dataLoading||_dataWriting)return;
                 await ExecuteGameDataAsync(new(){["op"]="set",["key"]=key,["value"]=toggle.Checked});
@@ -132,7 +134,8 @@ public sealed partial class MainForm
         }
         else if(type=="number")
         {
-            number=new NativeRpgNumber{Width=110,Minimum=initial.GetProperty("min").GetDecimal(),Maximum=initial.GetProperty("max").GetDecimal(),AccessibleName="条件值 "+key};
+            number=new NativeRpgNumber{Width=110,Minimum=initial.GetProperty("min").GetDecimal(),Maximum=initial.GetProperty("max").GetDecimal(),AccessibleName=UiLanguage.FormatTemplate("条件值 {0}",key)};
+            WpfUiLanguage.Property(number.View,System.Windows.Automation.AutomationProperties.NameProperty);
             number.ValueChanged+=(_,_)=>{if(!updating)dirty=true;};
             async Task Apply()
             {
@@ -150,15 +153,15 @@ public sealed partial class MainForm
             string detail=chinese.Length>0&&chinese!=original?original:"";
             if(title.Text!=heading)title.Text=heading;
             if(reference.Text!=detail)reference.Text=detail;reference.Visible=detail.Length>0;
-            string Plain(JsonElement value)=>value.ValueKind==JsonValueKind.True?"开启":value.ValueKind==JsonValueKind.False?"关闭":value.ValueKind==JsonValueKind.Null?"未读取到":value.ToString();
+            string Plain(JsonElement value)=>value.ValueKind==JsonValueKind.True?UiLanguage.SwitchText(true):value.ValueKind==JsonValueKind.False?UiLanguage.SwitchText(false):value.ValueKind==JsonValueKind.Null?UiLanguage.Text("未读取到"):value.ToString();
             string text,neededText="";
             if(type=="unavailable")text="暂无法读取："+row.GetProperty("error").GetString();
             else
             {
-                string needed=row.GetProperty("condition").GetString()=="atLeast"?"至少 "+Plain(row.GetProperty("target")):Plain(row.GetProperty("target"));
-                text="当前值："+Plain(row.GetProperty("value"));
-                neededText="要求："+needed+" · "+(row.GetProperty("met").GetBoolean()?"已满足":"未满足");
-                if(type=="readonly")text+="（文本变量）";
+                string needed=row.GetProperty("condition").GetString()=="atLeast"?UiLanguage.FormatTemplate("至少 {0}",Plain(row.GetProperty("target"))):Plain(row.GetProperty("target"));
+                text=UiLanguage.FormatTemplate("当前值：{0}",Plain(row.GetProperty("value")));
+                neededText=UiLanguage.FormatTemplate("要求：{0} · {1}",needed,UiLanguage.Text(row.GetProperty("met").GetBoolean()?"已满足":"未满足"));
+                if(type=="readonly")text+=UiLanguage.Text("（文本变量）");
             }
             if(status.Text!=text)status.Text=text;
             // A separate live value is needed only while a numeric draft differs or for a read-only field.
@@ -168,7 +171,7 @@ public sealed partial class MainForm
             updating=true;
             try
             {
-                if(toggle is not null){toggle.Checked=row.GetProperty("value").GetBoolean();toggle.Text=toggle.Checked?"开启":"关闭";}
+                if(toggle is not null){toggle.Checked=row.GetProperty("value").GetBoolean();toggle.Text=UiLanguage.SwitchText(toggle.Checked);}
                 if(number is not null){actualNumber=row.GetProperty("value").GetDecimal();if(!dirty&&!number.ContainsFocus)number.Value=Math.Clamp(actualNumber.Value,number.Minimum,number.Maximum);}
             }
             finally{updating=false;}

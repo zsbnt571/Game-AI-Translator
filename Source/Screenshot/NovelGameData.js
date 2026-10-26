@@ -18,7 +18,7 @@ function createFusionNovelData(g,engine){
         }
         return engine==='tyrano'?g.TYRANO&&g.TYRANO.kag&&g.TYRANO.kag.stat&&g.TYRANO.kag.stat.f:engine==='vnmaker'?g.GameManager&&g.GameManager.variableStore:null;
     }
-    function sync(){const next=current();if(next!==root){root=next;generation++;entries.clear();locks.clear();history=[];}return !!root&&typeof root==='object';}
+    function sync(){if(!enabled)return false;const next=current();if(next!==root){root=next;generation++;entries.clear();locks.clear();history=[];}return !!root&&typeof root==='object';}
     function resolve(e){
         if(!sync()||e.generation!==generation)throw Error('游戏数据已更换，请刷新。');
         let owner=root;
@@ -67,12 +67,12 @@ function createFusionNovelData(g,engine){
         for(const [key,l] of locks){try{const t=resolve(l.entry);if(t.value!==l.value)write(l.entry,l.value,t.value);}catch(_){locks.delete(key);}}
     }
     function command(q){
+        if(q.op==='dataDisable'){enabled=false;locks.clear();entries.clear();history=[];root=null;choiceRoot=null;choiceScene=null;generation++;return {enabled:false};}
+        if(q.op==='dataEnable'){if(engine!=='tyrano'&&engine!=='vnmaker'&&engine!=='choicescript')throw Error('此引擎尚未接入变量修改。');enabled=true;sync();return {enabled,ready:!!root&&typeof root==='object',generation};}
+        if(!enabled){if(q.op==='dataStatus')return {enabled:false,ready:false,generation,locks:0};throw Error('请先开启修改。');}
         sync();
-        if(q.op==='dataEnable'){if(engine!=='tyrano'&&engine!=='vnmaker'&&engine!=='choicescript')throw Error('此引擎尚未接入变量修改。');enabled=true;return {enabled,ready:!!root&&typeof root==='object',generation};}
-        if(q.op==='dataDisable'){enabled=false;locks.clear();entries.clear();history=[];return {enabled:false};}
         if(q.op==='dataStatus')return {enabled,ready:!!root&&typeof root==='object',generation,locks:locks.size};
         if(suspended)throw Error('状态操作进行中，请稍候再修改变量。');
-        if(!enabled)throw Error('请先开启修改。');
         if(q.op==='dataSnapshot')return snapshot();
         if(q.op==='dataUndo'){
             const h=history[history.length-1];if(!h)throw Error('没有可撤销的修改。');write(h.entry,h.before,h.after);locks.delete(JSON.stringify(h.entry.path));history.pop();return {restored:true};

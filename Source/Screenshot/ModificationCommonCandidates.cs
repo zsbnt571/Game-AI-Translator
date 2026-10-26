@@ -38,14 +38,21 @@ internal static class ModificationCommonCandidates
                 ||row.TryGetProperty("canWrite",out var canWrite)&&canWrite.ValueKind==JsonValueKind.False)continue;
             string id=Text(row,"id"),name=Text(row,"name");var parts=Parts(name);
             bool database=DatabaseIdentity(id,out int table,out int record);
-            if(database&&(parts.Length<3||!UsableObject(parts[^2])||sampleStarts.TryGetValue(table,out int start)&&record>=start))continue;
+            if(database&&(parts.Length<3||sampleStarts.TryGetValue(table,out int start)&&record>=start))continue;
             string collection=ExcludedContext(name)?"":ModificationFieldSemantics.Recollection(parts[^1],parts);
-            if(collection.Length>0&&parts.Length>=2&&UsableObject(parts[^2]))
+            if(collection.Length>0&&parts.Length>=2)
             {
-                string objectName=string.Join(" / ",parts[..^1]);
-                candidates.Add(new(row,collection,"recollection","可能的 CG / 回想",database?$"db:{table}:{record}":"path:"+objectName,objectName));
+                if(!UsableObject(parts[^2])&&!string.IsNullOrWhiteSpace(parts[^2]))continue;
+                bool registration=collection=="回想登记值";
+                // An unnamed database record is still addressable, but it is
+                // not a named CG or event. Show its stable location explicitly.
+                string collectionOwner=UsableObject(parts[^2])?string.Join(" / ",parts[..^1]):parts[0];
+                string objectName=database?$"{collectionOwner} [CDB {table}:{record}]":collectionOwner;
+                candidates.Add(new(row,collection,registration?"recollection-registration":"recollection",
+                    registration?"回想登记（用途待核对）":"可能的 CG / 回想状态",database?$"db:{table}:{record}":"path:"+objectName,objectName));
                 continue;
             }
+            if(database&&!UsableObject(parts[^2]))continue;
             if(!numeric)continue;
             string label=Label(name);bool trustedParty=adapterId=="yukar-bakin"&&name=="队伍.金钱";
             if(label.Length==0&&parts.Length==1&&name.Contains('.')&&!ExcludedContext(name)
@@ -96,7 +103,7 @@ internal static class ModificationCommonCandidates
             for(int i=0;i<candidates.Count;i++)
                 if(candidates[i].Caption=="金钱"&&!candidates[i].Verified)
                     candidates[i]=candidates[i] with{SectionKey="currency",SectionTitle="金钱（待核对）"};
-        return candidates.OrderBy(item=>item.SectionKey switch{""=>0,"currency"=>1,"recollection"=>2,"characters"=>3,_=>4}).ToArray();
+        return candidates.OrderBy(item=>item.SectionKey switch{""=>0,"currency"=>1,"recollection"=>2,"recollection-registration"=>3,"characters"=>4,_=>5}).ToArray();
     }
 
     internal static JsonElement[] BoardRows(IEnumerable<Candidate> candidates,Func<string,string>? display=null)=>candidates.Select(item=>JsonSerializer.SerializeToElement(new {
@@ -106,9 +113,15 @@ internal static class ModificationCommonCandidates
         canLock=!item.Source.TryGetProperty("canLock",out var canLock)||canLock.ValueKind!=JsonValueKind.False,
         min=item.Source.TryGetProperty("min",out var min)&&min.TryGetDecimal(out var lower)?lower:decimal.MinValue,
         max=item.Source.TryGetProperty("max",out var max)&&max.TryGetDecimal(out var upper)?upper:decimal.MaxValue,
-        sectionKey=item.SectionKey,sectionTitle=item.SectionTitle,sectionExpanded=item.SectionKey is "characters" or "relationships",groupKey=item.GroupKey,groupTitle=display?.Invoke(item.GroupTitle)??item.GroupTitle,groupOriginal=item.GroupTitle,verified=item.Verified,
+        sectionKey=item.SectionKey,sectionTitle=item.SectionTitle,sectionExpanded=item.SectionKey is "characters" or "relationships",groupKey=item.GroupKey,groupTitle=DisplayGroup(item.GroupTitle,display),groupOriginal=item.GroupTitle,verified=item.Verified,
         attributeGroup=item.AttributeGroup,attributeTitle=item.AttributeTitle,attributeOrder=item.Order
     })).ToArray();
+    private static string DisplayGroup(string title,Func<string,string>? display)
+    {
+        if(display is null)return title;
+        var identity=Regex.Match(title,@"\s*(\[CDB [^\]]+\])$");
+        return identity.Success?display(title[..identity.Index])+" "+identity.Groups[1].Value:display(title);
+    }
     private static string Text(JsonElement row,string key)=>row.TryGetProperty(key,out var value)&&value.ValueKind==JsonValueKind.String?value.GetString()??"":"";
     private static string[] Parts(string name)=>Regex.Replace(name,@"\s*\[CDB [^\]]+\]\s*$","").Split(" / ",StringSplitOptions.TrimEntries);
     private static bool DatabaseIdentity(string id,out int table,out int row)

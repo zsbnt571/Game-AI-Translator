@@ -17,17 +17,20 @@ internal sealed class UnrealTranslationConnection : IEmbeddedTranslationConnecti
 {
     private readonly string runtime,folder,secret=Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
     private readonly UnrealEngine engine;
+    private readonly string executable;
+    private bool deferredCatalog;
     private readonly SemaphoreSlim gate=new(1,1);
     private readonly CancellationTokenSource lifetime=new();
     private readonly object stateGate=new();
     private Process? peer;private int id;private bool accepted,disposed,retainStartup;
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode,SetLastError=true)]
     private static extern bool QueryFullProcessImageName(IntPtr process,uint flags,StringBuilder path,ref uint size);
-    internal UnrealTranslationConnection(string exe)
+    internal UnrealTranslationConnection(string exe,bool deferCatalog=false)
     {
+        executable=exe;deferredCatalog=deferCatalog;
         engine=UnrealGameAdapter.Detect(exe)??throw new IOException("无法确认虚幻入口。");runtime=engine.Runtime;
         folder=Path.Combine(UnrealGameAdapter.Storage(exe),"sessions",Guid.NewGuid().ToString("N"));Directory.CreateDirectory(folder);
-        File.Copy(Path.Combine(UnrealGameAdapter.Storage(exe),"catalog.json"),Path.Combine(folder,"catalog.json"));
+        if(!deferCatalog)File.Copy(Path.Combine(UnrealGameAdapter.Storage(exe),"catalog.json"),Path.Combine(folder,"catalog.json"));
     }
     internal static bool ValidPair(string source,string text)=>!string.IsNullOrWhiteSpace(source)&&!string.IsNullOrWhiteSpace(text)&&source.Length is >=1 and <=6000&&text.Length is >=1 and <=12000
         &&!source.Contains('\0')&&!text.Contains('\0')
@@ -59,6 +62,7 @@ internal sealed class UnrealTranslationConnection : IEmbeddedTranslationConnecti
     public ProcessStartInfo StartInfo(bool translationAtStartup=true)
     {
         var info=new ProcessStartInfo(runtime){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(runtime)};
+        GameLaunchEnvironment.ClearSession(info);
         foreach(string argument in engine.LaunchArguments)info.ArgumentList.Add(argument);
         info.Environment["FUSION_UNREAL_SESSION"]=folder;info.Environment["FUSION_UNREAL_SECRET"]=secret;
         info.Environment["FUSION_UNREAL_TRANSLATION"]=translationAtStartup?"1":"0";
@@ -149,6 +153,16 @@ internal sealed class UnrealTranslationConnection : IEmbeddedTranslationConnecti
             // Session credentials and filtering must never mutate the caller's object.
             var outgoing=request.DeepClone().AsObject();
             if(outgoing["op"] is not JsonValue operation||!operation.TryGetValue<string>(out var op))throw new IOException("虚幻翻译请求格式无效。");
+            if(deferredCatalog&&op is "translationPrepare" or "translationEnable")
+            {
+                // Ordinary startup supplies only the dormant transport. Catalog
+                // extraction and publication belong to the first explicit enable.
+                await Task.Run(()=>UnrealGameAdapter.PrepareCatalog(executable,engine),waiting.Token);
+                waiting.Token.ThrowIfCancellationRequested();
+                string staged=Path.Combine(folder,"catalog.json.tmp");
+                File.Copy(Path.Combine(UnrealGameAdapter.Storage(executable),"catalog.json"),staged,true);
+                File.Move(staged,Path.Combine(folder,"catalog.json"),true);deferredCatalog=false;
+            }
             if(op=="translationPrepare")
             {lock(stateGate)outgoing["retainStartup"]=retainStartup;}
             if(op=="translationApply")

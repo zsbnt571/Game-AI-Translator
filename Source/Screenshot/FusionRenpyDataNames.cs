@@ -41,7 +41,7 @@ public sealed partial class MainForm
         try
         {
             var settings=_fusion!.GameSettings(_appliedDesktopSettings,game.ExePath);
-            if(string.IsNullOrWhiteSpace(settings.ApiUrl)||string.IsNullOrWhiteSpace(settings.Model)||(!settings.AllowEmptyApiKey&&string.IsNullOrWhiteSpace(settings.ApiKey)))
+            if(!ApiConnectionPolicy.IsConfigured(settings))
             {if(!automatic)RenpyNamesStatus="设置可用翻译方案后会自动补齐译名。原文和已有备注仍可使用。";return;}
             EnsureRenpyDataNames(game.ExePath,session,settings);var labels=session.Labels!;
             if(!automatic)labels.RetryMissing();

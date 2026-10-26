@@ -40,6 +40,7 @@ internal sealed class WpfScreenshotModeSwitch : WC.Border
               </ControlTemplate.Triggers>
             </ControlTemplate>
             """);
+        WpfFocusCues.GateFocusTriggers(template);
         for (int i = 0; i < options.Length; i++)
         {
             int index = i;

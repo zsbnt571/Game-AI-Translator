@@ -7,13 +7,13 @@ namespace ScreenshotTranslationUiTester;
 internal sealed class GameDataSession(IGameDataConnection connection) : IDisposable
 {
     internal IGameDataConnection Connection {get;}=connection;
-    internal bool Enabled,Ready,EnableOnEntry,InBattle,ModificationEntered;
+    internal bool Enabled,Ready,InBattle;
     internal int Generation,Locks;
     internal RpgTranslationSession? Translation;
     internal EmbeddedTranslationOptions? TranslationOptions;
     internal RpgLabelTranslations? Labels;
     internal string LabelIdentity="";
-    internal string Feedback="已连接，打开游戏修改页即可操作。";
+    internal string Feedback="已连接 · 修改关闭";
     public void Dispose(){Translation?.Dispose();Labels?.Dispose();Connection.Dispose();}
 }
 
@@ -69,7 +69,7 @@ public sealed partial class MainForm
         bool stopped=game is not null&&SameGame(_desktopGameState?.Game.ExePath,game.ExePath)&&_desktopGameState?.Process==FusionGameProcessState.Stopped&&!_gameSessions.Get(game).LaunchPending;
         if(stopped&&state?.Connection.Connected==true){state.Dispose();state.Enabled=false;state.Ready=false;state.Locks=0;state.Feedback="游戏已退出。下次可选择“修改并启动”。";}
         bool connected=state?.Connection.Connected==true;
-        if(!connected&&(_dataGrid.Rows.Count>0||_dataMap.MapId!=0)){_dataSelecting=true;try{_dataGrid.Rows.Clear();}finally{_dataSelecting=false;}_dataMap.ClearMap();_dataPage.Text="";ResetDataDetails();_dataCommonBoard?.ClearRows();}
+        if((!connected||state?.Enabled!=true)&&(_dataGrid.Rows.Count>0||_dataMap.MapId!=0)){_dataSelecting=true;try{_dataGrid.Rows.Clear();}finally{_dataSelecting=false;}_dataMap.ClearMap();_dataPage.Text="";ResetDataDetails();_dataCommonBoard?.ClearRows();}
         bool busy=_gameActionRunning||_dataLoading;
         _dataStatus.Text=!supported?"此引擎的数据修改尚未接入。当前首版支持 RPG Maker MV/MZ 标准桌面结构。":connected?
             (state!.Enabled?"修改已开启 · 锁定 "+state.Locks+" 项":"已连接 · 修改关闭"):
@@ -80,14 +80,14 @@ public sealed partial class MainForm
         _dataLaunch.Visible=supported&&!connected;_dataLaunch.Enabled=stopped&&!busy;
         _dataRestore!.Visible=supported;_dataRestore.Enabled=stopped&&!busy;
         _dataToggle!.Visible=connected;_dataToggle.Enabled=!_dataWriting;_dataToggle.Text=state?.Enabled==true?"关闭修改":"开启修改";
-        _dataBrowser!.Visible=supported;_dataBrowser.Enabled=true;_dataRefresh!.Enabled=connected&&!_dataWriting;
+        _dataBrowser!.Visible=supported;_dataBrowser.Enabled=true;_dataRefresh!.Enabled=connected&&state!.Enabled&&!_dataWriting;
         _dataEditor!.Enabled=connected&&state!.Enabled&&state.Ready;
         if(_dataContextActions is not null)_dataContextActions.Enabled=connected&&state!.Enabled&&state.Ready&&!_dataWriting;
         if(_dataLockActions is not null)_dataLockActions.Enabled=connected&&state!.Enabled&&state.Ready&&!_dataWriting;
         if(_dataBattleActions is not null)_dataBattleActions.Enabled=connected&&state!.Enabled&&state.Ready&&state.InBattle&&!_dataWriting;
         _dataCommonBoard?.SetAvailability(connected&&state!.Enabled&&state.Ready,connected?state!.Ready?"开启修改后即可直接操作。":"请先进入游戏或读取存档。":"启动并连接游戏后可使用常用操作。");
         _dataGrid.ApplyPalette();
-        if(state?.Translation?.Enabled==true&&_dataGrid.Visible)RefreshDataLabels();
+        if(state?.Enabled==true&&state.Translation?.Enabled==true&&_dataGrid.Visible)RefreshDataLabels();
     }
 
     private async Task RefreshGameDataStatusAsync()
@@ -98,7 +98,7 @@ public sealed partial class MainForm
         try
         {
             var result=await state.Connection.RequestAsync(new(){["op"]="status"});
-            if(!IsDataView(game.ExePath,epoch)||_dataWriting||_dataLoading)return;
+            if(!state.Enabled||!IsDataView(game.ExePath,epoch)||_dataWriting||_dataLoading)return;
             state.InBattle=result.GetProperty("inBattle").GetBoolean();
             bool changedGeneration=result.GetProperty("generation").GetInt32()!=state.Generation;
             state.Ready=result.GetProperty("ready").GetBoolean();state.Locks=result.GetProperty("lockCount").GetInt32();
@@ -116,9 +116,10 @@ public sealed partial class MainForm
     private Task LaunchRpgSessionAsync(string action)=>!_gameDetecting&&_selectedGame is {} game?LaunchRpgSessionAsyncFor(game,action):Task.CompletedTask;
     private async Task LaunchRpgSessionAsyncFor(GameInfo game,string action)
     {
+        if(action=="plain"){await LaunchOrdinaryGameSessionAsyncFor(game);return;}
         var session=_gameSessions.Get(game);var root=RecentGameStore.Normalize(Path.GetDirectoryName(game.ExePath)!);
         if(session.Busy||session.LaunchPending||_gameRootOperations.ContainsKey(root))return;
-        session.Busy=true;_gameRootOperations[root]=session;RenderGameSessionState();RpgGameDataConnection? connection=null;
+        session.Busy=true;session.TranslationRuntimePending=action is "launch" or "modify";_gameRootOperations[root]=session;RenderGameSessionState();RpgGameDataConnection? connection=null;
         try
         {
             ApiSettings? translationSettings=null;
@@ -139,7 +140,6 @@ public sealed partial class MainForm
             {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}});
             AppLog.Write("rpg-session","game connection authenticated");
             if(action=="modify"){await connection.RequestAsync(new(){["op"]="enable"});data.Enabled=true;}
-            else if(SameGame(game.ExePath,_selectedGame?.ExePath)&&session.Section==2)data.EnableOnEntry=true;
             if(translationSettings is not null)
             {
                 data.Translation=new(connection,game.ExePath,translationSettings,async(text,settings,token)=>(await _translationService.TranslatePlainAsync(text,settings,token)).Text);
@@ -150,9 +150,9 @@ public sealed partial class MainForm
                 await connection.RequestAsync(new(){["op"]="translationDisable"});
                 session.Feedback="";
             }
-            data.Feedback="已连接。进入游戏或读取存档后，点击“刷新”读取数据。";
+            data.Feedback=data.Enabled?"已连接。进入游戏或读取存档后，点击“刷新”读取数据。":"已连接 · 修改关闭";
             session.Feedback="";
-            if(SameGame(game.ExePath,_selectedGame?.ExePath))await RefreshGameDataAsync();
+            if(data.Enabled&&SameGame(game.ExePath,_selectedGame?.ExePath))await RefreshGameDataAsync();
         }
         catch(Exception ex)
         {
@@ -163,7 +163,7 @@ public sealed partial class MainForm
             session.Feedback=ex is OperationCanceledException?"游戏连接已取消，可重新启动。":SafeDiagnosticOutput.ExceptionSummary(ex);
             AppLog.Write("rpg-session",session.Feedback);
         }
-        finally{session.Busy=false;_gameRootOperations.Remove(root);if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
+        finally{session.TranslationRuntimePending=false;session.Busy=false;_gameRootOperations.Remove(root);if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
     }
 
     private async Task ToggleGameDataAsync()
@@ -176,19 +176,15 @@ public sealed partial class MainForm
     {
         if(WpfWorkspace.Enabled){if(nativeRpg is not null)await nativeRpg.Refresh();return;}
         if(_dataLoading){_dataRefreshPending=true;return;}
-        if(_selectedGame is not { } game||SelectedDataSession() is not { } state||!state.Connection.Connected)return;
+        if(_selectedGame is not { } game||SelectedDataSession() is not {Enabled:true} state||!state.Connection.Connected)return;
         int epoch=_dataEpoch,revision=_dataRevision;string scope=ActiveDataScope,query=_dataSearch.Text.Trim();
-        bool StillCurrent()=>IsDataView(game.ExePath,epoch)&&revision==_dataRevision;
+        bool StillCurrent()=>state.Enabled&&IsDataView(game.ExePath,epoch)&&revision==_dataRevision&&ReferenceEquals(state,SelectedDataSession());
         _dataLoading=true;RenderGameModificationState();
         try
         {
-            if(state.EnableOnEntry)
-            {
-                state.EnableOnEntry=false;
-                if(!state.Enabled){await state.Connection.RequestAsync(new(){["op"]="enable"});state.Enabled=true;}
-            }
             var aliasKeys=new JsonArray(_dataAliases.Where(x=>query.Length>0&&x.Value.Contains(query,StringComparison.OrdinalIgnoreCase)).Take(200).Select(x=>(JsonNode?)JsonValue.Create(x.Key)).ToArray());
             var result=await state.Connection.RequestAsync(new(){["op"]="snapshot",["scope"]=scope=="maps"?"gold":scope,["query"]=scope=="maps"?"":query,["aliasKeys"]=aliasKeys,["offset"]=0,["limit"]=_dataLimit,["mapId"]=_dataMapFollowCurrent?0:_dataSelectedMapId});
+            if(!StillCurrent())return;
             state.InBattle=result.TryGetProperty("inBattle",out var inBattle)&&inBattle.GetBoolean();state.Enabled=result.GetProperty("enabled").GetBoolean();state.Ready=result.GetProperty("ready").GetBoolean();state.Generation=result.GetProperty("generation").GetInt32();state.Locks=result.GetProperty("lockCount").GetInt32();
             state.Feedback=!state.Ready?"请先进入游戏或读取存档。":result.GetProperty("lastError").GetString() is {Length:>0} error?error:"已读取当前数据。";
             if(!StillCurrent())return;
@@ -326,17 +322,24 @@ public sealed partial class MainForm
     {
         if(_selectedGame is not { } game||SelectedDataSession() is not { } state)return;
         int epoch=_dataEpoch,revision=_dataRevision;string feedback="";
+        if(request["op"]?.ToString()=="disable"){state.Enabled=false;await RevokeModificationSpeedAsync(game);}
         await _dataWriteGate.WaitAsync();
         try
         {
             while(_dataLoading&&IsDataView(game.ExePath,epoch))await Task.Delay(20);
             if(!IsDataView(game.ExePath,epoch)||revision!=_dataRevision||!state.Connection.Connected)return;
+            if(request["op"]?.ToString() is not ("enable" or "disable")&&!state.Enabled)return;
             int detailScroll=_dataDetailScroll?.ScrollOffset??0;
             if(!request.ContainsKey("generation"))request["generation"]=state.Generation;
             _dataWriting=true;_dataLoading=true;RenderGameModificationState();
             try
             {
                 var result=await state.Connection.RequestAsync(request);
+                if(request["op"]?.ToString() is "enable" or "disable")
+                {
+                    state.Enabled=request["op"]?.ToString()=="enable"&&result.GetProperty("enabled").GetBoolean();
+                    if(!state.Enabled){state.Ready=false;state.Locks=0;state.InBattle=false;}
+                }
                 feedback=request["op"]?.ToString() switch
                 {
                     "teleport"=>result.TryGetProperty("moved",out var moved)&&moved.GetBoolean()?"已移动到目标格子。":"已请求切换地图，请在游戏内确认位置。",
@@ -352,7 +355,7 @@ public sealed partial class MainForm
             if(IsDataView(game.ExePath,epoch))
             {
                 if(request["op"]?.ToString()=="eventCommandSet")_dataObjectGeneration=-1;
-                await RefreshGameDataAsync();
+                if(state.Enabled)await RefreshGameDataAsync();else RenderGameModificationState();
                 if(revision==_dataRevision&&_dataDetailScroll is not null)_dataDetailScroll.ScrollOffset=detailScroll;
                 state.Feedback=feedback;
             }

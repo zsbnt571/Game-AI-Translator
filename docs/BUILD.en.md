@@ -1,50 +1,65 @@
-# Fusion R1 1.0.0 Preview 1 — Source and build
+# Build and source materials — 1.1.0.127
 
-[简体中文](BUILD.md) · [Documentation](README.md)
+[简体中文](BUILD.md) · [Русский](BUILD.ru.md)
 
-The matching tag is [v1.0.0-preview.1](https://github.com/zsbnt571/Game-AI-Translator/tree/v1.0.0-preview.1). End users should download `Fusion-1.0.0.zip`; developers should use the complete `Fusion-1.0.0-Source.zip` release asset.
+## Choose the right materials
 
-## Obtain the materials
+- **Fusion-1.1.0-Preview3.zip** is the complete runnable application.
+- **Fusion-1.1.0-Preview3-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
+- **Git source and GitHub's automatic Source code archives** omit binary dependencies. They are useful for review and contributions, but are not the complete set of ready-to-build inputs.
 
-1. Download the complete source asset from [this release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.0.0-preview.1) and verify its SHA-256 against the accompanying checksum information.
-2. Fully extract into a new writable directory. Enter the root containing `Source`, `Dependencies`, `tools`, `licenses` and `third-party-source`.
-3. Prepare the environment below and run the script from that root. Preserve old build outputs and use a fresh extraction for another build.
+Start with the complete source asset from the same version. Do not mix historical payloads or arbitrary DLLs from game directories. Initial NuGet restore may need network access. A complete source asset does not establish that all toolchains can rebuild everything offline from scratch.
 
-A Git clone or GitHub's automatic Source code ZIP omits required runtime ZIPs, DLLs, generated fonts and development inputs; it does not replace the full source asset. See [SOURCE-MANIFEST.json](../SOURCE-MANIFEST.json) for source/dependency provenance and hashes, and [git-source-index.json](../git-source-index.json) for the Git product-source index. Use each manifest's declared scope; later documentation changes do not imply product-source changes.
+Project-owned code retains GPL-3.0-only; dependencies, models and binaries have their own terms. See [Third-party notices](../THIRD_PARTY_NOTICES.md) and the [source inventory](../third-party-source/README.md).
 
-## Environment and entry point
+## Desktop build
 
-- Windows x64 and the .NET 8 SDK for the desktop program.
-- The .NET 10 SDK for UnrealCatalog.
-- .NET Framework 4.8 developer references and Windows SDK 10.0.26100.0 metadata for legacy net48 helpers.
-- Network access for the first NuGet restore. Independent native-bridge or game-plugin rebuilds also need the project's C++/engine toolchain and legally obtained compile references.
+The principal environment is Windows x64. The desktop targets .NET 8; UnrealCatalog needs an SDK supporting .NET 10. Relevant legacy helpers also use .NET Framework 4.8 developer references and Windows SDK 10.0.26100.0. Independent native bridges and plugins have their own toolchains; a successful desktop build does not certify that they were all rebuilt.
 
-The main project is `Source/Screenshot/ScreenshotTranslationUiTester.csproj`. Its historical project filename is retained; it builds the current `GameTranslator` application. The application entry-point version is 1.0.0, while internal bridges/helpers may retain their own compatibility versions.
+From the source root containing Source and tools:
 
-From the extracted source root:
+    powershell -ExecutionPolicy Bypass -File .\tools\Build-Desktop.ps1
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\Build-Desktop.ps1
-```
+Use -DotNet to select a dotnet executable. The script creates a fresh Build directory and refuses existing output. The historical main project is Source/Screenshot/ScreenshotTranslationUiTester.csproj; it builds GameTranslator.
 
-[tools/Build-Desktop.ps1](../tools/Build-Desktop.ps1) accepts `-DotNet` to select a dotnet executable. It creates `Build` and refuses to overwrite existing output, builds required helpers, then publishes the Windows x64 desktop program and modern helpers. net48 features still depend on platform components. Starting at the root avoids historical subdirectory `global.json` files unexpectedly selecting another SDK.
+This entry point uses some supplied precompiled adapter resources. It does not rebuild every Unity plugin, native bridge, runtime or model from scratch. Byte-identical reproducibility and a complete clean-machine rebuild are not established by a desktop build. [Validation](VALIDATION-1.1.0.127.md) separates the public build from the retained local installation build.
 
-This script does not rebuild every engine plugin from scratch and does not establish a complete fresh-developer-machine rebuild. SDK, path and environment differences can change binaries; byte-for-byte reproducibility is not promised.
+For the release build, publish the desktop, cover helper and UnitySchema with `RuntimeFrameworkVersion=8.0.33`; the script also explicitly passes `UnitySchemaRuntimeVersion=8.0.33` to the main project. Publish UnrealCatalog with `RuntimeFrameworkVersion=10.0.14`. Use the same properties for Restore and Publish. Updating the system runtime does not update a self-contained package. The supplied GameMaker tool is serviced separately with the .NET 10.0.14 runtime in both the source dependency and application copies; this does not rebuild its business code. The legacy IL2CPP loader retains .NET 6.0.7 and must not be switched to another major runtime without compatibility work.
 
-## Inputs and redistribution boundaries
+The script builds the OCR, cover and Yukar prerequisites first, then publishes CoverCapture, UnitySchema and UnrealCatalog before the main application. The cover project must restore and publish its win-x64 assets before the main copy targets run. Duplicate helper builds are skipped in the main publish. `Build/Publish` contains the desktop output, while `Build/Helpers` contains the three separate helper outputs. Assemble a complete package as described below.
 
-The complete source materials contain product code, redistributable build inputs and corresponding third-party sources/licenses. Independent plugin rebuilds require extra toolchains; including existing adapter payloads does not mean they were all rebuilt from scratch for this release.
+## Supply Unity references locally
 
-The public materials exclude:
+Public materials exclude five compile references under Source/Plugin/References: mscorlib.dll, System.dll, System.Core.dll, UnityEngine.dll and UnityEngine.UI.dll, as well as game assemblies. The first three historical Mono references are retained privately because their exact provenance was not pinned; they are not distributed in this public source. Obtain matching references locally from an authorized source when independently rebuilding those plugins. Do not commit or redistribute them.
 
-- Proprietary `oo2core_9_win64.dll`. The main tool can build without it, with limits on the corresponding Unreal decompression support.
-- Unity compile references `UnityEngine.dll` and `UnityEngine.UI.dll`. Supply legal local references to the relevant rebuild script; possessing references does not authorize redistributing game assemblies.
-- Games, game assemblies, saves, personal API settings, logs, real-game fixtures and historical machine-specific build output.
+The legacy plugin entry point accepts an external reference directory:
 
-Some old diagnostic tools retain historical fixture paths; the referenced game materials are not included. Do not run historical installation scripts or real-game probes without an explicitly designated isolated directory. The normal application uses its current data-storage setting.
+    $referenceDirectory = Read-Host 'Local compile-reference directory'
+    powershell -ExecutionPolicy Bypass -File .\Source\Plugin\build.ps1 -ReferenceDirectory $referenceDirectory -OutputDirectory .\Build-local\LegacyPlugin
 
-**Build output is not a complete public distribution.** Packaging still requires verified OCR/image runtimes, models, licenses, component manifests, removal of user data and archive checks. Do not publish the entire Build folder as an application package.
+Provide the framework references, UnityEngine.dll, UnityEngine.UI.dll and BepInEx.dll required by that script. It also accepts -DotNet and -SdkVersion; choose an installed compatible compiler.
 
-This release build passed **615 of 615 controlled checks**: 342 interface/localization checks and 273 modification/translation regression checks. These results do not establish extended real-gameplay or physical display-FPS acceptance. A clean Windows developer machine, every independently rebuilt plugin and byte-for-byte reproducibility are outside the default claim.
+The Mono6 project exposes these actual properties:
 
-Project-owned code uses GPL-3.0-only; third parties retain their own licenses. See [Third-party notices](../THIRD_PARTY_NOTICES.md) and [Known issues](KNOWN-ISSUES.en.md).
+    $frameworkReferences = Read-Host 'Local framework and UnityEngine reference directory'
+    $loaderReferences = Read-Host 'Local BepInEx Mono6 loader reference directory'
+    dotnet build .\Source\Plugin\UnityEmbedded\FusionUnityMono6.csproj -p:FrameworkReferenceDirectory="$frameworkReferences" -p:LoaderDirectory="$loaderReferences" -o .\Build-local\UnityMono6
+
+These properties select paths; they do not download references or grant redistribution rights. The project's other declared inputs are still required.
+
+The older UnityEmbedded/build-mono.ps1 has a different limit: -FrameworkReferenceRoot redirects only framework DLLs, not UnityEngine/BepInEx; Harmony uses a fixed relative reference path. Do not treat it as a complete external Unity-reference selector. Supply the files it actually expects only in a private build copy.
+
+## Optional checks and deployment boundaries
+
+Two historical layout self-tests read external fixtures only when FUSION_LAYOUT_FIXTURE_ROOT is explicitly set. Original game materials are not included publicly. Without matching authorized fixtures, these checks must not be counted as executed passes. Ordinary application startup and the normal build do not require them.
+
+Local-model deployment research describes running an external service. Configuring a compatible endpoint does not establish integrated model downloads, training, service management or every tool mentioned in that research. Android and other platform/tool studies likewise do not constitute delivered support.
+
+## Assemble a runnable package
+
+A build output is not automatically a complete portable distribution. Assembly also requires matching runtimes, OCR/image dependencies and models, original licenses, a clean relative data-location default, current documentation and file checksums. Personal profiles, keys, populated caches, saves, game resources, proprietary Oodle decompression DLLs and machine-specific deployment receipts are excluded.
+
+Original third-party notices and corresponding-source records remain. The BepInEx distribution source copy explicitly omits two Unity compile references, so its distribution hash differs from the upstream ZIP hash; see the [source guide](../third-party-source/README.md). Inventory hashes identify files and do not replace upstream licenses.
+
+[Home](../README.en.md)
+

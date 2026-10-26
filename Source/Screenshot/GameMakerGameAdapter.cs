@@ -127,6 +127,26 @@ internal static class GameMakerGameAdapter
         token.ThrowIfCancellationRequested();string path=InGame(exe,".fusion-gamemaker/catalog.json");
         if(new FileInfo(path).Length>32*1024*1024)throw new IOException("文本目录过大。");
         using var doc=JsonDocument.Parse(File.ReadAllText(path));
+        if(doc.RootElement.TryGetProperty("schema",out var schema)) {
+            if(schema.GetString()!="fusion-gamemaker-display/1")throw new IOException("不支持的 GameMaker 文本目录版本。");
+            var entries=doc.RootElement.GetProperty("entries");
+            if(entries.ValueKind!=JsonValueKind.Array||entries.GetArrayLength()>100000)throw new IOException("GameMaker 显示来源目录超出范围。");
+            var selected=new HashSet<string>(StringComparer.Ordinal);var origins=new CatalogOrigins();
+            string resource=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(exe))!,"data.win"),hash=Hash(resource);
+            foreach(var entry in entries.EnumerateArray()) {
+                token.ThrowIfCancellationRequested();
+                string text=entry.GetProperty("text").GetString()??"",code=entry.GetProperty("code").GetString()??"",sink=entry.GetProperty("sink").GetString()??"",rule=entry.GetProperty("rule").GetString()??"";
+                if(!RpgTextCatalog.IsText(text)||text.Contains('\0')||code.Length is <1 or >512||sink.Length is <1 or >512||rule is not ("display-flow/constant" or "display-flow/typewriter-source" or "display-flow/struct-member"))
+                    throw new IOException("GameMaker 显示来源记录无效。");
+                selected.Add(text);origins.Add(new(text,resource,code,hash,"gamemaker-display","gml-string",Context:rule+" → "+sink));
+            }
+            // Only the extractor's exact display-flow rows carry this authority.
+            // Legacy literal catalogues below must never acquire it on upgrade.
+            var issues=new List<CatalogReadIssue>{new(CatalogIssueKind.Incomplete,"GameMaker","已读取可追踪到绘制调用的文字；动态拼接、语言选择分支和未知自定义绘制仍需运行时补译。")};
+            if(doc.RootElement.TryGetProperty("limited",out var limited)&&limited.GetBoolean())issues.Add(new(CatalogIssueKind.Limited,"GameMaker","显示来源分析达到本次上限，保留已确认条目。"));
+            if(doc.RootElement.TryGetProperty("failures",out var failures)&&failures.GetArrayLength()>0)issues.Add(new(CatalogIssueKind.Failed,"GameMaker",$"{failures.GetArrayLength()} 个脚本未能分析，未把其中的原始字面量加入目录。"));
+            return new(selected.ToArray(),1,[]){ReadCompleted=false,UnlocalizedSourceTexts=selected,Origins=origins.Items,OriginsTruncated=origins.Truncated,Report=new(false,issues.ToArray())};
+        }
         var texts=doc.RootElement.GetProperty("texts").EnumerateArray().Select(x=>x.GetString()??"").Where(RpgTextCatalog.IsText).Take(100000).Distinct(StringComparer.Ordinal).ToArray();
         return new(texts,1,[]){ReadCompleted=false,ScriptSourceLanguage=SingleLanguageScriptCatalog.Infer(texts),Report=new(false,[new(CatalogIssueKind.Incomplete,"GameMaker","已读取脚本文字常量；动态拼接和自定义绘制仍需运行时补译。")])};
     }
@@ -166,6 +186,7 @@ internal sealed class GameMakerTranslationConnection : IEmbeddedTranslationConne
     public ProcessStartInfo StartInfo(bool translationAtStartup=true){
         if(!GameMakerGameAdapter.IsInstalled(exe))throw new IOException("翻译资源不完整或游戏已更新，请重新应用翻译。");
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};
+        GameLaunchEnvironment.ClearSession(info);
         info.ArgumentList.Add("-game");info.ArgumentList.Add(GameMakerGameAdapter.InGame(exe,GameMakerGameAdapter.Patched));
         GameTestCopyEnvironment.Apply(info);
         info.Environment["FUSION_GAMEMAKER_SESSION"]=folder.Replace('\\','/');info.Environment["FUSION_GAMEMAKER_SESSION_ID"]=sessionId;info.Environment["FUSION_GAMEMAKER_SECRET"]=secret;info.Environment["FUSION_GAMEMAKER_TRANSLATION"]=translationAtStartup?"1":"0";

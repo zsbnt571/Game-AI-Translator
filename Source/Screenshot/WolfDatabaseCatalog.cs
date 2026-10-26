@@ -10,10 +10,11 @@ internal static class WolfDatabaseCatalog
 {
     internal sealed record Field(string Location,string Text,string Context);
     internal sealed record Result(Field[] Fields,string Encoding,byte Version,int Excluded)
-    {internal int UnreadableStrings {get;init;}internal Dictionary<int,string> MapFiles {get;init;}=[];internal Dictionary<string,string> NumericNames {get;init;}=[];}
+    {internal int UnreadableStrings {get;init;}internal bool NumericNamesTruncated {get;init;}internal Dictionary<int,string> MapFiles {get;init;}=[];internal Dictionary<string,string> NumericNames {get;init;}=[];}
     private sealed record TypePlan(string Name,string[] Names,string[] Rows,byte[] Kinds);
-    internal static Result Read(byte[] project,byte[] data,Action check,bool skipMalformedStrings=false)
+    internal static Result Read(byte[] project,byte[] data,Action check,bool skipMalformedStrings=false,int numericNameLimit=20000)
     {
+        if(numericNameLimit is <0 or >250000)throw new ArgumentOutOfRangeException(nameof(numericNameLimit));
         if(project.Length>32*1024*1024||data.Length>32*1024*1024)
             throw new ExperimentalRpgCatalog.LimitException("WOLF 数据库配对文件超过 32 MB。");
         if(data.Length<11||!data.AsSpan(0,6).SequenceEqual(new byte[]{0,0x57,0,0,0x4f,0x4c})
@@ -46,7 +47,7 @@ internal static class WolfDatabaseCatalog
         }
         else plain=data[11..];
         var r=new Reader(plain,utf8,check,skipMalformedStrings);if(r.Count(512)!=typeCount)throw new InvalidDataException("WOLF 数据库与 project 类型数量不符。");
-        var result=new List<Field>();var mapFiles=new Dictionary<int,string>();var numericNames=new Dictionary<string,string>();int cells=0,excluded=0;
+        var result=new List<Field>();var mapFiles=new Dictionary<int,string>();var numericNames=new Dictionary<string,string>();int cells=0,excluded=0;bool numericNamesTruncated=false;
         for(int t=0;t<typeCount;t++)
         {
             var type=types[t];r.Expect(0xfe,0xff,0xff,0xff);uint named=r.Word();int fields=r.Count(type.Names.Length);
@@ -61,8 +62,12 @@ internal static class WolfDatabaseCatalog
             }
             if(fieldOf.Take(strings).Any(f=>f<0))throw new InvalidDataException("WOLF 数据库字符串槽位存在空洞。");
             int rows=r.Count(100000);if(rows!=type.Rows.Length)throw new InvalidDataException("WOLF 数据库与 project 行数量不符。");
-            if(!opaqueSchema)for(int row=0;row<rows&&numericNames.Count<20000;row++)foreach(int f in numericFields)
-                if(numericNames.Count<20000)numericNames[$"db:{t}:{row}:{f}"]=$"{type.Name} / {type.Rows[row]} / {type.Names[f]} [CDB {t}:{row}:{f}]";
+            if(!opaqueSchema)
+            {
+                if((long)rows*numericFields.Count>numericNameLimit-numericNames.Count)numericNamesTruncated=true;
+                for(int row=0;row<rows&&numericNames.Count<numericNameLimit;row++)foreach(int f in numericFields)
+                    if(numericNames.Count<numericNameLimit)numericNames[$"db:{t}:{row}:{f}"]=$"{type.Name} / {type.Rows[row]} / {type.Names[f]} [CDB {t}:{row}:{f}]";
+            }
             cells=checked(cells+rows*strings);if(cells>100000)throw new ExperimentalRpgCatalog.LimitException("WOLF 数据库字符串数量超过 100000。");
             var values=new string[rows][];
             for(int row=0;row<rows;row++)
@@ -100,7 +105,7 @@ internal static class WolfDatabaseCatalog
             }
         }
         if(r.Byte()!=version)throw new InvalidDataException("WOLF 数据库首尾版本标记不符。");r.End();
-        return new(result.ToArray(),utf8?"utf-8":"windows-932",version,excluded){UnreadableStrings=p.UnreadableStrings+r.UnreadableStrings,MapFiles=mapFiles,NumericNames=numericNames};
+        return new(result.ToArray(),utf8?"utf-8":"windows-932",version,excluded){UnreadableStrings=p.UnreadableStrings+r.UnreadableStrings,MapFiles=mapFiles,NumericNames=numericNames,NumericNamesTruncated=numericNamesTruncated};
     }
     private static bool DisplayCandidate(string text)
         =>!string.IsNullOrWhiteSpace(text)&&!text.Contains('\0')&&Regex.IsMatch(text,@"\p{L}")

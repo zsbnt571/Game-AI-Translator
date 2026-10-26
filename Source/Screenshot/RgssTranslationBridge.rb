@@ -74,13 +74,114 @@ module FusionRgss157
   end
   @folder=ENV['FUSION_RGSS_SESSION']; @secret=ENV['FUSION_RGSS_SECRET']; @enabled=ENV['FUSION_RGSS_TRANSLATION']=='1'
   @cache={}; @seen={}; @owners={}; @bytes=0; @epoch=1; @busy=false; @pending=nil; @reply=nil; @last=0; @stopped=false; @dirty=[]; @draws=0; @font_blocked=0; @limited=0
-  @mutex=Mutex.new; @font_name=nil; @settling={}
-  @font_pool={}; @metrics={}; @changed={}; @invalidate_all=false
+  @mutex=defined?(Mutex) ? Mutex.new : nil; @font_name=nil; @settling={}
+  @font_pool={}; @metrics={}; @changed={}; @invalidate_all=false; @custom_font=false
   @formatted_alias={}
+  # Render pacing is owned by Graphics.update in all three native RGSS APIs.
+  # Preserve the game's frame_rate; fast-forward its existing Ruby loop rather
+  # than scaling process clocks or calling an arbitrary scene method twice.
+  @speed_enabled=false; @speed_rate=1; @speed_steps=0; @speed_last_steps=1
+  @speed_last_render=nil; @speed_lease=nil; @speed_limited=false; @speed_error=nil
+  def self.speed_supported
+    Graphics.respond_to?(:fusion157_update) && Graphics.respond_to?(:frame_count) &&
+      Graphics.respond_to?(:frame_count=) && Graphics.respond_to?(:frame_rate)
+  end
+  def self.speed_disable
+    @speed_enabled=false; @speed_rate=1; @speed_steps=0; @speed_last_render=nil; @speed_lease=nil
+  end
+  def self.speed_expire
+    now=Time.now
+    if @speed_enabled && (!@speed_lease || now<@speed_lease || now-@speed_lease>10)
+      speed_disable; @speed_error='RGSS speed authorization expired; original pacing restored.'
+    end
+  end
+  def self.speed_state
+    {'supported'=>speed_supported,'enabled'=>@speed_enabled,'speed'=>@speed_rate,
+      'minimum'=>1,'maximum'=>100,'integerOnly'=>true,'backend'=>'rgss-update',
+      'lastSteps'=>@speed_last_steps,'budgetLimited'=>@speed_limited,
+      'frameRate'=>Graphics.respond_to?(:frame_rate) ? Graphics.frame_rate : 0,
+      'diagnostic'=>@speed_error.to_s}
+  end
+  def self.speed_command(q)
+    if q['op']=='speedDisable'
+      speed_disable
+      return speed_state.merge({'restored'=>true,'restorePending'=>0})
+    end
+    speed_expire
+    if q.has_key?('_speed_queued_at')
+      now=Time.now; queued=q['_speed_queued_at']
+      raise 'RGSS speed request expired before the game resumed.' if now<queued || now-queued>5
+    end
+    return {'supported'=>false,'enabled'=>false,'fallbackSafe'=>true,'error'=>'RGSS update pacing is unavailable.'} unless speed_supported
+    case q['op']
+    when 'speedEnable'
+      # Probe the reversible same-value assignment before accepting a capability.
+      # No engine rate or progress is changed by enabling modification alone.
+      unless @speed_enabled
+        count=Graphics.frame_count; Graphics.frame_count=count
+        raise 'RGSS frame counter is not writable.' unless Graphics.frame_count==count
+        if defined?(Win32API)
+          module_handle=Win32API.new('kernel32','GetModuleHandleA',['P'],'L')
+          raise 'Generic clock speed is already active.' if module_handle.call('FusionSpeed.x86.dll')!=0 || module_handle.call('FusionSpeed.x64.dll')!=0
+        end
+        @speed_rate=1; @speed_steps=0; @speed_last_render=nil; @speed_error=nil
+        @speed_enabled=true
+      end
+      @speed_lease=Time.now
+    when 'speedDisable'
+      speed_disable
+    when 'gameSpeed'
+      raise 'RGSS speed modification is not enabled.' unless @speed_enabled
+      if q.has_key?('rate')
+        rate=q['rate']; raise 'RGSS speed must be an integer from 1 to 100.' unless rate.is_a?(Integer) && rate>=1 && rate<=100
+        if rate!=@speed_rate
+          @speed_rate=rate; @speed_steps=0; @speed_last_render=nil; @speed_limited=false
+        end
+      end
+      @speed_lease=Time.now
+    end
+    speed_state
+  rescue StandardError => error
+    @speed_error=error.to_s
+    raise
+  end
+  def self.speed_update
+    speed_expire
+    now=Time.now
+    rate=@speed_enabled ? @speed_rate : 1
+    @speed_steps+=1
+    elapsed=@speed_last_render ? now-@speed_last_render : nil
+    limited=elapsed && (elapsed<0 || elapsed>=0.008)
+    if rate>1 && @speed_last_render && @speed_steps<rate && !limited
+      begin
+        count=Graphics.frame_count
+        Graphics.frame_count=count+1
+        raise 'RGSS frame counter did not advance.' unless Graphics.frame_count==count+1
+        return
+      rescue StandardError => error
+        # A failing optional pacing operation must never stop the game loop.
+        speed_disable; @speed_error=error.to_s
+      end
+    end
+    @speed_last_steps=[@speed_steps,1].max; @speed_limited=!!limited && @speed_steps<rate
+    @speed_steps=0
+    Graphics.fusion157_update
+    @speed_last_render=Time.now if @speed_enabled
+  end
   def self.sync
-    @mutex.lock
-    begin yield
-    ensure @mutex.unlock
+    if @mutex
+      @mutex.lock
+      begin yield
+      ensure @mutex.unlock
+      end
+    else
+      # Native RGSS1 embeds Ruby 1.8 without thread.rb's Mutex class. These
+      # short assignments contain no I/O or yields; retain an outer critical
+      # section if the game's own Ruby code already entered one.
+      previous=Thread.critical; Thread.critical=true
+      begin yield
+      ensure Thread.critical=previous
+      end
     end
   end
   def self.diagnostic(error)
@@ -209,7 +310,7 @@ module FusionRgss157
     begin
       lines.each_with_index do |line,index|
         template=line[4].dup; template[0]=segments[index]; template[1]=line[0]; template[2]=line[1]; template[3]=[binding[2]-(line[0]-lines[0][0])-4,1].max
-        template[12]=cjk ? @font_name : template[12]; template[13]=[template[13],line[2]].min
+        template[12]=(cjk || @custom_font) ? @font_name : template[12]; template[13]=[template[13],line[2]].min
         measure=font_copy(saved); measure.name=template[12]; measure.size=template[13]; measure.bold=template[6]; measure.italic=template[7]
         bitmap.font=measure; bitmap.font.name=measure.name
         while bitmap.font.size>8 && bitmap.text_size(template[0]).width>template[3]
@@ -511,7 +612,7 @@ module FusionRgss157
     copy=args.dup; index=copy[0].is_a?(Rect) ? 1 : 4; source=copy[index]; translated=translate && @enabled ? text(source) : source
     if translated.is_a?(String) && translated!=source
       original=font_copy(bitmap.font); f=font_copy(original)
-      if translated.unpack('U*').any? { |c| c>=128 }
+      if @custom_font || translated.unpack('U*').any? { |c| c>=128 }
         if @font_name then f.name=@font_name
         else @font_blocked+=1; return bitmap.fusion157_draw_text(*args)
         end
@@ -636,6 +737,20 @@ module FusionRgss157
   def self.dispatch(q)
     result={'epoch'=>@epoch}; ok=true
     case q['op']
+    when 'fontPreferences'
+      if q.has_key?('_font_queued_at')
+        now=Time.now; queued=q['_font_queued_at']
+        raise 'Font request expired before the game resumed.' if now<queued || now-queued>5
+      end
+      mode=q['mode']; raise 'Invalid font mode' unless ['default','custom'].include?(mode)
+      selected=mode=='custom' ? q['family'].to_s : @default_font_name
+      if mode=='custom'
+        raise 'Choose an installed font' if selected.empty? || selected.length>256 || selected =~ /[\x00-\x1f]/ || !Font.exist?(selected)
+      end
+      @font_name=selected; @custom_font=mode=='custom'; @font_pool={}; @metrics={}
+      @invalidate_all=true if @enabled
+      result={'accepted'=>true,'mode'=>mode,'enabled'=>@enabled,'writebackPending'=>@enabled,'restorePending'=>@enabled && mode=='default','restartRequired'=>false}
+    when 'speedEnable','speedDisable','gameSpeed' then result=speed_command(q)
     when 'translationPrepare'
       @epoch+=1; @seen={}; unless q['preserveStartup'] then @cache={}; @formatted_alias={}; @enabled=false; end
       @invalidate_all=true; result={'epoch'=>@epoch}
@@ -659,10 +774,22 @@ module FusionRgss157
     else ok=false; result={'message'=>'Unsupported RGSS translation operation.'}
     end
     {'secret'=>@secret,'id'=>q['id'],'ok'=>ok,'result'=>result}
+  rescue StandardError => error
+    {'secret'=>@secret,'id'=>q['id'],'ok'=>false,'result'=>{'message'=>error.to_s[0,500]}}
   end
   def self.tick
     return if @stopped
     Thread.pass
+    q=nil; responded=false; sync { q=@pending }
+    if q
+      if q['op']=='stop'
+        speed_disable
+        @enabled=false; @cache={}; @formatted_alias={}; @dirty=@owners.keys; @closing=true
+        sync { @pending=nil }
+      else
+        response=dispatch(q); sync { @reply=response; @pending=nil }; responded=true
+      end
+    end
     hooks
     if @invalidate_all
       @invalidate_all=false; queue_all
@@ -679,28 +806,27 @@ module FusionRgss157
         @settling.delete(id); @dirty << id unless @dirty.include?(id)
       end
     end
-    q=nil; sync { q=@pending; @pending=nil }
-    if q
-      if q['op']=='stop'
-        @enabled=false; @cache={}; @formatted_alias={}; @dirty=@owners.keys; @closing=true
-      end
-    end
     refresh
     if @closing && @dirty.empty?
       @owners.values.dup.each { |state| release(state[0]) }; @stopped=true
     end
   rescue StandardError => error
     fail_display(error)
-    if q && q['id']
-      sync { @reply={'secret'=>@secret,'id'=>q['id'],'ok'=>false,'result'=>{'message'=>'RGSS display refresh failed: '+error.class.to_s}} }
+    if q && q['id'] && !responded
+      sync { @reply={'secret'=>@secret,'id'=>q['id'],'ok'=>false,'result'=>{'message'=>'RGSS display refresh failed: '+error.class.to_s}}; @pending=nil }
     end
   end
   def self.start
     return unless @secret =~ /\A[0-9A-Fa-f]{64}\z/ && File.directory?(@folder)
     ['Noto Sans CJK SC','Microsoft YaHei','SimHei','SimSun'].each { |name| if Font.exist?(name) then @font_name=name; break; end }
+    @default_font_name=@font_name
+    selected=ENV['FUSION_GAME_FONT_FAMILY'].to_s
+    if !selected.empty? && selected.length<=256 && Font.exist?(selected)
+      @font_name=selected; @custom_font=true
+    end
     class << Graphics
       alias_method :fusion157_update,:update
-      def update; FusionRgss157.tick; fusion157_update; end
+      def update; FusionRgss157.tick; FusionRgss157.speed_update; end
     end
     Bitmap.class_eval do
       alias_method :fusion157_draw_text,:draw_text
@@ -744,12 +870,21 @@ module FusionRgss157
           if q && q['id'].is_a?(Integer) && q['id']>@last && q['op'].is_a?(String)
             # IPC and cache receipts do not depend on a focused graphics window.
             # All Bitmap and Font operations remain on the game render thread.
-            response=dispatch(q); sync { @reply=response }
+            if ['speedEnable','speedDisable','gameSpeed','fontPreferences'].include?(q['op'])
+              # Graphics APIs must run on the render thread, including capability
+              # probes and readback. Never acknowledge a merely queued change.
+              q[q['op']=='fontPreferences' ? '_font_queued_at' : '_speed_queued_at']=Time.now
+              sync { @pending=q }
+            else
+              response=dispatch(q); sync { @reply=response }
+            end
           end
         end
         sleep(0.03)
       end
       rescue StandardError => error
+        speed_disable
+        sync { @pending=nil }
         diagnostic(error)
       end
     end

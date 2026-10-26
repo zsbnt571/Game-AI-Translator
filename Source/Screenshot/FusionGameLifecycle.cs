@@ -8,8 +8,14 @@ public sealed partial class MainForm
     // not cancel artwork belonging to the game that was actually launched.
     private async Task RecordGameStartedAsync(GameInfo game,int pid)
     {
+        // A restart never inherits speed authorization from the previous process.
+        await RevokeModificationSpeedAsync(game);
         TrackGameDiagnostics(game,pid);
-        if(_gameLaunchOperations.AutomaticCover)GameWindowCover.NoteLaunch(game.ExePath,pid);
+        if(_gameLaunchOperations.AutomaticCover)
+        {
+            GameWindowCover.NoteLaunch(game.ExePath,pid);
+            GameSpeedRuntimeTargets.NoteLaunch(game.ExePath,pid);
+        }
         await RememberLaunchAsync(game);
         if(!IsDisposed&&_gameLaunchOperations.AutomaticCover)_=CaptureStartedGameCoverAsync(game);
     }
@@ -64,15 +70,16 @@ public sealed partial class MainForm
     }
     private readonly Dictionary<string,CancellationTokenSource> _gameRestartRequests=new(StringComparer.OrdinalIgnoreCase);
     private bool IsGameRestartPending(GameInfo? game)=>game is not null&&_gameRestartRequests.ContainsKey(game.ExePath);
-    private async Task RestartGameAsync(GameInfo game)
+    private async Task RestartGameAsync(GameInfo game,bool enableTranslation=false)
     {
         var session=_gameSessions.Get(game);if(session.Busy)return;
         string root=RecentGameStore.Normalize(Path.GetDirectoryName(game.ExePath)!);
         if(_gameRootOperations.ContainsKey(root))return;
         var data=_scriptTranslationSessions.GetValueOrDefault(game.ExePath)??_dataSessions.GetValueOrDefault(game.ExePath)??_embeddedTranslationSessions.GetValueOrDefault(game.ExePath);
-        bool translate=data is not null?data.Translation?.Enabled==true:session.LaunchMode==GameLaunchMode.Translation;
-        string action=translate?"launch":session.LaunchMode==GameLaunchMode.Modification?"modify":"plain";
-        if(!translate&&session.LaunchedWithoutBridge&&EmbeddedGameAdapters.Handles(game))action="plain-bare";
+        bool translate=enableTranslation||(data is not null?data.Translation?.Enabled==true:session.LaunchMode==GameLaunchMode.Translation);
+        if(enableTranslation)_fusion!.RequireGameReady(game.ExePath);
+        string action=translate?"launch":session.LaunchMode==GameLaunchMode.Modification?(EngineTimeSpeed(game)?"speed":"modify"):"plain";
+        if(!translate&&session.LaunchedWithoutBridge)action="plain-bare";
         using var cancel=CancellationTokenSource.CreateLinkedTokenSource(_desktopLifetime.Token);
         _gameRestartRequests.Add(game.ExePath,cancel);
         bool restart=false,quitRequested=false;session.Busy=true;_gameRootOperations[root]=session;RenderGameSessionState();

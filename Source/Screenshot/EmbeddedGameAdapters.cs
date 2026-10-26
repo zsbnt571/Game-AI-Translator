@@ -1,7 +1,6 @@
 namespace ScreenshotTranslationUiTester;
 
-// Only these registered adapters share the desktop translation queue. Existing
-// game-specific plugins retain their own lifecycle and payloads.
+// Registered adapters share the desktop translation queue and lifecycle.
 internal static class EmbeddedGameAdapters
 {
     internal static EmbeddedTextSyntax TextSyntax(GameInfo game)=>game.AdapterId=="renpy"?EmbeddedTextSyntax.Renpy:Handles(game)?Options(game).Syntax:
@@ -31,7 +30,7 @@ internal static class EmbeddedGameAdapters
     internal static EmbeddedTranslationOptions Options(GameInfo game)=>game.AdapterId=="rgss"?new(EmbeddedTextSyntax.Rpg,false,DesktopCatalog:token=>Task.Run(()=>RgssTextCatalog.Read(game.ExePath,token),token),StartupCache:true):game.AdapterId=="yukar-bakin"?new(EmbeddedTextSyntax.Yukar,false,StartupCache:true):game.AdapterId=="wolf"?new(EmbeddedTextSyntax.Wolf,false,DesktopCatalog:token=>Task.Run(()=>WolfGameAdapter.ReadCatalog(game.ExePath,token),token),StartupCache:true){DisplayBoundaryWhitespace=true,SupplementalDesktopCatalog=token=>Task.Run(()=>WolfGameAdapter.ReadCatalog(game.ExePath,token,collect:true),token)}:game.AdapterId=="defold"?new(EmbeddedTextSyntax.Generic,false,DesktopCatalog:token=>Task.Run(()=>DefoldGameAdapter.ReadCatalog(game.ExePath,token),token),StartupCache:true):Web(game)?new(game.AdapterId=="web-rpg"?EmbeddedTextSyntax.Rpg:EmbeddedTextSyntax.Generic,false,ConfiguredDesktopCatalog:(settings,token)=>Task.Run(()=>WebTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,preferredLanguage:settings.CatalogLanguageHint),token),StartupCache:true):game.AdapterId=="gamemaker"?new(EmbeddedTextSyntax.Generic,false,DesktopCatalog:token=>Task.Run(()=>GameMakerGameAdapter.ReadCatalog(game.ExePath,token),token),StartupCache:true):new(EmbeddedTextSyntax.Generic,true,
         CatalogBoundOnly:game.AdapterId=="unreal",
         ConfiguredDesktopCatalog:Godot(game)||game.AdapterId=="unreal"?null:
-            (settings,token)=>Task.Run(()=>UnityEmbeddedCatalog.Read(game.ExePath,token,settings.SourceLanguage,preferredLanguage:settings.CatalogLanguageHint),token),
+            (settings,token)=>Task.Run(()=>UnityEmbeddedCatalog.Read(game.ExePath,token,settings),token),
         StartupCache:true){RemoteActiveSources=Godot(game)};
 }
 

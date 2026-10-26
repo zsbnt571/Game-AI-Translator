@@ -1,4 +1,4 @@
-param([string]$GameRoot='E:\Codex\Cloud Meadow cs',[string]$OutputDirectory='E:\Codex\GameTranslator\Build\CloudMeadow-0.6.0.21')
+param([Parameter(Mandatory=$true)][string]$GameRoot,[Parameter(Mandatory=$true)][string]$OutputDirectory)
 $ErrorActionPreference='Stop'
 $managed=Join-Path $GameRoot 'Cloud Meadow_Data\Managed'
 $compiler='C:\Program Files\dotnet\sdk\10.0.103\Roslyn\bincore\csc.dll'

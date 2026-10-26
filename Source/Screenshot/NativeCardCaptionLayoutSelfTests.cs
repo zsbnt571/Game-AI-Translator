@@ -59,7 +59,9 @@ internal static class NativeCardCaptionLayoutSelfTests
     }
     private static void Actual(string output,Action<string,Action> test)
     {
-        var root=@"E:\Codex\2026-09-04\ScreenshotTranslator-V2-R49-Final-Visual-Convergence";
+        var root=Environment.GetEnvironmentVariable("FUSION_LAYOUT_FIXTURE_ROOT");
+        if(string.IsNullOrWhiteSpace(root))return;
+        root=Path.GetFullPath(root);
         var input=Path.Combine(root,@"scoped-fix\R64-review-fix-20260904-180559\inputs\fixed-full37\fixtures\OLD-009");
         var savedRoot=Path.Combine(root,@"visual-native-recovery\C3-QQ-20260905-035147\runs\NATIVE-A4-native-fixed-full37-combo-regression\results\fixtures\OLD-009");
         if(!Directory.Exists(savedRoot))return;

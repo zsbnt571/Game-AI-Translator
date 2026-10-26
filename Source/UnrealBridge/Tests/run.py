@@ -24,7 +24,7 @@ def check(name, fn):
     except Exception as error:
         checks.append({'name': name, 'passed': False, 'detail': str(error)})
 
-def case(cache=None, entries=None, initial=None, tables=True, reference=False, identity=False, query_shape=False, display_sources=None):
+def case(cache=None, entries=None, initial=None, tables=True, reference=False, identity=False, query_shape=False, display_sources=None, dormant=False):
     folder = Path(tempfile.mkdtemp(prefix='case-', dir=OUTPUT))
     (folder / 'startup.json').write_text(json.dumps({'secret': 'a' * 64, 'entries': cache or {}}, ensure_ascii=False), encoding='utf-8')
     if entries is not None:
@@ -32,7 +32,7 @@ def case(cache=None, entries=None, initial=None, tables=True, reference=False, i
     lua = LuaRuntime(unpack_returned_tuples=True, register_eval=False, register_builtins=False)
     for name, value in {'FIXTURE_FOLDER': str(folder), 'FIXTURE_MAIN': str(SOURCE / 'main.lua'),
                         'FIXTURE_TABLES': tables, 'FIXTURE_REFERENCE': reference, 'FIXTURE_IDENTITY': identity,
-                        'FIXTURE_QUERY_SHAPE': query_shape,
+                        'FIXTURE_QUERY_SHAPE': query_shape, 'FIXTURE_DORMANT': dormant,
                         'FIXTURE_INITIAL_DISPLAYS': lua.table_from(initial or {})}.items():
         setattr(lua.globals(), name, value)
     lua.execute((HERE / 'fixture.lua').read_text(encoding='utf-8'))
@@ -51,6 +51,27 @@ def static_entry(source='Continue', key='Continue', **extra):
 
 def writes(fx, ns):
     return [row for row in fx.writes.values() if row.ns == ns]
+
+def dormant_late_enable():
+    _, fx, folder = case(initial={'Neutral.Menu\0Continue': 'Continue'}, dormant=True)
+    for _ in range(3):
+        fx.advance(.3); fx.loop(); fx.pump()
+    require(not fx.catalogReads and not fx.tableLists and not fx.keySnapshots, 'dormant startup enumerated translation catalog or string tables')
+    require(fx.display['Neutral.Menu\0Continue'] == 'Continue' and not writes(fx, 'Neutral.Menu'), 'dormant startup changed game text')
+    # The desktop publishes the catalog only after the explicit enable action.
+    (folder / 'catalog.json').write_text(json.dumps({'protocol': 76, 'entries': [static_entry()], 'skipped': 0}), encoding='utf-8')
+    prepare = request(fx, folder, 1, 'translationPrepare')
+    require(prepare['ok'] and fx.catalogReads == 1 and fx.tableLists, 'first prepare did not load the late catalog and discover runtime identities')
+    applied = request(fx, folder, 2, 'translationApply', epoch=prepare['result']['epoch'], prime=True, entries=[{'source': 'Continue', 'text': '继续'}])
+    enabled = request(fx, folder, 3, 'translationEnable')
+    require(applied['ok'] and enabled['ok'] and fx.display['Neutral.Menu\0Continue'] == '继续', 'late enable did not use the prepared catalog')
+    disabled = request(fx, folder, 4, 'translationDisable')
+    require(disabled['ok'] and fx.display['Neutral.Menu\0Continue'] == 'Continue', 'late disable failed to restore original text')
+    prepare = request(fx, folder, 5, 'translationPrepare')
+    applied = request(fx, folder, 6, 'translationApply', epoch=prepare['result']['epoch'], prime=True, entries=[{'source': 'Continue', 'text': '接着玩'}])
+    enabled = request(fx, folder, 7, 'translationEnable')
+    require(prepare['ok'] and applied['ok'] and enabled['ok'] and fx.display['Neutral.Menu\0Continue'] == '接着玩' and fx.catalogReads == 1, 'same runtime did not reopen with the new translations')
+check('dormant_startup_defers_catalog_and_supports_enable_disable_reenable', dormant_late_enable)
 
 def startup_identity():
     entry = static_entry()

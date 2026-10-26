@@ -30,36 +30,39 @@ public sealed partial class MainForm
         }
         var selectedConnection=SelectedScriptTranslationSession()?.Connection;
         bool connected=selectedConnection?.Connected==true;
+        bool enabled=connected&&SelectedScriptTranslationSession()?.Enabled==true;
         if(!ReferenceEquals(selectedConnection,_renpyDataConnection))
         {
             _renpyDataConnection=selectedConnection;_renpyDataSnapshotConnection=null;_renpyDataGeneration=null;_renpyChangedNames.Clear();_renpyDataRows.Clear();ClearNativeRenpyRows();_renpyDataSaveDirectory=null;_renpyUndoCount=0;
             _renpySnapshotFailure=false;_renpyDataTruncated=false;_renpyCgIncomplete=false;_renpyDataState="ready";_renpyCgState="notRecognized";_renpyCgRows=0;RenpyStatus="";
             ClearRenpyNumericSession("连接已变化，请进入游戏后重新开始数值查找。");
         }
-        bool stopped=SameGame(_desktopGameState?.Game.ExePath,path)&&_desktopGameState?.Process==FusionGameProcessState.Stopped;
+        bool stopped=SameGame(_desktopGameState?.Game.ExePath,path)&&_desktopGameState?.Process==FusionGameProcessState.Stopped&&_selectedGame is {} selectedGame&&!_gameSessions.Get(selectedGame).LaunchPending;
         NativeRenpy.Launch.Visible=!connected;NativeRenpy.Launch.Enabled=stopped&&!_renpyDataBusy&&_selectedGame is {} game&&!_gameSessions.Get(game).Busy;
-        NativeRenpy.Refresh.Enabled=connected&&!_renpyDataBusy;NativeRenpy.Undo.Enabled=connected&&!_renpyDataBusy&&_renpyUndoCount>0;
+        NativeRenpy.Toggle.Visible=connected;NativeRenpy.Toggle.Enabled=connected&&!_renpyDataBusy;NativeRenpy.Toggle.Text=enabled?"关闭修改":"开启修改";
+        NativeRenpy.Refresh.Enabled=enabled&&!_renpyDataBusy;NativeRenpy.Undo.Enabled=enabled&&!_renpyDataBusy&&_renpyUndoCount>0;
         NativeRenpy.Backup.Visible=SelectedScriptTranslationSession()?.Connection is {} current&&_renpyDataBackups.ContainsKey(current);
-        if(!connected){_renpyDataSnapshotConnection=null;if(_renpyDataGeneration is not null||_renpyNumericFinder.Active){_renpyDataGeneration=null;_renpyChangedNames.Clear();ClearRenpyNumericSession("游戏已断开连接，请重新连接后开始查找。");}_renpyDataRows.Clear();ClearNativeRenpyRows();RenpyStatus=stopped?"点击“修改并启动”，进入游戏或读档后刷新。无需开启翻译。":"当前游戏未连接。保存并退出游戏后，使用“修改并启动”连接。";}
+        if(!connected){_renpyDataSnapshotConnection=null;if(_renpyDataGeneration is not null||_renpyNumericFinder.Active){_renpyDataGeneration=null;_renpyChangedNames.Clear();ClearRenpyNumericSession("游戏已断开连接，请重新连接后开始查找。");}_renpyDataRows.Clear();ClearNativeRenpyRows();RenpyStatus=_selectedGame is {} pendingGame&&_gameSessions.Get(pendingGame).LaunchPending?"正在等待游戏启动…":stopped?"点击“修改并启动”，进入游戏或读档后刷新。无需开启翻译。":"当前游戏未连接。保存并退出游戏后，使用“修改并启动”连接。";}
+        else if(!enabled){RenpyStatus="已连接 · 修改关闭";}
         else if(RenpyStatus.Length==0&&!_renpyDataBusy)RenpyStatus="已连接。进入游戏或读档后点击“刷新数据”。";
-        
-        NativeRenpy.ValueEnabled=connected&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
-        NativeRenpy.Apply.Enabled=connected&&ReferenceEquals(_renpyDataSnapshotConnection,selectedConnection)&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
+
+        NativeRenpy.ValueEnabled=enabled&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
+        NativeRenpy.Apply.Enabled=enabled&&ReferenceEquals(_renpyDataSnapshotConnection,selectedConnection)&&!_renpyDataBusy&&SelectedRenpyRow() is not null;
         RenderNativeRenpyFinder();NativeRenpyChanged?.Invoke();
-    
+
     }
     private void RenderNativeRenpyFinder()
     {
         if(IsDisposed||Disposing)return;
-        bool ready=SelectedScriptTranslationSession()?.Connection.Connected==true&&!_renpyDataBusy;
+        bool ready=SelectedScriptTranslationSession() is {Enabled:true,Connection.Connected:true}&&!_renpyDataBusy;
         NativeRenpy.FinderBegin.Enabled=ready;
         NativeRenpy.FinderNarrow.Enabled=ready&&_renpyNumericFinder.Active;
         NativeRenpy.FinderReset.Enabled=!_renpyDataBusy&&_renpyNumericFinder.Active;
         NativeRenpy.FinderEnabled=!_renpyDataBusy;
-        
-        NativeRenpy.FinderToggle.Text=RenpyFinderVisible?"返回全部变量":_renpyNumericFinder.Active?$"数值查找（{_renpyNumericFinder.Count} 项）":"数值查找";
+
+        NativeRenpy.FinderToggle.Text=RenpyFinderVisible?"返回全部变量":_renpyNumericFinder.Active?UiLanguage.FormatTemplate("数值查找（{0} 项）",_renpyNumericFinder.Count):"数值查找";
         if(_renpyNumericFinder.Active)RenpyFinderStatus=$"候选 {_renpyNumericFinder.Count} / {_renpyNumericFinder.InitialCount} 项 · 已筛选 {_renpyNumericFinder.Round} 次 · 普通刷新不改变比较基准"+
             (_renpyNumericFinder.Truncated?" · 仅在已读取的数据中查找":"");
-    
+
     }
 }

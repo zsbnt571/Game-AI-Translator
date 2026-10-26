@@ -10,13 +10,22 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
         // already in the catalog must not be added again.
         int total=Math.Max(0,s.DirectoryTexts)+Math.Max(0,s.RuntimeOutsideDirectory);
         int done=Math.Clamp(s.DirectoryCachedTexts,0,Math.Max(0,s.DirectoryTexts))+Math.Clamp(s.RuntimeOutsideDirectoryCached,0,Math.Max(0,s.RuntimeOutsideDirectory));
-        int remaining=Math.Max(0,total-done),active=Math.Min(remaining,Math.Max(0,s.ActiveRequests));
-        int retry=Math.Min(remaining-active,Math.Max(0,s.RetryScheduledTexts)+Math.Max(0,s.RetryStoppedTexts));
+        int remaining=Math.Max(0,total-done),active=Math.Max(0,s.ActiveRequests);
+        int countedActive=Math.Min(remaining,active);
+        int retry=Math.Min(remaining-countedActive,Math.Max(0,s.RetryScheduledTexts)+Math.Max(0,s.RetryStoppedTexts));
         string result=UiLanguage.Format($"运行中已收到文字 {s.RuntimeCapturedTexts:N0} 条");
-        result+="\n"+(total==0?UiLanguage.Text("翻译进度　等待可译文字"):UiLanguage.Format($"已发现文字的翻译进度　{Math.Floor(100d*done/total):0}%"));
+        // Ahead-of-screen work and retries can be outside the progress denominator.
+        // A cache count is not a successful validation or a rendering receipt.
+        string progress=total==0?UiLanguage.Text("翻译进度　等待可译文字")
+            :done==total&&(s.RetryScheduledTexts>0||s.RetryStoppedTexts>0)?UiLanguage.Text("翻译进度　仍有文字需要重试")
+            :done==total&&active>0?UiLanguage.Text("翻译进度　仍在处理文字")
+            :done==total&&(s.PendingBridgeEntries>0||s.NativeWritebackPending is >0||s.ActiveCachedWaitingBindings is >0)
+                ?UiLanguage.Text("翻译进度　等待游戏应用译文")
+            :UiLanguage.Format($"已发现文字的翻译进度　{Math.Floor(100d*done/total):0}%");
+        result+="\n"+progress;
         if(total>0&&s.CatalogReading)result+=UiLanguage.Text("（已读部分）");
         result+=UiLanguage.Format($"\n已有译文 {done:N0} / {total:N0} 条");
-        result+=UiLanguage.Format($"\n当前翻译 {active:N0} 条 · 排队 {Math.Max(0,remaining-active-retry):N0} 条");
+        result+=UiLanguage.Format($"\n当前翻译 {active:N0} 条 · 排队 {Math.Max(0,remaining-countedActive-retry):N0} 条");
         if(s.CatalogDiscoveredTexts>0)result+=UiLanguage.Format($"\n已读取资源文字 {s.CatalogDiscoveredTexts:N0} 条");
         if(s.CatalogDeferredTexts>0)result+=UiLanguage.Format($"\n其中 {s.CatalogDeferredTexts:N0} 条尚未确认启用");
         if(s.CatalogReading)result+=UiLanguage.Text("\n正在读取更多文字，数量和进度会继续变化");
@@ -28,6 +37,7 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
         if(s.FontBlockedBindings is >0)limits.Add(UiLanguage.Format($"字体受限 {s.FontBlockedBindings:N0} 处"));
         if(s.CatalogIncomplete)limits.Add(UiLanguage.Format($"未完整读取 {s.CatalogIssueCount:N0} 处来源"));
         if(limits.Count>0)result+="\n"+string.Join(" · ",limits);
+        if(s.FontDeferredComponents is >0)result+="\n"+UiLanguage.Format($"所选字体暂不能用于 {s.FontDeferredComponents} 处文字；继续使用当前翻译字体。");
         result+=UiLanguage.Text("\n图片内文字、尚未识别的文字：数量未知");
         if(s.BridgePaused)result+=UiLanguage.Text("\n游戏文字更新暂缓，恢复后继续应用译文");
         return result;
@@ -86,6 +96,7 @@ internal sealed record TranslationProgressPresentation(string Summary,string Nex
         if(s.CatalogRetryPending)details.Add(UiLanguage.Text("游戏文本目录读取暂未完成，将自动重试；当前文字继续处理。"));
         if(s.CatalogIncomplete)details.Add(UiLanguage.Format($"部分来源尚未完整读取（已记录 {s.CatalogIssueCount} 处限制或错误），运行时继续补译。"));
         if(s.ReadOnlyTexts>0)details.Add(UiLanguage.Format($"另有 {s.ReadOnlyTexts} 条只能读取、不能内嵌替换的文字。"));
+        if(s.FontDeferredComponents is >0)details.Add(UiLanguage.Format($"所选字体暂不能用于 {s.FontDeferredComponents} 处文字；继续使用当前翻译字体。"));
         if(reasons.Length>0)details.Add(UiLanguage.Text("本次失败原因：")+string.Join("；",reasons)+"。");
         details.Add(UiLanguage.Text("以上数量仅描述本次接入收到的文字；没有收到的文字无法计数。缓存和控件回执不能代替画面验收。"));
         return new(summary,step,details.ToArray());

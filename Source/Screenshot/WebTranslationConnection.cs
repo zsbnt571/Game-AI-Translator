@@ -21,6 +21,8 @@ internal sealed class WebTranslationConnection : IEmbeddedTranslationConnection
     {
         if(!WebGameAdapter.IsInstalled(exe))throw new IOException("网页翻译组件或资源包已变化，请重新应用翻译。");
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};
+        GameLaunchEnvironment.ClearSession(info);
+        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup);
         info.Environment["FUSION_WEB_SESSION"]=folder;info.Environment["FUSION_WEB_SECRET"]=secret;info.Environment["FUSION_WEB_START"]=translationAtStartup?"1":"0";GameTestCopyEnvironment.Apply(info);
         if(File.Exists(WebGameAdapter.InGame(exe,GameTestCopyEnvironment.Marker))){string profile=WebGameAdapter.InGame(exe,".fusion-test-data/web-profile");Directory.CreateDirectory(profile);info.ArgumentList.Add("--user-data-dir="+profile);info.ArgumentList.Add("--mute-audio");info.Environment["FUSION_WEB_TEST_DATA"]=profile;}
         else{info.Environment.Remove("FUSION_WEB_TEST_DATA");info.Environment.Remove("FUSION_WEB_TEST_HIDDEN");}return info;

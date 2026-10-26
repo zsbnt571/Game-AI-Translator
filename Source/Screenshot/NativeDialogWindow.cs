@@ -13,7 +13,7 @@ internal class NativeDialogWindow : W.Window, IWin32Window, IDisposable
     internal bool IsModal { get; private set; }
     internal NativeDialogWindow(string title, double width = 560, double height = 420)
     {
-        Title = title; WpfUiLanguage.Property(this,TitleProperty); Width = width; Height = height;
+        Title = title; WpfUiLanguage.Property(this,TitleProperty,UiLanguage.Original(title)); Width = width; Height = height;
         MinWidth = Math.Min(width, 420); MinHeight = Math.Min(height, 180);
         ShowInTaskbar = false; WindowStartupLocation = W.WindowStartupLocation.CenterOwner;
         UseLayoutRounding = SnapsToDevicePixels = true;
@@ -88,7 +88,7 @@ internal static class NativeDialogControls
     internal static WC.Button Button(string text, Action action, bool primary = false)
     {
         var button = new WC.Button { Content = text, MinHeight = 36, MinWidth = 92, Padding = new(14, 7, 14, 7), Margin = new(0, 0, 8, 8) };
-        WpfUiLanguage.Property(button,WC.ContentControl.ContentProperty);
+        WpfUiLanguage.Property(button,WC.ContentControl.ContentProperty,UiLanguage.Original(text));
         if (primary) button.SetResourceReference(WC.Control.BackgroundProperty, "Fusion.Accent");
         button.Click += (_, _) => action(); return button;
     }

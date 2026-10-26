@@ -1,0 +1,9 @@
+# GameMaker CLI runtime servicing for Fusion 1.1.0.127
+
+The bundled UndertaleModCli business assemblies and application executable retain their reviewed upstream bytes. This release services their self-contained Microsoft .NET runtime from 10.0.11 to 10.0.14 using the original official NuGet package, without recompiling the tool's business code.
+
+The package data/RuntimeList.xml is the ownership list: 172 managed and 15 native assets, including hostfxr. Each original asset must match the earlier exact-package evidence. The only basename change is the versioned mscordaccore DAC. The old file is moved to a separate audit backup; it is not left in the public runtime. All other files outside these assets and the application's runtimeconfig/deps runtimepack fields must retain their hashes.
+
+The service script is `tools/service-gamemaker-runtime.py`. Its default is a dry-run. Explicit input roots, exact package and prior evidence are required; audit backups must be outside both public roots. Use it only on fresh isolated public working copies. It performs complete preflight validation before any writes, preserves old files in the audit backup and restores them if apply fails. It does not download or execute the tool or a game.
+
+The application's deps file is updated in place semantically: only the runtimepack version key, dependency version and managed/native runtime metadata change. The package's framework deps file is not copied over the application deps file. Original Microsoft LICENSE and THIRD-PARTY-NOTICES are included in `licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.14/`. The detailed current mapping is `licenses/provenance/GameMaker-runtime-10.0.14.json`; the 10.0.11 mapping remains historical evidence. This file documents provenance and the service operation, not a claim of original-game functional acceptance.

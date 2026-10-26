@@ -26,7 +26,10 @@ if(args.Length==2&&args[0]=="--metadata-save-literals")
 
 if(args.Length==3&&args[0]=="--isolate-copy")
 {
-    string root=Path.GetFullPath(args[1]),allowed=Path.GetFullPath(@"E:\Codex\GameTranslator\Work\Fusion-R1-0.6.0.75\GameCopies")+Path.DirectorySeparatorChar;
+    var configuredTestRoot=Environment.GetEnvironmentVariable("FUSION_UNITY_TEST_ROOT");
+    if(string.IsNullOrWhiteSpace(configuredTestRoot))throw new InvalidOperationException("Set FUSION_UNITY_TEST_ROOT to a dedicated directory containing isolated game copies.");
+    string root=Path.GetFullPath(args[1]),allowed=Path.GetFullPath(configuredTestRoot).TrimEnd(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar)+Path.DirectorySeparatorChar;
+    if(string.Equals(allowed,Path.GetPathRoot(allowed),StringComparison.OrdinalIgnoreCase)||!Directory.Exists(allowed))throw new InvalidOperationException("The isolated test root must be an existing directory below the drive root.");
     if(!root.StartsWith(allowed,StringComparison.OrdinalIgnoreCase)||!System.Text.RegularExpressions.Regex.IsMatch(args[2],@"^FusionTest75_[a-f0-9]{8,32}$"))throw new Exception("Only an isolated .73 game copy and unique test identity are allowed.");
     if((File.GetAttributes(root)&FileAttributes.ReparsePoint)!=0)throw new Exception("Test copy must not be a directory link.");
     string data=Directory.GetDirectories(root,"*_Data").Single(),path=Path.Combine(data,"globalgamemanagers"),temporary=path+".fusion-test-new",backup=path+".fusion-test-original";

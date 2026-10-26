@@ -1,0 +1,2002 @@
+[
+  {
+    "path": "Dependencies/GameMakerTool/clretwrc.dll",
+    "sha256": "E9F9CCAA20A91570E6E505FD85197B86E8E6582B67864A8630C1A82AFB9866A7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/clretwrc.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/clrgc.dll",
+    "sha256": "83A829823C333BFBCF0BD82BC015A61AF10CE136D8EB7933B28D97C9193C578B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/clrgc.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/clrgcexp.dll",
+    "sha256": "D006BE1E64E796161C8F3ABB462C23753D86103A82282013B1C5309C76613F1F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/clrgcexp.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/clrjit.dll",
+    "sha256": "E7BF743E7BF9A01C8C2BCDC0D828212FD8DFC285BE9D4EC21962BECF456DF648",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/clrjit.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/coreclr.dll",
+    "sha256": "C98C3078A4F2495DD7D3CED967C7A6981545194ED163454703580B740F435521",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/coreclr.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/createdump.exe",
+    "sha256": "D34B488BD20B87AAA8F1739AA834B877F76B22FF9EF1BDEC7D0386A307F42A89",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/createdump.exe"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/hostfxr.dll",
+    "sha256": "44F97E946B36415176DBC56A4426565A5E9B3E722C0AD579E20A749E3C0C7BCD",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/hostfxr.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/hostpolicy.dll",
+    "sha256": "DED1D42C38688A1CACD20026B1F981C22FD583F621B7123296EF0F2AF9CD656D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/hostpolicy.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/ICSharpCode.SharpZipLib.dll",
+    "sha256": "32EA2D0CE3512E74F1C7AD82591FE67E6B8939D76A8A4FF9C93EAD030131E71C",
+    "packageMatches": [
+      {
+        "component": "SharpZipLib/1.4.2",
+        "archiveEntry": "lib/net6.0/ICSharpCode.SharpZipLib.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Magick.Native-Q8-x64.dll",
+    "sha256": "56539D5F601FCB487190E1C030E3E6DE97591D5524D892E634D247152C63EBA0",
+    "packageMatches": [
+      {
+        "component": "Magick.NET-Q8-AnyCPU/14.16.0",
+        "archiveEntry": "runtimes/win-x64/native/Magick.Native-Q8-x64.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Magick.NET-Q8-AnyCPU.dll",
+    "sha256": "DE4DFF7053A433F493797A08904F1F5DB418F2A5233EF362767E1CFD56199B03",
+    "packageMatches": [
+      {
+        "component": "Magick.NET-Q8-AnyCPU/14.16.0",
+        "archiveEntry": "lib/net8.0/Magick.NET-Q8-AnyCPU.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Magick.NET.Core.dll",
+    "sha256": "126233ABE368695A3B7FD9381CBA9CBB7B02F0B107E5183BC2A4B45AEFCFD0E3",
+    "packageMatches": [
+      {
+        "component": "Magick.NET.Core/14.16.0",
+        "archiveEntry": "lib/net8.0/Magick.NET.Core.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.CSharp.dll",
+    "sha256": "FC571A6647AC45B0B0DC1866B795529BB2EEB93ADF9BE97FCD5903CF482F700A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+        "archiveEntry": "lib/net10.0/Microsoft.CodeAnalysis.CSharp.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.CSharp.Scripting.dll",
+    "sha256": "A7B578BC4DF597964BE5DC786E4F456ED68C6ADB204BC78D5B7ED141029C922C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0",
+        "archiveEntry": "lib/net10.0/Microsoft.CodeAnalysis.CSharp.Scripting.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.dll",
+    "sha256": "55618D457128EEC582017545B8929EBF195669003B6EC737110F9519E1711D28",
+    "packageMatches": [
+      {
+        "component": "Microsoft.CodeAnalysis.Common/5.9.0",
+        "archiveEntry": "lib/net10.0/Microsoft.CodeAnalysis.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.CodeAnalysis.Scripting.dll",
+    "sha256": "7E96A8C0BB8F63CAFD54EE274D1C638EC609834207FEF35469C01A2E4EF065D1",
+    "packageMatches": [
+      {
+        "component": "Microsoft.CodeAnalysis.Scripting.Common/5.9.0",
+        "archiveEntry": "lib/net10.0/Microsoft.CodeAnalysis.Scripting.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.CSharp.dll",
+    "sha256": "2D073FF1F059DDA2814C320AC5782536DC268B335E23E8E8B4D0D3B0833B617F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/Microsoft.CSharp.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.DiaSymReader.Native.amd64.dll",
+    "sha256": "315A61C47C41B8D4C815F4274BB6584C1D24B4640C7EEDC354ED5B03A9A1361E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/Microsoft.DiaSymReader.Native.amd64.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.VisualBasic.Core.dll",
+    "sha256": "6C267ACB79006291CDA2484BD9D39F289419B7D3448E1A1F30EF7C2AD7DCE82C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/Microsoft.VisualBasic.Core.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.VisualBasic.dll",
+    "sha256": "6ADCDD16418823C4D27BC65C9EF07DF2EAC26215FAFC3D27EDA58AE44A4787B3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/Microsoft.VisualBasic.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.Win32.Primitives.dll",
+    "sha256": "07EE7D2780A74C523AF5CA4BABDC63D006FA896B3A1463C2E638C5BB2843F9B9",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/Microsoft.Win32.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Microsoft.Win32.Registry.dll",
+    "sha256": "5F7623B92C1EF07C98546F63C83613F5F5F7AF6513DC52E2E9E11447B6C1C7F6",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/Microsoft.Win32.Registry.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/mscordaccore.dll",
+    "sha256": "C1B92DA5356BB36F4AB55AA54B2D25A8A27518CF7A456EB4957DDFE94E2D428C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/mscordaccore.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/mscordaccore_amd64_amd64_10.0.1126.37416.dll",
+    "sha256": "C1B92DA5356BB36F4AB55AA54B2D25A8A27518CF7A456EB4957DDFE94E2D428C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/mscordaccore_amd64_amd64_10.0.1126.37416.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/mscordbi.dll",
+    "sha256": "F3553412AF82AB90180A0D412DD87B7BFC087043484A572DC2DCE07ECA9906FA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/mscordbi.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/mscorlib.dll",
+    "sha256": "A2C8875B7823B631AE669C6E78DC4B58BB577CE30206CCC03DBBC56981E1714E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/mscorlib.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/mscorrc.dll",
+    "sha256": "0C5EFACADABAF31E07E131FE7E9150454FB1DD148222A053A2F743551D42184C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/mscorrc.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/msquic.dll",
+    "sha256": "24DA0BF4D7B7E0ADB598297D170FA547F94F398BD6F2B515AE87F0A207C999C7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/msquic.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/netstandard.dll",
+    "sha256": "CE09CEF0D758196F2467F320D840C03202453EFE9FB1920DDDD24EA8277BBBB3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/netstandard.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Newtonsoft.Json.dll",
+    "sha256": "A28C251DFE36D881E9E2462E171441B8B0EC156FE3F452602C9149B1B9EFE05B",
+    "packageMatches": [
+      {
+        "component": "Newtonsoft.Json/13.0.4",
+        "archiveEntry": "lib/net6.0/Newtonsoft.Json.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/runtime.osx.10.10-x64.CoreCompat.System.Drawing.dll",
+    "sha256": "68E3ED455B1074CC0F7F6CCEDE5CA37E7D7D1B1B2DFE1556B916BC3034064F71",
+    "packageMatches": [
+      {
+        "component": "runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128",
+        "archiveEntry": "lib/netstandard2.0/runtime.osx.10.10-x64.CoreCompat.System.Drawing.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.AppContext.dll",
+    "sha256": "36447D0E4C9C86352905726EAF37292C55CAED5B87C74C22836AE8B0334395C3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.AppContext.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Buffers.dll",
+    "sha256": "7EFC8DFEF9548771EC328610DE7B8E5C4308A8EA6B1CA73021F336FC00653176",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Buffers.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Collections.Concurrent.dll",
+    "sha256": "569667E92DDA0AF323A9F289C6BBE7A046BAB7354F9FA0D37FC97404A0499ED3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Collections.Concurrent.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Collections.dll",
+    "sha256": "5AEA9C285F011D1E83F05834E12632EE5EBF65DA1D546E696F525AF47101A3B0",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Collections.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Collections.Immutable.dll",
+    "sha256": "623AD5FA5AC38C460DF0073F37FBB649E219AC486C926B822F77EBF02676D56C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Collections.Immutable.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Collections.NonGeneric.dll",
+    "sha256": "8CF296B4868C0DEA441C452C50ED5C322837BF736A7C173F46DDA4EBDFEB4C0B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Collections.NonGeneric.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Collections.Specialized.dll",
+    "sha256": "61702E1173C49F32E7B1804667A249F8709680F01859D46CF30E74197FEDC1C5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Collections.Specialized.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.CommandLine.dll",
+    "sha256": "467D0CC5E0242BAC33733D94FC8842114EF861537780ACDD5F1ABEFF1F5C7BC7",
+    "packageMatches": [
+      {
+        "component": "System.CommandLine/2.0.11",
+        "archiveEntry": "lib/net8.0/System.CommandLine.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ComponentModel.Annotations.dll",
+    "sha256": "BE6047DC8B7D2545C2DD099C6868D3736ECD81EA053C6714E9A6F92FF547358E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.Annotations.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ComponentModel.DataAnnotations.dll",
+    "sha256": "C4AD5B72E9461F82B6F5346AF3B2F4F46D76763DAAF51586943F99F1CC7D5AFB",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.DataAnnotations.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ComponentModel.dll",
+    "sha256": "615F1D4F821D25F46E61BC70DD879B4129DAA754F42F427A23FA68C4DC74F09A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ComponentModel.EventBasedAsync.dll",
+    "sha256": "704D58B299577D640F365A4541089D99D8187B3071FF680599D3640251E470DA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.EventBasedAsync.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ComponentModel.Primitives.dll",
+    "sha256": "B671AE0E9463F65D2AD08366C890043FD570F7D3149BB57BC16B8D427D9684F5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ComponentModel.TypeConverter.dll",
+    "sha256": "D24CA7BE9B39FF4117EDB0D207FF5AB1A0E1587557A3DAAA44391F0B04D93816",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.TypeConverter.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Configuration.dll",
+    "sha256": "495B65CD3C8488FA39A4905F072D14B336A5851C87F1B70D3B57AFC565025A9F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Configuration.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Console.dll",
+    "sha256": "A50D6F54E509342C49B6B7C8D72684F68701FC97FADE19956D4618A4A30E84FA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Console.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Core.dll",
+    "sha256": "C4908DD3C89942880310CD1C19CC2DCA2C8CE3D564BE04BE80897CB7F5B9D351",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Core.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Data.Common.dll",
+    "sha256": "951BC9FF57EEA7C382EB75CC595A9598AFDE341DB853291B937BE37DA6CA3E81",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Data.Common.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Data.DataSetExtensions.dll",
+    "sha256": "ABD30BF053CE162967B8EE2B95E4A4A60DDF288BB959CD64DFC107BC6C7D762E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Data.DataSetExtensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Data.dll",
+    "sha256": "EF6E30CC3AA9C93CA43F58F3CDC763ED31614B35CE835BE57CB7DA57358D2734",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Data.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.Contracts.dll",
+    "sha256": "764267AEE046B300A4598EEA0FA328348EC496C01281B31D00573A25AD8BD58F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Contracts.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.Debug.dll",
+    "sha256": "44B71CB2BC82E2E93C99C095A0E493F3C4AFC0E50AAFE8E91849629DA295E6DC",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Debug.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.DiagnosticSource.dll",
+    "sha256": "3E8FF9BB002715F5AB50263F6FE7C340355A5A963C03821C3A240FFA36B9F223",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.DiagnosticSource.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.FileVersionInfo.dll",
+    "sha256": "CBF1DA7048153697F1C47175B61579E5F8E79E178D62B04787D626055ED9792E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.FileVersionInfo.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.Process.dll",
+    "sha256": "2B4871E02B366113C6CCF3B1436FADDE5E69FC0A3E3AC421E2FA0F7AF8C2BC3B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Process.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.StackTrace.dll",
+    "sha256": "6578CEF25CBA5DCD0F7C34F2BBE6FAD5C2CB59B601AB708C5F3E8D1DBFC60A95",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.StackTrace.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.TextWriterTraceListener.dll",
+    "sha256": "65FBEB64BD73D658860C4A65799C1E57EDC2D985E73FEC1FE585B1DC660B1C91",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.TextWriterTraceListener.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.Tools.dll",
+    "sha256": "4BFC11BEBAE21C6A604F090F8EC94CE2D76D57FCFEAFD8FFC9BEB139AF2A086E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Tools.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.TraceSource.dll",
+    "sha256": "63E22E512F3DB18AB51D57663364479CE56FCD924085FD0D6BD136F299106FA6",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.TraceSource.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Diagnostics.Tracing.dll",
+    "sha256": "3275B203F9EC3D62C6A6C57B0771513F99F5C3D81CB4505B77EE679165FED800",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Tracing.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.dll",
+    "sha256": "72F6FA05B4C1696D7D50F8A93086165980276CE6661F0F8A77FE426028309720",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Drawing.dll",
+    "sha256": "9F68761F68125E3596C7AF69D56799CF3E08DC2947661069B433D3043FEED7DA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Drawing.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Drawing.Primitives.dll",
+    "sha256": "E8C09040A03D506E08E8165CBA4E80CD2D69FB26629D7DF65B0D72C1A290C216",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Drawing.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Dynamic.Runtime.dll",
+    "sha256": "00B37B775253D8011E0220BACADDA3566224272EA787CB0C4CC24FA6B70643FF",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Dynamic.Runtime.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Formats.Asn1.dll",
+    "sha256": "AE3627515191E83D6EA062D3566AF536A587D8F04CA6CCE8AA71599B092D4A25",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Formats.Asn1.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Formats.Tar.dll",
+    "sha256": "D630C4DB760A4A793F7FF3DF0A3F6EDEEC40BCB94307E92AC493AD2D3EDA1EAA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Formats.Tar.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Globalization.Calendars.dll",
+    "sha256": "885967ADB01EF10E764EF54A0F6D646FD41DEAB81BD80908407D0BA8F834DCAC",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Globalization.Calendars.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Globalization.dll",
+    "sha256": "28DB274E2CBB417C61C346D437A0C8265FC0B3BB93CBA7330E5EF75CB4D16226",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Globalization.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Globalization.Extensions.dll",
+    "sha256": "5DC6A7838A0B2F472FDC093FD1206C61DF3494C66D1E5BFB1081EE00A372F50B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Globalization.Extensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Compression.Brotli.dll",
+    "sha256": "F6AC00E499EC8F6CD60E092C83391EA9BC176BAABED66E9479DDCEA796DE3448",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.Brotli.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Compression.dll",
+    "sha256": "99FC38BD6A7DEFD709B7459FF7E454543C15442D1C295238094504B6301A1050",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Compression.FileSystem.dll",
+    "sha256": "AA87020C837176940637A4C672B2F2B33FD2517506FA12CAE1F655FF1E515CC6",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.FileSystem.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Compression.Native.dll",
+    "sha256": "5869C7B088D1886F19F91B8BE0D4B6DB89DDB07DCFB02FB7DD759C92EF722919",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/native/System.IO.Compression.Native.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Compression.ZipFile.dll",
+    "sha256": "88D270860E5C00343057793D6A9B63B7E4CFDF847E62D8161A6AC8D1AA4BFFB8",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.ZipFile.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.dll",
+    "sha256": "7A820716EE9AB010EA624B9448EA1ACB4C78B0F79DFC9D98DB01B7F99C610B6A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.FileSystem.AccessControl.dll",
+    "sha256": "1D5F0B64AF1920709AA26D5B38991787B458EAA6DA8BB8D86B4BB46CA0434026",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.AccessControl.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.FileSystem.dll",
+    "sha256": "1D619955D7495E7E040C446FB1A24FA4FF4B9145F9A7D39DD90E92C59666930C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.FileSystem.DriveInfo.dll",
+    "sha256": "9A7268C66CC9A63128C2D23C4ABB0EEC155E59F352F5A6859EECFF62912DAFBF",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.DriveInfo.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.FileSystem.Primitives.dll",
+    "sha256": "6BF2B62E83F43B9E2A679ABDCAB875F37280A36E4C6E9FEAB99A410AB43F846C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.FileSystem.Watcher.dll",
+    "sha256": "A03F59C4562FE7C1E8F768765B1637239F145C37D4805C8C693AE48F426828EB",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.Watcher.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.IsolatedStorage.dll",
+    "sha256": "66E5EF5D0E23B4EDD96F6D19B32D3E0A04CE57270D5AC55ACCED2BF177BBF68D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.IsolatedStorage.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.MemoryMappedFiles.dll",
+    "sha256": "21B24BB967A254328E2644E2DBFE00E1205463663504819BBFCAE6F6B43D426D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.MemoryMappedFiles.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Pipelines.dll",
+    "sha256": "93CE5DDAFB25BA6AEAE208FFC750DA0F243F25E89FE7DBC5287E1D8B4F26A2E0",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Pipelines.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Pipes.AccessControl.dll",
+    "sha256": "D7C4E7F1A4CBADA634B82E5939DE9D9B3C87CC44BA8D4C1319BAE0A796083E3C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Pipes.AccessControl.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.Pipes.dll",
+    "sha256": "244167C32B3DB092253E21A2301AFA1E763FC861CA8A2304CB29FEB773B85322",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.Pipes.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.IO.UnmanagedMemoryStream.dll",
+    "sha256": "A988846408ABF1513AC7AB81A9F72218FFCAB410B2A06CAF3844677604032075",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.IO.UnmanagedMemoryStream.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Linq.AsyncEnumerable.dll",
+    "sha256": "0009A3DA0DE5B968F777F715103C873A5DE5F1840B870C95F6B7C11AC05246C4",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Linq.AsyncEnumerable.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Linq.dll",
+    "sha256": "139264775432FAF15A813E607E1919EA869D3321079BA134FFA36B350577C271",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Linq.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Linq.Expressions.dll",
+    "sha256": "F5D05F16C2F31AE822BCA8DB63019067C8D83B09376B0A60C38B9C98FA0E088F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Linq.Expressions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Linq.Parallel.dll",
+    "sha256": "D8CDFA91B3CEDC1D928848A2724F230B130EE549E8B9008AD38E3ED10E8E9AF6",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Linq.Parallel.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Linq.Queryable.dll",
+    "sha256": "EDDADCB60DD56A06EB83F6F1284F9AE42C181AF3CDE4B19350938B1930D6F531",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Linq.Queryable.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Memory.dll",
+    "sha256": "58A4DC8A9EFAC1FE0EE67138B0DDA35B2B812ADDC14C5D8251CC222B278A5C2D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Memory.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.dll",
+    "sha256": "D7A4C693B1922E0E69AEE3597AC72C25E0A5E1D3AC2D1072D7D8DC854D27E488",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Http.dll",
+    "sha256": "8AE9F649D43F1F3FB635170784BCB753D305BC36A42703B4B0BEDB15A29729F0",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Http.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Http.Json.dll",
+    "sha256": "552422BE522E40937DE77BDCAEE0575282D2F2D449B19DD81F1A3EF23E85B73F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Http.Json.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.HttpListener.dll",
+    "sha256": "C3BBBB42561E9DE67DA6ACCD846FA710944D38B4BDE88EE111943EA4AFB5B82F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.HttpListener.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Mail.dll",
+    "sha256": "5E053F23212C0F0EB0EE1A17A94CED79AFD7D8D2175B35F2750B85EB570B5DB0",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Mail.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.NameResolution.dll",
+    "sha256": "1003E24EAF96E8AA019B188FEFABAB4A6CA488D5C51E70600140BFA4DABE3BDA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.NameResolution.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.NetworkInformation.dll",
+    "sha256": "47B220C9A183125C8CF9E2A7B21B45947B3B1951412D719D7C5F047277C4927E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.NetworkInformation.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Ping.dll",
+    "sha256": "C337CAF03B0D50C7CF4A4822872BD34603D11E7F689D211ECAEA3EE74F65518A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Ping.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Primitives.dll",
+    "sha256": "E678E0129A87751C624CBE2E3AB83D55055A091A5B77D8138F02255DEDA4B6C4",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Quic.dll",
+    "sha256": "A02B202989FF28ADEE64FAE1C9CC7290057CA2F234ED7A05C647617399E6D4C7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Quic.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Requests.dll",
+    "sha256": "F2735DD7ADBC04C505805E9F069F9D545F34F1FF689E2A9D6BCDA1A2480D3DA7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Requests.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Security.dll",
+    "sha256": "1605BB05B7CD623DC79C8F4EC2E10EA5779B5BD343F909A9C0DECE472EE2A8F2",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Security.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.ServerSentEvents.dll",
+    "sha256": "792C085FFF01183AC597F69BF33DB289D7301AABDE1CC388904621A47EFE719C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.ServerSentEvents.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.ServicePoint.dll",
+    "sha256": "9645242A547B02BC0CBFA78C365FE8CBF02869C182DEBE4CE37BAC32BE1CA42B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.ServicePoint.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.Sockets.dll",
+    "sha256": "B4BF19B0C8E412B9D0F479FC5268BF44E04CA656CD121044CA51F2652595AF6C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.Sockets.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.WebClient.dll",
+    "sha256": "AB06CB5EAFF5CA00045DD847E167F0107A53114ACA47D26ED3500ADF38BD142B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebClient.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.WebHeaderCollection.dll",
+    "sha256": "7ABFC26269A95CEC0D93CA2A6B8148AA45D504C8F50A62FBBBAD72408966D45A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebHeaderCollection.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.WebProxy.dll",
+    "sha256": "D6F5FBC775D7B1639C1740E3E10834F6FB729FC5FE7619B972DF79D528ABAF18",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebProxy.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.WebSockets.Client.dll",
+    "sha256": "FF5D42603B662A634857DCC6E1239547025D03794AEA4F84D624579765C23BA9",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebSockets.Client.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Net.WebSockets.dll",
+    "sha256": "36FEFD219495298B0B28A6BBF1D99FB9B2471467F5A0D382AF9730F0A32FC8F1",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebSockets.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Numerics.dll",
+    "sha256": "FD4F0BC0541231FC01C21CAB517A948019D4C9ADBF66F81B65B276298E6AB922",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Numerics.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Numerics.Vectors.dll",
+    "sha256": "6BEAF983FA8C33D25160C7A77E185967E8F113A5C02E6DC27F05F26E1B34763C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Numerics.Vectors.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ObjectModel.dll",
+    "sha256": "16D9A18630F1D33EC7A709AB2F31652C91EBDFBC7A5A481378AEBE2E1102FFC2",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ObjectModel.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Private.CoreLib.dll",
+    "sha256": "ED80A1A5DD066C0407AD59686F9AF90A4F3E55DBF3E4C973B53CC8C9D0706F82",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Private.CoreLib.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Private.DataContractSerialization.dll",
+    "sha256": "631A7719E6E67E4F86E553031C56038EAFCA2AB5FA161C8CFF786A92838A0255",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Private.DataContractSerialization.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Private.Uri.dll",
+    "sha256": "0546093EC627BF832C244BE56D9ACCA471778385C534E0107F2A6DC6A78F93D2",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Private.Uri.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Private.Xml.dll",
+    "sha256": "D570B8CB9507F2FCAC88F80A2FE7597D3E2331A84F337820A7D794632A67ED5D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Private.Xml.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Private.Xml.Linq.dll",
+    "sha256": "0F4D2BE70F3715853DCA3BD6C9B67DE7738A5F4EC6E9959F526EF1DBF1F7FA8E",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Private.Xml.Linq.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.DispatchProxy.dll",
+    "sha256": "A08A235C45E6944B3A086F3DF03E55B38A5958E7126948847EB33261FE1CA10B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.DispatchProxy.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.dll",
+    "sha256": "80FB9E206044C6F1C02BCC6895E2CE432119C670EA12248A6CBA112AFA78A9B6",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.Emit.dll",
+    "sha256": "B4208981583D74994AA4D855E12788676FDEBCE63BA848BE63A6E0A7FBE2CB3D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Emit.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.Emit.ILGeneration.dll",
+    "sha256": "5E38D9D71CE8FBAB210A590F20543B19A2BF0CF1265F3ED78D63519E3B73B979",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Emit.ILGeneration.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.Emit.Lightweight.dll",
+    "sha256": "C15BE07E2131FDC8806D47E222B58E545981C2A3E7DC9C069A6C6076271A291F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Emit.Lightweight.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.Extensions.dll",
+    "sha256": "4E6967D52CBC95AE9EDA01B8D8705F59C2C56F8B69471EFAA6ECA8F0E22A9A6A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Extensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.Metadata.dll",
+    "sha256": "97152D5C07E1E5D7F080F871EFF211CCDBECB2496E4EB1B086005CBD3656D431",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Metadata.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.Primitives.dll",
+    "sha256": "D1BA728FAB43E22821A1B19C508667995C0DF10EE98D1F19E63AAC94098CA8F5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Reflection.TypeExtensions.dll",
+    "sha256": "FBF5445D2A288DDCE3BF163A6B692DBF97A10F6A17BB9DE7C0D2D71387C6E440",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.TypeExtensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Resources.Reader.dll",
+    "sha256": "AE5E53448ADF49F3BB0E6FCC4DF836BCD413CE0EEEAAD0B94F7363AD238D71DD",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Resources.Reader.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Resources.ResourceManager.dll",
+    "sha256": "C3456835CFBD88D081A3EE4030CE533CB6FBB27AD0F60F954A5AE7D45B1422CD",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Resources.ResourceManager.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Resources.Writer.dll",
+    "sha256": "A478BBFEAC355E728D914F6F5E1E893AB1454C6F92D28DA84FF0A75F04476277",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Resources.Writer.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.CompilerServices.Unsafe.dll",
+    "sha256": "6F396205ABE594C9C72E618F4278657B4FF9DA9CD2BC17D8083481B287838ECC",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.CompilerServices.Unsafe.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.CompilerServices.VisualC.dll",
+    "sha256": "67483E224E8019D1D725876485A6FCA81DD977D5254CF26D79A26F2A73207FA9",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.CompilerServices.VisualC.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.dll",
+    "sha256": "EF6D37D9334FCDF7C7E4B9590B730EB5BA623192D47F0CBE4EC478962625E586",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Extensions.dll",
+    "sha256": "633F210388E326F0A2FBA3148312FB2900A9E0BA32F08015BB606ABC44A3D634",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Extensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Handles.dll",
+    "sha256": "834ED37905ECAFB69C3D33D1B659E5F8216CEF9995CBFCC7B2CF858752ADD880",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Handles.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.dll",
+    "sha256": "9D0621F1E573BD20525287533BEA24EC7824813EADA7820A0C82252EDE072AB9",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.InteropServices.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.JavaScript.dll",
+    "sha256": "6FEDECFA2FB691E50175DCCF64860DA8DD147B9D64D942997259A79A7EDB77D5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.InteropServices.JavaScript.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.InteropServices.RuntimeInformation.dll",
+    "sha256": "506DC257F2F039746172057CF574992D4DB07E31F9338B0AB2D90E88D385C472",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.InteropServices.RuntimeInformation.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Intrinsics.dll",
+    "sha256": "C44FC7C6F2AFF4A9C8B9A0B6ABFD2C1B65A762B69FA982FCFCA28C6001D022E3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Intrinsics.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Loader.dll",
+    "sha256": "C858230D105EC1225CD58EC22623BF59BDDEE9DFC7077D7F93957D3321EC55F7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Loader.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Numerics.dll",
+    "sha256": "CADCA5367AEC4FB54DF4A81CD033C62228F3E100736EF9701AAFCD13123A5EF4",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Numerics.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.dll",
+    "sha256": "2092AD8E233C2A01A8DCC640AB218C1EABC059F6BEBAAA8F81D1CE8225A939A0",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Formatters.dll",
+    "sha256": "AE2D71A1C6231A7E4C9F0264666ACF90F743460AE7983D5331E9AD0271E7AD88",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Formatters.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Json.dll",
+    "sha256": "7E44E9979E6C539E7AD22846AC9C6F250E888D28411BA88761122095DFED9727",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Json.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Primitives.dll",
+    "sha256": "E15940836E5B22E89A0B7FEBFA0DE2F158855563D9CCA0AC36A84E4BE9E3E683",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Runtime.Serialization.Xml.dll",
+    "sha256": "286BBAFD589189F1D684831C33DD81A4650E12B73DB70920BA5D4E0A477FD33A",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Xml.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.AccessControl.dll",
+    "sha256": "5FDA871AC0AB09BA62884BA4160B5C84F8D9513D16C773B7D01E3B82DAE905B4",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.AccessControl.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Claims.dll",
+    "sha256": "CA5A036A17ED63C6F90D92570C657BCEC451DC2C894B1FFFF0688855B61E455C",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Claims.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Algorithms.dll",
+    "sha256": "35677214A8B8388D82FF5BF45789790FA048612F6ACA8B8F71EFB3AA93EF70B1",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Algorithms.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Cng.dll",
+    "sha256": "328A4EA1C05177E97F65A24D68268C96674BBFBCFB5BC3906229EEA2C46AC6D2",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Cng.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Csp.dll",
+    "sha256": "0BE1DED6AC6B8BDC53D0D49BB01292770F9A022FE7D2D2F1A480223ECA5CA6BA",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Csp.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.dll",
+    "sha256": "BEE61E6BDEFF9FB0C4F3CBF9D48E9D1D97D12A8BB85D1EEAB9178E818B582EEE",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Encoding.dll",
+    "sha256": "09FBBD2934040BA1260775F34A8B901F5F9EDEC9BD1A2203B3726686006B7829",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Encoding.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.OpenSsl.dll",
+    "sha256": "695EBDF0901AFD27B7504DD4FDBC504A5AAE8EA87D3B342DA800789A6A94A732",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.OpenSsl.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.Primitives.dll",
+    "sha256": "C4D76A73F7147DF7999B371ADBC091850984A40CD45F4D0464E85424DE412E30",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Primitives.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Cryptography.X509Certificates.dll",
+    "sha256": "BCBCD0C436BFD24052AE4F7A3785B434436CBC18E6465F0BE19437A453872CF3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.X509Certificates.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.dll",
+    "sha256": "2A0EE1358A507F20BB9099AFB2C79745212BCA44C1102E580C20742ECCA560D5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Principal.dll",
+    "sha256": "F4E101D9D1B328868CD91199CA441E4EE273047FE96DD6EC34A1E889E523DA21",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Principal.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.Principal.Windows.dll",
+    "sha256": "ED56739AABC1FB6F81E8F71DB89531BEEA985550F654D4D0E6C9A64C67E4E349",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.Principal.Windows.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Security.SecureString.dll",
+    "sha256": "F371FB101973637A772E44F75B48D66540466A914F61E4B1F4AE7EB01DAD1B62",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Security.SecureString.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ServiceModel.Web.dll",
+    "sha256": "948E182337526B0DECAAB7A9274C1BDE5BE3E419B076CFE0161A335E22643AC3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ServiceModel.Web.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ServiceProcess.dll",
+    "sha256": "04E5CA5A4DF4D31E8E6B527CE5A16B6F150A256384B2CBDABEEBA1F6974CFA99",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ServiceProcess.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Text.Encoding.CodePages.dll",
+    "sha256": "56582910B3C0D17F10DC2EAFC8E5746C6F23B57AF56D7F0D4CD208F06ECE1E28",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encoding.CodePages.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Text.Encoding.dll",
+    "sha256": "4C140DE2FDD2C673ECE196892E28786B85200B8F315FC9BB2DE7AEB862372D9D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encoding.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Text.Encoding.Extensions.dll",
+    "sha256": "2B63801416706C7817193A742FC8648C4AFD6697CA342D4A2DEB30450B99218D",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encoding.Extensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Text.Encodings.Web.dll",
+    "sha256": "2C459F175331339B8580DEC1842879B3F0532100FA426B97A1B74E1B5DEE95D7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encodings.Web.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Text.Json.dll",
+    "sha256": "ED5F0F3773C89948471E3691F31963EA00D3577E17296AC4DFB97772E78B6FA3",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Text.Json.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Text.RegularExpressions.dll",
+    "sha256": "B8494BA41DA52018409CCCD851753717C6BD035FCCDF5E4D5AC83E420D4678F4",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Text.RegularExpressions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.AccessControl.dll",
+    "sha256": "EEC9D6F83EC123602039EC449B402C1BCB74FF00518EB87F8D007558E48C2B89",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.AccessControl.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Channels.dll",
+    "sha256": "FF8DCB281D2D35F01DBDF72E766E431C397F9DB063F22F61A9A85F7BD173F5E8",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Channels.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.dll",
+    "sha256": "CADF13029AC996ABACECCFD7C242E55888B669246163342A3B335EEE9851B531",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Overlapped.dll",
+    "sha256": "A0EF0237E67A16A347A8ED9B9286E3ACEF358AEB4A23463323C2EFDF646FC0F5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Overlapped.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Dataflow.dll",
+    "sha256": "83A9B71C298BA233393EB1CDBDA26380CB2D50CEFD2FD645B0BA1C34C7AECA9F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.Dataflow.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Tasks.dll",
+    "sha256": "D95CEE14D0DBB97D8F8A8F4DCC5EEFA35F394F9D94B0FA0BF29068786AEE6A06",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Extensions.dll",
+    "sha256": "6EC70446F8FAEFAA167A0E3360468203CB03FFAB90369644E92C22DC650A9CD5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.Extensions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Tasks.Parallel.dll",
+    "sha256": "FF17DD0DDD3F2DEBDACED18F39B9F8A205630BAEB3DE20BBF0630935A8605AA6",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.Parallel.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Thread.dll",
+    "sha256": "7B451DE5E88ADFDB49765BC0745A12E377318534D02E6BF81660C285A7AA6664",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Thread.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.ThreadPool.dll",
+    "sha256": "9E3BF9838FF48525E4F2FD1C7646956BA00183977C7E4762D999670AA901E101",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.ThreadPool.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Threading.Timer.dll",
+    "sha256": "5B21F38133328E8017BB7A4651007738CE76FCFA673AF267B4C8B5E857D572D7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Timer.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Transactions.dll",
+    "sha256": "9BA6785FAF04DE3B018A7E6BDB349C538CA861ADD4A3558C693FE4C9EF905335",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Transactions.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Transactions.Local.dll",
+    "sha256": "CB3D436592FE994BA8F570CC7CB021EF347730E96E52E3B8695B7C7BD79A3967",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Transactions.Local.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.ValueTuple.dll",
+    "sha256": "63E0EAC320A2EAC02F418E186232405427E036D9CE9DD80951923280308CFE59",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.ValueTuple.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Web.dll",
+    "sha256": "45B1D8E331AEB3D4006AFE64CDE59EDDAC958968D6C432DF3F869982D94996F0",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Web.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Web.HttpUtility.dll",
+    "sha256": "03841EE0B42C5ED0D4B58C185E9CFA57A939C479256943644062B918CF595A08",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Web.HttpUtility.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Windows.dll",
+    "sha256": "5898D03D2707C44B55883BC475F8C3AA779738A439DB6EC2ABBF9E0FAC82E6D5",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Windows.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.dll",
+    "sha256": "3BF8CF7C17A8EC51EF64A48707DBCBB0359E466A7903BB564A4C74228D895E32",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.Linq.dll",
+    "sha256": "06BE8D12AB41B70960703EC77899DA99E0A93A6D125E77E7F8154AB071220D54",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.Linq.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.ReaderWriter.dll",
+    "sha256": "9ED86FCB4A068F56C61CE4D595D91B57DF12999820BB11659E9A4B45103305ED",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.ReaderWriter.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.Serialization.dll",
+    "sha256": "868E566390C0A0800253511B757644433C512989A213F32153464A4611667D8B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.Serialization.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.XDocument.dll",
+    "sha256": "58CF36935545FDF661B64DC2F8C57B7066D2A380252D194EDB6708895A50E6A7",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XDocument.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.XmlDocument.dll",
+    "sha256": "E6D348CE2E40D5F8E767F3863F3217F6075F3E4E331270BE1D13E45430F87811",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XmlDocument.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.XmlSerializer.dll",
+    "sha256": "96D2EF2D9503BCB06D4AA9F8E15EFDF3AE94C30B9DB4211DA75020D0690238D2",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XmlSerializer.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.XPath.dll",
+    "sha256": "8E21C30F514E711D8446C4EEC9FE92CB8156EFEAA476E67A26F17BA0A21E593F",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XPath.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/System.Xml.XPath.XDocument.dll",
+    "sha256": "75B319F01C19A9C1C8B08B6A26BB44E3329DA177D974BA90D1A4A40BBA3E7D3B",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XPath.XDocument.dll"
+      }
+    ]
+  },
+  {
+    "path": "Dependencies/GameMakerTool/Underanalyzer.dll",
+    "sha256": "13866EFFB6DB10AA0C7FEA1B9F017BB362E8B9E1266295896BEBCD920C3571FA",
+    "packageMatches": []
+  },
+  {
+    "path": "Dependencies/GameMakerTool/UndertaleModCli.dll",
+    "sha256": "3960A1D33360BD7C46668BDC354A915601496A7AECDEE5107C63FDDE4D2FBFC6",
+    "packageMatches": []
+  },
+  {
+    "path": "Dependencies/GameMakerTool/UndertaleModCli.exe",
+    "sha256": "6D13BD017E7D6527A1E2CA676DDC9826388AB335E45374751A3DAFE18BD1AB9D",
+    "packageMatches": []
+  },
+  {
+    "path": "Dependencies/GameMakerTool/UndertaleModLib.dll",
+    "sha256": "BB12B0E22B46BE6A8E6E498767CA61E8974E5ACAC6DF46E66000AFE1DD35FBF5",
+    "packageMatches": []
+  },
+  {
+    "path": "Dependencies/GameMakerTool/WindowsBase.dll",
+    "sha256": "2586159B2C347D39A93BEBCBD8811A6DC05D0252202B24CEBF2E28188F8CE7AB",
+    "packageMatches": [
+      {
+        "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+        "archiveEntry": "runtimes/win-x64/lib/net10.0/WindowsBase.dll"
+      }
+    ]
+  }
+]

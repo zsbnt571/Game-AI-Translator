@@ -22,13 +22,17 @@ internal sealed class GameDetailPresentation
     internal DesktopActionState LaunchArrow { get; } = new("") { Text = "" };
     internal DesktopActionState Return { get; } = new("返回游戏") { Text = "返回游戏" };
     internal DesktopActionState Restart { get; } = new("重启游戏") { Text = "重启游戏" };
+    internal DesktopActionState Exit { get; } = new("退出游戏") { Text = "退出游戏", Visible = false, Enabled = false };
     internal DesktopActionState Rename { get; } = new("编辑名称") { Text = "编辑名称" };
     internal DesktopActionState CoverEdit { get; } = new("更换封面") { Text = "更换封面" };
     internal DesktopActionState FolderOpen { get; } = new("打开游戏文件夹") { Text = "打开游戏文件夹" };
     internal DesktopActionState TranslationTab { get; } = new("游戏翻译") { Text = "游戏翻译" };
     internal DesktopActionState ModificationTab { get; } = new("游戏修改") { Text = "游戏修改" };
     internal DesktopActionState CompactReturn { get; } = new("返回游戏") { Text = "返回游戏" };
+    internal DesktopActionState CompactLaunch { get; } = new("启动游戏") { Text = "启动游戏" };
+    internal DesktopActionState CompactLaunchArrow { get; } = new("") { Text = "" };
     internal DesktopActionState CompactRestart { get; } = new("重启游戏") { Text = "重启游戏" };
+    internal DesktopActionState CompactExit { get; } = new("退出游戏") { Text = "退出游戏", Visible = false, Enabled = false };
     internal DesktopActionState CompactRename { get; } = new("编辑名称") { Text = "编辑名称" };
     internal DesktopActionState CompactMore { get; } = new("···") { Text = "···" };
     internal DesktopActionState ToggleTranslation { get; } = new("开启翻译") { Text = "开启翻译" };
@@ -41,6 +45,8 @@ internal sealed class GameDetailPresentation
     internal DesktopActionState ScreenTranslation { get; } = new("屏幕翻译并启动") { Text = "屏幕翻译并启动" };
     internal DesktopLabelState Badge { get; } = new();
     internal DesktopLabelState FontCapability { get; } = new();
+    internal DesktopLabelState FontPreference { get; } = new();
+    internal DesktopActionState FontEdit { get; } = new("更换字体") { Text = "更换字体" };
     internal DesktopLabelState RenderingCapability { get; } = new();
     internal DesktopLabelState SelectionLabel { get; } = new();
     internal DesktopLabelState Status { get; } = new();
@@ -62,21 +68,26 @@ public sealed partial class MainForm
     {
         if(_gameDetecting){GameDetail.SelectionPending=true;NotifyNativeGameDetailChanged();return;}
         GameDetail.SelectionPending=false;
+        _ = PollIndependentGameSpeedAsync();
         var game=_selectedGame; var state=_desktopGameState;
         GameDetail.Install.Text=state?.Action??"应用翻译";
         var session=game is null?null:_gameSessions.Get(game);
         bool current=SameGame(game?.ExePath,state?.Game.ExePath);
         if(current)session!.Observe(state!.Process);
+        RenderCommonModificationAuthorization();
         bool running=current&&state!.Process==FusionGameProcessState.Running;
         bool stopped=current&&state!.Process==FusionGameProcessState.Stopped&&session?.LaunchPending!=true;
         bool busy=_gameActionRunning||_gameDetecting;
         bool rpg=game?.AdapterId is "rpg-maker-mv" or "rpg-maker-mz";
         bool renpy=game?.AdapterId=="renpy";
         bool embedded=EmbeddedGameAdapters.Handles(game);
+        
         bool supported=GameCapabilities.EmbeddedTranslation(game);
         var translationPresentation=TranslationPresentation(game);
         SetLabelText(GameDetail.Badge,translationPresentation.Badge);
         if(GameDetail.FontCapability is not null)SetLabelText(GameDetail.FontCapability,translationPresentation.Font);
+        GameDetail.FontEdit.Enabled=game is not null&&GameFontSettings.Supports(game)&&!busy;
+        GameDetail.FontPreference.Text=game is null?"":GameFontSettings.Supports(game)?GameFontSettings.Describe(game.ExePath):"此游戏暂不支持自定义内嵌字体。";
         if(GameDetail.RenderingCapability is not null)SetLabelText(GameDetail.RenderingCapability,translationPresentation.Rendering);
         bool ready=GameTranslationReady(game);
         RenderNativeScreenTranslationState(game,running,stopped,busy,ready);
@@ -88,6 +99,7 @@ public sealed partial class MainForm
         bool restarting=IsGameRestartPending(game);
         GameDetail.Return!.Visible=running; GameDetail.Return.Enabled=!busy||restarting;
         GameDetail.Restart!.Visible=running||restarting;GameDetail.Restart.Enabled=restarting||running&&!busy;GameDetail.Restart.Text=restarting?"取消重启":"重启游戏";
+        GameDetail.Exit.Visible=running;GameDetail.Exit.Enabled=running&&!busy;
         foreach(var button in new[]{GameDetail.Rename,GameDetail.CoverEdit,GameDetail.FolderOpen})if(button is not null)button.Enabled=game is not null&&!busy;
         GameDetail.SelectionLabel.Text=game is null?"双击游戏进入详细主页":game.Name+(GameChineseNameText.Length>0?" · "+GameChineseNameText:"");
         GameDetail.Status.Text=_gameDetecting?"正在识别游戏…":busy?"正在处理此游戏…":session?.LaunchPending==true?"正在等待游戏启动…":running?"游戏运行中":stopped?"游戏未运行":"正在核对游戏状态…";
@@ -98,8 +110,11 @@ public sealed partial class MainForm
         var modifying=section==2;
         GameDetail.Modifying=modifying;
         GameDetail.CompactTitle.Visible=modifying;GameDetail.CompactTitle.Text=game?.Name??"";
+        GameDetail.CompactLaunch.Visible=modifying&&GameDetail.Launch.Visible;GameDetail.CompactLaunch.Enabled=GameDetail.Launch.Enabled;GameDetail.CompactLaunch.Text=GameDetail.Launch.Text;
+        GameDetail.CompactLaunchArrow.Visible=modifying&&GameDetail.LaunchArrow.Visible;GameDetail.CompactLaunchArrow.Enabled=GameDetail.LaunchArrow.Enabled;
         GameDetail.CompactReturn.Visible=modifying&&running;GameDetail.CompactReturn.Enabled=!busy||restarting;
         GameDetail.CompactRestart.Visible=modifying&&(running||restarting);GameDetail.CompactRestart.Enabled=restarting||running&&!busy;GameDetail.CompactRestart.Text=restarting?"取消重启":"重启游戏";
+        GameDetail.CompactExit.Visible=modifying&&running;GameDetail.CompactExit.Enabled=GameDetail.Exit.Enabled;
         GameDetail.CompactRename.Visible=modifying;GameDetail.CompactRename.Enabled=game is not null&&!busy;
         GameDetail.CompactMore.Visible=modifying;
         GameDetail.TranslationTab.Primary=section==1;GameDetail.ModificationTab.Primary=section==2;
@@ -109,13 +124,14 @@ public sealed partial class MainForm
         bool requested=session?.TranslationRequested==true;
         if(!rpg&&!renpy&&!embedded)
         {
-        GameDetail.ToggleTranslation!.Visible=running&&!prepared;
-        GameDetail.ToggleTranslation.Enabled=supported&&!busy&&!requested;
-        GameDetail.ToggleTranslation.Text=requested?"等待退出后启用":"开启翻译";
+        var activation=GameTranslationActivation.Resolve(false,false,ready,busy,restarting,null);
+        GameDetail.ToggleTranslation!.Visible=running&&!prepared||restarting;
+        GameDetail.ToggleTranslation.Enabled=supported&&activation.Enabled;
+        GameDetail.ToggleTranslation.Text=activation.Text;
         GameDetail.TranslationStatus.Text=!supported?"此游戏暂不支持内嵌翻译。":prepared&&(running||session?.LaunchPending==true)?
             "已随本次启动配置翻译 · 实际效果以游戏内文字为准。":requested?
             (running?"当前适配需要重启才能启用。请保存并自行退出游戏，再点击“翻译并启动”。":"已保留开启翻译的选择，可以翻译并启动。"):
-            running?(session?.LaunchMode==GameLaunchMode.Ordinary?"翻译未开启 · 当前适配需退出游戏后启用。":"本次启动方式未确认 · 当前适配需退出游戏后应用翻译。"):
+            running?activation.Hint:
             "按需选择翻译方案，普通启动不会开启翻译。";
         if(prepared&&(running||session?.LaunchPending==true)&&session!.AppliedProfileName is { } applied)
         {
@@ -125,7 +141,7 @@ public sealed partial class MainForm
         }
         }
         GameDetail.TranslateLaunch!.Visible=!running; GameDetail.TranslateLaunch.Enabled=stopped&&supported&&ready&&!busy;
-        bool canPrepare=game is not null&&CatalogTranslationPreparation.Supports(game.Engine);
+        bool canPrepare=game is not null&&CatalogTranslationPreparation.Supports(game);
         if(GameDetail.PrepareText is not null){GameDetail.PrepareText.Visible=canPrepare;GameDetail.PrepareText.Enabled=!busy;}
         if(canPrepare&&!supported&&game is not null){GameDetail.TranslateLaunch.Visible=false;GameDetail.ToggleTranslation!.Visible=false;GameDetail.TranslationStatus!.Text=game.Engine+" · 可读取文本并准备译文；游戏内显示尚未接入。";}
         GameDetail.Restore!.Enabled=(rpg||current&&state?.HasRecord==true)&&stopped&&!busy;
@@ -135,15 +151,14 @@ public sealed partial class MainForm
         if(rpg||renpy||embedded)
         {
             var data=SelectedTranslationSession();bool connected=running&&data?.Connection.Connected==true;
-            GameDetail.ToggleTranslation!.Visible=running;
+            GameDetail.ToggleTranslation!.Visible=running||restarting;
             bool restorePending=data?.Translation?.RestorePending==true;
             bool reconnect=renpy&&running&&!connected&&RenpyReconnect.Peer(game!.ExePath) is not null;
-            GameDetail.ToggleTranslation.Enabled=!busy&&(reconnect&&ready|| (restorePending?connected:translationPresentation.CanToggle&&(ready||data?.Translation?.Enabled==true)));
-            GameDetail.ToggleTranslation.Text=connected?TranslationToggleDispatcher.ButtonText(data?.Translation):reconnect?"重新连接翻译":"翻译未接入";
+            var activation=GameTranslationActivation.Resolve(connected,reconnect,ready,busy,restarting,data?.Translation,session?.TranslationRuntimePending==true);
+            GameDetail.ToggleTranslation.Enabled=activation.Enabled;
+            GameDetail.ToggleTranslation.Text=activation.Text;
             GameDetail.TranslationStatus.Text=restorePending?data!.Translation!.Status:connected?(data!.Translation?.Status??"游戏已连接，翻译关闭。可在游玩时开启，无需重启。"):
-                !string.IsNullOrEmpty(session?.TranslationBlockedReason)?"本次翻译未接入："+session.TranslationBlockedReason:
-                reconnect?"翻译连接已断开，已有译文保留。点击“重新连接翻译”即可继续，无需退出游戏。":
-                running?(busy?"正在连接游戏…":"此游戏尚未建立翻译连接。保存退出后，可从本软件重新启动并检查连接结果。"):
+                running?(restarting?activation.Hint:(!string.IsNullOrEmpty(session?.TranslationBlockedReason)?"本次翻译未接入："+session.TranslationBlockedReason+"\n":"")+(busy?"正在连接游戏…":activation.Hint)):
                 translationPresentation.PendingVerification?"已识别到适配方式。点击“翻译并启动”，连接后会自动开启翻译；首次使用请进入菜单或对话查看效果。":
                 "点击“翻译并启动”可连接游戏并开启翻译；普通启动后，也可在连接成功时手动开启。";
             if(connected&&data?.Translation is {Enabled:true,RestorePending:false} activeTranslation)
@@ -161,7 +176,7 @@ public sealed partial class MainForm
         }
         GameDetail.ActionFeedback.Text=session?.Feedback??""; GameDetail.ActionFeedback.Visible=GameDetail.ActionFeedback.Text.Length>0;
         if(GameDetail.ScanKey is not null)GameDetail.ScanKey.Text=rpg||renpy||embedded?
-            translationPresentation.CanToggle?"使用本页翻译开关":translationPresentation.Blocked?"当前无法开关翻译":"接入后可用":
+            translationPresentation.CanToggle?"使用本页翻译开关":translationPresentation.Blocked?"当前无法开关翻译":translationPresentation.OrdinaryLaunch?"翻译开启后可用":"接入后可用":
             GameCapabilities.TranslationToggleKey(game)?_fusion?.State.EmbeddedToggleKey??"F8":"当前引擎尚无内嵌翻译开关";
         if(GameDetail.ScanKeyEdit is not null)GameDetail.ScanKeyEdit.Visible=GameCapabilities.TranslationToggleKey(game);
         var runningPaths=_gameSessions.Snapshot().Where(x=>x.Process==FusionGameProcessState.Running).Select(x=>x.Game.ExePath).ToArray();

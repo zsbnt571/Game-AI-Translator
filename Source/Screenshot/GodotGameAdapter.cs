@@ -198,6 +198,8 @@ internal sealed class GodotTranslationConnection : IEmbeddedTranslationConnectio
     public ProcessStartInfo StartInfo(bool translationAtStartup=true)
     {
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};
+        GameLaunchEnvironment.ClearSession(info);
+        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup);
         info.Environment["FUSION_GODOT_SESSION"]=folder;info.Environment["FUSION_GODOT_SECRET"]=secret;
         info.Environment["FUSION_GODOT_TRANSLATION"]=translationAtStartup?"1":"0";
         GameTestCopyEnvironment.Apply(info);return info;

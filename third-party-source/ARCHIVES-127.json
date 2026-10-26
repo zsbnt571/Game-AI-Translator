@@ -1,0 +1,52 @@
+{
+  "release": "1.1.0.127",
+  "archives": [
+    {
+      "file": "BepInEx-5b766a3-source.zip",
+      "bytes": 786491,
+      "sha256": "4e53a4650de500b1cd9c5e85669644bd5dc5e1ee40d12a66070a308a1e9eba0e",
+      "upstreamArchiveSha256": "ccea1256ef0552f51be640bf5e38f45667d3f95d609ea95ce386338a952993d0",
+      "upstreamArchiveBytes": 1207906,
+      "excludedBuildReferences": [
+        "BepInEx-5b766a3b7f6c164d4798924a93f3acf4db769d06/Runtimes/Unity/BepInEx.Unity.IL2CPP/lib/UnityEngine.CoreModule.dll",
+        "BepInEx-5b766a3b7f6c164d4798924a93f3acf4db769d06/Runtimes/Unity/BepInEx.Unity.IL2CPP/lib/UnityEngine.InputLegacyModule.dll"
+      ],
+      "distributionNote": "Distribution copy excludes only two Unity engine compile-reference DLLs. All other upstream archive members, source files and license notices are preserved byte-for-byte. The upstream URL returns the original archive identified by upstreamArchiveSha256, not this distribution hash. Rebuilding the affected upstream Unity components requires the developer to provide legally obtained matching Unity reference assemblies."
+    },
+    {
+      "file": "Disarm-8574010-source.zip",
+      "bytes": 78273,
+      "sha256": "9e36d2b36a64c60a1f633b396ac1ebb8d3469dae78a4b83bda799ec74216d4cb"
+    },
+    {
+      "file": "Il2CppInterop-1.5.3-source.zip",
+      "bytes": 922434,
+      "sha256": "32c37dc7cbd94aeb97a26bdcf14c551118062633d2e2d5491d258570f8b5dd9a"
+    },
+    {
+      "file": "Underanalyzer-4ff50a8-source.zip",
+      "bytes": 476661,
+      "sha256": "588bd38ba0f55c3f37e0cbabc71fa6a46669fe4a2dbda4b2895eb374cbe5dab2"
+    },
+    {
+      "file": "UndertaleModTool-0.9.2.0-source.zip",
+      "bytes": 13547040,
+      "sha256": "330f6ea64d6c399130a15d1ab9024ffe1d35d82563d981b96f0d0f84bbd410f5"
+    },
+    {
+      "file": "UnityDoorstop-4.5.0-source.zip",
+      "bytes": 109881,
+      "sha256": "7f0c963104aa08bf5fefef8ff85e7fecd8306838f5af3101487d9db4e9188d63"
+    },
+    {
+      "file": "Dobby-1.0.5-source.zip",
+      "bytes": 768106,
+      "sha256": "00C0A582FC69EFD52AA3A95449D27882384B653EB0E6524B79E796E8A8EF807D",
+      "sourceUrl": "https://codeload.github.com/BepInEx/Dobby/zip/888d971214900374edbca6206fad6ded8a2c1311",
+      "sourceCommit": "888d971214900374edbca6206fad6ded8a2c1311",
+      "license": "Apache-2.0"
+    }
+  ],
+  "distributionNote": "Current corresponding-source archive inventory. Historical ARCHIVES.json is retained as provenance, not the current release download link. BepInEx retains its documented exclusions; no game/Unity assembly grant is made.",
+  "sourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v1.1.0-preview.3%2Bdialogue.5/Fusion-1.1.0-Preview3-Source.zip"
+}

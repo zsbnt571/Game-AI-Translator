@@ -6,7 +6,7 @@ using BepInEx.Unity.IL2CPP;
 
 namespace Fusion.UnityEmbedded
 {
-    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "0.6.0.134")]
+    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "1.1.0.123")]
     public sealed class Il2CppPlugin : BasePlugin
     {
         static UnityBridgeRuntime bridge;

@@ -235,11 +235,16 @@ function fixture.newIdentityText(ns,key,source)return ftext(ns,key,source)end
 os.getenv=function(key)
  if key=='FUSION_UNREAL_SESSION'then return FIXTURE_FOLDER end
  if key=='FUSION_UNREAL_SECRET'then return secret end
- if key=='FUSION_UNREAL_TRANSLATION'then return '1'end
+ if key=='FUSION_UNREAL_TRANSLATION'then return FIXTURE_DORMANT and '0' or '1'end
 end
 os.time=function()return 1000+math.floor(fixture.now)end
 os.clock=function()return fixture.now end
 local realDofile=dofile
+local realOpen=io.open
+io.open=function(path,mode)
+ if path:match('catalog%.json$') and mode=='rb' then fixture.catalogReads=(fixture.catalogReads or 0)+1 end
+ return realOpen(path,mode)
+end
 dofile=function(path)
  if path:match('fonts%.lua$')then
   local function restoreStep(limit)

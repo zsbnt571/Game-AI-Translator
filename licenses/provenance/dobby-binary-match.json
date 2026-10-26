@@ -1,0 +1,15 @@
+{
+  "assetUrl": "https://github.com/BepInEx/Dobby/releases/download/v1.0.5/dobby-win.zip",
+  "assetSha256": "980E67FB8E945E2FE39DAC759A54FE3BE46E74C38F9B8181FDA83E10E1D5839E",
+  "assetBytes": 183046,
+  "bundledDobbyPath": "BepInEx/core/dobby.dll",
+  "bundledDobbySha256": "8015DE7D867245A1095D13947A63763878E4CF5FD3D3089B63CC39200B055DED",
+  "matchingOriginalAssetEntries": [
+    "dobby_x64.dll"
+  ],
+  "originalAssetEntries": [
+    "dobby_x64.dll",
+    "dobby_x86.dll"
+  ],
+  "executed": false
+}

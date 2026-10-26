@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 namespace ScreenshotTranslationUiTester;
 
 // Owned by one game session, never a cross-game or persistent translation cache.
-// Only Chinese quantity sentences qualify. Names, versions, dates, decimals and
-// numeric identifiers are deliberately left to the ordinary exact-source path.
+// Short label/value fields and Chinese quantity sentences qualify. Full prose,
+// versions, dates and numeric identifiers keep their ordinary exact-source path.
 internal sealed class TranslationTemplates
 {
     internal sealed record Request(string Text,string[] Codes,string Key);
@@ -18,9 +18,23 @@ internal sealed class TranslationTemplates
     private static readonly Regex Token=new(@"⟦RPG\d+⟧",RegexOptions.Compiled);
     private static readonly Regex Number=new(@"(?<![\p{L}\p{N}_.,:/#%+\-])\d{1,9}(?![\p{L}\p{N}_.,:/%\-])",RegexOptions.Compiled);
     private static readonly Regex Word=new(@"[A-Za-z]{2,}",RegexOptions.Compiled);
+    private static readonly Regex LabelValue=new(@"\A(?<label>\p{L}[\p{L}\p{M} _-]{1,63}?)[ \t]*[:：][ \t]*(?<number>[+\-]?\d{1,9}(?:\.\d{1,6})?)(?<suffix>[ \t]*%?)[ \t]*\z",RegexOptions.Compiled|RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
+    private static readonly Regex LabelIdentifier=new(@"(?i)\b(?:version|build|chapter|episode|room|level|stage|floor|id|serial|phone|year|page|error|code|date|time)\b",RegexOptions.Compiled|RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
     private static readonly Regex Identifier=new(@"(?i)\b(?:version|build|chapter|episode|room|level|stage|floor|id|serial|phone|year|page|error|code)\s*\d|\d[./:\-]\d|\b(?:january|february|march|april|may|june|july|august|september|october|november|december)\b|\d\s*(?:am|pm)\b",RegexOptions.Compiled);
     internal static Request Prepare(string text,string[] codes,ApiSettings settings,EmbeddedTextSyntax syntax)
     {
+        // The whole field must be a label followed by one scalar. Decimal
+        // spellings are retained verbatim, while only its label is translated.
+        // This key is session-local and includes settings and engine syntax.
+        if(settings.PreserveNumbers&&codes.Length==0&&text.Length<=100)
+        {
+            var field=LabelValue.Match(text);
+            if(field.Success&&(!LabelIdentifier.IsMatch(field.Groups["label"].Value)||Regex.IsMatch(field.Groups["label"].Value,@"\A(?:cooldown|recharge|reload|cast|casting|respawn) time\z",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant)))
+            {
+                string fieldText=field.Groups["label"].Value.Trim()+": ⟦RPG0⟧"+field.Groups["suffix"].Value.Trim();
+                return new(fieldText,[field.Groups["number"].Value],Key(fieldText,codes,settings,syntax));
+            }
+        }
         string visible=Token.Replace(text,"");
         if(!settings.PreserveNumbers||!FusionConfiguration.NormalizeLanguage(settings.TargetLanguage).StartsWith("zh",StringComparison.OrdinalIgnoreCase)
             ||Word.Matches(visible).Count<3||Identifier.IsMatch(visible))return new(text,codes,"");
@@ -34,9 +48,10 @@ internal sealed class TranslationTemplates
         if(count is <1 or >3)return new(text,codes,"");
         string request=b.ToString();
         if(Regex.IsMatch(Token.Replace(request,""),@"\d"))return new(text,codes,"");
-        string key=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new{syntax,request,controls=codes,settings}))));
-        return new(request,all.ToArray(),key);
+        return new(request,all.ToArray(),Key(request,codes,settings,syntax));
     }
+    private static string Key(string request,string[] codes,ApiSettings settings,EmbeddedTextSyntax syntax)
+        =>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new{syntax,request,controls=codes,settings}))));
     internal bool TryGet(string key,out string value){lock(gate)return values.TryGetValue(key,out value!);}
     internal static bool ValidResult(string value)=>!Regex.IsMatch(Token.Replace(value,""),@"\d");
     internal void Remember(string key,string value)

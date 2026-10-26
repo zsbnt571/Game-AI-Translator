@@ -14,4 +14,14 @@
     <Compile Include="..\Screenshot\FusionCoverWindowIdentity.cs" Link="CoverWindowIdentity.cs"/>
     <Compile Include="..\Screenshot\FusionCoverQuality.cs" Link="CoverQuality.cs"/>
   </ItemGroup>
+  <Target Name="PreserveWindowsSdkReferenceVersion" AfterTargets="AddWindowsSdkKnownFrameworkReferences" Condition="'$(RuntimeFrameworkVersion)' != ''">
+    <!-- A .NET runtime patch version is not a Windows SDK reference version. -->
+    <ItemGroup>
+      <_FusionWindowsSdkFramework Include="@(KnownFrameworkReference)" Condition="'%(KnownFrameworkReference.Identity)' == 'Microsoft.Windows.SDK.NET.Ref' And '%(KnownFrameworkReference.TargetFramework)' == '$(TargetFramework)'" />
+      <FrameworkReference Include="Microsoft.Windows.SDK.NET.Ref" RuntimeFrameworkVersion="@(_FusionWindowsSdkFramework->'%(DefaultRuntimeFrameworkVersion)')" />
+      <FrameworkReference Condition="'%(FrameworkReference.Identity)' == 'Microsoft.Windows.SDK.NET.Ref.Windows'">
+        <RuntimeFrameworkVersion>@(_FusionWindowsSdkFramework->'%(DefaultRuntimeFrameworkVersion)')</RuntimeFrameworkVersion>
+      </FrameworkReference>
+    </ItemGroup>
+  </Target>
 </Project>

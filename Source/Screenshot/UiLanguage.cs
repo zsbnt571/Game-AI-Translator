@@ -4,56 +4,135 @@ using System.Text.RegularExpressions;
 
 namespace ScreenshotTranslationUiTester;
 
-public enum ApplicationLanguage { SimplifiedChinese = 0, English = 1, Russian = 2 }
+// Persisted values 0–3 belong to existing installations. Append new languages.
+public enum ApplicationLanguage { SimplifiedChinese = 0, English = 1, Russian = 2, FollowSystem = 3, TraditionalChinese = 4, Japanese = 5, Korean = 6, Spanish = 7, French = 8, German = 9 }
+
+internal sealed record InterfaceLanguageChoice(ApplicationLanguage Value,string NativeName)
+{
+    public override string ToString()=>Value==ApplicationLanguage.FollowSystem?UiLanguage.Text("跟随系统"):NativeName;
+}
+
+// Accept the named preference understood by startup diagnostics, while keeping
+// the existing numeric on-disk format and leaving other enum fields untouched.
+internal sealed class ApplicationLanguagePreferenceConverter : System.Text.Json.Serialization.JsonConverter<ApplicationLanguage>
+{
+    public ApplicationLanguagePreferenceConverter() { }
+    public override ApplicationLanguage Read(ref Utf8JsonReader reader,Type type,JsonSerializerOptions options)
+    {
+        if(reader.TokenType==JsonTokenType.Number && reader.TryGetInt32(out var number))return (ApplicationLanguage)number;
+        if(reader.TokenType==JsonTokenType.String && Enum.TryParse<ApplicationLanguage>(reader.GetString(),true,out var named) && Enum.IsDefined(named))return named;
+        throw new JsonException();
+    }
+    public override void Write(Utf8JsonWriter writer,ApplicationLanguage value,JsonSerializerOptions options)=>writer.WriteNumberValue((int)value);
+}
 
 // Display localization never rewrites combo values, profile names, API fields,
 // translated game text or serialized identifiers.
 internal static class UiLanguage
 {
+    internal const string SelectionHelp="保存后切换界面语言。默认跟随系统，不支持的系统语言使用英语。游戏译文语言在“翻译方案”中单独设置。";
+    // Display order is independent of the persisted ApplicationLanguage values.
+    internal static readonly InterfaceLanguageChoice[] Options=[
+        new(ApplicationLanguage.FollowSystem,"跟随系统"),new(ApplicationLanguage.SimplifiedChinese,"简体中文"),
+        new(ApplicationLanguage.TraditionalChinese,"繁體中文"),new(ApplicationLanguage.English,"English"),
+        new(ApplicationLanguage.Japanese,"日本語"),
+        new(ApplicationLanguage.Korean,"한국어"),new(ApplicationLanguage.Spanish,"Español"),
+        new(ApplicationLanguage.French,"Français"),new(ApplicationLanguage.German,"Deutsch"),
+        new(ApplicationLanguage.Russian,"Русский")];
+    internal static IEnumerable<ApplicationLanguage> Supported=>Options.Where(x=>x.Value!=ApplicationLanguage.FollowSystem).Select(x=>x.Value);
     // Startup diagnostics must respect the saved preference before normal settings
     // loading. Read only this value; never migrate, save or expose credentials here.
     internal static void ReadStartupPreference()
     {
+        Set(ApplicationLanguage.FollowSystem);
         try
         {
             using var stream=File.OpenRead(ConfigurationManager.ResolveSettingsPath());
             using var document=JsonDocument.Parse(stream);
-            if(document.RootElement.TryGetProperty("InterfaceLanguage",out var item))
-            {
-                var language=item.ValueKind==JsonValueKind.Number?(ApplicationLanguage)item.GetInt32():Enum.Parse<ApplicationLanguage>(item.GetString()!);
-                if(Enum.IsDefined(language))Set(language);
-            }
+            Set(ExistingPreference(document.RootElement));
         }
         catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException or InvalidOperationException or OverflowException) { }
     }
-    private static readonly Lazy<Dictionary<string,string>> English=new(()=>
+    internal static bool HasSavedPreference(JsonElement settings) => settings.ValueKind==JsonValueKind.Object &&
+        settings.EnumerateObject().Any(x=>x.Name.Equals("InterfaceLanguage",StringComparison.OrdinalIgnoreCase));
+    // A settings file created before interface-language support kept the Chinese UI.
+    // Only a genuinely new profile defaults to following the operating system.
+    internal static ApplicationLanguage ExistingPreference(JsonElement settings)
     {
-        using var stream=typeof(UiLanguage).Assembly.GetManifestResourceStream("Fusion.UiEnglish.json")
-            ?? throw new InvalidOperationException("Interface language resources are missing.");
-        return JsonSerializer.Deserialize<Dictionary<string,string>>(stream)!;
-    });
-    private static readonly Lazy<Dictionary<string,string>> Russian=new(()=>
+        if(settings.ValueKind!=JsonValueKind.Object)return ApplicationLanguage.SimplifiedChinese;
+        foreach(var property in settings.EnumerateObject())
+        {
+            if(!property.Name.Equals("InterfaceLanguage",StringComparison.OrdinalIgnoreCase))continue;
+            if(property.Value.ValueKind==JsonValueKind.Number&&property.Value.TryGetInt32(out var value)&&Enum.IsDefined((ApplicationLanguage)value))
+                return (ApplicationLanguage)value;
+            if(property.Value.ValueKind==JsonValueKind.String&&Enum.TryParse<ApplicationLanguage>(property.Value.GetString(),true,out var named)&&Enum.IsDefined(named))
+                return named;
+        }
+        return ApplicationLanguage.SimplifiedChinese;
+    }
+    internal static ApplicationLanguage Resolve(ApplicationLanguage preference,System.Globalization.CultureInfo? systemCulture=null)
     {
-        using var stream=typeof(UiLanguage).Assembly.GetManifestResourceStream("Fusion.UiRussian.json")
-            ?? throw new InvalidOperationException("Russian interface resources are missing.");
-        return JsonSerializer.Deserialize<Dictionary<string,string>>(stream)!;
-    });
-    private static Dictionary<string,string> Translations=>Current==ApplicationLanguage.Russian?Russian.Value:English.Value;
+        if(preference!=ApplicationLanguage.FollowSystem)
+            return Enum.IsDefined(preference)?preference:ApplicationLanguage.SimplifiedChinese;
+        var culture=systemCulture??System.Globalization.CultureInfo.CurrentUICulture;
+        return culture.TwoLetterISOLanguageName switch
+        {
+            "zh"=>culture.Name.Contains("Hant",StringComparison.OrdinalIgnoreCase)||(!culture.Name.Contains("Hans",StringComparison.OrdinalIgnoreCase)&&culture.Name.Split('-').Any(x=>x.Equals("TW",StringComparison.OrdinalIgnoreCase)||x.Equals("HK",StringComparison.OrdinalIgnoreCase)||x.Equals("MO",StringComparison.OrdinalIgnoreCase)))
+                ?ApplicationLanguage.TraditionalChinese:ApplicationLanguage.SimplifiedChinese,
+            "ru"=>ApplicationLanguage.Russian,
+            "ja"=>ApplicationLanguage.Japanese,
+            "ko"=>ApplicationLanguage.Korean,
+            "es"=>ApplicationLanguage.Spanish,
+            "fr"=>ApplicationLanguage.French,
+            "de"=>ApplicationLanguage.German,
+            _=>ApplicationLanguage.English
+        };
+    }
+    private sealed class Catalog(string resource)
+    {
+        internal readonly Lazy<Dictionary<string,string>> Entries=new(()=>ReadCatalog(resource));
+        internal Dictionary<string,string> Reverse=>reverse??=UiLanguage.Reverse(Entries.Value);
+        internal Pattern[] Patterns=>patterns??=BuildPatterns(Entries.Value);
+        internal Pattern[] ReversePatterns=>reversePatterns??=BuildPatterns(Reverse);
+        internal KeyValuePair<string,string>[] Fragments=>fragments??=BuildFragments(Entries.Value);
+        private Dictionary<string,string>? reverse;
+        private Pattern[]? patterns,reversePatterns;
+        private KeyValuePair<string,string>[]? fragments;
+    }
+    private static readonly Dictionary<ApplicationLanguage,Catalog> Catalogs=new()
+    {
+        [ApplicationLanguage.English]=new("UiEnglish.json"),[ApplicationLanguage.Russian]=new("UiRussian.json"),
+        [ApplicationLanguage.TraditionalChinese]=new("UiTraditionalChinese.json"),[ApplicationLanguage.Japanese]=new("UiJapanese.json"),
+        [ApplicationLanguage.Korean]=new("UiKorean.json"),[ApplicationLanguage.Spanish]=new("UiSpanish.json"),
+        [ApplicationLanguage.French]=new("UiFrench.json"),[ApplicationLanguage.German]=new("UiGerman.json")
+    };
+    private static Dictionary<string,string> ReadCatalog(string resource)
+    {
+        using var stream=typeof(UiLanguage).Assembly.GetManifestResourceStream("Fusion."+resource);
+        if(stream is null)return new(StringComparer.Ordinal);
+        try{return JsonSerializer.Deserialize<Dictionary<string,string>>(stream)??new(StringComparer.Ordinal);}
+        catch(JsonException){return new(StringComparer.Ordinal);}
+    }
+    private static Catalog CurrentCatalog=>Catalogs.GetValueOrDefault(Current)??Catalogs[ApplicationLanguage.English];
+    private static Dictionary<string,string> Translations=>CurrentCatalog.Entries.Value;
+    private static bool TryText(string source,out string translated)=>Translations.TryGetValue(source,out translated!)||Catalogs[ApplicationLanguage.English].Entries.Value.TryGetValue(source,out translated!);
     private static Dictionary<string,string> Reverse(Dictionary<string,string> source)=>source
         .GroupBy(x=>x.Value,StringComparer.Ordinal).ToDictionary(x=>x.Key,x=>x.First().Key,StringComparer.Ordinal);
-    private static readonly Lazy<Dictionary<string,string>> EnglishReverse=new(()=>Reverse(English.Value));
-    private static readonly Lazy<Dictionary<string,string>> RussianReverse=new(()=>Reverse(Russian.Value));
     internal static string Original(string source)
     {
-        if(EnglishReverse.Value.TryGetValue(source,out var original))return original;
-        if(Russian.IsValueCreated&&RussianReverse.Value.TryGetValue(source,out original))return original;
-        foreach(var patterns in new[]{EnglishReversePatterns.Value,RussianReversePatterns.Value})
-            foreach(var pattern in patterns)
+        // Canonical product strings win over a coincidentally identical localized
+        // caption. Only catalogs already used by this UI participate in reversal.
+        if(Catalogs[ApplicationLanguage.English].Entries.Value.ContainsKey(source))return source;
+        foreach(var catalog in new[]{CurrentCatalog}.Concat(Catalogs.Values.Where(x=>x.Entries.IsValueCreated)).Distinct())
+        {
+            if(catalog.Reverse.TryGetValue(source,out var original))return original;
+            foreach(var pattern in catalog.ReversePatterns)
             {
                 if(!source.StartsWith(pattern.Prefix,StringComparison.Ordinal))continue;
                 var match=pattern.Regex.Match(source);if(!match.Success)continue;
                 return Regex.Replace(pattern.Replacement,@"\{(\d+)\}",m=>match.Groups["v"+m.Groups[1].Value].Value);
             }
+        }
         return source;
     }
     private sealed class Binding(Control control)
@@ -81,11 +160,7 @@ internal static class UiLanguage
         Application.Idle+=(_,_)=>{foreach(Form form in Application.OpenForms)BindTree(form);};
     }
     private sealed record Pattern(Regex Regex,string Replacement,string Prefix);
-    private static readonly Lazy<Pattern[]> EnglishPatterns=new(()=>BuildPatterns(English.Value));
-    private static readonly Lazy<Pattern[]> RussianPatterns=new(()=>BuildPatterns(Russian.Value));
-    private static readonly Lazy<Pattern[]> EnglishReversePatterns=new(()=>BuildPatterns(EnglishReverse.Value));
-    private static readonly Lazy<Pattern[]> RussianReversePatterns=new(()=>BuildPatterns(RussianReverse.Value));
-    private static Pattern[] Patterns=>Current==ApplicationLanguage.Russian?RussianPatterns.Value:EnglishPatterns.Value;
+    private static IEnumerable<Pattern> Patterns=>CurrentCatalog.Patterns.Concat(Current==ApplicationLanguage.English?[]:Catalogs[ApplicationLanguage.English].Patterns);
     private static Pattern[] BuildPatterns(Dictionary<string,string> translations)=>translations.Where(x=>Regex.IsMatch(x.Key,@"\{\d+\}")).Select(pair=>
     {
         var matches=Regex.Matches(pair.Key,@"\{(\d+)\}");int at=0;var expression=new System.Text.StringBuilder("^");
@@ -96,17 +171,30 @@ internal static class UiLanguage
         var options=RegexOptions.CultureInvariant|(pair.Key.Contains('\n')?RegexOptions.Singleline:RegexOptions.None);
         return new Pattern(new Regex(expression.ToString(),options,TimeSpan.FromMilliseconds(20)),pair.Value,pair.Key[..matches[0].Index]);
     }).OrderByDescending(x=>x.Prefix.Length).ThenByDescending(x=>x.Regex.ToString().Length).ToArray();
-    private static readonly Lazy<KeyValuePair<string,string>[]> EnglishFragments=new(()=>BuildFragments(English.Value));
-    private static readonly Lazy<KeyValuePair<string,string>[]> RussianFragments=new(()=>BuildFragments(Russian.Value));
-    private static KeyValuePair<string,string>[] Fragments=>Current==ApplicationLanguage.Russian?RussianFragments.Value:EnglishFragments.Value;
+    private static IEnumerable<KeyValuePair<string,string>> Fragments=>CurrentCatalog.Fragments.Concat(Current==ApplicationLanguage.English?[]:Catalogs[ApplicationLanguage.English].Fragments);
     private static KeyValuePair<string,string>[] BuildFragments(Dictionary<string,string> translations)=>translations.Where(x=>(x.Key.Length>=4||x.Key.EndsWith('：'))&&!x.Key.Contains('{')&&x.Key.Any(c=>c>='\u3400'&&c<='\u9fff')).OrderByDescending(x=>x.Key.Length).ToArray();
 
-    internal static ApplicationLanguage Current {get;private set;}
+    internal static ApplicationLanguage Current {get;private set;}=Resolve(ApplicationLanguage.FollowSystem);
     internal static bool IsEnglish=>Current==ApplicationLanguage.English;
     internal static bool IsTranslated=>Current!=ApplicationLanguage.SimplifiedChinese;
+    // The Chinese source word also labels Close-window buttons. Additional
+    // catalogs use explicit status keys for boolean fields, never that command.
+    internal static string SwitchText(bool enabled)=>Text(Current is ApplicationLanguage.SimplifiedChinese or ApplicationLanguage.English or ApplicationLanguage.Russian
+        ?enabled?"开启":"关闭":enabled?"已开启":"已关闭");
+    // UI entry accepts the selected language's decimal separator. Persisted
+    // numbers and game protocols continue to use invariant representations.
+    internal static System.Globalization.CultureInfo NumericInputCulture=>Current switch
+    {
+        ApplicationLanguage.Russian=>System.Globalization.CultureInfo.GetCultureInfo("ru-RU"),
+        ApplicationLanguage.French=>System.Globalization.CultureInfo.GetCultureInfo("fr-FR"),
+        ApplicationLanguage.German=>System.Globalization.CultureInfo.GetCultureInfo("de-DE"),
+        ApplicationLanguage.Spanish=>System.Globalization.CultureInfo.GetCultureInfo("es-ES"),
+        _=>System.Globalization.CultureInfo.InvariantCulture
+    };
     internal static string Source(Control control)=>Bound.TryGetValue(control,out var binding)?binding.Source:control.Text;
     internal static string Choose(string chinese,string english,string? russian=null)=>IsEnglish?english:
         Current==ApplicationLanguage.Russian&&russian is not null?russian:Text(chinese);
+    internal static string FormatTemplate(string template,params object?[] values)=>Format(FormattableStringFactory.Create(template,values));
     internal static string Format(FormattableString source)
     {
         // Translate the template, never opaque arguments such as user names,
@@ -117,8 +205,8 @@ internal static class UiLanguage
             var formats = Regex.Matches(template, @"\{(\d+)(?:,-?\d+)?(?::[^{}]+)?\}")
                 .Cast<Match>().GroupBy(m => m.Groups[1].Value).ToDictionary(g => g.Key, g => g.First().Value);
             string key = Regex.Replace(template, @"\{(\d+)(?:,-?\d+)?(?::[^{}]+)?\}", "{$1}");
-            bool found=Translations.TryGetValue(key,out var translated);
-            if(!found&&key.Trim()!=key&&Translations.TryGetValue(key.Trim(),out translated))
+            bool found=TryText(key,out var translated);
+            if(!found&&key.Trim()!=key&&TryText(key.Trim(),out translated))
             {
                 translated=key[..(key.Length-key.TrimStart().Length)]+translated+key[key.TrimEnd().Length..];found=true;
             }
@@ -129,12 +217,12 @@ internal static class UiLanguage
     }
     // Exact lookup for a diagnostic message that may also contain opaque paths.
     // Do not apply fragment or template matching to unknown external text.
-    internal static string Exact(string? source)=>IsTranslated&&source is not null&&Translations.TryGetValue(source,out var text)?text:source??"";
+    internal static string Exact(string? source)=>IsTranslated&&source is not null&&TryText(source,out var text)?text:source??"";
     internal static string Text(string? source)
     {
         if(string.IsNullOrEmpty(source)||!IsTranslated)return source??"";
-        if(Translations.TryGetValue(source,out var translated))return translated;
-        if(source.Trim()!=source&&Translations.TryGetValue(source.Trim(),out translated))
+        if(TryText(source,out var translated))return translated;
+        if(source.Trim()!=source&&TryText(source.Trim(),out translated))
             return source[..(source.Length-source.TrimStart().Length)]+translated+source[source.TrimEnd().Length..];
         if(!source.Any(c=>c>='\u3400'&&c<='\u9fff'))return source;
         if(UiDiagnosticText.Translate(source) is {} diagnostic)return diagnostic;
@@ -148,6 +236,26 @@ internal static class UiLanguage
         const string missingPrefix="方案尚缺：",missingSuffix="。请在“编辑”中补全后应用。";
         if(source.StartsWith(missingPrefix,StringComparison.Ordinal)&&source.EndsWith(missingSuffix,StringComparison.Ordinal))
             return Format($"方案尚缺：{string.Join(", ",source[missingPrefix.Length..^missingSuffix.Length].Split('、').Select(Text))}。请在“编辑”中补全后应用。");
+        const string connectionPrefix="翻译接口尚缺：",connectionSuffix="。若服务无需鉴权，请勾选“无需密钥（本地／免鉴权）”。";
+        if(source.StartsWith(connectionPrefix,StringComparison.Ordinal)&&source.EndsWith(connectionSuffix,StringComparison.Ordinal))
+            return Format($"翻译接口尚缺：{string.Join(", ",source[connectionPrefix.Length..^connectionSuffix.Length].Split('、').Select(Text))}。若服务无需鉴权，请勾选“无需密钥（本地／免鉴权）”。");
+        // Compose known nested product statuses before a generic template can
+        // consume the inner text as an opaque parameter.
+        if(source.StartsWith("配置文件：",StringComparison.Ordinal))return Format($"配置文件：{source[5..]}");
+        if(source.StartsWith("自动/混合模式会合并已安装语言：",StringComparison.Ordinal))return Format($"自动/混合模式会合并已安装语言：{source["自动/混合模式会合并已安装语言：".Length..]}");
+        if(source.StartsWith("API Key：",StringComparison.Ordinal))
+        {
+            var value=source[8..].Replace("未配置",Text("未配置")).Replace("已配置",Text("已配置")).Replace("长度",Text("长度")).Replace("（"," (").Replace("）",")");
+            return Format($"API Key：{value}");
+        }
+        var draft=Regex.Match(source,@"^(已保存|未保存修改) · 草稿，缺少：(.+)$");
+        if(draft.Success){var missing=string.Join(", ",draft.Groups[2].Value.Split('、').Select(Text));return draft.Groups[1].Value=="已保存"?Format($"已保存 · 草稿，缺少：{missing}"):Format($"未保存修改 · 草稿，缺少：{missing}");}
+        foreach(var suffix in new[]{"（未配置完成）","（未保存）"})
+            if(source.EndsWith(suffix,StringComparison.Ordinal))return source[..^suffix.Length]+Exact(suffix);
+        var origin=Regex.Match(source,@"^来源：(.+) · 接收服务：(.+)\n协议：OpenAI 兼容格式（实际请求发送至上方接口地址）$");
+        if(origin.Success)return Format($"来源：{Text(origin.Groups[1].Value)} · 接收服务：{Text(origin.Groups[2].Value)}\n协议：OpenAI 兼容格式（实际请求发送至上方接口地址）");
+        var usage=Regex.Match(source,@"^配置引用：(.+)。保存会影响这些功能后续使用的方案，不表示任务正在运行。$");
+        if(usage.Success)return Format($"配置引用：{string.Join("; ",usage.Groups[1].Value.Split('；').Select(Text))}。保存会影响这些功能后续使用的方案，不表示任务正在运行。");
         foreach(var pattern in Patterns)
         {
             if(!source.StartsWith(pattern.Prefix,StringComparison.Ordinal))continue;
@@ -155,22 +263,7 @@ internal static class UiLanguage
             return Regex.Replace(pattern.Replacement,@"\{(\d+)\}",m=>match.Groups["v"+m.Groups[1].Value].Value);
         }
         foreach(var suffix in new[]{" ▾"," ▴","…"})
-            if(source.EndsWith(suffix,StringComparison.Ordinal)&&Translations.TryGetValue(source[..^suffix.Length],out translated))return translated+suffix;
-        if(source.StartsWith("配置文件：",StringComparison.Ordinal))return (IsEnglish?"Settings file: ":"Файл настроек: ")+source[5..];
-        if(source.StartsWith("自动/混合模式会合并已安装语言：",StringComparison.Ordinal))return (IsEnglish?"Automatic / mixed mode combines installed languages: ":"Автоматический / смешанный режим объединяет установленные языки: ")+source["自动/混合模式会合并已安装语言：".Length..];
-        if(source.StartsWith("API Key：",StringComparison.Ordinal))
-        {
-            var value=source[8..].Replace("未配置",IsEnglish?"Not configured":"Не настроен").Replace("已配置",IsEnglish?"Configured":"Настроен").Replace("长度",IsEnglish?"length":"длина").Replace("（"," (").Replace("）",")");
-            return (IsEnglish?"API key: ":"Ключ API: ")+value;
-        }
-        var draft=Regex.Match(source,@"^(已保存|未保存修改) · 草稿，缺少：(.+)$");
-        if(draft.Success)return (draft.Groups[1].Value=="已保存"?(IsEnglish?"Saved draft. Missing: ":"Черновик сохранён. Не указано: "):(IsEnglish?"Unsaved draft. Missing: ":"Черновик не сохранён. Не указано: "))+string.Join(", ",draft.Groups[2].Value.Split('、').Select(Text));
-        foreach(var pair in new[]{("（未配置完成）",IsEnglish?" (incomplete)":" (не настроен)"),("（未保存）",IsEnglish?" (unsaved)":" (не сохранено)")})
-            if(source.EndsWith(pair.Item1,StringComparison.Ordinal))return source[..^pair.Item1.Length]+pair.Item2;
-        var origin=Regex.Match(source,@"^来源：(.+) · 接收服务：(.+)\n协议：OpenAI 兼容格式（实际请求发送至上方接口地址）$");
-        if(origin.Success)return (IsEnglish?"Origin: ":"Источник: ")+Text(origin.Groups[1].Value)+(IsEnglish?" · Service: ":" · Сервис: ")+Text(origin.Groups[2].Value)+(IsEnglish?"\nProtocol: OpenAI-compatible. Requests go to the service URL above.":"\nПротокол: совместимый с OpenAI. Запросы отправляются по указанному выше адресу сервиса.");
-        var usage=Regex.Match(source,@"^配置引用：(.+)。保存会影响这些功能后续使用的方案，不表示任务正在运行。$");
-        if(usage.Success)return (IsEnglish?"Used by: ":"Используется: ")+string.Join("; ",usage.Groups[1].Value.Split('；').Select(Text))+(IsEnglish?". Saving affects future use; it does not start a task.":". Сохранение влияет на последующее использование и не запускает задачу.");
+            if(source.EndsWith(suffix,StringComparison.Ordinal)&&TryText(source[..^suffix.Length],out translated))return translated+suffix;
         if(source.Contains('\n'))return string.Join("\n",source.Split('\n').Select(Text));
         foreach(var fragment in Fragments)
         {
@@ -182,7 +275,7 @@ internal static class UiLanguage
     }
     internal static void Set(ApplicationLanguage language)
     {
-        WatchWindows();var next=Enum.IsDefined(language)?language:ApplicationLanguage.SimplifiedChinese;
+        WatchWindows();var next=Resolve(language);
         if(Current==next)return;Current=next;
         for(int i=Controls.Count-1;i>=0;i--)
         {

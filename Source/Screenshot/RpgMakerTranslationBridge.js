@@ -3,6 +3,9 @@ function createFusionRpgTranslation(g) {
     "use strict";
     var enabled=false,cache=Object.create(null),outputs=Object.create(null),pending=Object.create(null),retry=Object.create(null),queue=[],windows=[],hooks=[],epoch=0,hookRevision=0,hookOwner={};
     var drawings=[],drawingBytes=0,replaying=false,rawAllText=null,displayDepth=0;
+    var messagePage=null,messageCanvas=null,messageDrawScope=null,messageReplaying=false;
+    var messageFontResult={messageRedrawPending:false,messageRedrawn:false};
+    var customFont=typeof createFusionGameFontPolicy==='function'?createFusionGameFontPolicy(g,g.__fusionGameFontOptions,function(){if(enabled)refresh(true,null,true);}):null;
     function storedPairsHash(entries){
         // Identifies accepted pairs, not pixels or resource writes. Old browser
         // contexts without Node retain their count-only receipt contract.
@@ -114,11 +117,112 @@ function createFusionRpgTranslation(g) {
         displayDepth++;try{return original.apply(this,a);}finally{displayDepth--;this._fusionDrawing=false;}
     };}
     function forget(bitmap){drawings=drawings.filter(function(d){if(d.bitmap!==bitmap)return true;drawingBytes-=d.bytes;return false;});}
+    function activeMessage(){return g.SceneManager&&g.SceneManager._scene&&g.SceneManager._scene._messageWindow;}
+    function fontKey(){return enabled&&customFont?customFont.family():'';}
+    function messageFont(font,family){
+        var prefix=/^(.*?\b(?:\d+(?:\.\d+)?|\.\d+)px(?:\/[^\s]+)?\s+).+$/.exec(font);
+        return prefix?prefix[1]+family:null;
+    }
+    function blockMessagePage(page){if(page){page.blocked=true;page.image=null;page.ops=[];}}
+    function releaseMessageCanvas(){
+        if(messageCanvas)messageCanvas.hooks.forEach(function(h){if(messageCanvas.ctx[h.name]===h.wrapper)messageCanvas.ctx[h.name]=h.original;});
+        messageCanvas=null;
+    }
+    function watchMessageCanvas(page){
+        var ctx=page.bitmap&&page.bitmap._context;
+        if(messageCanvas&&messageCanvas.ctx===ctx)return;
+        releaseMessageCanvas();
+        if(!ctx||typeof ctx.getTransform!=='function'||typeof ctx.setTransform!=='function'||typeof ctx.getImageData!=='function'||typeof ctx.putImageData!=='function'){blockMessagePage(page);return;}
+        var watch={ctx:ctx,hooks:[]};messageCanvas=watch;
+        ['fillText','strokeText','clearRect','fillRect','strokeRect','drawImage','putImageData','fill','stroke','clip','reset'].forEach(function(name){
+            var original=ctx[name];if(typeof original!=='function')return;
+            var wrapper=function(){
+                if(messageReplaying)return original.apply(this,arguments);
+                var current=messagePage,scope=messageDrawScope,op=null;
+                if(current&&current.ctx===this){
+                    if((name==='fillText'||name==='strokeText')&&scope&&scope.page===current&&!current.blocked){
+                        try{
+                            var transform=this.getTransform(),styles={};
+                            ['font','fillStyle','strokeStyle','globalAlpha','globalCompositeOperation','lineWidth','lineJoin','miterLimit','textAlign','textBaseline','direction','shadowBlur','shadowColor','shadowOffsetX','shadowOffsetY','filter','fontKerning','fontStretch','fontVariantCaps','letterSpacing','wordSpacing','textRendering'].forEach(function(key){if(key in this)styles[key]=this[key];},this);
+                            var args=Array.prototype.slice.call(arguments),nativeFont=messageFont(styles.font,scope.nativeFamily);
+                            if(!nativeFont||args.length<3||typeof args[0]!=='string'||!isFinite(Number(args[1]))||!isFinite(Number(args[2])))throw Error('Unsupported message draw');
+                            op={original:original,args:args,styles:styles,nativeFont:nativeFont,matrix:[transform.a,transform.b,transform.c,transform.d,transform.e,transform.f]};
+                            if(op.matrix.some(function(n){return !isFinite(n);}))throw Error('Invalid message transform');
+                        }catch(_){blockMessagePage(current);}
+                    }else if(name==='clip'||current.ops.length)blockMessagePage(current);
+                    else current.image=null;
+                }
+                var value;
+                try{value=original.apply(this,arguments);}catch(error){blockMessagePage(current);throw error;}
+                if(op&&!current.blocked){
+                    current.characters+=op.args[0].length;
+                    if(current.ops.length>=2048||current.characters>32768)blockMessagePage(current);else current.ops.push(op);
+                }
+                return value;
+            };
+            try{ctx[name]=wrapper;if(ctx[name]!==wrapper)throw Error('Read-only canvas');watch.hooks.push({name:name,original:original,wrapper:wrapper});}
+            catch(_){blockMessagePage(page);}
+        });
+    }
+    function resetMessagePage(message){
+        if(!message||message!==activeMessage()||!message.contents)return;
+        var bitmap=message.contents;
+        messagePage={owner:message,bitmap:bitmap,ctx:bitmap._context,width:bitmap.width,height:bitmap.height,image:null,ops:[],characters:0,blocked:false,fontKey:fontKey()};
+        watchMessageCanvas(messagePage);
+    }
+    function captureMessageDraw(bitmap,original,args){
+        var page=messagePage,previous=messageDrawScope;
+        if(!page||page.owner!==activeMessage()||page.bitmap!==bitmap||page.owner.contents!==bitmap||page.ctx!==bitmap._context)return original.apply(bitmap,args);
+        if(!enabled){blockMessagePage(page);return original.apply(bitmap,args);}
+        if(page.blocked)return original.apply(bitmap,args);
+        if(page.width!==bitmap.width||page.height!==bitmap.height||!messageCanvas||messageCanvas.hooks.some(function(h){return page.ctx[h.name]!==h.wrapper;})){blockMessagePage(page);return original.apply(bitmap,args);}
+        try{
+            if(!page.image){
+                if(!(page.width>0&&page.height>0)||page.width*page.height*4>8*1024*1024)throw Error('Message image limit');
+                page.image=page.ctx.getImageData(0,0,page.width,page.height);
+            }
+            messageDrawScope={page:page,nativeFamily:String(bitmap.fontFace||'sans-serif')};
+        }catch(_){blockMessagePage(page);}
+        try{return original.apply(bitmap,args);}finally{messageDrawScope=previous;}
+    }
+    function repaintMessageFont(){
+        var message=activeMessage(),page=messagePage,key=fontKey();
+        messageFontResult={messageRedrawPending:false,messageRedrawn:false};
+        if(!message||!g.$gameMessage||!g.$gameMessage.isBusy())return;
+        if(!page||page.owner!==message||page.bitmap!==message.contents||page.ctx!==message.contents._context||page.width!==page.bitmap.width||page.height!==page.bitmap.height||page.blocked){messageFontResult.messageRedrawPending=true;return;}
+        if(page.fontKey===key)return;
+        if(!page.image||!page.ops.length||!messageCanvas||messageCanvas.hooks.some(function(h){return page.ctx[h.name]!==h.wrapper;})){messageFontResult.messageRedrawPending=true;return;}
+        var ctx=page.ctx,before;
+        try{before=ctx.getImageData(0,0,page.width,page.height);}catch(_){messageFontResult.messageRedrawPending=true;return;}
+        messageReplaying=true;
+        try{
+            ctx.putImageData(page.image,0,0);
+            page.ops.forEach(function(op){
+                ctx.save();try{
+                    Object.keys(op.styles).forEach(function(name){ctx[name]=op.styles[name];});
+                    ctx.font=key?messageFont(op.styles.font,JSON.stringify(key)):op.nativeFont;
+                    ctx.setTransform.apply(ctx,op.matrix);op.original.apply(ctx,op.args);
+                }finally{ctx.restore();}
+            });
+            if(page.bitmap._setDirty)page.bitmap._setDirty();else if(page.bitmap._baseTexture&&page.bitmap._baseTexture.update)page.bitmap._baseTexture.update();
+            page.fontKey=key;messageFontResult.messageRedrawn=true;
+        }catch(error){
+            try{ctx.putImageData(before,0,0);if(page.bitmap._setDirty)page.bitmap._setDirty();else if(page.bitmap._baseTexture&&page.bitmap._baseTexture.update)page.bitmap._baseTexture.update();}catch(_){}
+            throw error;
+        }finally{messageReplaying=false;}
+    }
     function bitmapHooks(){
         if(!g.Bitmap)return;
-        ["clear","clearRect","blt","fillRect","gradientFillRect","destroy"].forEach(function(name){wrap(g.Bitmap.prototype,name,function(original){return function(){if(!replaying)forget(this);return original.apply(this,arguments);};});});
+        // Both drawing and width measurement use this engine helper. Override
+        // only for the call, retaining size, outline and the bitmap's own face.
+        wrap(g.Bitmap.prototype,"_makeFontNameText",function(original){return function(){
+            var family=enabled&&customFont&&customFont.family(),old=this.fontFace;
+            if(!family)return original.apply(this,arguments);
+            try{this.fontFace=family;return original.apply(this,arguments);}finally{this.fontFace=old;}
+        };});
+        ["clear","clearRect","blt","fillRect","gradientFillRect","destroy"].forEach(function(name){wrap(g.Bitmap.prototype,name,function(original){return function(){if(!replaying)forget(this);if(!messageReplaying&&messagePage&&messagePage.bitmap===this){if(name==='clear')resetMessagePage(messagePage.owner);else if(name==='destroy')blockMessagePage(messagePage);}return original.apply(this,arguments);};});});
         wrap(g.Bitmap.prototype,"drawText",function(original){return function(value,x,y,width,height,align){
-            if(replaying||!enabled||displayDepth||/^[A-Za-z]$/.test(String(value).trim()))return original.apply(this,arguments);
+            if(replaying||!enabled||displayDepth||/^[A-Za-z]$/.test(String(value).trim()))return captureMessageDraw(this,original,arguments);
             var args=Array.prototype.slice.call(arguments),translated=text(value,null,true),ctx=this._context,record=null;
             if(valid(value)&&!outputs[value]&&ctx&&typeof ctx.getImageData==="function"&&Number(width)>0&&Number(height)>0){
                 // Keep the most recent text draws within a bounded background budget.
@@ -130,7 +234,7 @@ function createFusionRpgTranslation(g) {
                     ["fontFace","fontSize","fontBold","fontItalic","textColor","outlineColor","outlineWidth","paintOpacity"].forEach(function(key){record.styles[key]=this[key];},this);
                 }catch(_){}
             }
-            args[0]=translated;var result=original.apply(this,args);
+            args[0]=translated;var result=captureMessageDraw(this,original,args);
             if(record){record.shown=translated;drawings.push(record);drawingBytes+=record.bytes;}
             return result;
         };});
@@ -158,10 +262,11 @@ function createFusionRpgTranslation(g) {
         try{drawings.forEach(function(d){
             var replacement=enabled?translated(d.source):undefined;
             var wanted=replacement===undefined?d.source:replacement;
-            if(d.shown===wanted||!d.bitmap._context)return;
+            var fontKey=enabled&&customFont?customFont.family():'';
+            if(d.shown===wanted&&(d.fontKey||'')===fontKey||!d.bitmap._context)return;
             var current={};try{
                 Object.keys(d.styles).forEach(function(key){current[key]=d.bitmap[key];d.bitmap[key]=d.styles[key];});
-                d.bitmap._context.putImageData(d.image,d.x,d.y);var args=d.args.slice();args[0]=wanted;d.original.apply(d.bitmap,args);d.shown=wanted;
+                d.bitmap._context.putImageData(d.image,d.x,d.y);var args=d.args.slice();args[0]=wanted;d.original.apply(d.bitmap,args);d.shown=wanted;d.fontKey=fontKey;
                 if(d.bitmap._setDirty)d.bitmap._setDirty();else if(d.bitmap._baseTexture&&d.bitmap._baseTexture.update)d.bitmap._baseTexture.update();
             }catch(_){}finally{Object.keys(current).forEach(function(key){d.bitmap[key]=current[key];});}
         });}finally{replaying=false;}
@@ -182,16 +287,18 @@ function createFusionRpgTranslation(g) {
         wrap(g.Game_Message&&g.Game_Message.prototype,"allText",function(original){return function(){return text(original.apply(this,arguments),null,true);};});
         wrap(g.Window_Message.prototype,"startMessage",function(original){return function(){
             if(g.$gameMessage&&rawAllText){this._fusionOriginal=rawAllText.call(g.$gameMessage);this._fusionShownText=text(this._fusionOriginal,null,true);}
+            resetMessagePage(this);
             return original.apply(this,arguments);
         };});
+        wrap(g.Window_Message.prototype,"newPage",function(original){return function(){resetMessagePage(this);return original.apply(this,arguments);};});
         bitmapHooks();return true;
     }
-    function refresh(all,changed){
+    function refresh(all,changed,fontOnly){
         var list=windows;windows=[];
         if(g.SceneManager&&g.SceneManager._scene&&g.SceneManager._scene._windowLayer)list=list.concat(g.SceneManager._scene._windowLayer.children||[]);
         list.filter(function(w,i){return list.indexOf(w)===i;}).forEach(function(w){try{if(w.visible&&typeof w.refresh==="function"&&!(w instanceof g.Window_Message)&&(all||Object.keys(w._fusionTexts||{}).some(function(key){return changed&&changed[key];}))){w._fusionTexts=Object.create(null);w.refresh();}}catch(_){}});
         var message=g.SceneManager&&g.SceneManager._scene&&g.SceneManager._scene._messageWindow;
-        if(message&&(message._textState||message.pause||(typeof message.isAnySubWindowActive==="function"&&message.isAnySubWindowActive()))&&g.$gameMessage&&rawAllText&&g.$gameMessage.isBusy()){
+        if(!fontOnly&&message&&(message._textState||message.pause||(typeof message.isAnySubWindowActive==="function"&&message.isAnySubWindowActive()))&&g.$gameMessage&&rawAllText&&g.$gameMessage.isBusy()){
             var source=rawAllText.call(g.$gameMessage),wanted=text(source,null,true);
             if(message._fusionShownText!==wanted){
                 var complete=!message._textState,paused=message.pause,wait=message._waitCount,fast=message._showFast;
@@ -206,10 +313,14 @@ function createFusionRpgTranslation(g) {
                 }
             }
         }
-        redraw();
+        redraw();repaintMessageFont();
     }
     function disable(){enabled=false;epoch++;queue=[];pending=Object.create(null);refresh(true);drawings=[];drawingBytes=0;return {enabled:false,epoch:epoch};}
     function command(q) {
+        if(q.op==="fontPreferences") {
+            if(!customFont||!customFont.configure)throw new Error("Font switching unavailable");
+            return customFont.configure(q).then(function(receipt){return Object.assign(receipt,{enabled:enabled,writebackPending:enabled,restorePending:enabled&&q.mode==='default',messageRedrawPending:enabled&&messageFontResult.messageRedrawPending,messageRedrawn:enabled&&messageFontResult.messageRedrawn});});
+        }
         if(q.op==="translationPrepare") {enabled=false;epoch++;cache=Object.create(null);templates=Object.create(null);templateBuckets=Object.create(null);outputs=Object.create(null);pending=Object.create(null);retry=Object.create(null);queue=[];return {enabled:false,epoch:epoch};}
         if(q.op==="translationEnable") {if(!q.prepared){epoch++;cache=Object.create(null);templates=Object.create(null);templateBuckets=Object.create(null);outputs=Object.create(null);pending=Object.create(null);retry=Object.create(null);queue=[];}enabled=true;if(install())refresh(true);return {enabled:true,epoch:epoch};}
         if(q.op==="translationDisable")return disable();

@@ -8,7 +8,7 @@ using WI = System.Windows.Input;
 namespace ScreenshotTranslationUiTester;
 
 // Native preference pages bind to the draft, never to hidden Forms controls.
-internal sealed class WpfDesktopSettingsPage : IDisposable
+internal sealed partial class WpfDesktopSettingsPage : IDisposable
 {
     private readonly IDesktopSettingsHost host;
     private readonly DesktopSettingsDraft state;
@@ -54,16 +54,16 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
         row.Children.Add(title); WC.Grid.SetColumn(value, 1); row.Children.Add(value); section.Children.Add(row);
         if (label.Length > 0) refresh.Add(() => W.Automation.AutomationProperties.SetName(value, UiLanguage.Text(label)));
     }
-    private WC.TextBlock Text(string text, bool muted = true)
+    private WC.TextBlock Text(string text, bool muted = true, bool localize = true)
     {
         var view = new WC.TextBlock { TextWrapping = W.TextWrapping.Wrap };
         view.SetResourceReference(WC.TextBlock.ForegroundProperty, muted ? "Fusion.Muted" : "Fusion.Text");
-        refresh.Add(() => view.Text = UiLanguage.Text(text)); return view;
+        refresh.Add(() => view.Text = localize ? UiLanguage.Text(text) : text); return view;
     }
-    private WC.TextBlock DynamicText(Func<string> text)
+    private WC.TextBlock DynamicText(Func<string> text, bool localize = true)
     {
         var view = new WC.TextBlock { TextWrapping = W.TextWrapping.Wrap }; view.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted");
-        refresh.Add(() => view.Text = UiLanguage.Text(text())); return view;
+        refresh.Add(() => view.Text = localize ? UiLanguage.Text(text()) : text()); return view;
     }
     private static void Identify(W.DependencyObject view, string id) => W.Automation.AutomationProperties.SetAutomationId(view, id);
     private void Watch(string property, Action update)
@@ -81,7 +81,7 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
     private WC.CheckBox CheckAction(string text, Func<bool> read, Action<bool> write)
     {
         var view = new WC.CheckBox { MinHeight = 30, VerticalContentAlignment = W.VerticalAlignment.Center }; bool syncing = false;
-        refresh.Add(() => { syncing = true; view.Content = UiLanguage.Text(text); view.IsChecked = read(); syncing = false; });
+        refresh.Add(() => { syncing = true; view.Content = new WC.TextBlock { Text=UiLanguage.Text(text),TextWrapping=W.TextWrapping.Wrap }; W.Automation.AutomationProperties.SetName(view,UiLanguage.Text(text)); view.IsChecked = read(); syncing = false; });
         view.Checked += (_, _) => { if (!syncing) write(true); }; view.Unchecked += (_, _) => { if (!syncing) write(false); }; return view;
     }
     private WC.ComboBox Choice(string property, string[] labels)
@@ -110,11 +110,20 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
         void Commit(decimal value) => state.Set(property, Math.Clamp(value, min, max));
         editor.TextChanged += (_, _) => { if (!syncing && decimal.TryParse(editor.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var value) && value >= min && value <= max) Commit(value); };
         editor.LostKeyboardFocus += (_, _) => Sync();
-        editor.PreviewKeyDown += (_, e) => { if (e.Key is WI.Key.Up or WI.Key.Down) { Commit(Current() + (e.Key == WI.Key.Up ? step : -step)); e.Handled = true; } };
+        editor.PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key is WI.Key.Up or WI.Key.Down) { Commit(Current() + (e.Key == WI.Key.Up ? step : -step)); e.Handled = true; }
+            else if (e.Key == WI.Key.Enter)
+            {
+                if (decimal.TryParse(editor.Text, NumberStyles.Number, CultureInfo.CurrentCulture, out var value) && value >= min && value <= max) Commit(value);
+                Sync(); e.Handled = true;
+            }
+        };
         editor.PreviewMouseWheel += (_, e) => ScrollPage(editor, e);
         var minus = Button("−", () => Commit(Current() - step)); var plus = Button("+", () => Commit(Current() + step));
         foreach (var button in new[] { minus, plus }) { button.MinWidth = 0; button.MinHeight = 36; button.Padding = new(0); button.BorderThickness = new(0); button.Margin = new(0); }
         W.Automation.AutomationProperties.SetName(minus, UiLanguage.Text("减少")); W.Automation.AutomationProperties.SetName(plus, UiLanguage.Text("增加"));
+        WpfUiLanguage.Property(minus,W.Automation.AutomationProperties.NameProperty,"减少");WpfUiLanguage.Property(plus,W.Automation.AutomationProperties.NameProperty,"增加");
         panel.Children.Add(minus); WC.Grid.SetColumn(editor, 1); panel.Children.Add(editor); WC.Grid.SetColumn(plus, 2); panel.Children.Add(plus);
         Watch(property, Sync);
         var border = new WC.Border { Child = panel, CornerRadius = new(6), BorderThickness = new(1), HorizontalAlignment = W.HorizontalAlignment.Left };
@@ -151,9 +160,16 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
         }
         Row("主题", Flow(themes.ToArray()));
         Row("字体模式", Choice(nameof(ApiSettings.UiFontMode), ["产品默认", "自定义字体"]));
-        var fonts = Font(nameof(ApiSettings.UiFontFamily)); var actual = DynamicText(() => FontManager.ResolveUiProfile(host.NativeDraftSnapshot()).PrimaryFamily);
-        Watch(nameof(ApiSettings.UiFontMode), () => { bool custom = Get<UiFontMode>(nameof(ApiSettings.UiFontMode)) == UiFontMode.Custom; fonts.Visibility = custom ? W.Visibility.Visible : W.Visibility.Collapsed; actual.Visibility = custom ? W.Visibility.Collapsed : W.Visibility.Visible; });
-        Row("字体 / 字号", Flow(fonts, actual, Number(nameof(ApiSettings.UiFontSize), 7, 24, .5m, 1)));
+        var fonts = Font(nameof(ApiSettings.UiFontFamily)); fonts.MinHeight = 40;
+        var actual = DynamicText(() => FontManager.ResolveUiProfile(host.NativeDraftSnapshot()).PrimaryFamily, false); actual.VerticalAlignment = W.VerticalAlignment.Center;
+        var defaultFont = new WC.Border { Child = actual, MinHeight = 40, BorderThickness = new(1), CornerRadius = new(6), Padding = new(12, 6, 12, 6) };
+        defaultFont.SetResourceReference(WC.Border.BorderBrushProperty, "Fusion.Border");
+        defaultFont.SetResourceReference(WC.Border.BackgroundProperty, "Fusion.Secondary");
+        var fontSlot = new WC.Grid { Width = fonts.Width, MinHeight = 40, VerticalAlignment = W.VerticalAlignment.Center };
+        fontSlot.Children.Add(fonts); fontSlot.Children.Add(defaultFont);
+        Watch(nameof(ApiSettings.UiFontMode), () => { bool custom = Get<UiFontMode>(nameof(ApiSettings.UiFontMode)) == UiFontMode.Custom; fonts.Visibility = custom ? W.Visibility.Visible : W.Visibility.Collapsed; defaultFont.Visibility = custom ? W.Visibility.Collapsed : W.Visibility.Visible; });
+        var fontSize = Number(nameof(ApiSettings.UiFontSize), 7, 24, .5m, 1); fontSize.VerticalAlignment = W.VerticalAlignment.Center;
+        Row("字体 / 字号", Flow(fontSlot, fontSize));
         Section("游戏库外观"); Row("封面样式", Choice("LibraryCoverStyle", () => host.NativeLibraryPreferences.Portrait, x => host.NativeSaveLibraryPreferences(host.NativeLibraryPreferences with { Portrait = (bool)x }), () => [new(true, UiLanguage.Text("海报封面")), new(false, UiLanguage.Text("横向封面"))]));
         Row("封面大小", Choice("LibraryCoverSize", () => LibraryCoverSizes.IndexFor(host.NativeLibraryPreferences.CoverWidth), x => host.NativeSaveLibraryPreferences(host.NativeLibraryPreferences with { CoverWidth = LibraryCoverSizes.Widths[(int)x] }), () => LibraryCoverSizes.Labels.Select((x, i) => new ChoiceItem(i, UiLanguage.Text(x))).ToArray()));
         Row("", Text("封面视图按窗口宽度自动排满每行；列表缩略图、行高和首页最近使用也跟随大小设置，选择后立即保存。"));
@@ -166,7 +182,12 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
     }
     private void General()
     {
-        Section("语言"); Row("界面语言", Choice(nameof(ApiSettings.InterfaceLanguage), ["简体中文", "English", "Русский"])); Row("", Text("保存后切换整个软件的界面语言。游戏译文语言在“翻译方案”中设置。"));
+        Section("语言");
+        var language=Choice(nameof(ApiSettings.InterfaceLanguage),()=>Get<ApplicationLanguage>(nameof(ApiSettings.InterfaceLanguage)),
+            value=>state.Set(nameof(ApiSettings.InterfaceLanguage),value),
+            ()=>UiLanguage.Options.Select(x=>new ChoiceItem(x.Value,x.ToString())).ToArray());
+        Watch(nameof(ApiSettings.InterfaceLanguage),()=>language.SelectedValue=Get<ApplicationLanguage>(nameof(ApiSettings.InterfaceLanguage)));
+        Row("界面语言",language);Row("",Text(UiLanguage.SelectionHelp));
         Section("启动与关闭"); Row("游戏启动方式", CheckAction("默认翻译并启动游戏", () => host.NativeDefaultLaunch, value => host.NativeDefaultLaunch = value));
         Row("关闭主窗口时", Choice(nameof(ApiSettings.CloseMainWindowBehavior), ["退出程序", "最小化到托盘"])); Row("", Text("启动方式立即保存。切换游戏时，已经运行的游戏会继续运行。"));
     }
@@ -249,9 +270,15 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
     {
         Section("软件数据"); var path = new WC.TextBox { Text = AppDataPaths.Root, IsReadOnly = true, MinHeight = 36, VerticalContentAlignment = W.VerticalAlignment.Center };
         Identify(path, "DataDirectory"); Row("当前数据目录", path);
-        var notice = Text("设置、游戏库、图片、截图历史、缓存及日志统一存放在这里。"); string? pending = null;
-        Row("", Flow(Button("打开数据文件夹", () => host.NativeOpenFolder(AppDataPaths.Root)), Button("选择数据位置", () => { pending = host.NativeChooseStorageLocation() ?? pending; Refresh(); })));
-        refresh.Add(() => { if (pending is not null) notice.Text = UiLanguage.Text(pending); }); Row("", notice);
+        Row("", Button("打开数据文件夹", () => host.NativeOpenFolder(AppDataPaths.Root)));
+        Row("", Text("设置、游戏库、图片、截图历史、缓存及日志统一存放在这里。")); string? pending = null;
+        var chooseLocation = Button("迁移当前数据到空目录", () => { pending = host.NativeChooseStorageLocation() ?? pending; Refresh(); });
+        DataMigration(chooseLocation);
+        Section("更改当前数据存储位置");
+        Row("", Text("仅用于把本软件当前的数据搬到新的空文件夹。要读取旧版已有的数据，请使用上方“从旧版导入数据”。"));
+        Row("", chooseLocation);
+        var notice = new WC.TextBlock { TextWrapping = W.TextWrapping.Wrap }; notice.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted");
+        refresh.Add(() => notice.Text = pending ?? ""); Row("", notice);
         Section("存储说明"); Row("默认位置", Text("软件文件夹内的 data。目录不可写时会报告错误，不会转存到 C 盘。")); Row("游戏原存档", Text("游戏自己保存的存档仍在原位置，本软件不会移动。"));
     }
     private void Help()
@@ -263,8 +290,8 @@ internal sealed class WpfDesktopSettingsPage : IDisposable
         Section("诊断与数据"); Row("游戏退出诊断", Text("从本软件启动游戏后自动监测退出，最小化后继续。\n报告保存在本机，保留最近 50 次记录；可在游戏详情查看并导出。"));
         Row("截图识别诊断", Flow(Button("模型与运行环境管理",host.NativeOpenModelManager),Button("OCR 对比（主线）",()=>host.NativeOpenOcrComparison(false)),Button("OCR 对比（含 Windows 实验）",()=>host.NativeOpenOcrComparison(true))));
         Row("", Button("打开游戏诊断目录", host.NativeOpenGameDiagnostics));
-        Row("数据配置", Text(host.NativeSettingsPath)); Row("密钥状态", DynamicText(() => host.NativeCredentialStatus));
-        Row("当前运行环境", Text(FusionRuntime.Root + "\n缺少组件时会提示对应功能不可用；此测试版保持现有运行环境配置。"));
+        Row("数据配置", Text(host.NativeSettingsPath, localize: false)); Row("密钥状态", DynamicText(() => host.NativeCredentialStatus));
+        Row("当前运行环境", DynamicText(() => UiLanguage.FormatTemplate("{0}\n缺少组件时会提示对应功能不可用；此测试版保持现有运行环境配置。", FusionRuntime.Root), false));
         Row("译文与设置", Text("游戏译文按游戏及翻译方案保存，可在“译文与术语”中更正、重译或导入导出。\n桌面接口密钥由当前 Windows 用户加密保存；部分旧接入方式会在游戏目录写入所需配置。"));
     }
     private static void ScrollPage(W.DependencyObject from, WI.MouseWheelEventArgs e)

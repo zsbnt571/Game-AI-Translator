@@ -52,6 +52,8 @@ internal sealed class WpfProfileEditor : IDisposable
         Identify(key, "ApiKey"); Row(body, "API 密钥", key);
         key.PasswordChanged += (_, _) => { if (!syncing) state.ApiKey = key.Password; };
         Row(body, "", Check("无需密钥（本地／免鉴权）", nameof(state.AllowEmptyKey), "NoCredential"));
+        var noCredentialHelp = Text(ApiConnectionPolicy.NoCredentialHelp); Identify(noCredentialHelp, "NoCredentialHelp");
+        Row(body, "", noCredentialHelp);
         Row(body, "模型", Edit(nameof(state.Model), "ProfileModel"));
         Row(body, "首响应 / 总超时（秒）", Actions(
             Number("FirstByteTimeout", () => state.FirstTimeout, v => state.FirstTimeout = v, 10, 90),

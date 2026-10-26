@@ -129,7 +129,8 @@ public sealed class ApiSettings
     public int LastUserPreviewWidth { get; set; } = 1220;
     public int LastUserPreviewHeight { get; set; } = 800;
     public bool LastUserPreviewMaximized { get; set; }
-    public ApplicationLanguage InterfaceLanguage { get; set; } = ApplicationLanguage.SimplifiedChinese;
+    [JsonConverter(typeof(ApplicationLanguagePreferenceConverter))]
+    public ApplicationLanguage InterfaceLanguage { get; set; } = ApplicationLanguage.FollowSystem;
     public ApplicationThemeMode ThemeMode { get; set; } = ApplicationThemeMode.Night;
     public string CustomThemeMainBackground { get; set; } = "#121722";
     public string CustomThemeSecondaryBackground { get; set; } = "#1D222C";

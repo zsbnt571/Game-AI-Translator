@@ -69,6 +69,11 @@ internal static class TranslationLanguageSpans
              "\nFor Japanese dialogue translated into Chinese, also localize readable Japanese names and honorifics consistently with the dialogue. Use the supplied reading and context; do not invent a different identity. Do not leave kana names inside otherwise Chinese sentences merely because they are names. Explicit glossary spellings, verbatim passages, language-menu autonyms and protected variables remain authoritative.":"");
     }
     private static readonly Regex Pieces=new(@"(?:⟦RPG\d+⟧|[A-Za-z\u00c0-\u024f]+(?:[ , '\u2019-]+[A-Za-z\u00c0-\u024f]+)*|[\u3040-\u30ff\uff66-\uff9d\u3400-\u9fff]+|[\uac00-\ud7af\u1100-\u11ff]+(?:[ ,]+[\uac00-\ud7af\u1100-\u11ff]+)*|[\u0400-\u052f]+(?:[ ,]+[\u0400-\u052f]+)*)[,.;:!?。，；：！？]*",RegexOptions.Compiled);
+    // Lexical identifiers are indivisible: register_character must not become
+    // an untranslated UI label named "character". This only excludes explicit
+    // compound tokens from language classification; it does not exempt their
+    // surrounding prose or string arguments, infer names, or evaluate code.
+    private static readonly Regex Identifier=new(@"(?<![\p{L}\p{N}_])(?:[A-Za-z_][A-Za-z0-9_]*\.)*[A-Za-z][A-Za-z0-9]*_[A-Za-z0-9_]+(?![\p{L}\p{N}_])|(?<![\p{L}\p{N}_])[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)+(?=\s*\()",RegexOptions.Compiled|RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
     private sealed record Projection(string Source,string Plain,int[] Starts,int[] Ends)
     {
         internal string Original(int start,int length)
@@ -87,6 +92,8 @@ internal static class TranslationLanguageSpans
             ranges.Add((at,at+code.Length));cursor=at+code.Length;
         }
         foreach(Match match in Regex.Matches(source,@"⟦RPG\d+⟧|</?[^>]+>|(?:\\|\x1b)[A-Za-z]+\[[^\]]*\]"))
+            ranges.Add((match.Index,match.Index+match.Length));
+        foreach(Match match in Identifier.Matches(source))
             ranges.Add((match.Index,match.Index+match.Length));
         var merged=new List<(int Start,int End)>();
         foreach(var range in ranges.OrderBy(r=>r.Start).ThenBy(r=>r.End))
@@ -130,6 +137,9 @@ internal static class TranslationLanguageSpans
     }
     internal static string[] Required(string source,ApiSettings settings)
     {
+        var analysis=TranslationAnalysisScope.Current;
+        var key=(source,settings.TargetLanguage,settings.SourceLanguage,settings.SourceLanguage==SourceLanguageMode.Mixed?string.Join('\0',TranslationLanguagePolicy.Normalize(settings.SourceLanguages)):"");
+        if(analysis is not null&&analysis.Required.TryGetValue(key,out var cached))return cached.ToArray();
         var selected=TranslationLanguagePolicy.Selected(settings).ToHashSet(StringComparer.Ordinal);
         var keep=new List<string>();
         // Engine tokens, markup and variable names cannot become language spans.
@@ -146,7 +156,9 @@ internal static class TranslationLanguageSpans
                 !(l=="latin"&&selected.Overlaps(["en","fr","de","es","pt"]))&&l!="und");
             if(targetOnly||excluded)keep.Add(text);
         }
-        return keep.ToArray();
+        var result=keep.ToArray();
+        if(analysis is not null&&analysis.Required.Count<TranslationAnalysisScope.Limit)analysis.Required[key]=System.Collections.Immutable.ImmutableArray.CreateRange(result);
+        return result;
     }
     internal static bool Preserved(IEnumerable<string> required,string translated)
     {

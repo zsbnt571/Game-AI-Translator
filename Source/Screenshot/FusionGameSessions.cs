@@ -12,6 +12,7 @@ internal sealed class GameWorkspaceSession
     internal string Feedback { get; set; } = "";
     internal string TranslationBlockedReason { get; set; } = "";
     internal bool LaunchedWithoutBridge { get; set; }
+    internal bool TranslationRuntimePending { get; set; }
     internal GameLaunchMode LaunchMode { get; private set; }
     internal FusionGameProcessState Process { get; private set; } = FusionGameProcessState.Unknown;
     internal DateTime LaunchPendingUntil { get; private set; }
@@ -51,7 +52,7 @@ internal sealed class GameWorkspaceSession
         }
         else if (process == FusionGameProcessState.Running && Feedback == "已发起启动，正在等待运行检测。") Feedback = "";
     }
-    internal void LaunchExited(){LaunchPendingUntil=default;Observe(FusionGameProcessState.Stopped);}
+    internal void LaunchExited(){TranslationRuntimePending=false;LaunchPendingUntil=default;Observe(FusionGameProcessState.Stopped);}
 }
 
 internal sealed class GameWorkspaceSessions
@@ -95,6 +96,5 @@ internal sealed partial class FusionConfiguration
         var profile = GameSettings(new ApiSettings(),path);
         var missing = Missing(profile);
         if (missing.Count > 0) throw new InvalidOperationException("翻译方案尚缺：" + string.Join("、", missing) + "。请先编辑方案。");
-        if (string.IsNullOrEmpty(profile.ApiKey)) throw new InvalidOperationException("当前游戏适配仍需要 API 密钥，请选择已配置密钥的方案。");
     }
 }

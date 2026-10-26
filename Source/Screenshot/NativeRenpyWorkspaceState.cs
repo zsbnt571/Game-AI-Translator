@@ -9,7 +9,7 @@ internal sealed class RenpyVariableRow(JsonElement source, string label) : INoti
     public string Name => Source.GetProperty("name").GetString()!;
     private string label = label;
     public string Label { get => label; internal set { if (label == value) return; label = value; PropertyChanged?.Invoke(this, new(nameof(Label))); } }
-    public string Value => Source.GetProperty("value").ValueKind switch { JsonValueKind.True => UiLanguage.Text("开启"), JsonValueKind.False => UiLanguage.Text("关闭"), JsonValueKind.Null => UiLanguage.Text("暂无记录"), _ => Source.GetProperty("value").ToString() };
+    public string Value => Source.GetProperty("value").ValueKind switch { JsonValueKind.True => UiLanguage.SwitchText(true), JsonValueKind.False => UiLanguage.SwitchText(false), JsonValueKind.Null => UiLanguage.Text("暂无记录"), _ => Source.GetProperty("value").ToString() };
     public string Hint => UiLanguage.Text(Source.GetProperty("hint").GetString() ?? "");
     internal void RefreshLanguage(){PropertyChanged?.Invoke(this,new(nameof(Value)));PropertyChanged?.Invoke(this,new(nameof(Hint)));}
     public event PropertyChangedEventHandler? PropertyChanged;
@@ -20,7 +20,7 @@ internal sealed class NativeRenpyWorkspaceState
     internal int Scope=5, Comparison;
     internal bool Boolean, ChangedOnly, FinderVisible, NotesVisible, ValueEnabled, ValueVisible, BooleanVisible, FinderEnabled;
     internal RenpyVariableRow[] Rows = [], Selected = [];
-    internal readonly DesktopActionState Launch = new("修改并启动"), Refresh = new("刷新数据"), Apply = new("应用修改"), Undo = new("撤销上次修改"), Backup = new("打开存档备份"), Favorite = new("加入常用"), SaveNote = new("保存备注"), FinderBegin = new("开始查找"), FinderNarrow = new("继续筛选"), FinderReset = new("清除查找"), FinderToggle = new("数值查找");
+    internal readonly DesktopActionState Launch = new("修改并启动"), Toggle = new("开启修改"), Refresh = new("刷新数据"), Apply = new("应用修改"), Undo = new("撤销上次修改"), Backup = new("打开存档备份"), Favorite = new("加入常用"), SaveNote = new("保存备注"), FinderBegin = new("开始查找"), FinderNarrow = new("继续筛选"), FinderReset = new("清除查找"), FinderToggle = new("数值查找");
 }
 internal sealed record RenpyEditSession(JsonElement? Row, IGameDataConnection? Connection);
 
@@ -46,8 +46,8 @@ public sealed partial class MainForm
             state.Favorite.Enabled = state.SaveNote.Enabled = row is not null;
             state.Value = row?.GetProperty("value").ToString() ?? "";
             state.Boolean = row?.GetProperty("value").ValueKind == JsonValueKind.True;
-            state.ValueEnabled = row is not null && !_renpyDataBusy;
-            state.Apply.Enabled = row is not null && !_renpyDataBusy && SelectedScriptTranslationSession()?.Connection is { Connected: true } current && ReferenceEquals(_renpyDataSnapshotConnection, current);
+            state.ValueEnabled = SelectedScriptTranslationSession()?.Enabled==true && row is not null && !_renpyDataBusy;
+            state.Apply.Enabled = SelectedScriptTranslationSession()?.Enabled==true && row is not null && !_renpyDataBusy && SelectedScriptTranslationSession()?.Connection is { Connected: true } current && ReferenceEquals(_renpyDataSnapshotConnection, current);
         }
         finally { _renpyLoading = false; }
         NativeRenpyChanged?.Invoke();
@@ -107,6 +107,7 @@ public sealed partial class MainForm
         switch (action)
         {
             case "launch": await LaunchScriptTranslationSessionAsync("modify"); break;
+            case "toggle": await ToggleRenpyModificationAsync(); break;
             case "refresh": await RefreshRenpyDataAsync(); break;
             case "apply": await WriteRenpyDataAsync(false); break;
             case "undo": await WriteRenpyDataAsync(true); break;

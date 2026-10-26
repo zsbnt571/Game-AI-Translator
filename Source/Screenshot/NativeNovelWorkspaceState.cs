@@ -48,11 +48,13 @@ public sealed partial class MainForm
         if(NativeNovel.Search==text&&_wolfEventVariables is null)return;
         RememberNovelSelection();_wolfEventVariables=null;NativeNovel.Search=text;NativeNovel.Searches[NativeNovel.Scope]=text;FilterNativeNovelRows();
     }
-    internal void NativeNovelSelect(NovelVariableRow? row){if(ReferenceEquals(NativeNovel.Selected,row))return;NativeNovel.Selected=row;NativeNovel.Value=row?.Value??"";RenderNativeNovelState();}
+    internal void NativeNovelSelect(NovelVariableRow? row){if(ReferenceEquals(NativeNovel.Selected,row)||row is not null&&!NativeNovel.Rows.Contains(row))return;NativeNovel.Selected=row;NativeNovel.Value=row?.Value??"";RenderNativeNovelState();}
     internal void NativeNovelValue(string text)=>NativeNovel.Value=text;
     internal void NativeNovelSnapshot(NovelStateRecord? snapshot){NativeNovel.Snapshot=snapshot;RenderNativeNovelState();}
     internal Task NativeNovelCommand(string command)
     {
+        if(command is "dataSet" or "dataLock" or "dataUnlock")
+            return NativeNovelBatch(command,NativeNovel.Selected is {} selected?[selected]:[],NativeNovel.Value);
         if(command.StartsWith("scope:",StringComparison.Ordinal))
         {
             if(NativeNovel.Scope==command[6..])return Task.CompletedTask;
@@ -85,7 +87,7 @@ public sealed partial class MainForm
         NativeNovel.CandidateScopes.UnionWith(candidates.Where(item=>item.SectionKey is "characters" or "relationships").Select(item=>item.SectionKey));
         NativeNovel.CommonCandidates=candidates.Where(item=>NativeNovel.Scope switch{
                 "characters" or "relationships"=>item.SectionKey==NativeNovel.Scope,
-                "common"=>item.SectionKey is "" or "currency" or "recollection",_=>false})
+                "common"=>item.SectionKey is "" or "currency" or "recollection" or "recollection-registration",_=>false})
             .Where(item=>{if(query.Length==0)return true;var row=projection.ById![item.Source.GetProperty("id").GetString()!];return row.RawName.Contains(query,StringComparison.OrdinalIgnoreCase)||NativeNovel.NameLookup?.Invoke(row.RawName).Contains(query,StringComparison.OrdinalIgnoreCase)==true||row.Value==query||row.Source.GetProperty("id").GetString()!.Contains(query,StringComparison.OrdinalIgnoreCase);}).ToArray();
         var commonIds=NativeNovel.CommonCandidates.Select(item=>item.Source.GetProperty("id").GetString()).ToHashSet();
         NativeNovel.CommonRows=projection.Rows.Where(row=>commonIds.Contains(row.Source.GetProperty("id").GetString())).ToArray();
@@ -106,13 +108,28 @@ public sealed partial class MainForm
         NativeNovel.Value=preserveDraft&&previous is not null&&NativeNovel.Selected?.Source.GetProperty("id").GetString()==previous?draft:NativeNovel.Selected?.Value??"";
         RenderNativeNovelState();QueueNativeNovelNames();
     }
+    private bool CanStartNovelModification(GameInfo? game,bool connected)
+    {
+        if(game is null||!NovelModification(game)||_novelBusy||_gameActionRunning||_gameDetecting)return false;
+        var launch=_gameSessions.Get(game);
+        return !launch.Busy&&(connected||SameGame(_desktopGameState?.Game.ExePath,game.ExePath)&&_desktopGameState?.Process==FusionGameProcessState.Stopped&&!launch.LaunchPending);
+    }
+    private string NovelConnectionStatus(GameInfo? game,bool connected,bool active)
+    {
+        if(connected)return active?"修改已开启 · 翻译可独立开关":"已连接 · 修改关闭";
+        if(_gameDetecting)return "正在识别游戏…";
+        if(_gameActionRunning||_novelBusy||game is not null&&_gameSessions.Get(game).Busy)return "正在处理此游戏…";
+        if(game is not null&&_gameSessions.Get(game).LaunchPending)return "正在等待游戏启动…";
+        if(!SameGame(_desktopGameState?.Game.ExePath,game?.ExePath)||_desktopGameState?.Process==FusionGameProcessState.Unknown)return "正在核对游戏状态…";
+        return _desktopGameState?.Process==FusionGameProcessState.Running?"当前游戏未连接。保存并退出游戏后，使用“修改并启动”连接。":"从本软件启动并连接游戏后，可以读取变量。";
+    }
     private void RenderNativeNovelState()
     {
         var game=_selectedGame;EnsureNovelSessionView(game);EnsureNativeNovelNames();var state=NativeNovel;
         state.Path=game?.ExePath??"";
         var session=NovelSession();bool connected=session?.Connection.Connected==true,active=connected&&session!.Enabled;
-        state.Status=connected?active?"修改已开启 · 翻译可独立开关":"已连接 · 修改关闭":"从本软件启动并连接游戏后，可以读取变量。";
-        state.Start.Text=connected?active?"关闭修改":"开启修改":"修改并启动";state.Start.Enabled=NovelModification(game)&&!_novelBusy&&!_gameActionRunning;
+        state.Status=NovelConnectionStatus(game,connected,active);
+        state.Start.Text=connected?active?"关闭修改":"开启修改":"修改并启动";state.Start.Enabled=CanStartNovelModification(game,connected);
         state.Refresh.Enabled=state.Undo.Enabled=active&&!_novelBusy;
         state.Wolf=game?.AdapterId=="wolf";
         state.Speed=active?NovelSpeed(session?.Connection):1;

@@ -10,7 +10,7 @@ internal static class WpfModificationLayout
     internal const double ListHeight = 400, DetailHeight = 460, RowHeight = 48;
     internal static void Table(WC.DataGrid grid)
     {
-        grid.Height = ListHeight; grid.RowHeight = RowHeight; grid.ColumnHeaderHeight = 36;
+        grid.Height = ListHeight; grid.RowHeight = RowHeight; grid.ColumnHeaderHeight = double.NaN;
         grid.BorderThickness = new(1); grid.GridLinesVisibility = WC.DataGridGridLinesVisibility.Horizontal;
         grid.EnableRowVirtualization = grid.EnableColumnVirtualization = true;
         WC.VirtualizingPanel.SetIsVirtualizing(grid, true);
@@ -20,6 +20,17 @@ internal static class WpfModificationLayout
         grid.SetResourceReference(WC.Control.BorderBrushProperty, "Fusion.Border");
         grid.SetResourceReference(WC.DataGrid.HorizontalGridLinesBrushProperty, "Fusion.Border");
         grid.SetResourceReference(WC.DataGrid.VerticalGridLinesBrushProperty, "Fusion.Border");
+        // Longer interface languages must keep the full column heading visible.
+        // Header height may grow; row values and column identities stay intact.
+        foreach(var column in grid.Columns.Where(x=>x.Header is string))
+        {
+            var header=new W.FrameworkElementFactory(typeof(WC.TextBlock));
+            header.SetBinding(WC.TextBlock.TextProperty,new WD.Binding());
+            header.SetBinding(W.FrameworkElement.ToolTipProperty,new WD.Binding());
+            header.SetValue(WC.TextBlock.TextWrappingProperty,W.TextWrapping.Wrap);
+            header.SetValue(W.FrameworkElement.MinHeightProperty,20d);
+            column.HeaderTemplate=new W.DataTemplate{VisualTree=header};
+        }
         foreach (var column in grid.Columns.OfType<WC.DataGridTextColumn>())
         {
             // Value/status headings grow with the UI language. Fixed star

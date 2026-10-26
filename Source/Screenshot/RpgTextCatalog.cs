@@ -25,6 +25,9 @@ internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Un
     internal IReadOnlyList<EmbeddedCatalogSource> Sources {get;init;}=[];
     internal IReadOnlyList<CatalogTextOrigin> Origins {get;init;}=[];
     internal bool OriginsTruncated {get;init;}
+    // Recognized resource text can be deliberately excluded from bulk work.
+    // Keep Texts and Origins intact: a skipped sample is not an unread source.
+    internal IReadOnlySet<string>? SkippedSourceTexts {get;init;}
     internal CatalogReadReport? Report {get;init;}
 }
 internal static class RpgTextCatalog

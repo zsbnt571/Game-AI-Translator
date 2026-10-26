@@ -13,24 +13,34 @@ internal static class CatalogTranslationPreparation
     internal sealed record Progress(int Total,int Ready,int Added,int Failed,string Status);
     internal sealed record Entry(string Translation,string? ReplacesHash=null,string? GlossaryStamp=null);
     internal sealed record Document(int Version,EmbeddedTextSyntax Syntax,Dictionary<string,Entry> Entries);
-    internal static bool Supports(string engine)=>engine is "Defold" or "WOLF RPG Editor" or "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace" or "RPG Maker MV" or "RPG Maker MZ" or "TyranoBuilder" or "TyranoScript" or "Visual Novel Maker" or "ChoiceScript";
+    private static bool Unity(string engine)=>engine is "Unity Mono" or "Unity IL2CPP";
+    internal static bool Supports(string engine)=>Unity(engine)||engine is "Defold" or "WOLF RPG Editor" or "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace" or "RPG Maker MV" or "RPG Maker MZ" or "TyranoBuilder" or "TyranoScript" or "Visual Novel Maker" or "ChoiceScript";
+    // Legacy game-specific plugins own different caches. Opening this shared
+    // preparation view must not imply that those plugins can consume its output.
+    internal static bool Supports(GameInfo game)=>game.AdapterId is "web-rpg" or "web-construct" or "web-tyrano" or "web-vnmaker" or "web-choicescript"
+        ||Supports(game.Engine)&&(!Unity(game.Engine)||game.AdapterId is "unity-mono" or "unity-il2cpp");
     internal static EmbeddedTextSyntax Syntax(string engine)=>engine=="WOLF RPG Editor"?EmbeddedTextSyntax.Wolf:engine.StartsWith("RPG Maker ",StringComparison.Ordinal)?EmbeddedTextSyntax.Rpg:EmbeddedTextSyntax.Generic;
-    internal static ExperimentalRpgCatalog.Result ReadCatalog(GameInfo game,ApiSettings settings,CancellationToken token)
+    internal static ExperimentalRpgCatalog.Result ReadCatalog(GameInfo game,ApiSettings settings,CancellationToken token,bool collect=false)
     {
+        token.ThrowIfCancellationRequested();
         if(game.Engine=="Defold")return DefoldTextCatalog.Read(game.ExePath,token);
-        if(game.Engine=="WOLF RPG Editor")return WolfGameAdapter.DisplayBranches(WolfEngineCollection.Read(game.ExePath,token,collect:true));
-        if(game.Engine is "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace")return ExperimentalRpgCatalog.Read(game.ExePath,token);
-        RpgTextCatalogResult read=game.AdapterId=="web-rpg"?WebTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,settings.CatalogLanguageHint):
+        if(game.Engine=="WOLF RPG Editor")return WolfGameAdapter.DisplayBranches(WolfEngineCollection.Read(game.ExePath,token,collect));
+        if(Unity(game.Engine)&&!Supports(game))throw new IOException("此 Unity 游戏使用专用接入，未更改其译文缓存。请使用当前接入的翻译功能。");
+        RpgTextCatalogResult read=game.Engine is "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace"?RgssTextCatalog.Read(game.ExePath,token):
+            Unity(game.Engine)?UnityEmbeddedCatalog.Read(game.ExePath,token,settings):
+            game.AdapterId=="web-rpg"?WebTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,settings.CatalogLanguageHint):
             game.Engine is "RPG Maker MV" or "RPG Maker MZ"?RpgTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,preferredLanguage:settings.CatalogLanguageHint):
             WebTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,settings.CatalogLanguageHint);
-        var selected=read.Texts.ToHashSet(StringComparer.Ordinal);var origins=(read.Origins??[]).Where(o=>selected.Contains(o.Text)).ToArray();
+        var selected=read.Texts.ToHashSet(StringComparer.Ordinal);
+        var origins=(read.Origins??[]).Concat(read.Sources.Select(o=>new CatalogTextOrigin(o.Text,o.File,$"method:{o.MethodToken:x8}/il:{o.Offset:x4}",o.ContentHash,o.Kind,Container:o.ModuleId)))
+            .Where(o=>selected.Contains(o.Text)).Distinct().ToArray();
         var located=origins.Select(o=>o.Text).ToHashSet(StringComparer.Ordinal);
         var entries=origins.Select(o=>new ExperimentalRpgCatalog.Entry(o.File,o.Location,o.Text){ContentHash=o.ContentHash,Kind=o.Kind,Encoding=o.Encoding,SchemaFile=o.SchemaFile,SchemaHash=o.SchemaHash,Context=o.Context})
             .Concat(read.Texts.Where(t=>!located.Contains(t)).Select(t=>new ExperimentalRpgCatalog.Entry("catalog","display",t))).ToArray();
         var issues=read.Report?.Issues??[];
         bool completed=read.Report?.Completed??read.ReadCompleted;
         ExperimentalRpgCatalog.FileResult[] files=[new("资源目录（汇总）","读取完成",read.Texts.Length,$"已读取 {read.Files:N0} 个相关文件；详细来源保留在原文字段记录中。"),
-            ..issues.Select(i=>new ExperimentalRpgCatalog.FileResult(i.Source,i.Kind==CatalogIssueKind.Limited?"达到限制":i.Kind==CatalogIssueKind.Failed?"解析失败":"格式未支持",0,i.Reason))];
+            ..issues.Select(i=>new ExperimentalRpgCatalog.FileResult(i.Source,i.Kind==CatalogIssueKind.Skipped?"已跳过":i.Kind==CatalogIssueKind.Limited?"达到限制":i.Kind==CatalogIssueKind.Failed?"解析失败":"格式未支持",0,i.Reason))];
         return new(game.Engine,entries,files,completed,"提取结果可整批预译；已保存译文在下次翻译启动时复用。") { SourceCatalog=read };
     }
     internal static string PathFor(string exe,ApiSettings settings)=>Path.Combine(TranslationCacheReset.DirectoryFor(exe),RpgTranslationCache.Id(settings,RpgTranslationCache.Endpoint(settings.ApiUrl))+".prepared.json");
@@ -78,13 +88,19 @@ internal static class CatalogTranslationPreparation
         }
         return local with {Entries=changed??local.Entries,NeedsSave=local.NeedsSave||changed is not null,Receipts=receipts.Snapshot(changed??local.Entries)};
     }
-    internal static string[] Sources(ExperimentalRpgCatalog.Result catalog,ApiSettings settings)
+    internal static string[] Sources(ExperimentalRpgCatalog.Result catalog,ApiSettings settings,CancellationToken token=default)
     {
         var policy=new EmbeddedSourceLanguagePolicy(settings);var syntax=Syntax(catalog.Engine);
         var read=catalog.SourceCatalog;if(read is not null)policy.SelectCatalog(read.Texts,read.SelectedLanguage);
+        // A user-selected single source can prepare its explicitly selected
+        // locale table without running the game. Auto/default catalogue guesses
+        // and multi-source selections are not authority for inactive locale packs.
         bool Allowed(string text)=>read is null?policy.AllowsCatalog(text):policy.AllowsSelectedText(text)&&
-            (read.UnlocalizedSourceTexts?.Contains(text)==true||policy.AllowsActiveCatalog(text,read.TrustedSourceTexts?.Contains(text)==true)||policy.AllowsScriptCatalog(text,read.ScriptSourceLanguage));
-        return catalog.Entries.Select(e=>e.Text).Where(t=>t.Length is >0 and <=6000&&!t.Contains('\0')&&Allowed(t)&&RpgTranslationText.HasTranslatableText(t,syntax)).Distinct(StringComparer.Ordinal).Take(100000).ToArray();
+            (read.UnlocalizedSourceTexts?.Contains(text)==true||Unity(catalog.Engine)&&policy.AllowsSelectedResource(text,read.SelectedLanguage,read.TrustedSourceTexts?.Contains(text)==true)||
+                policy.AllowsActiveCatalog(text,read.TrustedSourceTexts?.Contains(text)==true)||policy.AllowsScriptCatalog(text,read.ScriptSourceLanguage));
+        // Classify each unique original once while retaining all source occurrences.
+        return catalog.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).Where(t=>
+        {token.ThrowIfCancellationRequested();return t.Length is >0 and <=6000&&!t.Contains('\0')&&read?.SkippedSourceTexts?.Contains(t)!=true&&Allowed(t)&&RpgTranslationText.HasTranslatableText(t,syntax);}).Take(100000).ToArray();
     }
     internal static bool NeedsPreparation(string exe,ExperimentalRpgCatalog.Result catalog,ApiSettings settings)
     {
@@ -100,7 +116,8 @@ internal static class CatalogTranslationPreparation
         await gate.WaitAsync(token);
         try
         {
-            var syntax=Syntax(catalog.Engine);string[] sources=Sources(catalog,settings);
+            var syntax=Syntax(catalog.Engine);string[] sources=Sources(catalog,settings,token);
+            token.ThrowIfCancellationRequested();
             TranslationOriginIndex.TrySave(exe,settings,catalog.SourceCatalog??new(catalog.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),catalog.Files.Length,[]){
                 Origins=catalog.Entries.Select(e=>ExperimentalRpgCatalog.Origin(e,"experimental-display-field")).ToArray(),
                 ReadCompleted=catalog.Complete,Report=new(catalog.Complete,[])});
@@ -108,17 +125,45 @@ internal static class CatalogTranslationPreparation
             var terminology=GameTerminology.For(store);
             var acceptedSources=sources.ToHashSet(StringComparer.Ordinal);
             terminology.Observe(sources,catalog.Entries.Where(e=>acceptedSources.Contains(e.Text)).Select(e=>ExperimentalRpgCatalog.Origin(e,"experimental-display-field")));
-            progress?.Invoke(new(sources.Length,0,0,0,"正在统一人物、地点和物品等名称…"));
-            await terminology.PrepareAsync(settings,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),token);
             document=store.Snapshot();
             var existing=RpgTranslationCache.Effective(exe,settings,syntax);
+            var previousDocument=document;
+            var previousExisting=new Dictionary<string,string>(existing,StringComparer.Ordinal);
+            var verified=existing.Where(p=>!document.Manual.ContainsKey(p.Key)&&!document.Requests.ContainsKey(p.Key)
+                &&AutomaticTranslationQuality.Valid(p.Key,p.Value,settings,document.Terms,syntax)).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal);
+            // Reuse exact verified names before starting their separate provider
+            // work. Cached dialogue is never parsed into a name translation.
+            using var terminologyOwnership=terminology.OwnSources(settings);
+            terminologyOwnership.Add(verified.Keys);
+            terminology.ReuseVerifiedTranslations(settings,verified,document,syntax,token);
+            progress?.Invoke(new(sources.Length,0,0,0,"正在统一人物、地点和物品等名称…"));
+            await terminology.PrepareAsync(settings,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),token);
+            token.ThrowIfCancellationRequested();
+            document=store.Snapshot();
+            existing=RpgTranslationCache.Effective(exe,settings,syntax);
+            var adopted=new Dictionary<string,string>(StringComparer.Ordinal);
+            foreach(var pair in previousExisting)
+                if(verified.ContainsKey(pair.Key)&&terminology.CanRebaseExact(pair.Key,pair.Value,settings,previousDocument,document,syntax))adopted[pair.Key]=pair.Value;
+            // The name request has already returned this exact source under the
+            // same profile. Persist it once into the ordinary prepared cache so
+            // the following body batches and the next process reuse its receipt.
+            foreach(var pair in terminology.PreparedTranslations(settings,sources,document))
+                if(!existing.ContainsKey(pair.Key)&&!previousExisting.ContainsKey(pair.Key)
+                    &&AutomaticTranslationQuality.Valid(pair.Key,pair.Value,settings,document.Terms,syntax))adopted[pair.Key]=pair.Value;
+            if(adopted.Count>0)
+            {
+                token.ThrowIfCancellationRequested();
+                if(!PortableDataStorage.Same(path,PathFor(exe,settings)))throw new OperationCanceledException("机器译文已重置，停止保存此前的准备结果。");
+                Save(exe,settings,syntax,adopted,adopted.Keys.ToDictionary(s=>s,s=>(string?)null,StringComparer.Ordinal),path,document.Terms);
+                existing=RpgTranslationCache.Effective(exe,settings,syntax);
+            }
             var readySources=sources.Where(t=>existing.TryGetValue(t,out var value)&&
                 (TranslationWorkspaceStore.Manual(document,t,syntax) is not null||AutomaticTranslationQuality.Valid(t,value,settings,document.Terms,syntax))).ToHashSet(StringComparer.Ordinal);
             string[] pending=sources.Where(t=>!readySources.Contains(t)||document.Requests.ContainsKey(t)&&TranslationWorkspaceStore.Manual(document,t,syntax) is null).ToArray();
             int ready=readySources.Count,added=0,failed=0,consecutiveFailures=0;
             Progress Report(string status){var p=new Progress(sources.Length,ready,added,failed,status);progress?.Invoke(p);return p;}
             Report("已有译文已读取。");if(pending.Length==0)return Report("已准备完成；已保存译文将在翻译启动时复用。");
-            if(string.IsNullOrWhiteSpace(settings.ApiUrl)||string.IsNullOrWhiteSpace(settings.Model)||!settings.AllowEmptyApiKey&&string.IsNullOrWhiteSpace(settings.ApiKey))throw new IOException("请先在游戏页面选择并配置翻译方案，再准备译文。");
+            if(!ApiConnectionPolicy.IsConfigured(settings))throw new IOException("请先在游戏页面选择并配置翻译方案，再准备译文。");
             var single=ApiSettingsSnapshot.Copy(settings);var batch=ApiSettingsSnapshot.Copy(settings);RpgTranslationPrompts.Configure(settings,single,batch);
             for(int index=0;index<pending.Length;)
             {
@@ -143,6 +188,7 @@ internal static class CatalogTranslationPreparation
                 var prompts=TranslationWorkspaceStore.WithTerms(document,group.ToArray(),single,batch);
                 var requestTerms=document.Terms;
                 var translated=await RpgTranslationBatch.Translate(group.ToArray(),prompts.Single,prompts.Batch,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),token,syntax:syntax,terms:document.Terms);
+                token.ThrowIfCancellationRequested();
                 if(!PortableDataStorage.Same(path,PathFor(exe,settings)))throw new OperationCanceledException("机器译文已重置，停止保存此前的准备结果。");
                 document=store.Snapshot(true);
                 var accepted=translated.Where(p=>group.Contains(p.Key,StringComparer.Ordinal)&&TranslationWorkspaceStore.Manual(document,p.Key,syntax) is null
@@ -178,8 +224,26 @@ internal static class CatalogTranslationPreparation
             }
             return Report(failed==0?"译文已保存；下次翻译启动将优先复用。":"部分文字未能翻译；完成部分已保存，再次准备只补缺失译文。");
         }
-        finally{gate.Release();}
+        finally
+        {
+            // A cancelled or partially completed batch can already contain
+            // durable translations. Inspect that effective layer, including
+            // human corrections, without turning font capability into game
+            // rendering acceptance or holding the save gate after a failure.
+            try
+            {
+                if(Unity(catalog.Engine)&&PortableDataStorage.Same(path,PathFor(exe,settings)))
+                {
+                    var durable=RpgTranslationCache.Effective(exe,settings,Syntax(catalog.Engine));
+                    if(durable.Count>0)UnityFontPreflight.WriteReport(exe,settings,durable,FontReportPathFor(exe,settings));
+                }
+            }
+            catch(Exception ex) when(ex is not OutOfMemoryException and not StackOverflowException)
+            {AppLog.Write("unity-font-preflight",SafeDiagnosticOutput.ExceptionSummary(ex));}
+            finally{gate.Release();}
+        }
     }
+    internal static string FontReportPathFor(string exe,ApiSettings settings)=>PathFor(exe,settings)+".font-coverage.json";
     private static void Save(string exe,ApiSettings settings,EmbeddedTextSyntax syntax,Dictionary<string,string> batch,Dictionary<string,string?> replaced,string path,IReadOnlyDictionary<string,string> terms)
     {
         // Keep the path captured before the request: a late pre-reset result

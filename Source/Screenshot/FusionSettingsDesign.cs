@@ -45,11 +45,11 @@ public sealed partial class MainForm
     private TableLayoutPanel BuildGeneralSettings()
     {
         var table=SettingsTable();
-        if(_interfaceLanguageBox.Items.Count==0)_interfaceLanguageBox.Items.AddRange(["简体中文","English","Русский"]);
-        _interfaceLanguageBox.SelectedIndex=(int)_translationOptions.InterfaceLanguage;
+        if(_interfaceLanguageBox.Items.Count==0)_interfaceLanguageBox.Items.AddRange(UiLanguage.Options);
+        _interfaceLanguageBox.SelectedItem=UiLanguage.Options.FirstOrDefault(x=>x.Value==_translationOptions.InterfaceLanguage);
         _interfaceLanguageBox.SelectedIndexChanged+=SettingsControlChanged;
         AddSettingRow(table,"界面语言",_interfaceLanguageBox);
-        AddSettingRow(table,"",Info("保存后切换整个软件的界面语言。游戏译文语言在“翻译方案”中设置。"));
+        AddSettingRow(table,"",Info(UiLanguage.SelectionHelp));
         var launch=new CheckBox{Text="默认翻译并启动游戏",AutoSize=true,Checked=_fusion?.State.DefaultGameLaunchWithTranslation==true};
         launch.CheckedChanged+=(_,_)=>{if(_fusion is null)return;_fusion.Change(next=>next.DefaultGameLaunchWithTranslation=launch.Checked);RenderGameState();UpdateSettingsSaveState("启动方式已保存");};
         AddSettingRow(table,"游戏启动方式",launch);AddSettingRow(table,"关闭主窗口时",_closeBehaviorBox);

@@ -45,7 +45,7 @@ internal sealed class LibraryMetadata
         if(!File.Exists(file))return new(StringComparer.Ordinal);
         if(new FileInfo(file).Length>4_000_000)throw new InvalidDataException();
         var result=JsonSerializer.Deserialize<Dictionary<string,LibraryAnnotation>>(File.ReadAllText(file))??throw new InvalidDataException();
-        if(result.Any(p=>!Guid.TryParseExact(p.Key,"N",out _)||p.Value is null||p.Value.ChineseName is null||p.Value.Note is null||p.Value.Tags is null||p.Value.LocalizedNames?.Any(n=>n.Key is not ("en" or "ru")||n.Value is null||n.Value.Text is null||n.Value.Text.Length>120)==true))throw new InvalidDataException();
+        if(result.Any(p=>!Guid.TryParseExact(p.Key,"N",out _)||p.Value is null||p.Value.ChineseName is null||p.Value.Note is null||p.Value.Tags is null||p.Value.LocalizedNames?.Any(n=>!InterfaceDisplayLanguage.KnownLocalizedCode(n.Key)||n.Value is null||n.Value.Text is null||n.Value.Text.Length>120)==true))throw new InvalidDataException();
         return result;
     }
     internal LibraryAnnotation Get(string id)=>values.GetValueOrDefault(id)??new();
@@ -123,7 +123,7 @@ internal sealed class LibraryMetadata
             Bookmark=value.Bookmark!=before.Bookmark?value.Bookmark:current.Bookmark,
             Engine=value.Engine!=before.Engine?value.Engine:current.Engine,
             Tags=value.Tags!=before.Tags?value.Tags:current.Tags};
-        foreach(var language in new[]{ApplicationLanguage.English,ApplicationLanguage.Russian})
+        foreach(var language in UiLanguage.Supported.Where(x=>x!=ApplicationLanguage.SimplifiedChinese))
         {
             var name=value.NameFor(language);
             if(name.Text!=before.NameFor(language).Text)

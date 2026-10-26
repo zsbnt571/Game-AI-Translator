@@ -41,6 +41,12 @@ internal sealed class ModificationSnapshotCache(Func<long>? clock=null)
         if(!connection.Connected||!buckets.TryGetValue(connection,out var bucket))return false;
         lock(bucket)return bucket.Generation==generation&&bucket.Entries.Count>0;
     }
+    internal bool IsLatestGeneration(IGameDataConnection connection,int generation)
+    {
+        if(!connection.Connected||!buckets.TryGetValue(connection,out var bucket))return false;
+        // Large snapshots need not be retained to establish ordering.
+        lock(bucket)return bucket.Generation==generation;
+    }
     internal Task<JsonElement> ReadAsync(string path, IGameDataConnection connection, JsonObject request, Func<JsonElement,Task<JsonElement>>? transform = null)
     {
         var bucket = buckets.GetValue(connection,_=>new()); string key = Key(path, request);

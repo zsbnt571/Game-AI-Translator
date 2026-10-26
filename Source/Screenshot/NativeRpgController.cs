@@ -12,6 +12,7 @@ public sealed partial class MainForm
     {
         private readonly MainForm owner;
         private readonly NativeRpgColumn root = new();
+        internal readonly WC.ContentControl CommonSpeedSlot = new() { Margin = new(0, 8, 0, 12) };
         private bool disposed;
         internal W.FrameworkElement View => root.View;
         private bool IsDisposed => disposed || owner.IsDisposed;
@@ -32,7 +33,8 @@ public sealed partial class MainForm
             _dataScope.Items.AddRange(names); _dataScope.SelectedIndex = 0;
             var tabs = ModificationRow();
             for (int i = 0; i < names.Length; i++) { int index = i; var tab = IconButton(names[i], "", (_, _) => _dataScope.SelectedIndex = index, i == 0, 56); tab.Name = "RpgTab" + index; tab.TabStyle = true; _dataTabs.Add(tab); tabs.Controls.Add(tab); }
-            WorkspaceAdd(root, tabs); WorkspaceAdd(root, ModificationRow(_dataLaunch, _dataToggle, _dataRefresh, IconButton("撤销上次修改", "back", async (_, _) => await ExecuteGameDataAsync(new() { ["op"] = "undo" }), false, 116)));
+            WorkspaceAdd(root, ModificationRow(_dataLaunch, _dataToggle, _dataRefresh, IconButton("撤销上次修改", "back", async (_, _) => await ExecuteGameDataAsync(new() { ["op"] = "undo" }), false, 116))); WorkspaceAdd(root, tabs);
+            root.Controls.Add(new NativeRpgElement(CommonSpeedSlot));
             _dataEventKind.Items.AddRange(new[]{"地图事件", "公共事件", "运行中事件"}.Select(UiLanguage.Text)); _dataEventKind.SelectedIndex = 0;
             _dataMapLabel = WorkspaceLabel("浏览地图"); _dataReturnMap = IconButton("跟随当前地图", "", async (_, _) => { _dataMapFollowCurrent = true; _dataSelectedMapId = 0; _dataMapSyncRevision = 0; _dataRevision++; ResetDataDetails(); await RefreshGameDataAsync(); }, false, 116);
             _dataMapToolbar = ModificationRow(_dataMapLabel, _dataMapChoice, _dataReturnMap, _dataEventKind); _dataMapToolbar.Visible = false; WorkspaceAdd(root, _dataMapToolbar);

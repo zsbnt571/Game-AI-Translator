@@ -24,7 +24,7 @@ init 998 python hide:
         class Data(n.object):
             def __init__(self):
                 self.queue = collections.deque()
-                self.gate = threading.Lock()
+                self.gate = threading.RLock()
                 self.generation = 0
                 self.serial = 0
                 self.entries = n.dict()
@@ -32,6 +32,9 @@ init 998 python hide:
                 self.roots = set()
                 self.cg = set()
                 self.replays = set()
+                self.replay_screens = {}
+                self.bound_replays = set()
+                self.replay_bindings_incomplete = False
                 self.classes = set()
                 self.wrappers = {}
                 self.memberships = set()
@@ -39,14 +42,69 @@ init 998 python hide:
                 self.gallery_calls={}
                 self.gallery_hooks={}
                 self.quit_due = None
-                self.inspect_script()
-                self.custom_galleries(lambda *args: None)
+                self.story_skip_owned = False
+                self.story_skip_preference = None
+                self.enabled = False
+                self.inspected = False
+                self.authorization = 0
+                self.cleanup_pending = False
                 self.previous = config.periodic_callback
                 config.periodic_callback = self.tick
-                config.after_load_callbacks.append(self.reset)
-                config.start_callbacks.append(self.reset)
+
+            def enable(self):
+                if self.enabled:return {'enabled':True}
+                if not self.inspected:
+                    self.inspect_script()
+                    self.inspected = True
+                self.authorization += 1
+                self.enabled = True
+                self.reset()
+                if self.reset not in config.after_load_callbacks:config.after_load_callbacks.append(self.reset)
+                if self.reset not in config.start_callbacks:config.start_callbacks.append(self.reset)
+                return {'enabled':True}
+
+            def revoke(self):
+                # May be called by the pipe worker. Stop override behavior at once;
+                # restore callbacks and descriptors on the next main-thread tick.
+                # Serialize against an enable currently running on the main thread.
+                with self.gate:
+                    self.enabled = False
+                    self.authorization += 1
+                    self.cleanup_pending = True
+
+            def disable(self):
+                self.revoke()
+                return self.cleanup()
+
+            def restore_story_preference(self):
+                if self.story_skip_preference is not None:
+                    if renpy.game.preferences.skip_unseen is True:
+                        renpy.game.preferences.skip_unseen=self.story_skip_preference
+                    self.story_skip_preference=None
+
+            def cleanup(self):
+                self.restore_story_preference()
+                if self.story_skip_owned and renpy.config.skipping=='fast':
+                    renpy.config.skipping=None
+                self.story_skip_owned=False
+                # Revocation already advanced the authorization. Cleanup must not
+                # invalidate a new request from the current authenticated session.
+                self.cleanup_pending = False
+                for (cls,predicate),(hook,original) in list(self.gallery_hooks.items()):
+                    if cls.__dict__.get(predicate) is hook:setattr(cls,predicate,original)
+                self.gallery_hooks.clear()
+                for callbacks in (config.after_load_callbacks,config.start_callbacks):
+                    if self.reset in callbacks:callbacks.remove(self.reset)
+                self.generation += 1
+                self.entries.clear()
+                self.undo[:] = []
+                return {'enabled':False}
 
             def reset(self):
+                self.restore_story_preference()
+                if self.story_skip_owned and renpy.config.skipping=='fast':renpy.config.skipping=None
+                self.story_skip_owned=False
+                if not self.enabled:return
                 self.generation += 1
                 self.entries.clear()
                 self.undo[:] = []
@@ -142,6 +200,8 @@ init 998 python hide:
                         elif node.store == 'store.persistent' and re.search(r'gallery|unlock.*cg|cg.*unlock|replay',node.varname,re.I) and not re.search(r'notify|notification|tooltip|volume|sound|enabled',node.varname,re.I):self.cg.add(node.varname)
                     parse(getattr(getattr(node, 'code', None), 'source', None), gallery)
                     if isinstance(node, renpy.ast.Screen):
+                        name=getattr(node.screen,'name',None)
+                        if isinstance(name,string_types):self.replay_screens[name]=node.screen
                         todo, seen = [(node.screen,{})], set()
                         while todo and len(seen) < 30000:
                             sl,bindings = todo.pop()
@@ -157,6 +217,160 @@ init 998 python hide:
                                 if isinstance(entry, (n.list, n.tuple)) and len(entry) > 1:
                                     parse(entry[0], context, bindings); todo.append((entry[1],bindings))
                             todo.extend((child,bindings) for child in (getattr(sl, 'children', ()) or ()))
+                self.inspect_replay_bindings()
+
+            def inspect_replay_bindings(self):
+                # Resolve only data flowing into registered standard Replay actions.
+                # Screen expressions are never eval'ed, functions/properties are
+                # never invoked, and the game's full label map is not enumerated.
+                missing=n.object();store=vars(renpy.store);budget=[30000]
+                found=set();unresolved=set();resolved=set();limited=[False];active_nodes=set()
+                def sequence(value):
+                    if type(value) is n.tuple:
+                        return value if len(value)<=2000 else missing
+                    if self.safe_list(value):
+                        return n.list.__getitem__(value,slice(None)) if n.list.__len__(value)<=2000 else missing
+                    return missing
+                def expression(node,env,depth=0):
+                    if depth>12:return missing
+                    if isinstance(node,ast.Name):return env.get(node.id,store.get(node.id,missing))
+                    if isinstance(node,(ast.List,ast.Tuple)):
+                        if len(node.elts)>2000:return missing
+                        return tuple(expression(x,env,depth+1) for x in node.elts)
+                    if isinstance(node,ast.Subscript):
+                        target=expression(node.value,env,depth+1)
+                        index=node.slice.value if isinstance(node.slice,getattr(ast,'Index',())) else node.slice
+                        key=expression(index,env,depth+1);items=sequence(target)
+                        if items is not missing and type(key) in integer_types:
+                            return items[key] if -len(items)<=key<len(items) else missing
+                        if self.safe_dict(target) and type(key) in integer_types+(n.str,type(u'')):
+                            # Native lookup is safe only when all keys are inert;
+                            # custom equality/hash implementations are not called.
+                            if n.dict.__len__(target)<=2000 and all(type(k) in integer_types+(n.str,type(u'')) for k in n.dict.keys(target)):
+                                return n.dict.get(target,key,missing)
+                        return missing
+                    if isinstance(node,ast.Call) and isinstance(node.func,ast.Name) and not node.keywords and not getattr(node,'starargs',None) and not getattr(node,'kwargs',None):
+                        name=node.func.id
+                        if name=='zip' and name not in env and 1<=len(node.args)<=8 and store.get(name,n.zip) is n.zip:
+                            inputs=[sequence(expression(x,env,depth+1)) for x in node.args]
+                            if all(x is not missing for x in inputs):return tuple(n.zip(*inputs))
+                        if name=='enumerate' and name not in env and len(node.args)==1 and store.get(name,n.enumerate) is n.enumerate:
+                            values=sequence(expression(node.args[0],env,depth+1))
+                            if values is not missing:return tuple(n.enumerate(values))
+                        return missing
+                    try:value=ast.literal_eval(node)
+                    except Exception:return missing
+                    return value if value is None or type(value) in integer_types+(n.bool,n.str,type(u'')) else missing
+                def bind(target,value,env):
+                    if isinstance(target,ast.Name):env[target.id]=value
+                    elif isinstance(target,(ast.Tuple,ast.List)):
+                        values=sequence(value)
+                        if values is missing or len(values)!=len(target.elts):values=[missing]*len(target.elts)
+                        for part,item in zip(target.elts,values):bind(part,item,env)
+                def tree(source):
+                    if not isinstance(source,string_types) or len(source)>262144:return None
+                    try:return ast.parse(source)
+                    except Exception:return None
+                def parameters(screen):
+                    info=getattr(screen,'parameters',None)
+                    entries=getattr(info,'parameters',())
+                    if isinstance(entries,n.dict):
+                        # Ren'Py 8 Signature; metadata belongs to the parsed screen.
+                        names=list(entries.keys());positional=[];defaults={}
+                        for key,value in entries.items():
+                            if getattr(value,'kind',None) in (0,1):positional.append(key)
+                            default=getattr(value,'default',None)
+                            if isinstance(default,string_types):defaults[key]=default
+                        return names,positional,defaults
+                    names=[item[0] for item in entries if isinstance(item,(n.list,n.tuple)) and len(item)==2]
+                    defaults={item[0]:item[1] for item in entries if isinstance(item,(n.list,n.tuple)) and len(item)==2 and isinstance(item[1],string_types)}
+                    return names,list(getattr(info,'positional',names)),defaults
+                def invoke(name,args,kwargs,depth,ancestry):
+                    screen=self.replay_screens.get(name)
+                    if screen is None or depth>8 or name in ancestry:return
+                    names,positional,defaults=parameters(screen)
+                    env={key:missing for key in names}
+                    for key,source in defaults.items():
+                        parsed=tree(source)
+                        if parsed and len(parsed.body)==1 and isinstance(parsed.body[0],ast.Expr):env[key]=expression(parsed.body[0].value,env)
+                    for key,value in zip(positional,args):env[key]=value
+                    for key,value in kwargs.items():
+                        if key in env:env[key]=value
+                    walk(screen,env,depth,ancestry+(name,))
+                def inspect(source,env,depth,ancestry,assign=False):
+                    parsed=tree(source)
+                    if parsed is None:return
+                    if assign:
+                        # SL2 compiles tuple-for unpacking to a simple assignment.
+                        # Other expressions remain data, not executable Python.
+                        for statement in parsed.body:
+                            if isinstance(statement,ast.Assign):
+                                value=expression(statement.value,env)
+                                for target in statement.targets:bind(target,value,env)
+                            elif isinstance(statement,ast.AugAssign):bind(statement.target,missing,env)
+                    for index,item in enumerate(ast.walk(parsed)):
+                        if index>=4000:limited[0]=True;break
+                        if not isinstance(item,ast.Call) or not isinstance(item.func,ast.Name):continue
+                        if item.func.id=='Replay' and item.args:
+                            label=expression(item.args[0],env)
+                            if type(label) in (n.str,type(u'')) and len(label)<=200 and label in renpy.game.script.namemap:
+                                found.add(label);resolved.add(source)
+                            else:unresolved.add(source)
+                        elif item.func.id in ('ShowMenu','Show','CallScreen') and item.args and not getattr(item,'starargs',None) and not getattr(item,'kwargs',None):
+                            target=expression(item.args[0],env)
+                            if type(target) not in (n.str,type(u'')):continue
+                            args=[expression(value,env) for value in item.args[1:]]
+                            kwargs={kw.arg:expression(kw.value,env) for kw in item.keywords if kw.arg is not None}
+                            invoke(target,args,kwargs,depth+1,ancestry)
+                def children(items,env,depth,ancestry):
+                    for item in items or ():
+                        if budget[0]<0:limited[0]=True;break
+                        walk(item,env,depth,ancestry)
+                def walk(sl,env,depth,ancestry):
+                    if id(sl) in active_nodes or len(active_nodes)>80:limited[0]=True;return
+                    active_nodes.add(id(sl))
+                    try:walk_node(sl,env,depth,ancestry)
+                    finally:active_nodes.remove(id(sl))
+                def walk_node(sl,env,depth,ancestry):
+                    budget[0]-=1
+                    if budget[0]<0 or len(found)>5000:limited[0]=True;return
+                    if sl is None:return
+                    if type(sl).__name__=='SLFor':
+                        parsed=tree(getattr(sl,'expression',''))
+                        values=sequence(expression(parsed.body[0].value,env)) if parsed and len(parsed.body)==1 and isinstance(parsed.body[0],ast.Expr) else missing
+                        variable=getattr(sl,'variable',None)
+                        if not isinstance(variable,string_types):return
+                        pattern=tree(variable)
+                        target=pattern.body[0].value if pattern and len(pattern.body)==1 and isinstance(pattern.body[0],ast.Expr) else None
+                        for value in [missing] if values is missing else values:
+                            if budget[0]<0:limited[0]=True;break
+                            nested=dict(env)
+                            if target is not None:bind(target,value,nested)
+                            children(getattr(sl,'children',()),nested,depth,ancestry)
+                        return
+                    if type(sl).__name__=='SLUse':
+                        target=getattr(sl,'target',None);arguments=getattr(sl,'args',None)
+                        if type(target) in (n.str,type(u'')) and not getattr(arguments,'starred_indexes',None) and not getattr(arguments,'doublestarred_indexes',None) and not getattr(arguments,'extrapos',None) and not getattr(arguments,'extrakw',None):
+                            args=[];kwargs={}
+                            for key,value in getattr(arguments,'arguments',()):
+                                parsed=tree(value)
+                                item=expression(parsed.body[0].value,env) if parsed and len(parsed.body)==1 and isinstance(parsed.body[0],ast.Expr) else missing
+                                if key is None:args.append(item)
+                                else:kwargs[key]=item
+                            invoke(target,args,kwargs,depth+1,ancestry)
+                    if type(sl).__name__=='SLPython':inspect(getattr(getattr(sl,'code',None),'source',None),env,depth,ancestry,True)
+                    for key,value in getattr(sl,'keyword',()):inspect(value,env,depth,ancestry)
+                    for value in getattr(sl,'positional',()):inspect(value,env,depth,ancestry)
+                    for entry in getattr(sl,'entries',()):
+                        if isinstance(entry,(n.list,n.tuple)) and len(entry)>1:
+                            inspect(entry[0],env,depth,ancestry);walk(entry[1],dict(env),depth,ancestry)
+                    children(getattr(sl,'children',()),env,depth,ancestry)
+                for name in sorted(self.replay_screens):
+                    if budget[0]<0:limited[0]=True;break
+                    invoke(name,[],{},0,())
+                self.replays.difference_update(self.bound_replays)
+                self.bound_replays=found;self.replays.update(found)
+                self.replay_bindings_incomplete=limited[0] or bool(unresolved-resolved)
 
             def membership_function(self,function,field):
                 if type(function) is not types.FunctionType:return False
@@ -214,20 +428,20 @@ init 998 python hide:
                         original=cls.__dict__.get(predicate)
                         installed=self.gallery_hooks.get((cls,predicate))
                         if installed is not None:
-                            if original is not installed:continue
+                            if original is not installed[0]:continue
                         elif self.membership_function(original,field):
                             def make_hook(original,field):
                                 bridge=self
                                 def effective(owner,name):
                                     # Exact string identifiers only; unrelated calls retain the game's behavior.
-                                    if type(name) in (n.str,type(u'')):
+                                    if bridge.enabled and type(name) in (n.str,type(u'')):
                                         for candidate in set(x[0] for x in bridge.gallery_calls):
                                             if vars(renpy.store).get(candidate) is owner:
                                                 override=bridge.gallery_override(['gallery',candidate,field,name])
                                                 if type(override) is n.bool:return override
                                     return original(owner,name)
                                 return effective
-                            hook=make_hook(original,field);setattr(cls,predicate,hook);self.gallery_hooks[(cls,predicate)]=hook
+                            hook=make_hook(original,field);setattr(cls,predicate,hook);self.gallery_hooks[(cls,predicate)]=(hook,original)
                         else:continue
                         for label in sorted(labels):
                             path=['gallery',root,field,label]
@@ -338,9 +552,9 @@ init 998 python hide:
             def write(self, path, value):
                 if path[0]=='gallery':self.gallery_write(path,value);return
                 if path[0]=='image':
-                    (renpy.exports.mark_image_seen if value else renpy.exports.mark_image_unseen)(path[1]);return
+                    self.write_seen_record(path,value);return
                 if path[0]=='label':
-                    (renpy.exports.mark_label_seen if value else renpy.exports.mark_label_unseen)(path[1]);return
+                    self.write_seen_record(path,value);return
                 if path[0]=='member':
                     # Persistent membership is changed in place. The list object,
                     # unrelated values, ordering and duplicates remain intact.
@@ -352,6 +566,27 @@ init 998 python hide:
                     if not field:raise DataError('数值属性已改变，请刷新列表。')
                     setattr(parent,field,value)
                 else: parent[key] = value
+
+            def write_seen_record(self,path,value):
+                # New engines provide public marking APIs. Ren'Py 7 reads the
+                # same native persistent dictionaries but has no marking APIs;
+                # preserve their membership semantics for set, clear, and undo.
+                image=path[0]=='image';name=path[1]
+                if type(name) not in (n.str,type(u'')) or not name or len(name)>200:raise DataError('此解锁记录名称不受支持。')
+                method=('mark_image_' if image else 'mark_label_')+('seen' if value else 'unseen')
+                marker=getattr(renpy.exports,method,None)
+                if marker is not None:
+                    marker(name);return
+                field='_seen_images' if image else '_seen_ever'
+                mapping=vars(renpy.game.persistent).get(field)
+                if type(mapping) is not n.dict or n.dict.__len__(mapping)>200000:raise DataError('此引擎版本的解锁记录结构暂不支持修改。')
+                def inert(key,depth=0):
+                    if type(key) in integer_types+(n.bool,n.str,type(u'')):return True
+                    return depth<3 and type(key) is n.tuple and len(key)<=16 and all(inert(part,depth+1) for part in key)
+                if not all(inert(key) for key in n.dict.keys(mapping)):raise DataError('解锁记录包含自定义对象，暂不修改。')
+                key=tuple(name.split()) if image else name
+                if value:n.dict.__setitem__(mapping,key,True)
+                else:n.dict.pop(mapping,key,None)
 
             def snapshot(self):
                 self.serial += 1
@@ -419,6 +654,8 @@ init 998 python hide:
                 # Verified CG rows come first, with their own bounded traversal.
                 # A large live-variable tree must not hide an already known gallery.
                 persistent = vars(renpy.store.persistent)
+                self.inspect_replay_bindings()
+                if self.replay_bindings_incomplete:cg_diagnostics.append({'kind':'replayBindingsUnsupported','path':'Replay','detail':'部分回放使用动态表达式，尚未确认其注册标签；未更改这些记录。'})
                 self.custom_galleries(add)
                 images=set()
                 gallery_type=vars(renpy.store).get('Gallery')
@@ -602,6 +839,40 @@ init 998 python hide:
                     # before raising Ren'Py's quit control-flow exception.
                     self.quit_due=time.time()+0.5
                     return {'accepted':True,'protocol':1}
+                if op=='dataEnable':return self.enable()
+                if op=='dataDisable':return self.disable()
+                if op=='dataStatus':return {'enabled':self.enabled}
+                if not self.enabled:raise DataError('游戏修改尚未开启。')
+                if op=='storySkip':
+                    action=getattr(renpy.store,'Skip',None)
+                    if action is None:raise DataError('此版本尚未提供剧情快进。')
+                    if renpy.exports.get_screen('choice') is not None:raise DataError('当前已到选项，请先作出选择。')
+                    if getattr(renpy.store,'main_menu',False) or getattr(renpy.exports.context(),'_menu',False):raise DataError('请先返回剧情画面。')
+                    if self.story_skip_owned and renpy.config.skipping=='fast':return {'accepted':True,'mode':'next-choice'}
+                    # This explicit testing action may skip unread text. Restore
+                    # the user's setting at the next menu, disable, or load.
+                    self.story_skip_preference=renpy.game.preferences.skip_unseen
+                    renpy.game.preferences.skip_unseen=True
+                    skip=action(fast=True,confirm=False)
+                    if not skip.get_sensitive():
+                        self.restore_story_preference()
+                        raise DataError('当前剧情暂不允许快进。')
+                    if renpy.config.skipping:
+                        self.restore_story_preference()
+                        raise DataError('请先停止游戏原有的跳过，再使用剧情快进。')
+                    self.story_skip_owned=True
+                    try:skip()
+                    except Exception:
+                        self.restore_story_preference()
+                        self.story_skip_owned=False
+                        raise
+                    return {'accepted':True,'mode':'next-choice'}
+                if op=='storySkipStop':
+                    self.restore_story_preference()
+                    if self.story_skip_owned and renpy.config.skipping=='fast':renpy.config.skipping=None
+                    self.story_skip_owned=False
+                    renpy.exports.restart_interaction()
+                    return {'stopped':True}
                 if op=='dataSnapshot':return self.snapshot()
                 if op in ('dataSet','dataSetMany'):
                     items=request.get('changes') if op=='dataSetMany' else [request]
@@ -629,8 +900,9 @@ init 998 python hide:
                 raise DataError('不支持此修改操作。')
 
             def request(self, request):
-                item=n.dict(request=request,done=threading.Event(),cancel=False)
-                with self.gate:self.queue.append(item)
+                with self.gate:
+                    item=n.dict(request=request,done=threading.Event(),cancel=False,authorization=self.authorization)
+                    self.queue.append(item)
                 if not item['done'].wait(5.0):
                     with self.gate:item['cancel']=True
                     raise DataError('游戏正忙，未执行修改，请稍后重试。')
@@ -639,16 +911,22 @@ init 998 python hide:
 
             def tick(self):
                 if self.previous:self.previous()
-                if self.quit_due is not None and time.time()>=self.quit_due:
-                    self.quit_due=None
-                    renpy.exports.quit(relaunch=False,status=0,save=False)
+                if self.story_skip_owned and renpy.config.skipping!='fast':
+                    self.restore_story_preference()
+                    self.story_skip_owned=False
                 with self.gate:
+                    if self.cleanup_pending:self.cleanup()
+                    if self.quit_due is not None and time.time()>=self.quit_due:
+                        self.quit_due=None
+                        renpy.exports.quit(relaunch=False,status=0,save=False)
                     if not self.queue:return
                     item=self.queue.popleft()
                     if item['cancel']:return
                     # Execute only on the Ren'Py main thread. Keep the gate until
                     # completion so a timed-out pending request can never write later.
-                    try:item['result']=self.run(item['request'])
+                    try:
+                        if item['request'].get('op') not in ('dataStatus','lifecycleState','prepareRestart') and item['authorization']!=self.authorization:raise DataError('游戏修改状态已改变，请重新读取数据。')
+                        item['result']=self.run(item['request'])
                     except DataError as ex:item['error']=ex.args[0]
                     except Exception:item['error']='此数据结构暂不支持修改，请刷新后重试。'
                     finally:item['done'].set()

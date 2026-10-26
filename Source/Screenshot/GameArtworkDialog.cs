@@ -9,7 +9,7 @@ internal sealed partial class ArtworkCropPreview:Control
     internal double Aspect {get;set;}=16d/9;
     private float zoom=1,centerX=.5f,centerY=.5f;
     private Point? dragging;
-    internal ArtworkCropPreview(){DoubleBuffered=true;TabStop=true;Cursor=Cursors.Hand;AccessibleName="图片裁剪预览，可拖动位置并用滚轮缩放";}
+    internal ArtworkCropPreview(){DoubleBuffered=true;TabStop=true;Cursor=Cursors.Hand;AccessibleName="图片裁剪预览，可拖动位置并用滚轮缩放";UiLanguage.Bind(this);}
     internal void SetImage(Bitmap? value){var old=image;image=value;old?.Dispose();zoom=1;centerX=centerY=.5f;Invalidate();}
     internal bool HasImage=>image is not null;
     internal RectangleF CropRectangle()

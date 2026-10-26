@@ -34,12 +34,38 @@ FORWARD(RGSSSetString,23) FORWARD(RGSSSetStringACP,24) FORWARD(RGSSSetStringUTF1
 extern "C" void RGSSInitialize(HMODULE){Ensure(20);reinterpret_cast<void(__cdecl*)(HMODULE)>(functions[20])(engine);}
 extern "C" void RGSSInitialize2(HMODULE){Ensure(21);reinterpret_cast<void(__cdecl*)(HMODULE)>(functions[21])(engine);}
 extern "C" void RGSSInitialize3(HMODULE){Ensure(22);reinterpret_cast<void(__cdecl*)(HMODULE)>(functions[22])(engine);}
+static bool ReadOwnedBridge(std::string& source) {
+ wchar_t module[32768]{};DWORD length=GetModuleFileNameW(selfModule,module,32768);
+ if(!length||length>=32768)return false;
+ std::wstring path(module,length);auto slash=path.find_last_of(L"\\/");if(slash==std::wstring::npos)return false;
+ path=path.substr(0,slash+1)+L"bridge.rb";
+ HANDLE input=CreateFileW(path.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+ if(input==INVALID_HANDLE_VALUE)return false;
+ LARGE_INTEGER size{};bool ok=GetFileSizeEx(input,&size)&&size.QuadPart>0&&size.QuadPart<=256*1024;
+ if(ok){source.resize(static_cast<size_t>(size.QuadPart));DWORD read=0;ok=ReadFile(input,&source[0],static_cast<DWORD>(source.size()),&read,nullptr)&&read==source.size();}
+ CloseHandle(input);
+ // This file is the installer's owned, hash-checked ASCII bridge. Never accept
+ // command text or an environment-provided script path as executable source.
+ return ok&&source.find('\0')==std::string::npos;
+}
+static void BootstrapFailure(const wchar_t* session,const char* text) {
+ std::wstring path(session);if(path.empty()||path.size()>32000)return;
+ path+=L"\\bridge-error.txt";
+ HANDLE output=CreateFileW(path.c_str(),GENERIC_WRITE,FILE_SHARE_READ,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
+ if(output==INVALID_HANDLE_VALUE)return;
+ DWORD written=0;WriteFile(output,text,static_cast<DWORD>(strlen(text)),&written,nullptr);CloseHandle(output);
+}
 extern "C" void RGSSGameMain(HWND window,const void* scripts,void** archives) {
  Ensure(9);
  wchar_t session[32768]{},secret[65]{};
  if(GetEnvironmentVariableW(L"FUSION_RGSS_SESSION",session,32768)>0&&GetEnvironmentVariableW(L"FUSION_RGSS_SECRET",secret,65)==64) {
-  // This is fixed, owned bootstrap code, never a received command or game text.
-  reinterpret_cast<int(__cdecl*)(const char*)>(functions[6])("load './.fusion-rgss/bridge.rb'");
+  // Native RGSS overrides Ruby's load with its resource reader, which is not
+  // ready before GameMain. Read the installer's fixed sibling file directly;
+  // RGSSEval remains the same engine-owned entrypoint used for bootstrapping.
+  std::string source;
+  if(!ReadOwnedBridge(source))BootstrapFailure(session,"RGSS owned bridge source could not be read safely.");
+  else if(reinterpret_cast<int(__cdecl*)(const char*)>(functions[6])(source.c_str())!=0)
+    BootstrapFailure(session,"RGSS owned bridge source could not be initialized.");
  }
  reinterpret_cast<void(__cdecl*)(HWND,const void*,void**)>(functions[9])(window,scripts,archives);
 }

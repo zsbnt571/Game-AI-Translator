@@ -52,6 +52,7 @@ internal sealed class WpfScreenshotWorkspace : WC.Grid, IDisposable
         left = new(model.Left); right = new(model.Right); panes.Children.Add(left); WC.Grid.SetColumn(right, 2); panes.Children.Add(right);
         splitter = new() { Width = 14, HorizontalAlignment = W.HorizontalAlignment.Stretch, VerticalAlignment = W.VerticalAlignment.Stretch, ResizeDirection = WC.GridResizeDirection.Columns, ResizeBehavior = WC.GridResizeBehavior.PreviousAndNext, Background = WM.Brushes.Transparent, ShowsPreview = false };
         W.Automation.AutomationProperties.SetName(splitter, UiLanguage.Text("调整左右分栏"));
+        WpfUiLanguage.Property(splitter,W.Automation.AutomationProperties.NameProperty,"调整左右分栏");
         WC.Grid.SetColumn(splitter, 1); panes.Children.Add(splitter);
         splitter.DragStarted += (_, _) => splitDragging = true;
         splitter.DragCompleted += (_, e) =>
@@ -81,13 +82,14 @@ internal sealed class WpfScreenshotWorkspace : WC.Grid, IDisposable
         export = Action("Export", "导出", "export", ShowExport);
         import = Action("Import", "导入图片", "image", commands.Import);
         capture = Action("Capture", "开始截图", "camera", commands.Capture, true);
-        collapse = WpfThemeResources.Button("", "sidebar-hide", () => model.SetHistoryVisible(false)); collapse.MinHeight = collapse.MinWidth = 0; collapse.Width = collapse.Height = 36; collapse.Padding = new(6); collapse.ToolTip = UiLanguage.Text("收起历史"); W.Automation.AutomationProperties.SetName(collapse, UiLanguage.Text("收起历史"));
+        collapse = WpfThemeResources.Button("", "sidebar-hide", () => model.SetHistoryVisible(false)); collapse.MinHeight = collapse.MinWidth = 0; collapse.Width = collapse.Height = 36; collapse.Padding = new(6); collapse.ToolTip = UiLanguage.Text("收起历史"); W.Automation.AutomationProperties.SetName(collapse, UiLanguage.Text("收起历史")); WpfUiLanguage.Property(collapse,W.Automation.AutomationProperties.NameProperty,"收起历史"); WpfUiLanguage.Property(collapse,W.FrameworkElement.ToolTipProperty,"收起历史");
         BuildHistoryHeader();
         var footer = new WC.StackPanel();
         var paging = new WC.StackPanel { Orientation = WC.Orientation.Horizontal, HorizontalAlignment = W.HorizontalAlignment.Center };
         previous = WpfThemeResources.Button("", "back", () => model.MovePage(-1)); next = WpfThemeResources.Button("", "next", () => model.MovePage(1));
         foreach (var b in new[] { previous, next }) { b.MinWidth = 30; b.MinHeight = 28; b.Padding = new(4); }
         W.Automation.AutomationProperties.SetName(previous, UiLanguage.Text("上一页")); W.Automation.AutomationProperties.SetName(next, UiLanguage.Text("下一页"));
+        WpfUiLanguage.Property(previous,W.Automation.AutomationProperties.NameProperty,"上一页");WpfUiLanguage.Property(next,W.Automation.AutomationProperties.NameProperty,"下一页");
         pageNumber.Width = 64; pageNumber.TextAlignment = W.TextAlignment.Center; pageNumber.VerticalAlignment = W.VerticalAlignment.Center; paging.Children.Add(previous); paging.Children.Add(pageNumber); paging.Children.Add(next); footer.Children.Add(paging);
         historyNote.Margin = new(8, 8, 8, 10); historyNote.FontSize = 11; historyNote.TextAlignment = W.TextAlignment.Center; historyNote.TextWrapping = W.TextWrapping.Wrap; footer.Children.Add(historyNote); WC.Grid.SetRow(footer, 2); history.Children.Add(footer);
         status.Margin = new(22, 0, 12, 0); status.FontSize = 11; status.TextTrimming = W.TextTrimming.CharacterEllipsis; WC.Grid.SetRow(status, 2); Children.Add(status);
@@ -116,7 +118,7 @@ internal sealed class WpfScreenshotWorkspace : WC.Grid, IDisposable
         foreach (double height in new[] { 36d, 54d, 27d }) historyHeader.RowDefinitions.Add(new() { Height = new(height) });
         historyTitle.FontWeight = W.FontWeights.SemiBold; historyTitle.VerticalAlignment = count.VerticalAlignment = W.VerticalAlignment.Center; count.FontSize = 11;
         historyHeader.Children.Add(historyTitle); WC.Grid.SetColumn(count, 1); historyHeader.Children.Add(count); WC.Grid.SetColumn(collapse, 2); historyHeader.Children.Add(collapse);
-        W.Automation.AutomationProperties.SetAutomationId(search, "ScreenshotHistorySearch"); W.Automation.AutomationProperties.SetName(search, UiLanguage.Text("搜索原文或译文")); search.ToolTip = UiLanguage.Text("搜索原文或译文");
+        W.Automation.AutomationProperties.SetAutomationId(search, "ScreenshotHistorySearch"); W.Automation.AutomationProperties.SetName(search, UiLanguage.Text("搜索原文或译文")); search.ToolTip = UiLanguage.Text("搜索原文或译文"); WpfUiLanguage.Property(search,W.Automation.AutomationProperties.NameProperty,"搜索原文或译文"); WpfUiLanguage.Property(search,W.FrameworkElement.ToolTipProperty,"搜索原文或译文");
         WC.Grid.SetRow(search, 1); WC.Grid.SetColumnSpan(search, 3); historyHeader.Children.Add(search);
         search.TextChanged += (_, _) => { if (!refreshing) model.Search(search.Text); };
         WC.Grid.SetRow(date, 2); WC.Grid.SetColumnSpan(date, 3); historyHeader.Children.Add(date);

@@ -301,7 +301,7 @@ internal sealed class RecentGamesDialog:Form
             cards.SuspendLayout();DisposeCards();tabs.RecentLimit=store.RecentLimit;
             var all=store.Snapshot(Saved);var page=pages[CurrentTab]=Math.Clamp(pages[CurrentTab],0,Math.Max(0,(all.Length-1)/PerPage));
             previous.Enabled=page>0;next.Enabled=(page+1)*PerPage<all.Length;
-            notice.Text=store.Notice.Length>0?store.Notice:$"{page+1} / {Math.Max(1,(all.Length+PerPage-1)/PerPage)} 页 · 共 {all.Length} 项 · 每页最多 {PerPage} 项";
+            notice.Text=store.Notice.Length>0?UiLanguage.Text(store.Notice):UiLanguage.FormatTemplate("{0} / {1} 页 · 共 {2} 项 · 每页最多 {3} 项",page+1,Math.Max(1,(all.Length+PerPage-1)/PerPage),all.Length,PerPage);
             if(all.Length==0)cards.Controls.Add(new Label{Text=Saved?"还没有已保存游戏。在主页或最近游戏中点“保存游戏”即可长期保留。":"还没有最近游戏。完成选择或发起启动后会记录在此。",AutoSize=true,MaximumSize=new(560,0),Margin=new(16)});
             foreach(var record in all.Skip(page*PerPage).Take(PerPage))BuildCard(record);
             cards.ResumeLayout();ResizeCards();LoadVisible();

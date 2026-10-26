@@ -25,7 +25,6 @@ public sealed partial class MainForm
         bool stopped=SameGame(_desktopGameState?.Game.ExePath,game.ExePath)&&_desktopGameState?.Process==FusionGameProcessState.Stopped;
         bool busy=_gameDetecting||session?.Busy==true||session?.LaunchPending==true;
         _gameLaunchMenu.AddAction("普通启动","play",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"plain"),stopped&&!busy);
-        if(EmbeddedGameAdapters.Handles(game))_gameLaunchMenu.AddAction("仅启动（不接入翻译）","play",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"plain-bare"),stopped&&!busy);
         var translation=_gameLaunchMenu.AddAction("翻译并启动","translate",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"launch"));
         UpdateTranslationMenuItem(translation,game,stopped,busy);
         if(nativeAnchor is not null)WpfNativeMenus.Show(_gameLaunchMenu,nativeAnchor:nativeAnchor);else if(anchor is not null)_gameLaunchMenu.Show(anchor,new Point(0,anchor.Height));

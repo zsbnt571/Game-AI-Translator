@@ -27,7 +27,7 @@ internal sealed class NativeRpgCommonBoard : NativeRpgElement
     internal NativeRpgCommonBoard(bool showTitles=true,bool fieldLayout=false) : base(new WC.StackPanel())
     {
         this.showTitles=showTitles;this.fieldLayout=fieldLayout;numbersTitle.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Text");switchesTitle.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Text");
-        var panel = (WC.StackPanel)View; panel.Children.Add(speed);panel.Children.Add(numbersTitle); panel.Children.Add(numbers); panel.Children.Add(switchesTitle); panel.Children.Add(switches);panel.Children.Add(attributes);panel.Children.Add(grouped);
+        var panel = (WC.StackPanel)View; panel.Children.Add(numbersTitle); panel.Children.Add(numbers); panel.Children.Add(switchesTitle); panel.Children.Add(switches);panel.Children.Add(attributes);panel.Children.Add(grouped);
         speed.Commit=async rate=>{if(available&&speedRow is not null&&Execute is not null)await Execute(new(){["op"]="set",["key"]="option:speed",["value"]=rate});};
         UiLanguage.LanguageChanged+=RefreshLanguage;
     }
@@ -176,7 +176,7 @@ internal sealed class NativeRpgCommonBoard : NativeRpgElement
             selectedName.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Text");selectedOriginal.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Muted");explanation.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Muted");
             W.Automation.AutomationProperties.SetAutomationId(selectedName,"CommonSelectedName:"+key);
             W.Automation.AutomationProperties.SetAutomationId(selectedOriginal,"CommonSelectedOriginal:"+key);
-            explanation.Text=key=="recollection"?"按字段名称识别的候选。请先核对用途和当前值；登记数值不一定表示已解锁。":"按字段名称归类的属性；不代表当前队伍。";
+            explanation.Text=key=="recollection-registration"?"登记字段用于关联或配置回想，不代表解锁状态。编号只标明数据库位置，不能据此对应地图事件。":key=="recollection"?"按字段名称识别的候选。请先核对用途和当前值；事件列表与状态变量的数量不一定相同。":"按字段名称归类的属性；不代表当前队伍。";
             detailPanel.Children.Add(selectedName);detailPanel.Children.Add(selectedOriginal);detailPanel.Children.Add(explanation);details.Content=detailPanel;
             View.SetResourceReference(WC.Control.ForegroundProperty,"Fusion.Text");
             objects.SetResourceReference(WC.Control.ForegroundProperty,"Fusion.Text");

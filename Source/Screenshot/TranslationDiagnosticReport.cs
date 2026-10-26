@@ -56,6 +56,7 @@ internal sealed record TranslationDiagnosticReport(DateTimeOffset CapturedAt,str
             s.WritebacksConfirmed,s.WritebacksFailed,s.NativeWritebackPending,s.FontBlockedBindings,
             s.CatalogReading,s.CatalogIncomplete,s.CatalogIssueCount,s.CatalogRetryPending,s.BridgePaused,
             s.TerminologyPendingNames,s.TerminologyPreparing,
+            s.FontDeferredComponents,FontWarningPresent=s.FontWarning.Length>0,
             RuntimeNotePresent=s.RuntimeNote.Length>0,
             FailureReasons=(s.FailureCodes??[]).Select(TranslationAttemptStatus.Reason).Distinct().ToArray()
         };

@@ -27,6 +27,7 @@ internal sealed class WolfTranslationConnection : IEmbeddedTranslationConnection
         if(!WolfGameAdapter.IsInstalled(exe))throw new IOException("翻译组件不完整或游戏已更新，请重新应用翻译。");
         string component=GameMakerGameAdapter.InGame(exe,WolfGameAdapter.Folder);
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe),CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden};
+        GameLaunchEnvironment.ClearSession(info);
         GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
         info.FileName=Path.Combine(component,"FusionWolfLaunch.exe");info.ArgumentList.Add(exe);info.ArgumentList.Add(Path.Combine(component,"FusionWolf.dll"));
         // Optional, resource-verified whole-display source contract. Unknown

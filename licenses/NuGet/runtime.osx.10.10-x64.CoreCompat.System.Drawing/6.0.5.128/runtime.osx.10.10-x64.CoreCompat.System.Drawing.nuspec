@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>runtime.osx.10.10-x64.CoreCompat.System.Drawing</id>
+    <version>6.0.5.128</version>
+    <title>macOS Native libraries for System.Drawing.Common</title>
+    <authors>runtime.osx.10.10-x64.CoreCompat.System.Drawing</authors>
+    <owners>runtime.osx.10.10-x64.CoreCompat.System.Drawing</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://raw.githubusercontent.com/CoreCompat/libgdiplus-packaging/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/CoreCompat/libgdiplus-packaging</projectUrl>
+    <description>Allows you to use System.Drawing.Common on macOS</description>
+    <copyright>Mono</copyright>
+    <repository type="git" />
+    <dependencies>
+      <group targetFramework=".NETStandard2.0" />
+    </dependencies>
+  </metadata>
+</package>

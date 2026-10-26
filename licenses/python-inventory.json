@@ -50,7 +50,9 @@
     "version": "4.9.3",
     "license": "BSD",
     "location": "runtime/venv/Lib/site-packages/antlr4_python3_runtime-4.9.3.dist-info",
-    "notices": []
+    "notices": [
+      "licenses/Python/antlr4-python3-runtime/4.9.3/LICENSE.txt"
+    ]
   },
   {
     "component": "anyio",
@@ -75,7 +77,9 @@
     "version": "0.9.76",
     "license": "Apache License 2.0",
     "location": "runtime/venv/Lib/site-packages/bce_python_sdk-0.9.76.dist-info",
-    "notices": []
+    "notices": [
+      "licenses/Python/bce-python-sdk/0.9.76/LICENSE"
+    ]
   },
   {
     "component": "certifi",
@@ -156,7 +160,9 @@
     "version": "25.12.19",
     "license": "Apache 2.0",
     "location": "runtime/venv/Lib/site-packages/flatbuffers-25.12.19.dist-info",
-    "notices": []
+    "notices": [
+      "licenses/Python/flatbuffers/25.12.19/LICENSE"
+    ]
   },
   {
     "component": "frozenlist",
@@ -316,7 +322,10 @@
     "version": "1.28.0",
     "license": "MIT License",
     "location": "runtime/venv/Lib/site-packages/onnxruntime-1.28.0.dist-info",
-    "notices": []
+    "notices": [
+      "runtime/venv/Lib/site-packages/onnxruntime/LICENSE",
+      "runtime/venv/Lib/site-packages/onnxruntime/ThirdPartyNotices.txt"
+    ]
   },
   {
     "component": "opencv-contrib-python",
@@ -510,7 +519,27 @@
     "version": "5.12.1",
     "license": "BSD-3-Clause, Apache-2.0, dependency licenses",
     "location": "runtime/venv/Lib/site-packages/pypdfium2-5.12.1.dist-info",
-    "notices": []
+    "notices": [
+      "licenses/Python/pypdfium2/5.12.1/LICENSES/Apache-2.0.txt",
+      "licenses/Python/pypdfium2/5.12.1/LICENSES/BSD-3-Clause.txt",
+      "licenses/Python/pypdfium2/5.12.1/LICENSES/CC-BY-4.0.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/abseil.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/agg23.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/fast_float.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/freetype.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/icu.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/lcms.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.ijg",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.md",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libopenjpeg.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libpng.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libtiff.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/llvm-libc.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/pdfium-binaries.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/pdfium.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/simdutf.txt",
+      "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/zlib.txt"
+    ]
   },
   {
     "component": "python-bidi",
@@ -555,7 +584,9 @@
     "version": "3.9.2",
     "license": "Apache-2.0",
     "location": "runtime/venv/Lib/site-packages/rapidocr-3.9.2.dist-info",
-    "notices": []
+    "notices": [
+      "licenses/Python/rapidocr/3.9.2/LICENSE"
+    ]
   },
   {
     "component": "requests",
@@ -619,7 +650,9 @@
     "version": "4.70.0",
     "license": "MPL-2.0 AND MIT",
     "location": "runtime/venv/Lib/site-packages/tqdm-4.70.0.dist-info",
-    "notices": []
+    "notices": [
+      "runtime/venv/Lib/site-packages/tqdm-4.70.0.dist-info/licenses/LICENCE"
+    ]
   },
   {
     "component": "typing_extensions",

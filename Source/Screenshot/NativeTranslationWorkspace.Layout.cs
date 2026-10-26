@@ -11,7 +11,7 @@ internal sealed partial class NativeTranslationWorkspace
     {
         Title=UiLanguage.Text("译文管理")+" · "+game.Name;
         heading.Text=game.Name+" · "+UiLanguage.Text(UiTargetLanguageDisplay.DisplayFromCode(settings.TargetLanguage))+" · "+
-            UiLanguage.Text(TranslationRoute.GenericTest(game.ExePath)?"通用测试独立缓存":"当前游戏译文");
+            UiLanguage.Text("当前游戏译文");
     }
     private void BuildWorkspace()
     {

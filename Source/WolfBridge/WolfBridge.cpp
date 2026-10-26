@@ -19,11 +19,13 @@
 #include <cmath>
 #include "MinHook.h"
 #include "json.hpp"
+#include "WolfSessionFiles.h"
 #include "WolfText.h"
 #include "WolfLegacyText.h"
 #include "WolfCache.h"
 #include "WolfFont.h"
 #include "WolfSpeed.h"
+#include "WolfSpeedProtocol.h"
 #include "WolfData.h"
 #include "WolfTestInput.h"
 #include "WolfTestScreen.h"
@@ -97,16 +99,11 @@ static std::string Narrow(const std::wstring& value) {
     std::string s(n,0);if(n)WideCharToMultiByte(CP_UTF8,0,value.data(),(int)value.size(),s.data(),n,nullptr,nullptr);return s;
 }
 static json Read(const wchar_t* name,size_t limit) {
-    std::error_code error;fs::path path=fs::path(folder)/name;
-    auto size=fs::file_size(path,error);if(error||size==0||size>limit)return {};
-    std::ifstream f(path,std::ios::binary);std::string s((size_t)size,0);if(!f.read(s.data(),s.size()))return {};
+    std::string s;if(!WolfSessionFiles::Read(fs::path(folder)/name,limit,s))return {};
     return json::parse(s,nullptr,false);
 }
 static bool Write(const std::wstring& name,const json& value) {
-    auto path=fs::path(folder)/name,temp=path;temp+=L".tmp";
-    auto data=value.dump(-1,' ',false,json::error_handler_t::replace);
-    {std::ofstream f(temp,std::ios::binary|std::ios::trunc);if(!f.write(data.data(),data.size()))return false;}
-    return MoveFileExW(temp.c_str(),path.c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=FALSE;
+    return WolfSessionFiles::WriteAtomic(fs::path(folder)/name,value.dump(-1,' ',false,json::error_handler_t::replace));
 }
 enum class RawRead { Invalid, Empty, Ready };
 static bool ReadRaw(void* object,char* dst,size_t* len,RawRead* status=nullptr) {
@@ -442,8 +439,14 @@ static json State(bool poll) {
 }
 static json Request(const json& q,bool& ok) {
     std::string op=q.value("op","");
+    // Speed belongs to the process session, not the editable-data lifecycle.
+    // It needs neither a variable scan nor the game's main-thread data queue.
+    if(op=="gameSpeed"||op=="speedEnable"||op=="speedDisable")return WolfSpeed::Request(q,ok);
     // Modification may wait for the main thread; do not hold the translation
     // telemetry/cache lock while waiting for it.
+    // Revoke speed before that wait: a paused/busy main thread may time out its
+    // dataDisable, but must not keep a previously authorized speed writable.
+    if(op=="dataDisable")WolfSpeed::Revoke();
     if(op.rfind("data",0)==0)return DataRequest(q,ok);
     std::lock_guard<std::mutex> lock(gate);
     if(op=="translationPrepare"){
@@ -477,8 +480,8 @@ static DWORD WINAPI Worker(void*) {
     for(;;) {
         try {
             if(GetTickCount64()>=nextWake){WolfMainThread::Wake();nextWake=GetTickCount64()+500;}
-            if(WaitForSingleObject(owner,0)==WAIT_OBJECT_0){enabled=false;WolfSpeed::Set(1);dataStop=true;WakeDataThread();break;}
-            auto stop=Read(L"stop.json",1024);if(stop.is_object()&&stop.value("secret","")==secret){enabled=false;WolfSpeed::Set(1);dataStop=true;WakeDataThread();break;}
+            if(WaitForSingleObject(owner,0)==WAIT_OBJECT_0){enabled=false;WolfSpeed::Revoke();dataStop=true;WakeDataThread();break;}
+            auto stop=Read(L"stop.json",1024);if(stop.is_object()&&stop.value("secret","")==secret){enabled=false;WolfSpeed::Revoke();dataStop=true;WakeDataThread();break;}
             if(!reply.is_null()){
                 if(Write(L"response-"+std::to_wstring(replyId)+L".json",reply)){lastId=replyId;reply=nullptr;}
             }else {
@@ -519,7 +522,7 @@ extern "C" DWORD WINAPI FusionWolfStart(void*) {
         if(legacy&&MH_CreateHook(convertTarget,(void*)LegacyConvert,(void**)&originalConvert)!=MH_OK)return 0;
         if(legacy)InstallLegacyPictureBounds(target);
         if(!WolfMainThread::Install())return 0;
-        if(!WolfSpeed::Install())return 0;
+        if(!WolfSpeed::Initialize())return 0;
         if(!legacy)WolfSentence::Install(Read(L"sentence-profile.json",4*1024*1024),
             WolfCollect::UniquePattern("55 8B EC 51 56 8B 75 0C 57 8B F9 8D 86 00 96 E7 FF 3D 9F 86 01 00 77 22 B8 1F 85 EB 51 F7 EE 8B 47 18 C1 FA 05 8B CA C1 E9 1F 03 CA 2B C1 05 F0 49 02 00 6B C0 64 03 F0 EB 2F 8D 86 90 C5 73 FF 3D 0F 27 00 00 77 22"),
             WolfCollect::UniquePattern("55 8B EC 53 8B 5D 0C 57 8B F9 3B 5F 14 77 32 56 E8 ?? ?? ?? ?? 53 FF 75 08 8B F0 89 5F 10 56 E8 ?? ?? ?? ?? 8D 45 0B C6 45 0B 00 50 8D 04 1E 50 E8 ?? ?? ?? ?? 83 C4 14 8B C7 5E 5F 5B 5D C2 08 00"));

@@ -1,50 +1,65 @@
-# Fusion R1 1.0.0 Preview 1 — 源码与构建
+# 构建与源码材料 — 1.1.0.127
 
-[English](BUILD.en.md) · [文档首页](README.md)
+[English](BUILD.en.md) · [Русский](BUILD.ru.md)
 
-对应标签为 [v1.0.0-preview.1](https://github.com/zsbnt571/Game-AI-Translator/tree/v1.0.0-preview.1)。普通用户下载 `Fusion-1.0.0.zip`，无需构建；开发者使用发布页的完整 `Fusion-1.0.0-Source.zip`。
+## 选择正确的材料
 
-## 获取材料
+- **Fusion-1.1.0-Preview3.zip** 是完整可运行程序包。
+- **Fusion-1.1.0-Preview3-Source.zip** 是完整源码资产，附带该版本对应的可分发依赖、原始许可与构建材料。
+- **Git仓库及GitHub自动Source code归档** 不包含完整二进制依赖。它们适合查看代码和提交变更，不等于开箱即用的全部构建输入。
 
-1. 从 [本版发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.0.0-preview.1) 下载完整源码附件，并按随附校验信息核对 SHA-256。
-2. 完整解压到新的可写目录，进入含有 `Source`、`Dependencies`、`tools`、`licenses`、`third-party-source` 的根目录。
-3. 按下方环境准备，从该根目录执行脚本。保留旧构建输出，使用新解压目录进行下一次构建。
+从同一版本的完整源码资产开始最直接。不要混用历史版本的载荷或任意游戏目录中的DLL。第一次NuGet还原可能需要网络；完整源码资产不等于已经证明所有工具链均可完全离线、从零重建。
 
-Git 克隆和 GitHub 自动生成的 Source code ZIP 不包含全部运行时 ZIP、DLL、生成字体与开发依赖，不能代替完整源码附件。源码与依赖文件的来源/哈希见 [SOURCE-MANIFEST.json](../SOURCE-MANIFEST.json)，Git 产品源码索引见 [git-source-index.json](../git-source-index.json)。清单的适用范围以其中声明为准，不把后续文档修改当成产品源码差异。
+项目自有代码沿用GPL-3.0-only；第三方源码、模型和二进制各有许可。见[当前第三方导航](../THIRD_PARTY_NOTICES.md)和[源码库存](../third-party-source/README.md)。
 
-## 环境与入口
+## 桌面构建
 
-- Windows x64；主程序使用 .NET 8 SDK。
-- UnrealCatalog 项目另需 .NET 10 SDK。
-- 旧 net48 辅助项目需要 .NET Framework 4.8 开发引用与 Windows SDK 10.0.26100.0 元数据。
-- 首次 NuGet 还原需要联网。独立重编 native bridge 或游戏插件另需各项目的 C++/引擎开发环境与合法编译引用。
+主要环境为Windows x64，桌面工程面向.NET 8；UnrealCatalog需要支持.NET 10的SDK。相关旧版辅助工程还使用.NET Framework 4.8开发引用与Windows SDK 10.0.26100.0。独立原生桥及插件有各自工具链，不能由主程序编译成功推定全部已重建。
 
-主程序项目：`Source/Screenshot/ScreenshotTranslationUiTester.csproj`。虽然保留历史项目文件名，生成的是当前 `GameTranslator` 程序。产品入口版本为 1.0.0；桥接及辅助组件可以保留各自的兼容版本号。
+在包含Source与tools的源码根目录执行：
 
-从源码包根目录执行：
+    powershell -ExecutionPolicy Bypass -File .\tools\Build-Desktop.ps1
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\Build-Desktop.ps1
-```
+可通过-DotNet选择dotnet程序。脚本创建新的Build目录，已有输出时拒绝覆盖。主工程的历史文件名是Source/Screenshot/ScreenshotTranslationUiTester.csproj，生成的应用名称是GameTranslator。
 
-脚本位于 [tools/Build-Desktop.ps1](../tools/Build-Desktop.ps1)，可使用 `-DotNet` 指定 dotnet 路径。脚本创建 `Build` 并拒绝覆盖已存在的输出，先构建所需辅助项目，再发布 Windows x64 主程序和现代辅助程序。net48 功能仍依赖平台组件。从根目录启动可避免历史子目录 `global.json` 意外改变 SDK 选择。
+此入口使用随源码保留的部分已编译适配资源；不会从零重建每个Unity插件、原生桥、运行库和模型。当前构建结果不等于已证明逐字节可复现或在全新系统上完整重建。独立公发构建与本地安装构建的身份和验收见[验证记录](VALIDATION-1.1.0.127.md)。
 
-该脚本不等于从零重编所有引擎插件，也不证明全新开发机上的全套重建已完成。不同 SDK、路径和环境可能产生不同二进制；不承诺逐字节可复现。
+发布构建对主程序、封面辅助和UnitySchema使用 `RuntimeFrameworkVersion=8.0.33`；脚本也向主工程显式传入 `UnitySchemaRuntimeVersion=8.0.33`。UnrealCatalog使用 `RuntimeFrameworkVersion=10.0.14`。Restore和Publish必须使用相同属性；仅更新系统运行时不会更新自包含程序包。GameMaker随附工具在对应源码依赖目录和程序包目录内单独服务其.NET 10.0.14运行时，不因此重编译业务工具。旧IL2CPP加载器内的.NET 6.0.7保持原版本，不能跨主版本直接替换。
 
-## 输入与分发边界
+脚本先构建OCR、封面和Yukar前置组件，再依次发布CoverCapture、UnitySchema、UnrealCatalog，最后发布主程序。封面组件必须先用win-x64还原并发布，主程序的封面复制目标才能找到对应资产；主程序跳过已独立完成的辅助构建。`Build/Publish`是桌面输出，三个独立辅助输出位于`Build/Helpers`，仍需按下文组装完整程序包。
 
-完整源码材料包括本版产品源码、构建使用的可分发依赖以及对应第三方来源/许可。独立重建插件需要额外工具链；既有适配 payload 的随附不等于它已在本次从零重编。
+## Unity引用只在本地提供
 
-以下内容不随公开材料提供：
+公开材料不附带Source/Plugin/References中的五个编译引用：mscorlib.dll、System.dll、System.Core.dll、UnityEngine.dll、UnityEngine.UI.dll，也不包含游戏程序集。前三份旧Mono引用因来源未钉住而保留在私有原件，不随本次公开源码分发。需要独立重建相关插件时，从合法来源在本地提供匹配引用；不要提交到Git或公开归档。
 
-- 专有 `oo2core_9_win64.dll`。主工具可在没有该文件时构建，但相应 Unreal 解压能力受限。
-- Unity 引擎编译引用 `UnityEngine.dll`、`UnityEngine.UI.dll`。需要单独重编时，通过相关脚本指定合法的本地引用；拥有引用不等于有权再次分发游戏程序集。
-- 游戏文件、游戏程序集、存档、个人 API 设置、日志、真实游戏测试素材与本机历史输出。
+旧插件入口支持外部引用目录：
 
-少数历史诊断工具含旧测试路径，这些是 fixture 引用而非随包素材。未经指定隔离目录，不要运行历史安装脚本或真实游戏探针。正常程序使用当前数据存储设置。
+    $referenceDirectory = Read-Host 'Local compile-reference directory'
+    powershell -ExecutionPolicy Bypass -File .\Source\Plugin\build.ps1 -ReferenceDirectory $referenceDirectory -OutputDirectory .\Build-local\LegacyPlugin
 
-**构建输出不是完整发布目录。** 发布仍需组装并核验 OCR/图像运行时、模型、许可证、组件清单，排除用户数据，再检查完整压缩包。不要直接把整个 Build 目录作为用户安装包。
+目录应包含该脚本要求的框架引用、UnityEngine.dll、UnityEngine.UI.dll和BepInEx.dll。脚本还支持-DotNet、-SdkVersion，应选择已安装的兼容编译器。
 
-本次发布构建完成 **615 / 615 项受控检查，全部通过**，包含 342 项界面与语言检查和 273 项修改/翻译回归检查。这些结果不等于真实游戏长期游玩或物理屏幕帧率验收。全新 Windows 开发机、全部插件独立重编和逐字节可复现不在默认声明范围内。
+Mono6工程支持以下真实属性：
 
-项目自有代码采用 GPL-3.0-only；第三方组件遵循各自许可证。见 [第三方声明](../THIRD_PARTY_NOTICES.md) 和 [已知限制](KNOWN-ISSUES.md)。
+    $frameworkReferences = Read-Host 'Local framework and UnityEngine reference directory'
+    $loaderReferences = Read-Host 'Local BepInEx Mono6 loader reference directory'
+    dotnet build .\Source\Plugin\UnityEmbedded\FusionUnityMono6.csproj -p:FrameworkReferenceDirectory="$frameworkReferences" -p:LoaderDirectory="$loaderReferences" -o .\Build-local\UnityMono6
+
+这些参数只指定引用位置，不会获取引用或授予分发许可。工程仍需其声明的其他资源。
+
+更早的UnityEmbedded/build-mono.ps1具有不同限制：-FrameworkReferenceRoot只改变框架DLL位置，不重定向UnityEngine/BepInEx；Harmony也使用既定相对引用。不能把它描述成完整的外部Unity引用选择器。仅在私人构建副本中提供它实际要求的本地文件。
+
+## 可选检查与部署边界
+
+两个历史布局自测只有在明确设置FUSION_LAYOUT_FIXTURE_ROOT时才尝试读取外部素材；相关原始游戏素材不随公开包提供。未提供合法匹配素材时，不应把这两项记作已运行通过。普通应用启动与普通构建不需要它们。
+
+本地模型的部署研究只说明如何运行外部服务。配置兼容端点并不代表Fusion集成了模型下载、训练、模型服务管理或该研究中出现的所有工具。Android及其他平台/工具研究同样不构成已交付支持。
+
+## 组装程序包
+
+编译输出不是自动完成的便携发行包。完整组装还要使用同版本的运行库、OCR/图像处理依赖和模型、原始许可证、干净的相对数据位置配置、当前文档及文件校验清单。私有配置、API密钥、用户缓存、存档、游戏资源、专有Oodle解压DLL和本机部署收据不属于公开材料。
+
+公开源码保留第三方原始声明及对应源码信息。BepInEx分发源码副本明确移除两份Unity编译引用，因而分发哈希与原上游压缩包哈希不同；详见[源码导航](../third-party-source/README.md)。库存哈希用于确认身份，不替代上游许可。
+
+[返回首页](../README.md)
+

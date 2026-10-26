@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -21,6 +22,7 @@ internal sealed class TranslationWorkspaceStore
         public string TextHash {get;init;}="";
         public string TermStamp {get;init;}="";
     }
+    internal sealed record IssueRevalidation(DateTime AtUtc,string Action,long WorkspaceRevision,string ProductVersion,Issue PreviousIssue);
     internal sealed record Document
     {
         public int Version {get;init;}=1;
@@ -144,6 +146,16 @@ internal sealed class TranslationWorkspaceStore
         Mutate(d=>{foreach(var term in terms)if(d.Terms.Count<2000&&TermValid(term.Key,term.Value)&&!d.Terms.ContainsKey(term.Key))
         {d.Terms[term.Key]=term.Value;var rule=rules?.GetValueOrDefault(term.Key);d.TermRules[term.Key]=new(rule?.Scope is "entity" or "literal"?rule.Scope:"label","automatic");}});
     }
+    internal bool AddAutomaticTermsIfCurrent(IReadOnlyDictionary<string,string> terms,IReadOnlyDictionary<string,TranslationGlossary.TermRule> rules,long revision)
+    {
+        lock(gate)
+        {
+            // Cache validation happened against this immutable snapshot. A
+            // concurrent edit/retry/deletion cannot be overwritten by adoption.
+            if(Snapshot(true).Revision!=revision)return false;
+            AddAutomaticTerms(terms,rules);return true;
+        }
+    }
     // Source evidence can classify an old entry without changing its spelling
     // or replacing an explicit newer user choice.
     internal void InferLegacyTermRules(IReadOnlyDictionary<string,TranslationGlossary.TermRule> rules)
@@ -260,6 +272,53 @@ internal sealed class TranslationWorkspaceStore
     internal Issue[] Issues()
     {
         lock(gate){try{string p=path+".issues.json";if(!File.Exists(p)||new FileInfo(p).Length>16*1024*1024)return [];return JsonSerializer.Deserialize<Issue[]>(File.ReadAllText(p))??[];}catch(IOException){return [];}catch(JsonException){return [];}}
+    }
+    internal void RecordRevalidatedIssues(IEnumerable<Issue> additions,IEnumerable<Issue> expected,long expectedRevision)
+    {
+        lock(gate)
+        {
+            // Startup revalidation only retires the exact failure it inspected.
+            // Another session's new failure or a changed human rule wins the race.
+            var inspected=expected.ToArray();
+            if(inspected.Length==0){RecordIssues(additions);return;}
+            bool sameRevision=false;
+            try{sameRevision=Snapshot(true).Revision==expectedRevision;}
+            catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException)
+            {AppLog.Write("translation-workspace",UiLanguage.Text("问题记录复核暂未完成；原有问题记录保留"),ex);}
+            var current=Issues().GroupBy(i=>i.Source,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.Last(),StringComparer.Ordinal);
+            // Reclassification of an existing cache is not a successful retry.
+            // Preserve the exact previous failure before retiring its active
+            // row; an unavailable audit location must leave that row intact.
+            var resolved=sameRevision?inspected.Where(i=>current.GetValueOrDefault(i.Source)==i&&ArchiveRevalidation(i,expectedRevision)).Select(i=>i.Source).ToArray():[];
+            RecordIssues(additions,resolved);
+        }
+    }
+    private bool ArchiveRevalidation(Issue previous,long revision)
+    {
+        const string action="cached-result-revalidated-no-provider-request";
+        try
+        {
+            // The identity is stable across a retried active-list write. A
+            // receipt is never replaced, truncated or aged out with that list.
+            string id=Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new{action,revision,previous}))).ToLowerInvariant();
+            string file=Path.Combine(path+".issue-history",id+".json");
+            if(File.Exists(file))
+            {
+                if(new FileInfo(file).Length>256*1024)return false;
+                var saved=JsonSerializer.Deserialize<IssueRevalidation>(File.ReadAllText(file));
+                return saved is not null&&saved.Action==action&&saved.WorkspaceRevision==revision&&saved.PreviousIssue==previous;
+            }
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            string version=typeof(TranslationWorkspaceStore).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"";
+            var receipt=new IssueRevalidation(DateTime.UtcNow,action,revision,version,previous);
+            // CreateNew prevents a simultaneous session from overwriting the
+            // original evidence. Flush the receipt before removing the row.
+            using var stream=new FileStream(file,FileMode.CreateNew,FileAccess.Write,FileShare.Read);
+            JsonSerializer.Serialize(stream,receipt,new JsonSerializerOptions{WriteIndented=true});stream.Flush(true);
+            return true;
+        }
+        catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException or JsonException)
+        {AppLog.Write("translation-workspace",UiLanguage.Text("问题记录复核暂未完成；原有问题记录保留"),ex);return false;}
     }
     internal void RecordIssues(IEnumerable<Issue> additions,IEnumerable<string>? resolved=null)
     {

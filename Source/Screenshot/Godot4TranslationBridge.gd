@@ -12,6 +12,11 @@ var cache = {}
 var startup_exact = {}
 var startup_loaded = false
 var staged_cache = {}
+var activation_exact = {}
+var activation_observed = {}
+var staged_exact = {}
+var staged_exact_bytes = 0
+var staged_exact_ready = false
 var preparing = false
 var pending = {}
 var entries = []
@@ -44,6 +49,7 @@ var last_id = 0
 var last_request = 0
 var elapsed = 0.0
 var chinese_font = null
+var custom_font = null
 var current_locale = ""
 var refreshing = false
 var entry_cursor = 0
@@ -51,6 +57,10 @@ var entry_refresh_max_ms = 0.0
 var scan_thread = Thread.new()
 var catalog_mutex = Mutex.new()
 var scan_stop = false
+var collection_started = false
+var font_preference_mode = "default"
+var font_preference_path = ""
+var font_preference_family = ""
 var pending_writes = {}
 var dirty_viewports = {}
 var slot_groups = []
@@ -75,23 +85,39 @@ func _ready():
     last_request = _ticks()
     current_locale = TranslationServer.get_locale()
     enabled = OS.get_environment("FUSION_GODOT_TRANSLATION") == "1"
-    _load_startup(_json(_read(session + "/startup.json", 33554432)))
+    if enabled:
+        _load_startup(_json(_read(session + "/startup.json", 33554432)))
     _prepare_font()
     get_tree().connect("node_added", Callable(self, "_added"))
     RenderingServer.connect("frame_pre_draw", Callable(self, "_before_draw"))
     RenderingServer.connect("frame_post_draw", Callable(self, "_finish_redraw"))
+    if enabled:
+        _ensure_collection()
+        _refresh(true)
+    _write("hello.json", {"pid": OS.get_process_id(), "secret": secret, "protocol": 73, "version": Engine.get_version_info().string})
+
+# A connected standby bridge must not enumerate game text or resources.
+# Enable/preparation starts collection once, without relaunching the process.
+func _ensure_collection():
+    if collection_started or not is_inside_tree():
+        return
+    collection_started = true
     _collect(get_tree().root)
-    _refresh(true)
     # Inspect configured resources to identify their language before publishing one source-language catalogue.
+    _project_catalog_resources()
+    scan_thread.start(Callable(self, "_scan_worker"))
+
+func _project_catalog_resources():
     for setting in ProjectSettings.get_property_list():
         var key = str(setting.name)
-        if key.begins_with("locale/translations") or key.begins_with("internationalization/locale/translations"):
+        # POT entries are source files, not translation binaries. Resolve their
+        # data-only import mapping before dispatching by the actual file type.
+        if key in ["locale/translations", "internationalization/locale/translations", "locale/translations_pot_files", "internationalization/locale/translations_pot_files"]:
             var value = ProjectSettings.get_setting(key)
-            if typeof(value) != TYPE_STRING and value != null:
+            if typeof(value) in [TYPE_ARRAY, TYPE_PACKED_STRING_ARRAY]:
                 for path in value:
-                    _queue_resource(str(path))
-    scan_thread.start(Callable(self, "_scan_worker"))
-    _write("hello.json", {"pid": OS.get_process_id(), "secret": secret, "protocol": 73, "version": Engine.get_version_info().string})
+                    if typeof(path) == TYPE_STRING:
+                        _queue_resource(path, true)
 
 # Read only the host's bounded snapshot for this session. Normal launches do
 # not retain translations for a later enable, and malformed rows keep originals.
@@ -102,7 +128,7 @@ func _load_startup(startup):
         return
     for source in startup.entries:
         var text = startup.entries[source]
-        if _valid(source) and typeof(text) == TYPE_STRING and text.strip_edges() != "" and text.length() <= 12000 and source.find(char(0)) < 0 and text.find(char(0)) < 0:
+        if _valid(source) and typeof(text) == TYPE_STRING and text.strip_edges() != "" and text.length() <= 12000 and not source.to_utf8_buffer().has(0) and not text.to_utf8_buffer().has(0):
             startup_exact[source] = text
     startup_loaded = true
 
@@ -220,7 +246,7 @@ func _catalog_page(cursor):
     var active_locale = TranslationServer.get_locale()
     for i in range(metadata.size()):
         var row = metadata[i]
-        if not row.kind in ["scene", "scene_binary", "resource_text", "script_tr"]:
+        if not row.kind in ["scene", "scene_binary", "resource_text", "script_tr", "script_display", "script_display_unconfirmed"]:
             continue
         var localized = str(TranslationServer.translate(row.source))
         if localized == row.source or not _valid(localized):
@@ -228,18 +254,34 @@ func _catalog_page(cursor):
         row["originalKey"] = row.source
         row["resolvedBy"] = "TranslationServer"
         row.source = localized
-        row.locale = active_locale
-        row.language = _locale_language(active_locale)
+        # Requested locale may fall back to a different Translation resource.
+        # Preserve the request separately; do not claim it is the result language.
+        row["requestedLocale"] = active_locale
+        row["originalLocale"] = row.locale
+        row["originalLanguage"] = row.language
+        row["resolvedLocale"] = ""
+        row["resourceLocale"] = ""
+        row.locale = ""
+        row.language = _text_language(localized)
+        row["languageEvidence"] = "text-inference"
         texts[i] = localized
-    # Serialized text fields in a shared scene/resource are original content.
+    # Serialized text and traced display fields in shared resources are original content.
     # An ISO locale inferred from those words is not required. Localization
-    # files and arbitrary script/data literals still need independent evidence.
+    # files, locale-dependent scripts and arbitrary literals still need independent evidence.
     var active_sources = []
     for row in metadata:
-        var base_field = row.kind in ["scene", "scene_binary", "resource_text"] and row.locale == "" and _path_language(row.path) == ""
+        var base_field = row.kind in ["scene", "scene_binary", "resource_text", "script_display", "json"] and row.locale == "" and _path_language(row.path) == ""
         if (base_field or row.get("resolvedBy", "") == "TranslationServer") and not active_sources.has(row.source):
             active_sources.append(row.source)
     result["activeSourceTexts"] = active_sources
+    # Explicit-resource preparation is distinct from actual display provenance.
+    # The desktop still requires the user's single matching source language.
+    var selected_resources = []
+    for row in metadata:
+        if row.kind in ["translation_text", "gettext", "optimized_value", "translation", "translation_plural"] and row.get("resourceLocale", "") != "":
+            if not selected_resources.has(row.source):
+                selected_resources.append(row.source)
+    result["selectedResourceTexts"] = selected_resources
     result["epoch"] = epoch
     return result
 
@@ -260,11 +302,22 @@ func _locale_language(value):
 
 func _path_language(path):
     # Whole path/file tokens only, never substrings such as 'enemy' or 'plan'.
-    var normalized = str(path).to_lower().replace("\\", "/").replace("-", "/").replace(".", "/")
+    var normalized = str(path).to_lower().replace("\\", "/").replace("-", "/").replace(".", "/").replace("_", "/")
     for token in normalized.split("/"):
         var language = _locale_language(token)
         if language != "":
             return language
+    return ""
+
+# Preserve a declared locale (including script/region); whole file/path tokens
+# are accepted, while guessed text language and arbitrary substrings are not.
+func _resource_locale(path, locale):
+    if not _locale_language(locale) in ["", "und"]:
+        return str(locale)
+    var normalized = str(path).to_lower().replace("\\", "/").replace(".", "/")
+    for token in normalized.split("/"):
+        if not _locale_language(token) in ["", "und"]:
+            return token
     return ""
 
 func _text_language(value):
@@ -450,10 +503,64 @@ func _catalog_add(value, path, key, locale, kind):
     catalog_mutex.lock()
     catalog_seen[identity] = true
     catalog.append(value)
-    catalog_metadata.append({"source": value, "path": path, "key": key, "locale": locale, "kind": kind, "language": language})
+    catalog_metadata.append({"source": value, "path": path, "key": key, "locale": locale, "kind": kind, "language": language, "resourceLocale": _resource_locale(path, locale)})
     catalog_mutex.unlock()
 
-func _queue_resource(path):
+func _catalog_path_valid(path):
+    if not path.begins_with("res://") or path.length() > 4096 or path.find("\\") >= 0 or path.to_utf8_buffer().has(0):
+        return false
+    for part in path.substr(6).split("/"):
+        if part in ["", ".", ".."] or part.find(":") >= 0:
+            return false
+    return true
+
+func _catalog_resource_path(path):
+    # Plain file reads never execute Resource loaders or attached scripts.
+    # Exported custom resources are reachable through these bounded sidecars.
+    var visited = {}
+    for hop in range(8):
+        if not _catalog_path_valid(path):
+            _warning("文本资源导入路径无效或超出游戏目录。")
+            return ""
+        if visited.has(path):
+            _warning("文本资源导入映射形成循环：" + path)
+            return ""
+        visited[path] = true
+        var sidecars = [path] if path.get_extension().to_lower() in ["remap", "import"] else [path + ".remap", path + ".import"]
+        var sidecar = ""
+        for candidate in sidecars:
+            if FileAccess.file_exists(candidate):
+                sidecar = candidate
+                break
+        if sidecar == "":
+            return path
+        if _file_size(sidecar) > 262144:
+            _warning("文本资源导入映射超过读取上限：" + sidecar)
+            return ""
+        var sidecar_bytes = _read_bytes(sidecar, 262144)
+        # Exported import metadata may include a C-string terminator. Remove
+        # only trailing padding before UTF-8 decoding; interior NUL is invalid.
+        while sidecar_bytes.size() > 0 and sidecar_bytes[sidecar_bytes.size() - 1] == 0:
+            sidecar_bytes.resize(sidecar_bytes.size() - 1)
+        if sidecar_bytes.size() == 0 or sidecar_bytes.has(0):
+            _warning("文本资源导入映射无法解析：" + sidecar)
+            return ""
+        var remap = ConfigFile.new()
+        if remap.parse(sidecar_bytes.get_string_from_utf8()) != OK or typeof(remap.get_value("remap", "path", null)) != TYPE_STRING:
+            _warning("文本资源导入映射无法解析：" + sidecar)
+            return ""
+        path = remap.get_value("remap", "path", "")
+    _warning("文本资源导入映射超过层数上限。")
+    return ""
+
+func _queue_resource(path, configured = false):
+    path = _catalog_resource_path(path)
+    if path == "":
+        return
+    if not path.get_extension().to_lower() in ["translation", "po", "tscn", "scn", "tres", "res", "json", "gd", "gdc"]:
+        if configured:
+            _warning("配置的文本资源暂不支持或未找到可读导入资源：" + path)
+        return
     # Imported 3D model scene data cannot contain GUI controls. Do not decompress
     # model geometry merely to discover there are no interface text properties.
     if path.get_extension().to_lower() == "scn":
@@ -481,6 +588,8 @@ func _scan_step():
             var path = resources.pop_front()
             if path.get_extension().to_lower() in ["json", "gd", "tscn", "tres", "po"]:
                 _extract_text(path)
+            elif path.get_extension().to_lower() == "gdc":
+                _extract_script_binary(path)
             else:
                 _binary_extract(path)
         elif directory_reader != null:
@@ -499,13 +608,11 @@ func _scan_step():
                         if not path.ends_with("/fusion_translation.gd"):
                             _queue_resource(path)
                     elif extension == "gdc":
-                        _warning("编译脚本未反编译；其未登记文字将在运行时补译。")
-                    elif extension in ["remap", "import"]:
-                        var remap = ConfigFile.new()
-                        if remap.load(path) == OK:
-                            var mapped = str(remap.get_value("remap", "path", ""))
-                            if mapped.begins_with("res://") and mapped.get_extension().to_lower() in ["scn", "tres", "res", "translation"]:
-                                _queue_resource(mapped)
+                        _queue_resource(path)
+                    elif extension in ["remap", "import"] or FileAccess.file_exists(path + ".import") or FileAccess.file_exists(path + ".remap"):
+                        # Exported listings may expose the logical extension
+                        # while hiding the .import file that maps its bytes.
+                        _queue_resource(path)
         elif directories.size() > 0:
             _directory_start(directories.pop_front())
         else:
@@ -537,6 +644,8 @@ func _extract_text(path):
             json_work.append({"value":data,"path":path,"key":"","depth":0,"accepted":false,"index":0})
     elif path.get_extension().to_lower() == "tres":
         _text_resource(source, path)
+    elif path.get_extension().to_lower() == "gd":
+        _script_catalog(_script_text_tokens(source), path)
     else:
         var expression = RegEx.new()
         var kind = "script_tr"
@@ -548,6 +657,347 @@ func _extract_text(path):
         for found in expression.search_all(source):
             var literal = found.get_string(1).replace("\n", "\\n").replace("\r", "\\r")
             _catalog_add(_json(literal), path, str(found.get_start()), "", kind)
+
+
+# Read script syntax as data only. Strings enter the catalog only when a known
+# display assignment/call (or its bounded local constant dependency) uses them.
+func _script_u32(reader):
+    if reader.bad or reader.stream.get_available_bytes() < 4:
+        reader.bad = true
+        return 0
+    return reader.stream.get_u32()
+
+func _script_skip(reader, count):
+    if count < 0 or count > reader.stream.get_available_bytes():
+        reader.bad = true
+        return
+    reader.stream.seek(reader.stream.get_position() + count)
+
+func _script_literal_string(reader):
+    var length = _script_u32(reader)
+    if reader.bad or length > 1048576 or length > reader.stream.get_available_bytes():
+        reader.bad = true
+        return ""
+    var value = reader.stream.get_data(length)[1].get_string_from_utf8()
+    _script_skip(reader, (4 - length % 4) % 4)
+    return value
+
+func _script_literal(reader):
+    # GDScript tokenizer literals are primitives. Reject every Object/container
+    # type; never deserialize objects or compile/load the script to read strings.
+    var header = _script_u32(reader)
+    var type = header & 0xffff
+    if type == 0:
+        return null
+    if type in [1, 2, 3]:
+        _script_skip(reader, 8 if header & 0x10000 else 4)
+        return null
+    if type in [4, 21]:
+        return _script_literal_string(reader)
+    if type == 22:
+        var names = _script_u32(reader)
+        var subnames = _script_u32(reader)
+        _script_u32(reader)
+        if not names & 0x80000000 or (names & 0x7fffffff) + subnames > 4096:
+            reader.bad = true
+            return null
+        for ignored in range((names & 0x7fffffff) + subnames):
+            _script_literal_string(reader)
+        return null
+    reader.bad = true
+    return null
+
+func _extract_script_binary(path):
+    var data = _read_bytes(path, 8388608)
+    var tokens = _script_binary_tokens(data)
+    if tokens == null:
+        _warning("编译脚本文字格式暂不支持或数据不完整；仍可实时补译：" + path)
+        return
+    _script_catalog(tokens, path)
+
+func _script_binary_tokens(data):
+    if data.size() < 12 or data.size() > 8388608 or data.slice(0, 4).get_string_from_ascii() != "GDSC":
+        return null
+    var version = data.decode_u32(4)
+    if not version in [100, 101]:
+        return null
+    var expanded = data.decode_u32(8)
+    if expanded > 16777216:
+        return null
+    var body = data.slice(12)
+    if expanded > 0:
+        body = body.decompress(expanded, FileAccess.COMPRESSION_ZSTD)
+        if body.size() != expanded:
+            return null
+    var reader = {"stream":StreamPeerBuffer.new(),"bad":false}
+    reader.stream.data_array = body
+    var identifiers_count = _script_u32(reader)
+    var constants_count = _script_u32(reader)
+    var lines_count = _script_u32(reader)
+    if version == 100:
+        _script_u32(reader) # Legacy reserved column count.
+    var token_count = _script_u32(reader)
+    if reader.bad or identifiers_count > 50000 or constants_count > 100000 or lines_count > 250000 or token_count > 250000:
+        return null
+    var identifiers = []
+    for index in range(identifiers_count):
+        if index % 128 == 0 and _scan_cancelled():
+            return null
+        var length = _script_u32(reader)
+        if reader.bad or length > 16384 or length * 4 > reader.stream.get_available_bytes():
+            return null
+        var bytes = reader.stream.get_data(length * 4)[1]
+        for at in range(bytes.size()):
+            bytes[at] = bytes[at] ^ 0xb6
+        identifiers.append(bytes.get_string_from_utf32())
+    var constants = []
+    for index in range(constants_count):
+        if index % 128 == 0 and _scan_cancelled():
+            return null
+        constants.append(_script_literal(reader))
+        if reader.bad:
+            return null
+    _script_skip(reader, lines_count * 16)
+    if reader.bad:
+        return null
+    var symbols = {22:"+",23:"-",24:"*",26:"/",27:"%",28:"=",29:"+=",57:"const",60:"func",70:"var",73:"[",74:"]",75:"{",76:"}",77:"(",78:")",79:",",80:";",81:"."}
+    symbols[84 if version == 101 else 83] = ":"
+    symbols[85 if version == 101 else 84] = "$"
+    var tokens = []
+    for index in range(token_count):
+        if index % 128 == 0 and _scan_cancelled():
+            return null
+        if reader.stream.get_available_bytes() < 5:
+            return null
+        var position = reader.stream.get_position()
+        var packed = reader.stream.get_u8()
+        if packed & 0x80:
+            reader.stream.seek(position)
+            packed = _script_u32(reader)
+        var line = _script_u32(reader)
+        var type = packed & 0x7f
+        var value = "?"
+        var kind = "symbol"
+        if type in [1, 2]:
+            var identifier = packed >> 8
+            if identifier >= identifiers.size():
+                return null
+            value = identifiers[identifier]
+            kind = "id"
+        elif type == 3:
+            var constant = packed >> 8
+            if constant >= constants.size():
+                return null
+            if typeof(constants[constant]) == TYPE_STRING:
+                value = constants[constant]
+                kind = "string"
+        elif symbols.has(type):
+            value = symbols[type]
+        elif type >= (100 if version == 101 else 99):
+            return null
+        if reader.bad:
+            return null
+        tokens.append({"kind":kind,"value":value,"line":line})
+    if reader.stream.get_available_bytes() != 0:
+        return null
+    return tokens
+
+
+func _script_text_tokens(source):
+    var lexer = RegEx.new()
+    lexer.compile("(?s)\"\"\".*?\"\"\"|'''.*?'''|\"(?:[^\"\\\\]|\\\\.)*\"|'(?:[^'\\\\]|\\\\.)*'|#[^\\n]*|[A-Za-z_][A-Za-z_0-9]*|:=|==|!=|<=|>=|[+*/%!-]?=|[^\\s]")
+    var tokens = []
+    var line = 1
+    var previous_end = 0
+    for found in lexer.search_all(source):
+        if tokens.size() >= 250000:
+            return []
+        line += source.substr(previous_end, found.get_start() - previous_end).count("\n")
+        var token = found.get_string()
+        previous_end = found.get_end()
+        if token.begins_with("#"):
+            continue
+        var value = token
+        var kind = "symbol"
+        if token.begins_with('"') or token.begins_with("'"):
+            var edge = 3 if token.begins_with('"""') or token.begins_with("'''") else 1
+            value = token.substr(edge, token.length() - edge * 2).c_unescape()
+            kind = "string"
+        elif token.is_valid_identifier():
+            kind = "id"
+        tokens.append({"kind":kind,"value":value,"line":line})
+        line += token.count("\n")
+    return tokens
+
+func _script_human_text(value, sentence = false):
+    if not _valid(value):
+        return false
+    var trimmed = value.strip_edges()
+    if trimmed in ["...", "…"] or (trimmed.length() == 1 and trimmed.unicode_at(0) < 128) or trimmed.trim_suffix("x").is_valid_float():
+        return false
+    if trimmed.find("://") >= 0 or trimmed.begins_with("/") or trimmed.begins_with("\\"):
+        return false
+    for extension in [".png", ".jpg", ".webp", ".ogg", ".wav", ".tscn", ".scn", ".tres", ".res", ".gd", ".gdc", ".json", ".cfg"]:
+        if trimmed.to_lower().ends_with(extension):
+            return false
+    # Machine keys and paths are not prose, including values in UI dictionaries.
+    if trimmed.find(" ") < 0 and trimmed.find("\n") < 0 and (trimmed.find("_") >= 0 or trimmed.find("/") >= 0):
+        return false
+    if sentence:
+        return (trimmed.length() >= 12 and trimmed.split(" ", false).size() >= 3) or (trimmed.length() >= 8 and (trimmed.find("。") >= 0 or trimmed.find("！") >= 0 or trimmed.find("？") >= 0))
+    return true
+
+func _text_map(data):
+    # A flat ID -> sentence table is common for descriptions/dialogue. Do not
+    # translate its identifiers, or interpret ordinary settings as a text table.
+    if typeof(data) != TYPE_DICTIONARY or data.size() < 2 or data.size() > 20000:
+        return false
+    for key in data:
+        if str(key).to_lower() in ["path", "file", "script", "url", "id", "key", "type"] or not _script_human_text(data[key], true):
+            return false
+    return true
+
+func _script_expression_end(tokens, start):
+    var depth = 0
+    var at = start
+    var line = tokens[start].line if start < tokens.size() else 0
+    while at < tokens.size() and at - start < 20000:
+        var value = tokens[at].value if tokens[at].kind == "symbol" else ""
+        if depth == 0 and (tokens[at].line > line or value in [",", ";", ")", "]", "}"]):
+            break
+        if value in ["(", "[", "{"]:
+            depth += 1
+        elif value in [")", "]", "}"]:
+            depth -= 1
+        line = tokens[at].line
+        at += 1
+    return at
+
+func _script_metadata_literal(tokens, at, start):
+    var depth = 0
+    var argument = 0
+    for before in range(at - 1, max(start - 1, at - 512), -1):
+        if tokens[before].kind != "symbol":
+            continue
+        var value = tokens[before].value
+        if value in [")", "]", "}"]:
+            depth += 1
+        elif value in ["(", "[", "{"]:
+            if depth > 0:
+                depth -= 1
+            elif value == "(" and before > 0:
+                var call_name = tokens[before - 1].value
+                return (call_name == "tr" and argument > 0) or (call_name == "tr_n" and argument > 1) or (call_name in ["get", "has", "set_item_text", "set_item_tooltip"] and argument == 0) or call_name in ["load", "preload", "get_node", "get_node_or_null"]
+            else:
+                return value == "[" and before > 0 and (tokens[before - 1].kind == "id" or tokens[before - 1].value in ["]", ")"])
+        elif value == "," and depth == 0:
+            argument += 1
+    return false
+
+func _script_catalog(tokens, path):
+    var definitions = {}
+    var sinks = []
+    var scope = ""
+    # Traced display strings can be prepared without a reported game locale.
+    # A script containing locale selectors may instead contain alternate packs:
+    # retain its discoveries, but wait for runtime/TranslationServer evidence.
+    # "No" and "id" are common UI/metadata tokens. They become locale evidence
+    # only with a selector, or together as distinct dictionary language keys.
+    var display_kind = "script_display"
+    var locale_selector = false
+    var ambiguous_keys = {}
+    for at in range(tokens.size()):
+        var token = tokens[at]
+        if token.kind == "id" and (str(token.value).to_lower().find("locale") >= 0 or str(token.value).to_lower().find("lang") >= 0):
+            locale_selector = true
+        if token.kind == "string" and str(token.value).to_lower() in ["no", "id"] and at + 2 < tokens.size() and tokens[at + 1].value == ":":
+            var value = tokens[at + 2]
+            if value.value in ["{", "["] or (value.kind == "string" and _script_human_text(value.value, true)):
+                ambiguous_keys[str(token.value).to_lower()] = true
+    for token in tokens:
+        if token.kind == "string" and _locale_language(token.value) != "" and (not str(token.value).to_lower() in ["no", "id"] or locale_selector or ambiguous_keys.size() >= 2):
+            display_kind = "script_display_unconfirmed"
+            break
+    for at in range(tokens.size()):
+        if tokens[at].kind != "string" and tokens[at].value == "func" and at + 1 < tokens.size():
+            scope = str(at) + ":" + tokens[at + 1].value
+        tokens[at]["scope"] = scope
+    for at in range(tokens.size()):
+        var token = tokens[at]
+        if token.kind == "symbol" and token.value in ["=", ":="] and at > 0 and tokens[at - 1].kind == "id":
+            var name = tokens[at - 1].value
+            for before in range(at - 1, max(-1, at - 10), -1):
+                if tokens[before].line != token.line:
+                    break
+                if tokens[before].value in ["var", "const"] and before + 1 < at:
+                    name = tokens[before + 1].value
+                    break
+            var span = {"start":at + 1,"end":_script_expression_end(tokens, at + 1),"depth":0}
+            var member_assignment = at > 1 and tokens[at - 2].value == "."
+            if not member_assignment:
+                var definition_key = token.scope + "\u001f" + name
+                if not definitions.has(definition_key):
+                    definitions[definition_key] = []
+                if definitions[definition_key].size() < 64:
+                    definitions[definition_key].append(span)
+            if member_assignment and name in ["text", "bbcode_text", "tooltip_text", "hint_tooltip", "placeholder_text", "dialog_text"]:
+                sinks.append(span)
+        elif token.kind == "id" and at + 1 < tokens.size() and tokens[at + 1].value == "(":
+            var argument_count = 0
+            if token.value in ["tr", "set_text", "set_bbcode", "append_text", "add_text", "set_tooltip_text", "set_placeholder", "set_placeholder_text", "add_item", "add_check_item", "add_radio_check_item"]:
+                argument_count = 1
+            elif token.value in ["tr_n", "set_item_text", "set_item_tooltip"]:
+                argument_count = 2
+            var start = at + 2
+            for ignored in range(argument_count):
+                var end = _script_expression_end(tokens, start)
+                sinks.append({"start":start,"end":end,"depth":0})
+                if end >= tokens.size() or tokens[end].value != ",":
+                    break
+                start = end + 1
+    var visited = {}
+    var work = 0
+    var inspected = 0
+    while sinks.size() > 0 and work < 10000 and inspected < 500000:
+        var span = sinks.pop_back()
+        work += 1
+        if span.depth > 8:
+            continue
+        var identity = str(span.start) + ":" + str(span.end)
+        if visited.has(identity):
+            continue
+        visited[identity] = true
+        for at in range(span.start, span.end):
+            inspected += 1
+            if inspected >= 500000 or (inspected % 128 == 0 and _scan_cancelled()):
+                return
+            var token = tokens[at]
+            if token.kind == "string":
+                # Dictionary keys, get_node paths and format-method arguments
+                # are metadata, even inside a display expression.
+                if at + 1 < span.end and tokens[at + 1].value == ":":
+                    continue
+                if at > 0 and tokens[at - 1].value in ["$", "^", "&"]:
+                    continue
+                if at > 1 and tokens[at - 1].value == "(" and tokens[at - 2].value in ["load", "preload", "get_node", "get_node_or_null"]:
+                    continue
+                if at > 1 and tokens[at - 1].value == "[" and (tokens[at - 2].kind == "id" or tokens[at - 2].value in ["]", ")"]):
+                    continue
+                if at > 1 and tokens[at - 1].value == "(" and tokens[at - 2].value in ["get", "has"]:
+                    continue
+                if _script_metadata_literal(tokens, at, span.start):
+                    continue
+                if _script_human_text(token.value):
+                    _catalog_add(token.value, path, "line:" + str(token.line), "", display_kind)
+            elif token.kind == "id":
+                if (at > span.start and tokens[at - 1].value == ".") or (at + 1 < span.end and tokens[at + 1].value == "("):
+                    continue
+                var definition_key = token.scope + "\u001f" + token.value
+                if not definitions.has(definition_key):
+                    definition_key = "\u001f" + token.value
+                if definitions.has(definition_key):
+                    for definition in definitions[definition_key]:
+                        sinks.append({"start":definition.start,"end":definition.end,"depth":span.depth + 1})
 
 
 func _text_field(key):
@@ -840,27 +1290,35 @@ func _json_step():
         if typeof(data) == TYPE_DICTIONARY:
             if not task.has("keys"):
                 task.keys = data.keys()
+                task.text_map = _text_map(data)
+                for locale_field in ["locale", "language", "lang"]:
+                    if data.has(locale_field) and typeof(data[locale_field]) == TYPE_STRING:
+                        var declared_locale = _locale_language(data[locale_field])
+                        if declared_locale != "":
+                            locale = declared_locale
+                            task["locale"] = locale
+                            break
                 var language_keys = {}
-                var strong_language = false
                 var clear_map = true
                 for candidate in task.keys:
                     var candidate_language = _locale_language(str(candidate))
                     if candidate_language != "" and typeof(data[candidate]) in [TYPE_STRING, TYPE_ARRAY, TYPE_DICTIONARY]:
                         language_keys[candidate_language] = true
-                        if not candidate_language in ["id", "no"]:
-                            strong_language = true
                     elif not str(candidate) in ["key", "context", "comment"]:
                         clear_map = false
-                # Business objects with id/no/name are not language dictionaries.
-                task.language_map = clear_map and strong_language and language_keys.size() >= 2
+                # Even a single-language object is a locale branch. Business
+                # objects with id/no/name/text fail clear_map and stay shared.
+                task.language_map = language_keys.size() >= 2 or (clear_map and language_keys.size() >= 1)
             child = task.keys[task.index]
             var child_locale = _locale_language(str(child))
-            if child_locale != "" and task.language_map:
+            # A version/comment alongside language branches must not erase
+            # their locale. Only the ambiguous business keys id/no need a map.
+            if child_locale != "" and (task.language_map or not child_locale in ["id", "no"] or typeof(data[child]) in [TYPE_DICTIONARY, TYPE_ARRAY] or _script_human_text(data[child], true)):
                 locale = child_locale
                 language_values = true
                 accepted = true
             else:
-                accepted = language_values or _text_field(str(child))
+                accepted = language_values or task.text_map or _text_field(str(child))
         task.index += 1
         json_work.append(task)
         json_work.append({"value":data[child],"path":task.path,"key":task.key+"/"+str(child),"depth":task.depth+1,"accepted":accepted,"index":0,"locale":locale,"language_values":language_values})
@@ -935,9 +1393,12 @@ func _collect(node):
         _collect(child)
 
 func _added(node):
+    if not collection_started and not enabled and not preparing:
+        return
     _slot_added(node)
     if node == self or node.has_meta("fusion_rich_display") or (node.get_parent() != null and node.get_parent().has_meta("fusion_rich_display")) or known.has(node.get_instance_id()) or entries.size() >= 20000:
         return
+    _discard_cloned_display(node)
     var properties = []
     if node is Label or (node is Button and not node is OptionButton) or node is Label3D:
         properties.append("text")
@@ -956,6 +1417,22 @@ func _added(node):
         entries.append(entry)
         if not property in ["tooltip_text", "hint_tooltip"] and node is Control:
             node.theme_changed.connect(Callable(self, "_font_style_changed").bind(entry))
+
+# duplicate() copies our display child and the transparent paint state of its
+# original parent. Reclaim only a display whose recorded owner is a different
+# node; otherwise the old translation can cover the clone's new game text.
+func _discard_cloned_display(node):
+    if not (node is Label or node is RichTextLabel):
+        return
+    for child in node.get_children():
+        if not child is CanvasItem or not child.has_meta("fusion_rich_display") or not child.has_meta("fusion_text_owner_id"):
+            continue
+        if child.get_meta("fusion_text_owner_id") == node.get_instance_id():
+            continue
+        if child.has_meta("fusion_text_hidden_modulate") and child.has_meta("fusion_text_original_modulate") and node.self_modulate == child.get_meta("fusion_text_hidden_modulate"):
+            node.self_modulate = child.get_meta("fusion_text_original_modulate")
+        child.hide()
+        child.queue_free()
 
 # Collection text lives behind item APIs, not the node's text property. Keep
 # only weak references and re-read the current slot before using a cache hit.
@@ -1117,7 +1594,8 @@ func _slots_refresh():
             slot_known.erase(group.id)
             slot_groups.remove_at(slot_cursor)
         else:
-            _slot_step(group, node)
+            if node.is_inside_tree() and node.get_viewport() != null:
+                _slot_step(group, node)
             slot_cursor += 1
         count += 1
         if Time.get_ticks_usec() - began >= 2000:
@@ -1127,6 +1605,229 @@ func _slots_refresh():
 func _font_style_changed(entry):
     entry.font_style_dirty = true
     entry.rich_style_dirty = true
+
+# Render plain labels separately too: assigning a long translation to the
+# game's Label changes its minimum size and can enlarge an entire container.
+func _text_bounds(node):
+    if not node.is_inside_tree() or node.get_viewport() == null:
+        return Rect2()
+    var bounds = Rect2(Vector2.ZERO, node.size)
+    var inverse = node.get_global_transform_with_canvas().affine_inverse()
+    bounds = bounds.intersection(inverse * node.get_viewport().get_visible_rect())
+    var parent = node.get_parent()
+    for ignored in range(12):
+        if parent == null or parent is Window or parent is SubViewport:
+            break
+        # A Control is a layout/transform parent, not an implicit clipping box.
+        # Games place prompts and speaker names outside nonclipping panels.
+        # Only an actual clipping ancestor may constrain that authored area.
+        if parent is Control and parent.clip_contents:
+            bounds = bounds.intersection(inverse * parent.get_global_transform_with_canvas() * Rect2(Vector2.ZERO, parent.size))
+        parent = parent.get_parent()
+    return bounds
+
+func _label_release(node, entry):
+    if not entry.has("label_display"):
+        return
+    var display = entry.label_display.get_ref()
+    if node.self_modulate == entry.label_hidden_modulate:
+        node.self_modulate = entry.label_original_modulate
+    if display != null:
+        display.hide()
+        display.queue_free()
+    entry.erase("label_display")
+    entry.erase("label_fonts")
+
+func _label_present(node, entry, text):
+    var bounds = _text_bounds(node)
+    if bounds.size.x <= 1 or bounds.size.y <= 1:
+        # Never leave the game text transparent when no replacement can draw.
+        _label_release(node, entry)
+        return
+    var display = entry.label_display.get_ref() if entry.has("label_display") else null
+    if display == null:
+        display = Label.new()
+        display.name = "FusionTranslatedLabel"
+        display.set_meta("fusion_rich_display", true)
+        display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+        display.focus_mode = Control.FOCUS_NONE
+        display.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+        display.clip_text = true
+        display.clip_contents = true
+        if not entry.has("label_display") or node.self_modulate != entry.label_hidden_modulate:
+            entry.label_original_modulate = node.self_modulate
+            entry.label_hidden_modulate = Color(node.self_modulate, 0.0)
+        entry.label_display = weakref(display)
+        entry.label_fonts = {"property":"text", "fonts":{}}
+        entry.label_layout_key = []
+        node.add_child(display)
+    if node.self_modulate != entry.label_hidden_modulate:
+        entry.label_original_modulate = node.self_modulate
+        entry.label_hidden_modulate = Color(node.self_modulate, 0.0)
+    node.self_modulate = entry.label_hidden_modulate
+    display.self_modulate = entry.label_original_modulate
+    display.set_meta("fusion_text_owner_id", node.get_instance_id())
+    display.set_meta("fusion_text_original_modulate", entry.label_original_modulate)
+    display.set_meta("fusion_text_hidden_modulate", entry.label_hidden_modulate)
+    var settings = node.label_settings
+    var original_font = settings.font if settings != null and settings.font != null else node.get_theme_font("font")
+    var original_size = settings.font_size if settings != null else node.get_theme_font_size("font_size")
+    # LabelSettings wins over theme overrides. Copy its paint values only to
+    # our child, so shared settings and the game's font resource stay intact.
+    var style_key = [original_font, original_size, settings]
+    for property in ["font_color", "outline_color", "outline_size", "shadow_color", "shadow_size", "shadow_offset", "line_spacing"]:
+        style_key.append(settings.get(property) if settings != null else null)
+    var key = [text, bounds, style_key, node.autowrap_mode, node.horizontal_alignment, node.vertical_alignment, node.uppercase, node.text_direction, node.language]
+    if entry.get("font_style_dirty", false) or key != entry.label_layout_key:
+        display.theme = node.theme
+        display.theme_type_variation = node.theme_type_variation
+        display.add_theme_font_override("font", original_font)
+        display.add_theme_font_size_override("font_size", original_size)
+        entry.label_fonts.fonts.clear()
+        for name in ["font_color", "font_outline_color", "font_shadow_color"]:
+            display.add_theme_color_override(name, node.get_theme_color(name))
+        for name in ["line_spacing", "outline_size", "shadow_offset_x", "shadow_offset_y", "shadow_outline_size"]:
+            display.add_theme_constant_override(name, node.get_theme_constant(name))
+        if settings != null:
+            display.add_theme_color_override("font_color", settings.font_color)
+            display.add_theme_color_override("font_outline_color", settings.outline_color)
+            display.add_theme_color_override("font_shadow_color", settings.shadow_color)
+            display.add_theme_constant_override("outline_size", settings.outline_size)
+            display.add_theme_constant_override("shadow_outline_size", settings.shadow_size)
+            display.add_theme_constant_override("shadow_offset_x", int(settings.shadow_offset.x))
+            display.add_theme_constant_override("shadow_offset_y", int(settings.shadow_offset.y))
+            display.add_theme_constant_override("line_spacing", int(settings.line_spacing))
+        for name in ["normal", "focus"]:
+            if node.has_theme_stylebox(name):
+                display.add_theme_stylebox_override(name, node.get_theme_stylebox(name))
+        for property in ["horizontal_alignment", "vertical_alignment", "uppercase", "text_direction", "language", "justification_flags"]:
+            display.set(property, node.get(property))
+        display.text = text
+        _font(display, entry.label_fonts, text)
+        _label_fit(node, display, bounds, original_size, entry.label_fonts.get("font_cjk", false))
+        entry.label_layout_key = key
+        entry.font_style_dirty = false
+        _redraw_viewport(node.get_viewport())
+    display.visible_ratio = node.visible_ratio
+    display.visible = bounds.size.x > 1 and bounds.size.y > 1
+
+func _label_fit(node, display, bounds, original_size, cjk):
+    var font = display.get_theme_font("font")
+    var inset = display.get_theme_stylebox("normal").get_minimum_size()
+    var outline = display.get_theme_constant("outline_size")
+    var shadow_outline = display.get_theme_constant("shadow_outline_size")
+    if cjk:
+        var limit = max(1, int(floor(original_size / 8.0)))
+        outline = min(outline, limit)
+        shadow_outline = min(shadow_outline, limit)
+    # Keep strokes inside the panel as well as the glyph advance rectangle.
+    var padding = max(outline, shadow_outline)
+    bounds = Rect2(bounds.position + Vector2(padding, padding), Vector2(max(1.0, bounds.size.x - padding * 2), max(1.0, bounds.size.y - padding * 2)))
+    var available = Vector2(max(1.0, bounds.size.x - inset.x), max(1.0, bounds.size.y - inset.y))
+    var minimum = min(original_size, max(10, int(floor(original_size * 0.4))))
+    var long_line = font.get_multiline_string_size(display.text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, original_size).x > available.x
+    # A one-line original can fit two translated lines at a modestly smaller
+    # size. Testing only the original line height would clip long warnings.
+    var wrap = node.autowrap_mode != TextServer.AUTOWRAP_OFF or available.y >= font.get_height(original_size) * 1.8 or (long_line and available.y >= font.get_height(minimum) * 1.8)
+    display.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wrap else TextServer.AUTOWRAP_OFF
+    var flags = TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE if wrap else TextServer.BREAK_MANDATORY
+    var lower = minimum
+    var upper = original_size
+    var chosen = minimum
+    var measured_text = display.text.to_upper() if display.uppercase else display.text
+    # Largest fitting size; short headings keep their original large type.
+    for ignored in range(8):
+        if lower > upper:
+            break
+        var size = int((lower + upper) / 2)
+        var measured = font.get_multiline_string_size(measured_text, HORIZONTAL_ALIGNMENT_LEFT, available.x if wrap else -1.0, size, -1, flags)
+        var lines = max(1, int(round(measured.y / max(1.0, font.get_height(size)))))
+        measured.y += max(0, lines - 1) * display.get_theme_constant("line_spacing")
+        if measured.x <= available.x + 0.5 and measured.y <= available.y + 0.5:
+            chosen = size
+            lower = size + 1
+        else:
+            upper = size - 1
+    display.add_theme_font_size_override("font_size", chosen)
+    if cjk:
+        var limit = max(1, int(floor(chosen / 8.0)))
+        display.add_theme_constant_override("outline_size", min(outline, limit))
+        display.add_theme_constant_override("shadow_outline_size", min(shadow_outline, limit))
+    # The fallback font's metric height can exceed the shaped Label line
+    # height. A second manual line limit would hide already-fitted lines.
+    display.max_lines_visible = -1
+    display.position = bounds.position
+    display.size = bounds.size
+    # Font's measuring API and Label's visible-line calculation differ for
+    # fallback faces. Confirm the final shaped control, not just the estimate.
+    display.visible_characters = -1
+    for ignored in range(32):
+        var lines = display.get_line_count()
+        if display.get_visible_line_count() >= lines or chosen <= minimum:
+            break
+        chosen -= 1
+        display.add_theme_font_size_override("font_size", chosen)
+        if cjk:
+            var limit = max(1, int(floor(chosen / 8.0)))
+            display.add_theme_constant_override("outline_size", min(outline, limit))
+            display.add_theme_constant_override("shadow_outline_size", min(shadow_outline, limit))
+        display.size = bounds.size
+
+# Buttons keep their skin, focus and input behavior. Game replacements win
+# when our temporary clipping/font-size overrides are removed.
+func _button_release(node, entry):
+    if not entry.has("button_layout"):
+        return
+    var state = entry.button_layout
+    if state.has("owned_minimum") and node.custom_minimum_size == state.owned_minimum:
+        node.custom_minimum_size = state.original_minimum
+    if node.clip_text == state.owned_clip:
+        node.clip_text = state.original_clip
+    if state.has("owned_size") and node.get_theme_font_size("font_size") == state.owned_size:
+        if state.original_size == null:
+            node.remove_theme_font_size_override("font_size")
+        else:
+            node.add_theme_font_size_override("font_size", state.original_size)
+    entry.erase("button_layout")
+
+func _button_prepare(node, entry, active):
+    if not active:
+        _button_release(node, entry)
+        return
+    if not entry.has("button_layout"):
+        entry.button_layout = {"original_clip":node.clip_text, "owned_clip":true, "original_size":node.get_theme_font_size("font_size") if node.has_theme_font_size_override("font_size") else null, "base_size":node.get_theme_font_size("font_size")}
+        if node.get_parent() is Container:
+            entry.button_layout.original_minimum = node.custom_minimum_size
+            entry.button_layout.owned_minimum = node.get_combined_minimum_size()
+            node.custom_minimum_size = entry.button_layout.owned_minimum
+    var state = entry.button_layout
+    if node.clip_text != state.owned_clip:
+        state.original_clip = node.clip_text
+    if state.has("owned_size") and node.get_theme_font_size("font_size") != state.owned_size:
+        state.original_size = node.get_theme_font_size("font_size") if node.has_theme_font_size_override("font_size") else null
+        state.base_size = node.get_theme_font_size("font_size")
+    state.bounds = _text_bounds(node)
+    state.control_size = node.size
+    node.clip_text = true
+
+func _button_fit(node, entry, text):
+    if not entry.has("button_layout"):
+        return
+    var state = entry.button_layout
+    var font = node.get_theme_font("font")
+    var available = state.bounds.size - node.get_theme_stylebox("normal").get_minimum_size()
+    if node.icon != null:
+        available.x -= node.icon.get_width() + node.get_theme_constant("h_separation")
+    var size = state.base_size
+    var measured = font.get_multiline_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size)
+    var ratio = min(1.0, min(max(1.0, available.x) / max(1.0, measured.x), max(1.0, available.y) / max(1.0, measured.y)))
+    size = max(min(size, max(10, int(ceil(size * 0.5)))), int(floor(size * ratio)))
+    if node.get_theme_font_size("font_size") != size:
+        node.add_theme_font_size_override("font_size", size)
+    state.owned_size = size
+    if node.size != state.control_size:
+        node.size = state.control_size
+    entry.font_style_dirty = false
 
 # append_text/add_text/push_* update RichTextLabel's document without updating
 # its text property. Never assign text back to such a document: doing so erases
@@ -1150,6 +1851,10 @@ func _rich_signal(value, original_ref, signal_name):
         original.emit_signal(signal_name, value)
 
 func _rich_present(node, entry, text):
+    var bounds = _text_bounds(node)
+    if bounds.size.x <= 1 or bounds.size.y <= 1:
+        _rich_release(node, entry)
+        return
     var display = entry.rich_display.get_ref() if entry.has("rich_display") else null
     if display == null:
         display = RichTextLabel.new()
@@ -1178,6 +1883,9 @@ func _rich_present(node, entry, text):
         entry.rich_hidden_modulate = Color(node.self_modulate, 0.0)
     node.self_modulate = entry.rich_hidden_modulate
     display.self_modulate = entry.rich_original_modulate
+    display.set_meta("fusion_text_owner_id", node.get_instance_id())
+    display.set_meta("fusion_text_original_modulate", entry.rich_original_modulate)
+    display.set_meta("fusion_text_hidden_modulate", entry.rich_hidden_modulate)
     var prefix = entry.get("rich_prefix", "")
     # A document built with text="[center]" followed by append_text has no
     # closing tag in its text property. Preserve its leading format on our
@@ -1189,11 +1897,14 @@ func _rich_present(node, entry, text):
     var style_changed = entry.get("rich_style_dirty", true)
     if style_changed:
         _rich_sync_style(node, display, entry)
-    for property in ["autowrap_mode", "text_direction", "language", "scroll_active", "selection_enabled", "tab_size", "justification_flags", "custom_effects", "meta_underlined"]:
+    for property in ["text_direction", "language", "scroll_active", "selection_enabled", "tab_size", "justification_flags", "custom_effects", "meta_underlined"]:
         if display.get(property) != node.get(property):
             display.set(property, node.get(property))
-    if display.size != node.size:
-        display.size = node.size
+    display.position = bounds.position
+    if display.size != bounds.size:
+        display.size = bounds.size
+    display.clip_contents = true
+    display.visible = bounds.size.x > 1 and bounds.size.y > 1
     if display.text != presented_text:
         display.text = presented_text
         _redraw_viewport(node.get_viewport())
@@ -1202,10 +1913,17 @@ func _rich_present(node, entry, text):
         display.visible_ratio = reveal_ratio
     entry.rich_fonts.property = "text"
     _font(display, entry.rich_fonts, text)
+    var outline_limit = max(1, int(floor(node.get_theme_font_size("normal_font_size") / 8.0)))
+    var padding = max(node.get_theme_constant("outline_size"), node.get_theme_constant("shadow_outline_size"))
+    if entry.rich_fonts.get("font_cjk", false):
+        padding = min(padding, outline_limit)
+    bounds = Rect2(bounds.position + Vector2(padding, padding), Vector2(max(1.0, bounds.size.x - padding * 2), max(1.0, bounds.size.y - padding * 2)))
+    display.position = bounds.position
+    display.size = bounds.size
     # Color/alpha animation changes paint, not the translated glyph layout.
-    var layout_key = [entry.get("rich_layout_text", presented_text), node.size, node.autowrap_mode, node.scroll_active]
+    var layout_key = [entry.get("rich_layout_text", presented_text), bounds, node.autowrap_mode, node.scroll_active]
     if style_changed or layout_key != entry.rich_layout_key:
-        _rich_fit(node, display, entry.rich_fonts.get("font_cjk", false))
+        _rich_fit(node, display, entry.rich_fonts.get("font_cjk", false), bounds)
         entry.rich_layout_key = layout_key
     var original_scroll = node.get_v_scroll_bar()
     var translated_scroll = display.get_v_scroll_bar()
@@ -1236,24 +1954,29 @@ func _rich_sync_style(node, display, entry):
         display.add_theme_stylebox_override(name, node.get_theme_stylebox(name))
     entry.rich_style_dirty = false
 
-func _rich_fit(node, display, cjk):
+func _rich_fit(node, display, cjk, bounds):
     # Fit only this owned translation into the game's existing rectangle. The
     # original document, theme sizes, scale and container minimum stay intact.
     var names = ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]
     for name in names:
         display.add_theme_font_size_override(name, node.get_theme_font_size(name))
-    if node.size.x > 1 and node.size.y > 1:
-        for ignored in range(3):
+    var original_normal_size = node.get_theme_font_size("normal_font_size")
+    var normal_font = display.get_theme_font("normal_font")
+    var minimum_size = min(original_normal_size, max(10, int(floor(original_normal_size * 0.4))))
+    var minimum_height = normal_font.get_height(minimum_size)
+    var can_wrap = node.autowrap_mode != TextServer.AUTOWRAP_OFF or bounds.size.y >= minimum_height * 1.8
+    display.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if can_wrap else TextServer.AUTOWRAP_OFF
+    if bounds.size.x > 1 and bounds.size.y > 1:
+        for ignored in range(5):
             var ratio = 1.0
-            if node.autowrap_mode == TextServer.AUTOWRAP_OFF:
-                ratio = min(ratio, node.size.x / max(1.0, float(display.get_content_width())))
+            ratio = min(ratio, bounds.size.x / max(1.0, float(display.get_content_width())))
             if not node.scroll_active:
-                ratio = min(ratio, node.size.y / max(1.0, float(display.get_content_height())))
+                ratio = min(ratio, bounds.size.y / max(1.0, float(display.get_content_height())))
             if ratio >= 0.99:
                 break
             for name in names:
                 var original_size = node.get_theme_font_size(name)
-                var minimum = min(original_size, max(8, int(ceil(original_size * 0.65))))
+                var minimum = min(original_size, max(10, int(ceil(original_size * 0.5))))
                 display.add_theme_font_size_override(name, max(minimum, int(floor(display.get_theme_font_size(name) * ratio))))
     # Dense CJK strokes cannot carry a 20px halo at a 28px type size. Keep the
     # original style untouched; constrain only our derived display's outline.
@@ -1323,19 +2046,118 @@ func _rich_refresh(node, entry, source):
     entry.last = str(node.get(entry.property))
     entry.last_parsed = node.get_parsed_text()
 
+func _font_u16(data, offset):
+    return int(data[offset]) * 256 + int(data[offset + 1])
+
+func _font_u32(data, offset):
+    return int(data[offset]) * 16777216 + int(data[offset + 1]) * 65536 + int(data[offset + 2]) * 256 + int(data[offset + 3])
+
+func _font_directory_valid(data):
+    # Native font loaders may accept malformed data and silently use a fallback.
+    # Bound and inspect the SFNT directory before replacing the working font.
+    var size = data.size()
+    if size < 12:
+        return false
+    var base = 0
+    if _font_u32(data, 0) == 0x74746366:
+        var faces = _font_u32(data, 8)
+        if faces < 1 or faces > 4096 or 12 + faces * 4 > size:
+            return false
+        base = _font_u32(data, 12)
+    if base < 0 or base + 12 > size:
+        return false
+    var magic = _font_u32(data, base)
+    if not magic in [0x00010000, 0x4F54544F, 0x74727565]:
+        return false
+    var count = _font_u16(data, base + 4)
+    if count < 1 or count > 256 or base + 12 + count * 16 > size:
+        return false
+    var tables = {}
+    for index in range(count):
+        var record = base + 12 + index * 16
+        var tag = _font_u32(data, record)
+        var offset = _font_u32(data, record + 8)
+        var length = _font_u32(data, record + 12)
+        if tables.has(tag) or offset > size or length > size - offset:
+            return false
+        tables[tag] = length
+    # cmap, head, hhea, hmtx, maxp and name must contain real records.
+    for tag in [0x636D6170, 0x68656164, 0x68686561, 0x686D7478, 0x6D617870, 0x6E616D65]:
+        if int(tables.get(tag, 0)) < 4:
+            return false
+    return tables.has(0x676C7966) or tables.has(0x43464620) or tables.has(0x43464632)
+
+func _load_font_file(path):
+    if not path.get_extension().to_lower() in ["ttf", "otf", "ttc"]:
+        return null
+    var file = FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        return null
+    var size = file.get_length()
+    if size < 12 or size > 33554432:
+        file.close()
+        return null
+    var data = file.get_buffer(size)
+    file.close()
+    if data.size() != size or not _font_directory_valid(data):
+        return null
+    var selected = FontFile.new()
+    if selected.load_dynamic_font(path) != OK:
+        return null
+    return selected
+
+func _font_preferences(q):
+    var mode = str(q.get("mode", "default"))
+    var path = str(q.get("path", "")).replace("\\", "/")
+    var family = str(q.get("family", ""))
+    if mode not in ["default", "custom"]:
+        return {"accepted":false,"error":"Unknown font preference mode.","restartRequired":false}
+    var selected = null
+    if mode == "custom":
+        if path != "":
+            selected = _load_font_file(path)
+        elif family != "" and OS.get_system_fonts().has(family):
+            selected = SystemFont.new()
+            selected.font_names = [family]
+            selected.allow_system_fallback = true
+        if selected == null:
+            return {"accepted":false,"error":"Cannot load the selected font. Choose a valid TTF, OTF or TTC file up to 32 MiB.","restartRequired":false}
+    else:
+        path = ""
+        family = ""
+    # Validation completed before touching any preference, text or owned font.
+    var changed = mode != font_preference_mode or path != font_preference_path or family != font_preference_family
+    var was_enabled = enabled
+    if changed and was_enabled:
+        enabled = false
+        _refresh(true)
+    if changed:
+        custom_font = selected
+        font_preference_mode = mode
+        font_preference_path = path
+        font_preference_family = family
+    enabled = was_enabled
+    if changed and was_enabled:
+        _refresh(true)
+    return {"accepted":true,"mode":mode,"enabled":enabled,"writebackPending":changed and enabled,"restorePending":changed and enabled and mode == "default","restartRequired":false}
+
 func _prepare_font():
+    var custom_path = OS.get_environment("FUSION_GAME_FONT_PATH").replace("\\", "/")
+    var custom_family = OS.get_environment("FUSION_GAME_FONT_FAMILY")
     chinese_font = SystemFont.new()
     chinese_font.font_names = ["Microsoft YaHei", "Microsoft YaHei UI", "DengXian"]
     chinese_font.allow_system_fallback = true
+    if custom_path != "" or custom_family != "":
+        _font_preferences({"mode":"custom","path":custom_path,"family":custom_family})
 
 func _font(node, entry, translated):
     if node is Label3D:
-        if enabled and translated != "" and chinese_font != null:
+        if enabled and translated != "" and (custom_font != null or chinese_font != null):
             if not entry.has("world_font") or node.font != entry.world_font.owned:
                 var original = node.font
                 var replacement = FontVariation.new()
-                replacement.base_font = original if original != null else ThemeDB.fallback_font
-                replacement.fallbacks = [chinese_font]
+                replacement.base_font = custom_font if custom_font != null else (original if original != null else ThemeDB.fallback_font)
+                replacement.fallbacks = [original if original != null else ThemeDB.fallback_font] if custom_font != null else [chinese_font]
                 entry.world_font = {"original":original,"owned":replacement}
                 node.font = replacement
         elif entry.has("world_font"):
@@ -1355,7 +2177,7 @@ func _font(node, entry, translated):
                 entry.font_cjk = true
                 break
     var names = ["normal_font", "bold_font", "italics_font", "bold_italics_font", "mono_font"] if node is RichTextLabel else ["font"]
-    if chinese_font != null and enabled and entry.get("font_cjk", false):
+    if enabled and (translated != "" if custom_font != null else (chinese_font != null and entry.get("font_cjk", false))):
         for name in names:
             if entry.fonts.has(name):
                 var owned = entry.fonts[name]
@@ -1377,7 +2199,10 @@ func _font(node, entry, translated):
             if not old is FontVariation:
                 replacement.base_font = old
             var fallbacks = replacement.fallbacks.duplicate()
-            if not fallbacks.has(chinese_font):
+            if custom_font != null:
+                replacement.base_font = custom_font
+                fallbacks.append(old)
+            elif not fallbacks.has(chinese_font):
                 fallbacks.append(chinese_font)
             replacement.fallbacks = fallbacks
             node.add_theme_font_override(name, replacement)
@@ -1780,6 +2605,13 @@ func _match_template(candidate, value):
 func _lookup(value, depth = 0):
     if cache.has(value):
         return cache[value]
+    if depth == 0 and activation_exact.has(value):
+        # Cache presence is not observation. Report this complete live source
+        # once so later corrections, revocation and retries retain authority.
+        if not activation_observed.has(value) and pending.size() < 4096:
+            pending[value] = true
+            activation_observed[value] = true
+        return activation_exact[value]
     if depth == 0 and startup_exact.has(value):
         return startup_exact[value]
     if lookup_dirty:
@@ -1876,6 +2708,10 @@ func _refresh(all = false):
         if node == null:
             stale[entry.id] = true
             continue
+        # Pooled scenes can leave the tree without being freed. Keep their
+        # identity for re-entry, but do not lay out or draw without a viewport.
+        if not node.is_inside_tree() or node.get_viewport() == null:
+            continue
         if not all and node is CanvasItem and not node.is_visible_in_tree():
             continue
         var current = str(node.get(entry.property))
@@ -1903,10 +2739,21 @@ func _refresh(all = false):
                 result = translated
             elif pending.size() < 4096:
                 pending[localized] = true
+        if node is Label and entry.property == "text":
+            if result != entry.source:
+                _label_present(node, entry, result)
+            else:
+                _label_release(node, entry)
+            entry.last = current
+            continue
+        if node is Button and entry.property == "text":
+            _button_prepare(node, entry, result != entry.source)
         if result != current:
             node.set(entry.property, result)
             _redraw_viewport(node.get_viewport())
         _font(node, entry, result if result != entry.source else "")
+        if node is Button and entry.property == "text" and result != entry.source:
+            _button_fit(node, entry, result)
         entry.last = result
     if not stale.is_empty():
         for id in stale:
@@ -1921,7 +2768,7 @@ func _refresh(all = false):
 # layout settle. Keep only changed, normally disabled viewports updating for
 # three completed frames, then relinquish the update mode we temporarily own.
 func _redraw_viewport(viewport):
-    if viewport == get_tree().root or not viewport is SubViewport:
+    if viewport == null or viewport == get_tree().root or not viewport is SubViewport:
         return
     var id = viewport.get_instance_id()
     if dirty_viewports.has(id):
@@ -1948,14 +2795,158 @@ func _before_draw():
     if enabled:
         _refresh()
 
+# Explicit modification authorization; translation alone never reads the clock.
+var speed_authorized = false
+var speed_owned = false
+var speed_baseline = null
+var speed_applied = 1.0
+var speed_rate = 1.0
+var speed_scale = null
+var speed_state = "idle"
+var speed_blocked = false
+var speed_reason = ""
+var bridge_poll_at = 0
+
+func _speed_valid(value):
+    return (typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT) and not is_nan(float(value)) and not is_inf(float(value)) and float(value) >= 0.0
+
+func _speed_same(a, b):
+    if not _speed_valid(a) or not _speed_valid(b):
+        return false
+    if a == 0.0 or b == 0.0:
+        return a == b
+    return abs(a - b) <= 0.0000001 * max(abs(a), abs(b))
+
+func _speed_unavailable(reason):
+    speed_blocked = true
+    speed_state = "unavailable"
+    speed_reason = reason
+
+func _speed_restore():
+    # Cancel first; restoring never reapplies a request waiting for game resume.
+    speed_rate = 1.0
+    speed_blocked = false
+    speed_state = "idle"
+    speed_reason = ""
+    if speed_owned:
+        speed_scale = Engine.time_scale
+        if not _speed_valid(speed_scale):
+            _speed_unavailable("游戏返回了无效的时间倍率。")
+            return
+        if _speed_same(speed_scale, speed_applied):
+            Engine.time_scale = speed_baseline
+            speed_scale = Engine.time_scale
+            if not _speed_same(speed_scale, speed_baseline):
+                _speed_unavailable("游戏未确认恢复原来的时间倍率。")
+                return
+    else:
+        speed_scale = null
+    speed_owned = false
+    speed_baseline = null
+
+func _speed_observe(explicit = false):
+    if not speed_authorized or speed_rate == 1.0 or (speed_blocked and not explicit):
+        return
+    speed_scale = Engine.time_scale
+    if not _speed_valid(speed_scale):
+        _speed_unavailable("游戏返回了无效的时间倍率。")
+        return
+    if speed_scale == 0.0:
+        speed_owned = false
+        speed_state = "paused"
+        speed_reason = ""
+        return
+    if speed_owned and not _speed_same(speed_scale, speed_applied):
+        speed_owned = false
+    if not speed_owned:
+        if explicit or speed_baseline == null:
+            speed_baseline = speed_scale
+        elif not _speed_same(speed_scale, speed_baseline):
+            speed_state = "game-controlled"
+            speed_reason = ""
+            return
+    var wanted = speed_baseline * speed_rate
+    if not _speed_valid(wanted) or wanted <= 0.0:
+        _speed_unavailable("请求的引擎时间倍率超出范围。")
+        return
+    if speed_owned and _speed_same(speed_scale, wanted):
+        speed_state = "active"
+        speed_reason = ""
+        return
+    var previous = speed_scale
+    var previous_owned = speed_owned
+    Engine.time_scale = wanted
+    speed_scale = Engine.time_scale
+    if not _speed_same(speed_scale, wanted):
+        if speed_scale == 0.0:
+            speed_owned = false
+            speed_state = "paused"
+            speed_reason = ""
+            return
+        # Revert this synchronous attempt, then wait for an explicit user retry.
+        if _speed_valid(speed_scale) and speed_scale > 0.0 and not _speed_same(speed_scale, previous):
+            Engine.time_scale = previous
+            speed_scale = Engine.time_scale
+        speed_owned = previous_owned and _speed_same(speed_scale, previous)
+        _speed_unavailable("引擎未确认此倍率，请检查游戏状态后重新应用。")
+        return
+    speed_applied = speed_scale
+    speed_owned = true
+    speed_state = "active"
+    speed_reason = ""
+
+func _speed_status():
+    var result = {"enabled": speed_authorized, "speed": speed_rate, "speedState": speed_state, "speedApplied": speed_state == "active" and speed_owned, "backend": "engine-time-scale", "reason": speed_reason}
+    if _speed_valid(speed_scale):
+        result["engineScale"] = speed_scale
+    if speed_baseline != null:
+        result["baselineScale"] = speed_baseline
+    return result
+
+func _speed_command(q):
+    var op = q.get("op", "")
+    if op == "speedEnable":
+        speed_authorized = true
+        return _speed_status()
+    if op == "speedDisable":
+        _speed_restore()
+        speed_authorized = false
+        return _speed_status()
+    if not speed_authorized:
+        return {"error": "请先开启修改。"}
+    if q.has("rate"):
+        var value = q.rate
+        if (typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT) or is_nan(float(value)) or is_inf(float(value)) or float(value) < 0.25 or float(value) > 100.0:
+            return {"error": "倍率必须在 0.25 到 100 之间。"}
+        var rate = float(value)
+        if rate == 1.0:
+            _speed_restore()
+        else:
+            speed_rate = rate
+            speed_blocked = false
+            _speed_observe(true)
+    else:
+        _speed_observe()
+    return _speed_status()
+
 func _command(q):
+    if q.get("op", "") in ["speedEnable", "speedDisable", "gameSpeed"]:
+        return _speed_command(q)
     match q.get("op", ""):
+        "fontPreferences":
+            return _font_preferences(q)
         "translationPrepare":
+            _ensure_collection()
             var preserve = startup_loaded and q.get("preserveStartup", false) == true
             startup_loaded = false
             epoch += 1
             preparing = true
             staged_cache.clear()
+            staged_exact.clear()
+            staged_exact_bytes = 0
+            staged_exact_ready = false
+            activation_exact.clear()
+            activation_observed.clear()
             cache.clear()
             if not preserve:
                 enabled = false
@@ -1963,11 +2954,21 @@ func _command(q):
             lookup_dirty = true
             pending.clear()
             _prepare_catalog_language(str(q.get("sourceLanguage", "Auto")))
-            return {"epoch": epoch}
+            return {"epoch": epoch, "exactStartupPrime": true}
         "translationEnable":
+            if q.has("epoch") and int(q.epoch) != epoch:
+                return {"epoch": epoch, "stale": true}
+            _ensure_collection()
             if preparing:
                 cache = staged_cache
                 staged_cache = {}
+                if staged_exact_ready:
+                    activation_exact = staged_exact
+                    activation_observed.clear()
+                    startup_exact.clear()
+                    staged_exact = {}
+                    staged_exact_bytes = 0
+                staged_exact_ready = false
                 preparing = false
             lookup_dirty = true
             enabled = true
@@ -1980,11 +2981,17 @@ func _command(q):
             lookup_dirty = true
             preparing = false
             staged_cache.clear()
+            staged_exact.clear()
+            staged_exact_bytes = 0
+            staged_exact_ready = false
+            activation_exact.clear()
+            activation_observed.clear()
             epoch += 1
             pending.clear()
             _refresh(true)
             return {"epoch": epoch}
         "translationCatalog":
+            _ensure_collection()
             return _catalog_page(q.get("cursor", 0))
         "translationPoll":
             _refresh()
@@ -1996,14 +3003,35 @@ func _command(q):
                 pending.erase(text)
             return {"epoch": epoch, "texts": texts, "ahead": [], "activeTextLanguage": selected_language if selected_language == _locale_language(current_locale) else "", "entryRefreshMaxMs":entry_refresh_max_ms, "slotBindings":slot_rows, "slotRefreshMaxMs":slot_max_ms, "runtimeWarning":"本次运行部分列表文字达到读取容量上限" if slot_limit_hits > 0 else ""}
         "translationApply":
+            var exact_prime = q.get("exactOnly", false) == true
+            if exact_prime and (not preparing or q.get("prime", false) != true):
+                return {"epoch": epoch, "stale": true, "applied": 0}
             if int(q.get("epoch", -1)) != epoch or (not enabled and not q.get("prime", false)):
                 return {"stale": true, "applied": 0}
             var count = 0
+            if exact_prime:
+                if q.get("replaceExact", false) == true:
+                    staged_exact.clear()
+                    staged_exact_bytes = 0
+                staged_exact_ready = true
             for pair in q.get("entries", []):
                 if count >= 128:
                     break
-                if typeof(pair) == TYPE_DICTIONARY and _valid(pair.get("source", "")) and typeof(pair.get("text")) == TYPE_STRING and pair.text.length() <= 12000:
-                    if preparing and q.get("prime", false):
+                # Exact preparation stores structurally safe rows; display eligibility
+                # still belongs to _valid at the actual control. An irrelevant
+                # numeric/resource key must not reject an otherwise valid page.
+                if typeof(pair) == TYPE_DICTIONARY and typeof(pair.get("source")) == TYPE_STRING and (exact_prime and pair.source.strip_edges() != "" and pair.source.length() <= 6000 or _valid(pair.source)) and typeof(pair.get("text")) == TYPE_STRING and pair.text.length() <= 12000:
+                    if exact_prime:
+                        if pair.text.strip_edges() == "" or _utf8(pair.source).has(0) or _utf8(pair.text).has(0):
+                            continue
+                        var size = _utf8(pair.source).size() + _utf8(pair.text).size()
+                        if staged_exact.has(pair.source):
+                            size -= _utf8(pair.source).size() + _utf8(staged_exact[pair.source]).size()
+                        if (not staged_exact.has(pair.source) and staged_exact.size() >= 100000) or staged_exact_bytes + size > 33554432:
+                            continue
+                        staged_exact[pair.source] = pair.text
+                        staged_exact_bytes += size
+                    elif preparing and q.get("prime", false):
                         staged_cache[pair.source] = pair.text
                     else:
                         cache[pair.source] = pair.text
@@ -2011,13 +3039,15 @@ func _command(q):
             if count > 0:
                 lookup_dirty = true
             _refresh(true)
-            return {"applied": count}
+            return {"epoch": epoch, "applied": count}
         "translationState":
             var snapshot = _catalog_page(0)
-            return {"enabled": enabled, "epoch": epoch, "entries": cache.size(), "startupExactCache": startup_exact.size(), "savedir": OS.get_user_data_dir(), "catalog": snapshot.total, "scanning": snapshot.scanning, "skipped": snapshot.skipped, "warnings": snapshot.warnings, "locale": TranslationServer.get_locale(), "scan_max_ms": scan_max_ms, "scan_overruns": scan_overruns, "scan_thread": true, "scene_resource_loads": 0, "sourceLanguage": snapshot.sourceLanguage, "selectedLanguage": snapshot.selectedLanguage, "skippedByLanguage": snapshot.skippedByLanguage}
+            return {"enabled": enabled, "epoch": epoch, "entries": cache.size(), "startupExactCache": startup_exact.size(), "activationExactCache": activation_exact.size(), "savedir": OS.get_user_data_dir(), "catalog": snapshot.total, "scanning": collection_started and snapshot.scanning, "skipped": snapshot.skipped, "warnings": snapshot.warnings, "locale": TranslationServer.get_locale(), "scan_max_ms": scan_max_ms, "scan_overruns": scan_overruns, "scan_thread": collection_started, "scene_resource_loads": 0, "sourceLanguage": snapshot.sourceLanguage, "selectedLanguage": snapshot.selectedLanguage, "skippedByLanguage": snapshot.skippedByLanguage}
     return null
 
 func _exit_tree():
+    _speed_restore()
+    speed_authorized = false
     catalog_mutex.lock()
     scan_stop = true
     catalog_mutex.unlock()
@@ -2039,6 +3069,11 @@ func _exit_tree():
     startup_exact.clear()
     startup_loaded = false
     staged_cache.clear()
+    staged_exact.clear()
+    staged_exact_bytes = 0
+    staged_exact_ready = false
+    activation_exact.clear()
+    activation_observed.clear()
     pending.clear()
     optimized_work.clear()
     json_work.clear()
@@ -2056,17 +3091,20 @@ func _process(delta):
         selected_metadata = []
         catalog_mutex.unlock()
         epoch += 1
+        activation_observed.clear()
     if enabled:
         _refresh()
         call_deferred("_before_draw")
     if session == "":
         return
-    elapsed += delta
-    if elapsed < 0.025:
+    # Communication and revocation use real time, including when the game pauses.
+    if _ticks() < bridge_poll_at:
         return
-    elapsed = 0.0
+    bridge_poll_at = _ticks() + 25
     _flush_writes()
-    if _read(session + "/stop", 1024) == secret or (enabled and _ticks() - last_request > 60000):
+    if _read(session + "/stop", 1024) == secret or ((enabled or speed_authorized) and _ticks() - last_request > 60000):
+        _speed_restore()
+        speed_authorized = false
         enabled = false
         epoch += 1
         _refresh(true)
@@ -2075,10 +3113,13 @@ func _process(delta):
             return
     var q = _json(_read(session + "/request.json", 262144))
     if typeof(q) != TYPE_DICTIONARY or q.get("secret", "") != secret or int(q.get("id", 0)) <= last_id:
+        _speed_observe()
         return
     last_id = int(q.id)
     last_request = _ticks()
     var result = _command(q)
+    if not q.get("op", "") in ["speedEnable", "speedDisable", "gameSpeed"]:
+        _speed_observe()
     _write("response.json", {"id": last_id, "ok": result != null, "result": result})
 
 # Parse serialized data only. No ResourceLoader, script compilation, instancing,

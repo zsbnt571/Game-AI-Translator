@@ -17,6 +17,8 @@ public sealed partial class MainForm
     private readonly Dictionary<JsonElement, NovelRowsProjection> _novelPreparedSnapshots = new();
     private int _novelPreparedBytes;
     private long _novelProjectionSequence;
+    private readonly Dictionary<string,Dictionary<string,string[]>> _wolfCategoryEntries=new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string,string> _wolfNameWarnings=new(StringComparer.OrdinalIgnoreCase);
     private const int NovelPreparedByteLimit=64*1024*1024;
     private sealed class NovelRowsProjection(JsonElement[] raw,string? adapter,Dictionary<string,string>? names,int estimatedBytes=0)
     {
@@ -128,27 +130,43 @@ public sealed partial class MainForm
             request["map"]=_wolfMapId;
             request["scope"]=NativeNovel.Scope is "common" or "characters" or "relationships" or "switches"?"all":NativeNovel.Scope;
             request["query"]=NativeNovel.Scope=="common"?"":NativeNovel.Search;
+            if(_wolfEventVariables is {} eventIds)
+                request["entries"]=new JsonArray(eventIds.Order(StringComparer.Ordinal).Take(20000).Select(id=>(JsonNode?)JsonValue.Create(id)).ToArray());
+            else if(_wolfCategoryEntries.TryGetValue(game.ExePath,out var categories)&&categories.TryGetValue(NativeNovel.Scope,out var entries))
+            {
+                request["entries"]=new JsonArray(entries.Take(20000).Select(id=>(JsonNode?)JsonValue.Create(id)).ToArray());
+                request["includeVariables"]=NativeNovel.Scope is "common" or "characters" or "relationships";
+            }
         }
         return request;
     }
     private async Task<JsonElement> AnnotateNovelSnapshotAsync(GameInfo game,JsonElement result)
     {
-        Dictionary<string,string>? names=null;
-        if(game.AdapterId=="wolf"&&!_wolfNumericNames.TryGetValue(game.ExePath,out names))
-        {
-            try{names=await Task.Run(()=>WolfModificationNames.Read(game.ExePath));}
-            catch(Exception error)when(error is IOException or InvalidDataException or NotSupportedException or InvalidOperationException){names=[];}
-            // Switching away and back can leave an older read in flight.
-            // Publish one immutable naming context per game; a later identical
-            // read must not invalidate already-prepared projections by identity.
-            if(_wolfNumericNames.TryGetValue(game.ExePath,out var published))names=published;
-            else _wolfNumericNames[game.ExePath]=names;
-        }
+        if(game.AdapterId=="wolf")await EnsureWolfNovelNamesAsync(game);
+        var names=_wolfNumericNames.GetValueOrDefault(game.ExePath);
         var annotated=await Task.Run(()=>AnnotateNovelRows(result,names));
         // Freshness begins when the complete snapshot is ready for display.
         // A large first projection can outlive the cache's freshness interval;
         // stamping before this work would immediately re-read it on return.
         if(WpfWorkspace.Enabled)await PrepareNovelSnapshotAsync(game,annotated);
         return annotated;
+    }
+    private async Task EnsureWolfNovelNamesAsync(GameInfo game)
+    {
+        if(game.AdapterId!="wolf"||_wolfCategoryEntries.ContainsKey(game.ExePath))return;
+        Dictionary<string,string>? names=_wolfNumericNames.GetValueOrDefault(game.ExePath);
+        if(names is null)
+        {
+            try{names=await Task.Run(()=>WolfModificationNames.Read(game.ExePath));}
+            catch(Exception error)when(error is IOException or InvalidDataException or NotSupportedException or InvalidOperationException)
+            {names=[];_wolfNameWarnings[game.ExePath]=SafeDiagnosticOutput.ExceptionSummary(error);}
+            // Switching away and back can leave an older read in flight.
+            // Publish one immutable naming context per game; a later identical
+            // read must not invalidate already-prepared projections by identity.
+            if(_wolfNumericNames.TryGetValue(game.ExePath,out var published))names=published;
+            else _wolfNumericNames[game.ExePath]=names;
+        }
+        var categories=names.Count>0?await Task.Run(()=>WolfModificationNames.Categories(names)):new Dictionary<string,string[]>();
+        _wolfCategoryEntries.TryAdd(game.ExePath,categories);
     }
 }

@@ -22,7 +22,7 @@ internal sealed class DefoldTranslationConnection : IEmbeddedTranslationConnecti
     public ProcessStartInfo StartInfo(bool translationAtStartup=true)
     {
         if(!DefoldGameAdapter.IsInstalled(exe))throw new IOException("翻译资源不完整或游戏已更新，请重新应用翻译。");
-        var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
+        var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};GameLaunchEnvironment.ClearSession(info);GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
         info.ArgumentList.Add(DefoldGameAdapter.InGame(exe,DefoldGameAdapter.Folder+"/game.projectc"));
         info.Environment["FUSION_DEFOLD_SESSION"]=folder.Replace('\\','/');info.Environment["FUSION_DEFOLD_SECRET"]=secret;info.Environment["FUSION_DEFOLD_TRANSLATION"]=translationAtStartup?"1":"0";return info;
     }

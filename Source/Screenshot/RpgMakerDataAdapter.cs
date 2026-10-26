@@ -55,8 +55,10 @@ internal static class RpgMakerDataAdapter
     {
         using var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.RpgMakerDataBridge.js")??throw new InvalidOperationException("缺少 RPG 修改组件。");
         using var translation=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.RpgMakerTranslationBridge.js")??throw new InvalidOperationException("缺少 RPG 翻译组件。");
+        using var gameFont=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.GameFontPolicy.js")??throw new InvalidOperationException("缺少游戏字体组件。");
         using var advanced=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.RpgMakerAdvancedBridge.js")??throw new InvalidOperationException("缺少 RPG 地图组件。");
-        using var advancedReader=new StreamReader(advanced);using var translationReader=new StreamReader(translation);using var reader=new StreamReader(stream);return advancedReader.ReadToEnd()+"\n"+translationReader.ReadToEnd()+"\n"+reader.ReadToEnd();
+        using var speed=Assembly.GetExecutingAssembly().GetManifestResourceStream("Fusion.RpgMakerGameSpeed.js")??throw new InvalidOperationException("缺少 RPG 逻辑变速组件。");
+        using var gameFontReader=new StreamReader(gameFont);using var speedReader=new StreamReader(speed);using var advancedReader=new StreamReader(advanced);using var translationReader=new StreamReader(translation);using var reader=new StreamReader(stream);return gameFontReader.ReadToEnd()+"\n"+speedReader.ReadToEnd()+"\n"+advancedReader.ReadToEnd()+"\n"+translationReader.ReadToEnd()+"\n"+reader.ReadToEnd();
     }
     internal static string Hash(byte[] data)=>Convert.ToHexString(SHA256.HashData(data));
     private sealed record Journal(string Exe,string Manifest,string Before,string After,string ScriptHash);
@@ -286,6 +288,8 @@ internal sealed class RpgGameDataConnection : IEmbeddedTranslationConnection
     public ProcessStartInfo StartInfo(bool translationAtStartup=true)
     {
         var info=new ProcessStartInfo(exe){WorkingDirectory=Path.GetDirectoryName(exe),UseShellExecute=false};
+        GameLaunchEnvironment.ClearSession(info);
+        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup);
         if(environmentPrefix=="UNITY")
         {
             if(launchPrepared)throw new InvalidOperationException("此连接已经准备过启动。");

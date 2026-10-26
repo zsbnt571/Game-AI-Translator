@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -130,6 +130,17 @@ internal sealed class EmbeddedSourceLanguagePolicy
     // only help local extraction: foreign dialogue can resemble a locale change.
     // Explicit active-pack provenance may contain genuine foreign dialogue.
     // Unmarked foreign rows wait for a visible/ahead event, which stays independent.
+    // A single explicit source selection can authorize that exact resource's
+    // batch work without claiming it is the game's active locale. Auto, guessed
+    // catalogue hints and multiple selected languages never grant this permission.
+    internal bool AllowsSelectedResource(string text,string resourceLanguage,bool trustedSource)
+    {
+        if(!trustedSource||settings is null||!AllowsSelectedText(text))return false;
+        var selected=TranslationLanguagePolicy.Selected(settings);
+        string resource=GameSourceLanguageTracker.CanonicalLocale(resourceLanguage);
+        return selected.Length==1&&resource.Length>0&&
+            resource==GameSourceLanguageTracker.CanonicalLocale(selected[0]);
+    }
     internal bool AllowsActiveCatalog(string text,bool trustedActivePack=false)
     {
         if(!Tracker.HasDeclaredLocale||!AllowsSelectedText(text))return false;

@@ -42,7 +42,7 @@ internal sealed class NativeWolfMapWorkspace : WC.Grid,IDisposable
         canvas.Margin=new(12,0,12,0);
         var layout=this;layout.RowDefinitions.Add(new(){Height=W.GridLength.Auto});layout.RowDefinitions.Add(new());layout.RowDefinitions.Add(new(){Height=new(200)});layout.RowDefinitions.Add(new(){Height=W.GridLength.Auto});
         layout.Children.Add(status);WC.Grid.SetRow(body,1);layout.Children.Add(body);WC.Grid.SetRow(detail,2);layout.Children.Add(detail);
-        var actions=NativeDialogControls.Row(NativeDialogControls.Text("格点图显示资源中的事件位置。选择事件可查看内容及相关变量。"),
+        var actions=NativeDialogControls.Row(NativeDialogControls.Text("这是所选资源的事件位置示意，不是游戏当前画面。请在左侧选择地图，再选择事件查看内容及相关变量。"),
             NativeDialogControls.Button("查看相关变量",async()=>{if(events.SelectedItem is WolfTextCatalog.MapEvent e&&maps.SelectedItem is WolfMapCatalog.Entry m){await selectVariables(m.MapId,e.Id,WolfMapCatalog.VariableIds(e));}}));
         WC.Grid.SetRow(actions,3);layout.Children.Add(actions);
         maps.SelectionChanged+=async(_,_)=>{if(maps.SelectedItem is WolfMapCatalog.Entry entry)await LoadMap(entry);};
@@ -90,7 +90,7 @@ internal sealed class NativeWolfMapWorkspace : WC.Grid,IDisposable
         if(errorMessage is {} error){status.Text=UiLanguage.Text(error);return;}
         if(mapLoading){status.Text=UiLanguage.Text("正在读取地图…");return;}
         if(displayedEntry is {} entry&&displayedMap is {} map)
-            status.Text=$"{entry} · {map.Name} · {map.Width} × {map.Height} · "+UiLanguage.Format($"{map.Events.Length} 个事件");
+            status.Text=UiLanguage.Text("资源地图")+$" · {entry} · {map.Name} · {map.Width} × {map.Height} · "+UiLanguage.Format($"{map.Events.Length} 个事件");
         else status.Text=loadedMapCount is {} count?UiLanguage.Format($"已读取 {count} 张地图。"):"";
     }
     private void RenderEvent(bool preservePosition)

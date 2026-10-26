@@ -1,14 +1,14 @@
 using BepInEx;
 using BepInEx.Unity.Mono;
 using UnityEngine;
-[assembly:System.Reflection.AssemblyVersion("0.6.0.134")]
-[assembly:System.Reflection.AssemblyFileVersion("0.6.0.134")]
+[assembly:System.Reflection.AssemblyVersion("1.1.0.123")]
+[assembly:System.Reflection.AssemblyFileVersion("1.1.0.123")]
 
 namespace Fusion.UnityEmbedded
 {
     // BepInEx 6 Mono moved BaseUnityPlugin into a separate assembly/namespace.
     // This wrapper is shipped alone for an existing compatible Mono6 loader.
-    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "0.6.0.134")]
+    [BepInPlugin("local.fusion.unity.embedded", "Fusion Embedded Translation", "1.1.0.123")]
     public sealed class Mono6Plugin : BaseUnityPlugin
     {
         void Awake()

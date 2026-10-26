@@ -11,7 +11,7 @@ foreach($reference in $references){if(-not(Test-Path -LiteralPath $reference)){t
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $arguments=@($compiler,'-nologo','-target:library','-langversion:latest','-nostdlib+','-optimize+','-deterministic+',"-out:$OutputDirectory\FusionUnityEmbedded.dll")
 $arguments+=@($references | ForEach-Object {"-reference:$_"})
-$arguments+=@('BridgeJson.cs','TextLookup.cs','UnityPipeStream.cs','UnityBridgeRuntime.cs','LegacyTextProjection.cs','BufferedTmpProjection.cs','CjkTextLayout.cs','LegacyTextRegion.cs','StaticTmpFonts.cs','NativeTmpPreprocessor.cs','IncrementalTextState.cs','DisplaySourceHooks.cs','MonoPlugin.cs') | ForEach-Object {Join-Path $PSScriptRoot $_}
+$arguments+=@('BridgeJson.cs','TextLookup.cs','UnityPipeStream.cs','UnityBridgeRuntime.cs','LegacyTextProjection.cs','BufferedTmpProjection.cs','CjkTextLayout.cs','LegacyTextRegion.cs','StaticTmpFonts.cs','FontGlyphs.cs','NativeTmpPreprocessor.cs','IncrementalTextState.cs','DisplaySourceHooks.cs','MonoPlugin.cs') | ForEach-Object {Join-Path $PSScriptRoot $_}
 $arguments+=Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'FontAssets') -File | ForEach-Object {"-resource:$($_.FullName),Fusion.UnityEmbedded.FontAssets.$($_.Name)"}
 & 'C:\Program Files\dotnet\dotnet.exe' @arguments
 if($LASTEXITCODE -ne 0){throw 'Unity embedded Mono compilation failed.'}

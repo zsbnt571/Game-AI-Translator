@@ -1,7 +1,9 @@
 /* Display-only adapters. Tagged links retain game identifiers and use the displayed geometry. */
 (function(g){
     'use strict';const transport=g.__fusionWebTransport;if(!transport)return;
-    let bridge,epoch=0,ready=false,enabled=false,startupAdoptable=false,cache=new Map(),queued=new Set(),queue=[],retry=new Map(),records=new Map(),sprites=new Map(),hooked=false,applied=0;
+    let bridge,epoch=0,ready=false,enabled=false,startupAdoptable=false,cache=new Map(),queued=new Set(),queue=[],retry=new Map(),records=new Map(),sprites=new Map(),hooked=false,applied=0,speedRestoreError='';
+    const startup=JSON.parse(transport.startup());g.__fusionGameFontOptions=startup;
+    const customFont=typeof createFusionGameFontPolicy==='function'?createFusionGameFontPolicy(g,startup,()=>refresh()):null;
     const prefixes=new Map();let prefixRecovered=0,layoutFits=0;
     const rpg=typeof createFusionRpgTranslation==='function';
     if(rpg)bridge=createFusionRpgTranslation(g);
@@ -9,6 +11,7 @@
     if(novel)bridge=createFusionNovelTranslation(g,g.__fusionNovelEngine);
     const data=novel&&typeof createFusionNovelData==='function'?createFusionNovelData(g,g.__fusionNovelEngine):null;
     const state=novel&&typeof createFusionNovelState==='function'?createFusionNovelState(g,g.__fusionNovelEngine,data):null;
+    const speed=rpg&&typeof createFusionRpgSpeed==='function'?createFusionRpgSpeed(g):g.__fusionWebEngine==='construct3'&&typeof createFusionConstructSpeed==='function'?createFusionConstructSpeed(g):null;
     function valid(s){return typeof s==='string'&&s.length>0&&s.length<=6000&&!s.includes('\0')&&/[A-Za-z\u00c0-\u2fff\u3040-\u9fff\uac00-\ud7af]/.test(s);}
     function codes(s){return s.match(/\\[\[\]]|\[\/?(?:b|i|u|s|color|font|size|scale|scalex|scaley|tag|offsetx|offsety|spacing|opacity|outline|background|icon)(?:=[^\]\r\n]{0,256})?\]/gi)||[];}
     function compatible(s,t){const a=codes(s),b=codes(t);return a.length===b.length&&a.every((v,i)=>v===b[i]);}
@@ -57,6 +60,11 @@
     }
     function fitText(inst,record,view){
         const rt=inst._rendererText;
+        const selected=enabled&&view.translated&&customFont&&customFont.family();
+        if(rt.SetFontName){
+            if(selected){rt.SetFontName(selected);record.ownedFont=true;}
+            else if(record.ownedFont){rt.SetFontName(inst._faceName);record.ownedFont=false;}
+        }
         if(!view.translated&&record.ownedReveal&&rt.SetDrawMaxCharacterCount){
             let count=-1;
             if(inst._typewriterEndTime>=0){const progress=Math.max(0,Math.min(1,(inst._runtime.GetWallTime()-inst._typewriterStartTime)/Math.max(.001,inst._typewriterEndTime-inst._typewriterStartTime)));count=Math.floor(rt.GetLengthInGraphemes()*progress);}
@@ -66,7 +74,7 @@
         const wi=inst.GetWorldInfo(),width=wi.GetWidth(),height=wi.GetHeight(),scale=wi.GetSceneGraphScale();
         if(!Number.isFinite(width+height+scale)||width<=0||height<=4||scale<=0)return;
         if(!view.translated){if(record.fitted){rt.SetFontSizeScale(scale);rt.SetWordWrapMode(inst._wrapByWord?'word':'character');record.fitted=false;record.layoutKey=null;}return;}
-        const key=JSON.stringify([view.body,width,height,scale,inst._ptSize,inst._faceName,inst._lineHeightOffset,inst._enableBBcode,inst._isBold,inst._isItalic]);
+        const key=JSON.stringify([view.body,width,height,scale,inst._ptSize,inst._faceName,selected,inst._lineHeightOffset,inst._enableBBcode,inst._isBold,inst._isItalic]);
         rt.SetWordWrapMode('character');
         if(record.layoutKey!==key){
             const layer=wi.GetLayer(),zoom=layer.GetRenderScale()*layer.Get2DScaleFactorToZ(wi.GetTotalZElevation());
@@ -109,10 +117,11 @@
         if(!item.rt){const rt=C.New(C.Gfx.RendererText,inst._runtime.GetRenderer(),{timeout:5});rt.ontextureupdate=()=>inst._runtime.UpdateRender();item.rt=rt;}
         const rt=item.rt,layer=wi.GetLayer(),height=inst._sdkType.GetSpriteFont().GetCharacterHeight(),width=wi.GetWidth(),boxHeight=wi.GetHeight(),sceneScale=wi.GetSceneGraphScale();
         const zoom=layer.GetRenderScale()*layer.Get2DScaleFactorToZ(wi.GetTotalZElevation()),bb=!!inst._enableBBcode;
-        const shown=bb?spriteMarkup(wanted,height):wanted,key=JSON.stringify([shown,width,boxHeight,height,inst._characterScale,sceneScale,zoom,bb,inst._horizontalAlign,inst._verticalAlign]);
+        const selected=customFont&&customFont.family()||'Microsoft YaHei UI';
+        const shown=bb?spriteMarkup(wanted,height):wanted,key=JSON.stringify([shown,width,boxHeight,height,inst._characterScale,sceneScale,zoom,bb,inst._horizontalAlign,inst._verticalAlign,selected]);
         if(!Number.isFinite(width+boxHeight+sceneScale+zoom)||width<=0||boxHeight<=4||sceneScale<=0||zoom<=0)return false;
         if(item.key!==key){
-            rt.SetText(shown);rt.SetFontName('Microsoft YaHei UI');rt.SetFontSize(Math.max(1,height*inst._characterScale*0.62));
+            rt.SetText(shown);rt.SetFontName(selected);rt.SetFontSize(Math.max(1,height*inst._characterScale*0.62));
             rt.SetBBCodeEnabled(bb);rt.SetHorizontalAlignment(['left','center','right'][inst._horizontalAlign]||'left');rt.SetVerticalAlignment(['top','center','bottom'][inst._verticalAlign]||'top');rt.SetWordWrapMode('character');rt.SetSize(width,boxHeight,zoom);
             // Measure the complete translated block, including tagged choices, before painting.
             // Never grow the game object: its neighbouring controls keep their own space.
@@ -130,6 +139,7 @@
         const fragment=rt.HitTestFragment((dx*c+dy*s+wi.GetWidth()*wi.GetOriginX())*scale,(-dx*s+dy*c+wi.GetHeight()*wi.GetOriginY())*scale),tag=fragment&&fragment.GetStyleTag('tag');return tag?tag.param:'';}
     let spriteHooked=false;
     function installAll(){
+        if(speed)speed.install();
         install();if(rpg||novel||spriteHooked)return;const P=g.C3&&g.C3.Plugins&&g.C3.Plugins.Spritefont2&&g.C3.Plugins.Spritefont2.Instance&&g.C3.Plugins.Spritefont2.Instance.prototype;
         if(!P||typeof P.Draw!=='function'||!g.C3.Gfx||!g.C3.Gfx.RendererText)return;
         const draw=P.Draw;P.Draw=function(renderer){try{if(spriteDraw(this,renderer))return;}catch(_){const item=sprites.get(this);if(item)item.active=false;}return draw.apply(this,arguments);};
@@ -143,11 +153,21 @@
         const release=P.Release;P.Release=function(){const item=sprites.get(this);if(item){if(item.rt)item.rt.Release();sprites.delete(this);}return release.apply(this,arguments);};spriteHooked=true;
     }
     function refresh(){for(const inst of records.keys())apply(inst);for(const inst of sprites.keys()){spriteDraw(inst,null);inst._runtime.UpdateRender();}}
-    function status(){return {enabled,epoch,live:records.size+sprites.size,applied,hooked:rpg||hooked,spriteHooked,prefixRecovered,layoutFits};}
+    function status(){return {enabled,epoch,live:records.size+sprites.size,applied,hooked:rpg||hooked,spriteHooked,prefixRecovered,layoutFits,speedRestoreError};}
     function command(q){
+        if(q.op==='fontPreferences'){
+            if(rpg||novel)return bridge.command(q);
+            if(!customFont||!customFont.configure)throw Error('Font switching unavailable');
+            return customFont.configure(q).then(receipt=>Object.assign(receipt,{enabled,writebackPending:enabled,restorePending:enabled&&q.mode==='default'}));
+        }
+        if(q.op==='gameSpeed'||q.op&&/^speed(?:Enable|Disable|Status)$/.test(q.op)){if(!speed)throw Error('此游戏没有可用的引擎倍率连接。');return speed.command(q);}
         if(q.op&&q.op.startsWith('state')){if(!state)throw Error('Game state adapter unavailable');return state.command(q);}
         if(q.op&&q.op.startsWith('data')){if(!data)throw Error('Game data adapter unavailable');return data.command(q);}
-        if(q.id<0){if(state)state.stop();if(data)data.command({op:'dataDisable'});}
+        if(q.id<0){
+            // A failed engine setter must not prevent independent translation cleanup.
+            if(speed)try{speed.stop();}catch(e){speedRestoreError=String(e&&e.message||e).slice(0,256);}
+            if(state)state.stop();if(data)data.command({op:'dataDisable'});
+        }
         // The desktop session attaches after first paint. Adopt its own startup
         // cache once instead of clearing visible translations and repainting them.
         if(q.op==='translationPrepare'){
@@ -175,13 +195,13 @@
         }
         if(q.op==='translationStatus')return status();throw Error('Unsupported translation request');
     }
-    const startup=JSON.parse(transport.startup()),prepare=command({op:'translationPrepare'});
+    const prepare=command({op:'translationPrepare'});
     if(startup.enabled){let batch=[];for(const source of Object.keys(startup.entries||{}).slice(0,150000)){batch.push({source,text:startup.entries[source]});if(batch.length===256){command({op:'translationApply',prime:true,epoch:prepare.epoch,entries:batch});batch=[];}}if(batch.length)command({op:'translationApply',prime:true,epoch:prepare.epoch,entries:batch});command({op:'translationEnable',prepared:true});startupAdoptable=true;}
     g.__fusionWebInstall=installAll;
     if(g.document)g.document.addEventListener('load',installAll,true);
     function tick(){
         try{
-            installAll();if(data)data.tick();if(!ready){transport.hello();ready=true;}
+            installAll();if(speed)speed.tick();if(data)data.tick();if(!ready){transport.hello();ready=true;}
             const raw=transport.request();if(!raw)return;const q=JSON.parse(raw);let reply;
             try{
                 const result=command(q);

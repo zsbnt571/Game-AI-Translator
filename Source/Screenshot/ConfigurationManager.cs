@@ -204,6 +204,9 @@ public static class ConfigurationManager
         var settings = JsonSerializer.Deserialize<ApiSettings>(json,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ApiSettings();
 
+        var hasInterfaceLanguage = UiLanguage.HasSavedPreference(root);
+        if (!hasInterfaceLanguage) settings.InterfaceLanguage = ApplicationLanguage.SimplifiedChinese;
+
         settings.ApiKey = FusionSecrets.Unprotect(settings.ApiKey);
         SafeDiagnosticOutput.RegisterCredential(settings.ApiKey);
         var firstByteValue = DefaultFirstByteTimeoutSeconds;
@@ -227,7 +230,7 @@ public static class ConfigurationManager
         var originalComplete = settings.RequestTimeoutSeconds;
         var oldSchema = settings.SettingsSchemaVersion;
         NormalizeAll(settings);
-        requiresSave = oldSchema != CurrentSettingsSchemaVersion || !hasFirstByte || !hasComplete
+        requiresSave = oldSchema != CurrentSettingsSchemaVersion || !hasFirstByte || !hasComplete || !hasInterfaceLanguage
             || originalFirstByte != settings.FirstByteTimeoutSeconds
             || originalComplete != settings.RequestTimeoutSeconds;
         return settings;

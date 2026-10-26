@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <unordered_set>
 #include <cmath>
 #include "json.hpp"
 // WOLF numeric variable banks. Locate the engine's initializer, then validate
@@ -10,6 +11,9 @@
 // accept an address from IPC. Strings, DB objects and saves are not guessed.
 namespace WolfData {
 using nlohmann::json;
+#ifdef FUSION_TEST_WOLFDATA
+inline size_t fixtureReadCalls=0;
+#endif
 inline bool Region(uintptr_t address,size_t count,bool write=false){
  if(!address||count>4*1024*1024||address+count<address)return false;
  MEMORY_BASIC_INFORMATION m{};if(!VirtualQuery((void*)address,&m,sizeof(m))||m.State!=MEM_COMMIT||m.Protect&(PAGE_GUARD|PAGE_NOACCESS))return false;
@@ -17,7 +21,11 @@ inline bool Region(uintptr_t address,size_t count,bool write=false){
  if(write&&!(m.Protect&(PAGE_READWRITE|PAGE_WRITECOPY)))return false;
  return true;
 }
-inline bool Read(uintptr_t address,void* out,size_t n){if(!Region(address,n))return false;__try{memcpy(out,(void*)address,n);return true;}__except(EXCEPTION_EXECUTE_HANDLER){return false;}}
+inline bool Read(uintptr_t address,void* out,size_t n){
+#ifdef FUSION_TEST_WOLFDATA
+ ++fixtureReadCalls;
+#endif
+ if(!Region(address,n))return false;__try{memcpy(out,(void*)address,n);return true;}__except(EXCEPTION_EXECUTE_HANDLER){return false;}}
 inline bool Exchange(uintptr_t address,int expected,int value){if(address%4||!Region(address,4,true))return false;__try{return InterlockedCompareExchange((volatile LONG*)address,value,expected)==expected;}__except(EXCEPTION_EXECUTE_HANDLER){return false;}}
 struct Bank {uintptr_t pointer=0;unsigned size=0;bool operator==(const Bank& b)const{return pointer==b.pointer&&size==b.size;}};
 struct Entry {uintptr_t address;int expected;};
@@ -139,6 +147,9 @@ class Data {
   databaseTypeStride=chosen;return true;
  }
  bool Refresh(){
+  // Never locate or dereference variable/database banks before an explicit
+  // enable, including a late request that arrives after dataDisable.
+  if(!enabled)return false;
   std::vector<Bank> current,currentMap;bool normalAvailable=Observe(current);if(!normalAvailable)current.clear();
   mapAvailable=normalAvailable&&ObserveMap(currentMap);if(!mapAvailable)currentMap.clear();
   std::vector<DatabaseRow> currentDatabase;std::vector<Bank> currentShape;
@@ -156,7 +167,7 @@ public:
  void Initialize(bool old){legacy=old;}
  void Stop(){enabled=false;Reset();
 #ifndef FUSION_TEST_WOLFDATA
-  WolfSpeed::Set(1);
+  WolfSpeed::Revoke();
 #endif
  }
  void Tick(){
@@ -169,13 +180,19 @@ public:
  json Request(const json& q,bool& ok){
   auto op=q.value("op","");
   if(op=="dataDisable"){Stop();return {{"enabled",false}};}
-  if(op=="dataEnable"){enabled=true;bool available=Refresh();return {{"enabled",true},{"available",available},{"generation",generation}};}
+  if(op=="dataEnable"){
+   enabled=true;
+#ifndef FUSION_TEST_WOLFDATA
+   WolfSpeed::Authorize();
+#endif
+   bool available=Refresh();return {{"enabled",true},{"available",available},{"generation",generation}};
+  }
+  if(!enabled)return Failure(ok,u8"请先开启游戏修改。");
 #ifndef FUSION_TEST_WOLFDATA
   if(op=="dataSpeed"){
-   if(!enabled)return Failure(ok,u8"请先开启游戏修改。");
    if(!q.contains("rate")||!q["rate"].is_number())return Failure(ok,u8"请填写有效的游戏速度。");
    double value=q["rate"].get<double>();if(!WolfSpeed::Valid(value))return Failure(ok,u8"变速范围为 0.25 到 100 倍。");
-   WolfSpeed::Set(value);return {{"speed",WolfSpeed::rate.load()}};
+   const char* error=nullptr;if(!WolfSpeed::Apply(value,error))return Failure(ok,error);return {{"speed",WolfSpeed::rate.load()}};
   }
 #endif
   if(op=="dataSnapshot"&&q.contains("map")){
@@ -183,7 +200,6 @@ public:
    if(value!=selectedMap){selectedMap=value;mapBanks.clear();Reset();}
   }
   if(!Refresh())return Failure(ok,u8"尚未识别当前数值数据。若已进入游戏，此引擎版本可能尚未支持；请保留诊断报告。");
-  if(!enabled)return Failure(ok,u8"请先开启游戏修改。");
 #ifdef FUSION_TEST_CAPTURE
   if(op=="dataInspect"){
    Bank maps{},events{};unsigned stride=legacy?16:12;bool a=Vector(root+8,stride,50000,maps),b=a&&selectedMap>=0&&(unsigned)selectedMap<maps.size&&Vector(maps.pointer+selectedMap*stride,stride,50000,events);
@@ -192,11 +208,24 @@ public:
   }
 #endif
   if(op=="dataSnapshot"){
+   bool targeted=q.contains("entries");std::unordered_set<std::string> requested;
+   if(q.contains("includeVariables")&&!q["includeVariables"].is_boolean())return Failure(ok,u8"请求的变量列表无效。");
+   bool includeVariables=targeted&&q.value("includeVariables",false);
+   if(targeted){
+    const auto& values=q["entries"];
+    if(!values.is_array()||values.size()>20000)return Failure(ok,u8"请求的变量列表无效。");
+    for(const auto& value:values){
+     if(!value.is_string())return Failure(ok,u8"请求的变量列表无效。");
+     auto id=value.get<std::string>();
+     if(id.empty()||id.size()>96)return Failure(ok,u8"请求的变量列表无效。");
+     requested.insert(std::move(id));
+    }
+   }
    json output=json::array();for(auto i=rows.begin();i!=rows.end();)if(!locks.count(i->first))i=rows.erase(i);else ++i;bool truncated=false;
    auto scope=q.value("scope","all");
    auto query=q.value("query","");char* end=nullptr;long long number=query.empty()?0:strtoll(query.c_str(),&end,10);
    bool numericQuery=!query.empty()&&end==query.c_str()+query.size()&&number>=INT_MIN&&number<=INT_MAX;
-   auto include=[&](const std::string& id,int value){return (scope!="locked"||locks.count(id))&&(!numericQuery||value==number);};
+   auto include=[&](const std::string& id,int value){return (scope!="locked"||locks.count(id))&&(targeted?(requested.count(id)!=0||(includeVariables&&id[0]>='0'&&id[0]<='9')):!numericQuery||value==number);};
    // Database first, so large normal banks cannot hide currency or game stats.
    if(scope!="variables")for(const auto& record:databaseRows)for(unsigned i=0;i<record.values.size;i++){
     auto address=record.values.pointer+i*4;int value=0;if(!Read(address,&value,4))continue;
@@ -213,7 +242,8 @@ public:
     std::string id=std::to_string(b)+":"+std::to_string(i);if(!include(id,value))continue;if(output.size()>=20000){truncated=true;break;}rows[id]={address,value};
     output.push_back({{"id",id},{"name",u8"变量组 "+std::to_string(b)+" / "+std::to_string(i)},{"type","number"},{"value",value},{"locked",locks.count(id)!=0}});
    }
-   return {{"generation",generation},{"rows",output},{"truncated",truncated},{"scope","numeric-variable-banks"},{"map",selectedMap},{"mapAvailable",mapAvailable},{"databaseAvailable",databaseAvailable}};
+   size_t matched=0;if(targeted)for(const auto& row:output)if(requested.count(row["id"].get<std::string>()))matched++;
+   return {{"generation",generation},{"rows",output},{"truncated",truncated},{"targeted",targeted},{"requestedEntries",requested.size()},{"matchedEntries",matched},{"scope","numeric-variable-banks"},{"map",selectedMap},{"mapAvailable",mapAvailable},{"databaseAvailable",databaseAvailable}};
   }
   if(q.value("generation",0u)!=generation)return Failure(ok,u8"游戏数据已变化，请重新刷新后修改。");
   if(op=="dataUndo"){

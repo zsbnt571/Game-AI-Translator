@@ -22,6 +22,7 @@ internal sealed class YukarTranslationConnection : IEmbeddedTranslationConnectio
         if(!YukarGameAdapter.IsInstalled(exe))throw new IOException("Bakin 组件已变化，请重新应用。");
         var layout=YukarGameAdapter.Detect(exe)??throw new IOException("游戏运行环境已变化。");
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=layout.Directory,CreateNoWindow=true};
+        GameLaunchEnvironment.ClearSession(info);
         GameTestCopyEnvironment.Apply(info);
         info.Environment["FUSION_YUKAR_SESSION"]=folder;info.Environment["FUSION_YUKAR_SECRET"]=secret;info.Environment["FUSION_YUKAR_START"]=translationAtStartup?"1":"0";
         if(File.Exists(Path.Combine(Path.GetDirectoryName(exe)!,GameTestCopyEnvironment.Marker)))info.Environment["FUSION_YUKAR_TEST_MUTE"]="1";else info.Environment.Remove("FUSION_YUKAR_TEST_MUTE");

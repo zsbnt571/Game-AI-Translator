@@ -52,6 +52,7 @@ internal sealed partial class NativeLibraryNavigation
             this.model=model;Focusable=true;FocusVisualStyle=null;ClipToBounds=true;UseLayoutRounding=true;SnapsToDevicePixels=true;
             WM.TextOptions.SetTextFormattingMode(this,WM.TextFormattingMode.Display);
             W.Automation.AutomationProperties.SetName(this,UiLanguage.Text("游戏导航"));
+            WpfUiLanguage.Property(this,W.Automation.AutomationProperties.NameProperty,"游戏导航");
             MouseDown+=(_,e)=>{if(e.ChangedButton is WI.MouseButton.XButton1 or WI.MouseButton.XButton2)return;HandlePointerDown(e.ChangedButton==WI.MouseButton.Right?MouseButtons.Right:MouseButtons.Left,e.ClickCount,Point(e.GetPosition(this)));e.Handled=true;};
             MouseUp+=(_,e)=>{if(e.ChangedButton is WI.MouseButton.XButton1 or WI.MouseButton.XButton2)return;var p=Point(e.GetPosition(this));model.OnMouseUp(new(e.ChangedButton==WI.MouseButton.Right?MouseButtons.Right:MouseButtons.Left,1,p.X,p.Y,0));e.Handled=true;};
             MouseMove+=(_,e)=>{var p=Point(e.GetPosition(this));model.OnMouseMove(new(e.LeftButton==WI.MouseButtonState.Pressed?MouseButtons.Left:MouseButtons.None,0,p.X,p.Y,0));};
@@ -95,7 +96,7 @@ internal sealed partial class NativeLibraryNavigation
             }
             var key=new TextKey(node.Text,UiLanguage.Current,width,fontSize,dpi,color.ToArgb(),x,rowHeight);
             if(cached.Drawing is not null&&cached.Key==key&&ReferenceEquals(cached.Typeface,face)&&ReferenceEquals(cached.Culture,culture))return cached;
-            var text=new WM.FormattedText(UiLanguage.Text(node.Text),culture,W.FlowDirection.LeftToRight,face,fontSize,WpfDrawing.Brush(color),dpi)
+            var text=new WM.FormattedText(DisplayText(node),culture,W.FlowDirection.LeftToRight,face,fontSize,WpfDrawing.Brush(color),dpi)
             {MaxTextWidth=width,MaxLineCount=1,Trimming=W.TextTrimming.CharacterEllipsis};
             var drawing=new WM.DrawingGroup();
             // Keep the text's fractional baseline inside the drawing instead

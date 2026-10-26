@@ -211,7 +211,7 @@ public sealed partial class PreviewForm : DesktopForm
         _visionRuntimeManager = visionRuntimeManager;
         _recognitionPipelineV2 = new RecognitionPipelineV2(_ocrRuntimeManager, _visionRuntimeManager);
         _session = session;
-        Text = $"游戏 AI 截图翻译器 {BuildIdentity.ProductVersion} · 预览";
+        Text = UiLanguage.FormatTemplate("游戏 AI 截图翻译器 {0} · 预览", BuildIdentity.ProductVersion);
         AppBranding.Apply(this);
         TopMost=_settings.PreviewAlwaysOnTop;
         StartPosition = FormStartPosition.CenterScreen;
@@ -1113,7 +1113,7 @@ public sealed partial class PreviewForm : DesktopForm
         InvalidateTranslationRequest("runtime translation settings changed");
         CopyTranslationSettings(updated, _settings);
         _settings.BackgroundComputeDevice=updated.BackgroundComputeDevice;
-        SetStatus($"翻译设置已应用到当前 Preview：{_settings.TargetLanguage} / {UiLanguage.Text(UiStrings.TranslationStyleName(_settings.TranslationStyle))} / {_settings.Model}");
+        SetStatus(UiLanguage.FormatTemplate("翻译设置已应用到当前 Preview：{0} / {1} / {2}", _settings.TargetLanguage, UiLanguage.Text(UiStrings.TranslationStyleName(_settings.TranslationStyle)), _settings.Model));
         TranslationService.DiagnosticLog(
             $"preview runtime settings applied target={_settings.TargetLanguage} style={_settings.TranslationStyle} " +
             $"provider={TranslationProviderRegistry.Get(_settings.TranslationProviderKind).Id} model={_settings.Model} " +
@@ -2359,7 +2359,7 @@ public sealed partial class PreviewForm : DesktopForm
         Path.GetExtension(path).Equals(".jpg",StringComparison.OrdinalIgnoreCase)?ImageFormat.Jpeg:ImageFormat.Png);
     private void SaveImage()
     {
-        using var dialog = new SaveFileDialog { Filter = UiLanguage.Text("PNG 图片|*.png|JPEG 图片|*.jpg"), FileName = $"译文截图_{DateTime.Now:yyyyMMdd_HHmmss}.png" };
+        using var dialog = new SaveFileDialog { Filter = UiLanguage.Text("PNG 图片|*.png|JPEG 图片|*.jpg"), FileName = UiLanguage.FormatTemplate("译文截图_{0}.png", DateTime.Now.ToString("yyyyMMdd_HHmmss")) };
         if(AppDataPaths.HasExplicitRoot)dialog.InitialDirectory=AppDataPaths.OutputRoot;
         if (ShowPreviewDialog(dialog) != DialogResult.OK) return;
         SaveDisplayedImage(dialog.FileName);

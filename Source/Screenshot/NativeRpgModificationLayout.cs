@@ -50,6 +50,7 @@ public sealed partial class MainForm
     private void UpdateModificationPresentation()
     {
         bool common=_dataScope.SelectedIndex==0;
+        CommonSpeedSlot.Visibility=common?System.Windows.Visibility.Visible:System.Windows.Visibility.Collapsed;
         if(_dataCommonBoard is not null){_dataCommonBoard.Visible=common;}
         if(_dataListSurface is not null)_dataListSurface.Visible=!common;
         if(_dataDetailSurface is not null)_dataDetailSurface.Visible=!common;

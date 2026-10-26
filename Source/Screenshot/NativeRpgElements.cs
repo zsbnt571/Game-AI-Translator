@@ -16,6 +16,7 @@ internal class NativeRpgElement : IDisposable
     internal virtual string Text { get; set; } = "";
     internal string Name { get => W.Automation.AutomationProperties.GetAutomationId(View); set => W.Automation.AutomationProperties.SetAutomationId(View, value); }
     internal string AccessibleName { get => W.Automation.AutomationProperties.GetName(View); set => W.Automation.AutomationProperties.SetName(View, value); }
+    internal string LocalizedAccessibleName { set { AccessibleName=value;WpfUiLanguage.Property(View,W.Automation.AutomationProperties.NameProperty,value); } }
     internal object? Tag { get; set; }
     internal bool Visible { get => View.Visibility == W.Visibility.Visible; set => View.Visibility = value ? W.Visibility.Visible : W.Visibility.Collapsed; }
     internal bool Enabled { get => View.IsEnabled; set => View.IsEnabled = value; }

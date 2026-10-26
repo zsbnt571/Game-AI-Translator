@@ -2,6 +2,14 @@
 
 public sealed partial class MainForm
 {
+    private Func<GameInfo,GameDataSession,ApiSettings,RpgTranslationSession>? _gameTranslationSessionFactory;
+    private RpgTranslationSession CreateCurrentGameTranslationSession(GameInfo game,GameDataSession data)
+    {
+        _fusion!.RequireGameReady(game.ExePath);
+        var settings=_fusion.GameSettings(UiSettings,game.ExePath);
+        return _gameTranslationSessionFactory?.Invoke(game,data,settings)
+            ??new(data.Connection,game.ExePath,settings,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text,data.TranslationOptions);
+    }
     private void RetrySessionTranslationFailures()
     {
         if(_selectedGame is not { } game||SelectedTranslationSession() is not { } data||!data.Connection.Connected||
@@ -19,11 +27,16 @@ public sealed partial class MainForm
         var session=_gameSessions.Get(game);if(session.Busy)return;session.Busy=true;session.Feedback="";RenderGameSessionState();
         try
         {
-            session.Feedback=await TranslationToggleDispatcher.ToggleAsync(data,()=>
+            string fontWarning="";
+            if(data.Translation is not {Enabled:true} and not {RestorePending:true})
             {
-                _fusion!.RequireGameReady(game.ExePath);var settings=_fusion.GameSettings(UiSettings,game.ExePath);
-                return new(data.Connection,game.ExePath,settings,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text,data.TranslationOptions);
-            });
+                _fusion!.RequireGameReady(game.ExePath);
+                fontWarning=await GameFontLive.ApplyIfSupportedAsync(game,data.Connection);
+            }
+            // Resolve after the asynchronous preparation, and on every new
+            // enable: ordinary launch never freezes a stale profile snapshot.
+            session.Feedback=await TranslationToggleDispatcher.ToggleAsync(data,()=>CreateCurrentGameTranslationSession(game,data));
+            if(fontWarning.Length>0)session.Feedback=fontWarning+(session.Feedback.Length==0?"":" · "+session.Feedback);
         }
         catch(Exception ex)
         {

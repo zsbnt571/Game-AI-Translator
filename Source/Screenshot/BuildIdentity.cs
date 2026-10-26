@@ -7,6 +7,8 @@ public static class BuildIdentity
 {
     public const string ProductName="Game Translator";
     public static readonly string BuildVersion=typeof(BuildIdentity).Assembly.GetName().Version?.ToString()??"Unavailable";
+    internal static string DiagnosticVersion => (typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? BuildVersion)
+        + " (" + (typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyFileVersionAttribute>()?.Version ?? BuildVersion) + ")";
     internal static readonly string LocalWpfCandidate=System.Text.RegularExpressions.Regex.Match(typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"",@"wpf\.(\d+)").Groups[1].Value;
     internal static string VersionLabel
     {

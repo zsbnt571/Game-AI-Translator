@@ -183,6 +183,15 @@ namespace Fusion.UnityEmbedded
                 }
                 else
                 {
+                    // Page/Linked overflow owns pagination across containers.
+                    // Fitting the complete translated buffer into one rectangle
+                    // changes page boundaries and can expose later dialogue.
+                    // Preserve that authored flow and restore any earlier fit
+                    // when a pooled control switches into one of these modes.
+                    var overflow=type.GetProperty("overflowMode");
+                    string overflowMode=overflow==null?null:Convert.ToString(overflow.GetValue(target,null));
+                    if(overflowMode=="Page"||overflowMode=="Linked")
+                    {Restore(target);return;}
                     if(Flag(target,"enableAutoSizing",false)||Flag(target,"autoSizeTextContainer",false)||ContentAxes(target)!=0)
                     {
                         ReleaseFit(target);fitText=null;fitReviewAt=0;
@@ -223,7 +232,22 @@ namespace Fusion.UnityEmbedded
                                 var x=bounds.GetType().GetField("x");var y=bounds.GetType().GetField("y");if(x==null||y==null)break;
                                 double wide=Convert.ToDouble(x.GetValue(bounds)),tall=Convert.ToDouble(y.GetValue(bounds));
                                 if(double.IsNaN(wide)||double.IsInfinity(wide)||wide<0||double.IsNaN(tall)||double.IsInfinity(tall)||tall<=0)break;
-                                double ratio=Math.Max(wide/width,tall*1.05/height);if(ratio<=1)break;
+                                // Older TMP versions accumulate the advances of
+                                // wrapped lines in preferredWidth. That is not
+                                // the width of the widest rendered line. Only
+                                // disregard it when a second, wider measurement
+                                // proves this paragraph actually gained lines.
+                                // Non-breaking runs and compact labels still
+                                // have to fit horizontally.
+                                double horizontalRatio=wide/width;
+                                if(horizontalRatio>1&&paragraph&&Flag(target,"enableWordWrapping",false)&&width<1000000)
+                                {
+                                    var unwrapped=measure.Invoke(target,new object[]{translated,1000000f,1000000f});
+                                    double naturalHeight=Convert.ToDouble(y.GetValue(unwrapped));
+                                    if(!double.IsNaN(naturalHeight)&&!double.IsInfinity(naturalHeight)&&naturalHeight>0&&tall>naturalHeight+.01)
+                                        horizontalRatio=1;
+                                }
+                                double ratio=Math.Max(horizontalRatio,tall*1.05/height);if(ratio<=1)break;
                                 double currentSize=Convert.ToDouble(sizeProperty.GetValue(target,null));
                                 double next=Math.Max(Math.Min(8,size),currentSize*Math.Min(.95,1/ratio));
                                 if(next>=currentSize-.01)break;

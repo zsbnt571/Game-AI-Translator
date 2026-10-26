@@ -11,6 +11,7 @@ internal interface IGameLaunchOperations
     void Install(GameInfo game,ApiSettings settings,string key);
     void Restore(GameInfo game);
     int Launch(GameInfo game);
+    int Launch(GameInfo game,bool explicitModification)=>Launch(game);
     bool AutomaticCover { get; }
 }
 internal sealed class DesktopGameLaunchOperations : IGameLaunchOperations
@@ -20,14 +21,16 @@ internal sealed class DesktopGameLaunchOperations : IGameLaunchOperations
     public void PrepareOrdinary(GameInfo game)=>new FusionAdapterInstaller().PrepareOrdinaryLaunch(game);
     public void Install(GameInfo game,ApiSettings settings,string key)=>new FusionAdapterInstaller().Install(game,settings,key);
     public void Restore(GameInfo game)=>new FusionAdapterInstaller().Restore(game);
-    public int Launch(GameInfo game)
+    public int Launch(GameInfo game)=>Launch(game,false);
+    public int Launch(GameInfo game,bool explicitModification)
     {
-        var start=new ProcessStartInfo(game.ExePath){WorkingDirectory=Path.GetDirectoryName(game.ExePath),UseShellExecute=true};
-        if(RpgMakerDataAdapter.Detect(game.ExePath) is not null){start.UseShellExecute=false;start.Environment.Remove("FUSION_RPG_PIPE");start.Environment.Remove("FUSION_RPG_SECRET");}
-        if(game.AdapterId=="renpy"){start.UseShellExecute=false;start.Environment.Remove("FUSION_RENPY_PIPE");start.Environment.Remove("FUSION_RENPY_SECRET");}
+        var start=GameLaunchEnvironment.Ordinary(game.ExePath);
+        bool prepared=DefoldSpeedLaunch.Prepare(game,start,explicitModification);
         GameTestCopyEnvironment.Apply(start,game.AdapterId=="renpy");
         using var process=Process.Start(start);
-        return process?.Id??throw new InvalidOperationException("未能确认启动请求。");
+        if(process is null)throw new InvalidOperationException("未能确认启动请求。");
+        DefoldSpeedLaunch.Launched(game,process,prepared);
+        return process.Id;
     }
 }
 
@@ -35,18 +38,25 @@ public sealed partial class MainForm
 {
     private IGameLaunchOperations _gameLaunchOperations = new DesktopGameLaunchOperations();
     private Task RunGameActionAsync(string action)=>!_gameDetecting&&_selectedGame is {} game?RunGameActionForAsync(game,action):Task.CompletedTask;
-    private async Task RunGameActionForAsync(GameInfo game,string action)
+    private Task LaunchOrdinaryGameSessionAsyncFor(GameInfo game,bool explicitModification=false)=>RunGameActionForCoreAsync(game,"plain",explicitModification);
+    private Task RunGameActionForAsync(GameInfo game,string action)=>RunGameActionForCoreAsync(game,action,false);
+    private async Task RunGameActionForCoreAsync(GameInfo game,string action,bool explicitModification)
     {
         if(action=="screen"){await ToggleScreenTranslationForAsync(game);return;}
-        if(RpgMakerDataAdapter.Detect(game.ExePath) is not null)
+        if(action=="plain"&&GameCapabilities.DormantTranslationRuntime(game))
+        {await LaunchDormantGameRuntimeAsyncFor(game);return;}
+        bool ordinary=action is "plain" or "plain-bare";
+        // Bare launch deliberately removes this app's bridge. Normal launch
+        // retains an idle bridge only when the adapter has a live host channel.
+        if(!ordinary&&RpgMakerDataAdapter.Detect(game.ExePath) is not null)
         {await LaunchRpgSessionAsyncFor(game,action);return;}
-        if(game.AdapterId=="renpy"){await LaunchScriptTranslationSessionAsyncFor(game,action);return;}
-        if(EmbeddedGameAdapters.Handles(game)){await LaunchEmbeddedTranslationSessionAsyncFor(game,action);return;}
+        if(!ordinary&&game.AdapterId=="renpy"){await LaunchScriptTranslationSessionAsyncFor(game,action);return;}
+        if(!ordinary&&EmbeddedGameAdapters.Handles(game)){await LaunchEmbeddedTranslationSessionAsyncFor(game,action);return;}
         var session=_gameSessions.Get(game);
         if(session.Busy||session.LaunchPending)return;
         var root=RecentGameStore.Normalize(Path.GetDirectoryName(game.ExePath)!);
         if(_gameRootOperations.ContainsKey(root)){session.Feedback="此游戏目录正在处理，请稍后重试。";RenderGameState();return;}
-        if(action is not ("plain" or "launch" or "install" or "restore"))throw new ArgumentOutOfRangeException(nameof(action));
+        if(action is not ("plain" or "plain-bare" or "launch" or "install" or "restore"))throw new ArgumentOutOfRangeException(nameof(action));
         var operations=_gameLaunchOperations;
         var key=_fusion!.State.EmbeddedToggleKey;
         var profileId=_fusion.GameProfileId(game.ExePath);
@@ -75,14 +85,20 @@ public sealed partial class MainForm
             }
             else
             {
-                if(action=="plain")await Task.Run(()=>operations.PrepareOrdinary(game));
+                if(ordinary)
+                {
+                    foreach(var sessions in new[]{_dataSessions,_scriptTranslationSessions,_embeddedTranslationSessions})
+                        if(sessions.Remove(game.ExePath,out var previous)){ResetNovelSpeed(previous.Connection);previous.Dispose();}
+                    await Task.Run(()=>operations.PrepareOrdinary(game));
+                }
                 else await Task.Run(()=>operations.Install(game,settings!,key));
                 if(action=="install")session.Feedback="已写入此游戏的翻译方案，下次启动生效。";
                 else
                 {
                     if(await Task.Run(()=>operations.ProcessState(game))!=FusionGameProcessState.Stopped)throw new InvalidOperationException("启动前此游戏的进程状态已改变，未重复启动。");
-                    int processId=await Task.Run(()=>operations.Launch(game));
+                    int processId=await Task.Run(()=>operations.Launch(game,explicitModification));
                     session.Launched(action=="launch"?GameLaunchMode.Translation:GameLaunchMode.Ordinary,action=="launch"?profileId:null,action=="launch"?profileName:null,settings is null?null:FusionConfiguration.EditIdentity(settings));
+                    session.LaunchedWithoutBridge=ordinary;
                     
                     // Completion belongs to the captured game even after browsing elsewhere.
                     // Launch does not navigate. Details are entered explicitly by

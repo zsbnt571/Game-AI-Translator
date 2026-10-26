@@ -26,6 +26,14 @@ internal sealed class NativeRecordRows(int columns) : ObservableCollection<Nativ
 {
     internal HashSet<int> LocalizedColumns {get;}=[];
     internal int Add(params object?[] values) { var row = new NativeRecordRow(columns);for(int i=0;i<columns;i++)row.Cells[i].Localized=LocalizedColumns.Contains(i); for (int i = 0; i < Math.Min(columns, values.Length); i++) row.Cells[i].Value = values[i]; base.Add(row); return Count - 1; }
+    internal void Replace(IEnumerable<NativeRecordRow> rows)
+    {
+        // Publish one complete snapshot. A reset avoids thousands of per-row
+        // collection notifications and preserves the prior view until ready.
+        CheckReentrancy();Items.Clear();foreach(var row in rows)Items.Add(row);
+        OnPropertyChanged(new(nameof(Count)));OnPropertyChanged(new("Item[]"));
+        OnCollectionChanged(new(System.Collections.Specialized.NotifyCollectionChangedAction.Reset));
+    }
 }
 internal sealed class NativeRecordGrid
 {

@@ -1,0 +1,334 @@
+{
+  "scope": "License documents and inventory corrections only; no runtime mutation",
+  "files": [
+    {
+      "component": "Microsoft.Web.WebView2",
+      "version": "1.0.2849.39",
+      "path": "licenses/NuGet/Microsoft.Web.WebView2/1.0.2849.39/LICENSE.txt",
+      "bytes": 1487,
+      "sha256": "0AF8F1B807512AAE39C2AC1AA4D0CAE65CABECB6FD554B8439A5162A0D6ECA55",
+      "sourceArchiveSha256": "099EC21F62E0E29EF9D9A991D096421EFB256BDFDB64984216395736043560FD",
+      "sourceEntry": "LICENSE.txt",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "Microsoft.Web.WebView2",
+      "version": "1.0.2849.39",
+      "path": "licenses/NuGet/Microsoft.Web.WebView2/1.0.2849.39/Microsoft.Web.WebView2.nuspec",
+      "bytes": 1367,
+      "sha256": "372C2F74908FA16F19D2C250268567E61B68B7926919F378F75C01568CC81E54",
+      "sourceArchiveSha256": "099EC21F62E0E29EF9D9A991D096421EFB256BDFDB64984216395736043560FD",
+      "sourceEntry": "Microsoft.Web.WebView2.nuspec",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "Microsoft.Web.WebView2",
+      "version": "1.0.2849.39",
+      "path": "licenses/NuGet/Microsoft.Web.WebView2/1.0.2849.39/NOTICE.txt",
+      "bytes": 3894,
+      "sha256": "106423785C5B7EBA0A8E61D1837F2132E9C828E20AD530F565D981C1DF60DD90",
+      "sourceArchiveSha256": "099EC21F62E0E29EF9D9A991D096421EFB256BDFDB64984216395736043560FD",
+      "sourceEntry": "NOTICE.txt",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "SkiaSharp",
+      "version": "3.119.4",
+      "path": "licenses/NuGet/SkiaSharp/3.119.4/SkiaSharp.nuspec",
+      "bytes": 6088,
+      "sha256": "64F0B2F1511042F5A6BA63A9B9508AA5D34118E7E388D828121FAA0E124E3597",
+      "sourceArchiveSha256": "E32A449D31945C0B9D169EB5BC676E1E3F589AAB69888E49D703FDC1C384C176",
+      "sourceEntry": "SkiaSharp.nuspec",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "SkiaSharp",
+      "version": "3.119.4",
+      "path": "licenses/NuGet/SkiaSharp/3.119.4/LICENSE.txt",
+      "bytes": 1129,
+      "sha256": "89101E35A8C66FD4D6DFFC1763259161D35CB564C169714EC227A768C89F2938",
+      "sourceArchiveSha256": "E32A449D31945C0B9D169EB5BC676E1E3F589AAB69888E49D703FDC1C384C176",
+      "sourceEntry": "LICENSE.txt",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "SkiaSharp.NativeAssets.Win32",
+      "version": "3.119.4",
+      "path": "licenses/NuGet/SkiaSharp.NativeAssets.Win32/3.119.4/SkiaSharp.NativeAssets.Win32.nuspec",
+      "bytes": 1832,
+      "sha256": "3E0C3EAFD204F390AB4E63F15BFAA34E5F128F576A2D97B9C25D1AFB848A5C16",
+      "sourceArchiveSha256": "5A5698B1B4E1FDC9FFE9868DF6874DB5FA69F21A4DE76BA71A01A542E9B43391",
+      "sourceEntry": "SkiaSharp.NativeAssets.Win32.nuspec",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "SkiaSharp.NativeAssets.Win32",
+      "version": "3.119.4",
+      "path": "licenses/NuGet/SkiaSharp.NativeAssets.Win32/3.119.4/LICENSE.txt",
+      "bytes": 1129,
+      "sha256": "89101E35A8C66FD4D6DFFC1763259161D35CB564C169714EC227A768C89F2938",
+      "sourceArchiveSha256": "5A5698B1B4E1FDC9FFE9868DF6874DB5FA69F21A4DE76BA71A01A542E9B43391",
+      "sourceEntry": "LICENSE.txt",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "SkiaSharp.NativeAssets.Win32",
+      "version": "3.119.4",
+      "path": "licenses/NuGet/SkiaSharp.NativeAssets.Win32/3.119.4/THIRD-PARTY-NOTICES.txt",
+      "bytes": 139775,
+      "sha256": "21504C46C4C58AA64C1055BD2DCBC5F9A136B4B8C412ED3CC6740E22C5B127F5",
+      "sourceArchiveSha256": "5A5698B1B4E1FDC9FFE9868DF6874DB5FA69F21A4DE76BA71A01A542E9B43391",
+      "sourceEntry": "THIRD-PARTY-NOTICES.txt",
+      "provenance": "Exact-version local original NuGet package"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/LICENSES/Apache-2.0.txt",
+      "bytes": 11560,
+      "sha256": "3DDF9BE5C28FE27DAD143A5DC76EEA25222AD1DD68934A047064E56ED2FA40C5",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/LICENSES/Apache-2.0.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/LICENSES/BSD-3-Clause.txt",
+      "bytes": 1485,
+      "sha256": "AD9A9E823DF025F42389C1812EAE28019F657D1ED7B3A4EBFD5010B0736A0DA4",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/LICENSES/BSD-3-Clause.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/LICENSES/CC-BY-4.0.txt",
+      "bytes": 14844,
+      "sha256": "F1B1748301CD4274F46733C218D510929661B4990855DE5FC645DACD69C4371C",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/LICENSES/CC-BY-4.0.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/abseil.txt",
+      "bytes": 11564,
+      "sha256": "F54FFF0B905DF5B3464527C652A30E903B172D6DCAB4D89B5E6F105D5E4A4603",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/abseil.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/agg23.txt",
+      "bytes": 725,
+      "sha256": "C110D3EA2AD77467CE0DCFF7D3337E6C8BE8049A5103F4B9BD5FD911A77972E5",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/agg23.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/fast_float.txt",
+      "bytes": 1106,
+      "sha256": "BF1B57355FECA8FCE77EE95F48002F8D4789FB71B30EC7599C06CDA4901FBB2B",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/fast_float.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/freetype.txt",
+      "bytes": 6741,
+      "sha256": "F4B133E25DF1F86AD3FFEA453AA0E613F0474F34778DBBB3E437E7B2724937D8",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/freetype.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/icu.txt",
+      "bytes": 28286,
+      "sha256": "93679F4389D53B6835D89843F251844FB9BC455B35BAB036D3C8E7ABE497A47A",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/icu.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/lcms.txt",
+      "bytes": 1353,
+      "sha256": "7312B68C5B25E9BF2B828706FB4E29588F22705112F411FD42E1F7D84C3D139A",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/lcms.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.ijg",
+      "bytes": 13059,
+      "sha256": "DB16A04128171879C60708D171B88D97345A2DD20F9BFC173680A4497C73F704",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.ijg",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.md",
+      "bytes": 5755,
+      "sha256": "BE2B2B5AB168BCE87BC3E31F2A5C5ADBA4B7F6E9E51D618E958D1D46972EBD95",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libjpeg_turbo.md",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libopenjpeg.txt",
+      "bytes": 1794,
+      "sha256": "C5AB0890A737C2DFA7BA675036554F6D17741D98629B0C2A145354D00617E6B2",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libopenjpeg.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libpng.txt",
+      "bytes": 5479,
+      "sha256": "452390433BA0F88AA3E2B122C647741B72A0C117CD6ED7A329B49785AECB5511",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libpng.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/libtiff.txt",
+      "bytes": 1139,
+      "sha256": "92B72BA97E6C2749C2A94BC0EF646B47080217F1E772A482B33CF5A5F98A6506",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/libtiff.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/llvm-libc.txt",
+      "bytes": 15418,
+      "sha256": "3B6226C32E168C83B891D8D6F0D3C29C2116DC3EF93DC93C307B54F279ECF383",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/llvm-libc.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/pdfium-binaries.txt",
+      "bytes": 1184,
+      "sha256": "8854F4388F1CA13B3AD9BAA42E95F5546B4C0B17109C159256D3ECA7BE39B09B",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/pdfium-binaries.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/pdfium.txt",
+      "bytes": 12818,
+      "sha256": "961EACD9633FFF6D051DB7208B755E9210E30EFAC7ADEC3E6A6D52798F0CCF0E",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/pdfium.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/simdutf.txt",
+      "bytes": 1077,
+      "sha256": "C172A0BA936FF31230FEBB5DAD869E25CB7C1A07480C7A381BE8CF011BB52719",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/simdutf.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "pypdfium2",
+      "version": "5.12.1",
+      "path": "licenses/Python/pypdfium2/5.12.1/data/windows_x64/BUILD_LICENSES/zlib.txt",
+      "bytes": 1332,
+      "sha256": "33FD641C9F3B0E0BE64BC78FEA9E94807674CDD70C48477599226CB8956565FE",
+      "sourceArchiveSha256": "9609BE73A6701A68F29DFFE0335F7A2E4B3BA581542ED65D35D49F761A4600CA",
+      "sourceEntry": "pypdfium2-5.12.1.dist-info/licenses/data/windows_x64/BUILD_LICENSES/zlib.txt",
+      "provenance": "Exact-version local original wheel; installed overlapping package files match"
+    },
+    {
+      "component": "antlr4-python3-runtime",
+      "version": "4.9.3",
+      "path": "licenses/Python/antlr4-python3-runtime/4.9.3/LICENSE.txt",
+      "bytes": 2699,
+      "sha256": "B1B379FCAF3219593A4C433FEB1B35C780BED23FAFAAE440B1AE2771A9521E3A",
+      "gitBlobSha1": "2042d1bda6c933e504d9dc2fe3197a6e42a71fe2",
+      "sourceCommit": "e4c1a74c66bd5290364ea2b36c97cd724b247357",
+      "sourceUrl": "https://github.com/antlr/antlr4/blob/e4c1a74c66bd5290364ea2b36c97cd724b247357/LICENSE.txt",
+      "provenance": "Original upstream license at exact version tag; BCE version is declared by its matching package source commit"
+    },
+    {
+      "component": "rapidocr",
+      "version": "3.9.2",
+      "path": "licenses/Python/rapidocr/3.9.2/LICENSE",
+      "bytes": 11422,
+      "sha256": "3E0AF25FDD06AA9586AE97ADB00EA927EBE5A3805AC77D2D3A81CE5F55693333",
+      "gitBlobSha1": "ab68e50ab2d0af41c9c8c30947a694a6285cde3f",
+      "sourceCommit": "095232a4c94f7f0e6600ba5bba1177010ad696d4",
+      "sourceUrl": "https://github.com/RapidAI/RapidOCR/blob/095232a4c94f7f0e6600ba5bba1177010ad696d4/LICENSE",
+      "provenance": "Original upstream license at exact version tag; BCE version is declared by its matching package source commit"
+    },
+    {
+      "component": "flatbuffers",
+      "version": "25.12.19",
+      "path": "licenses/Python/flatbuffers/25.12.19/LICENSE",
+      "bytes": 11358,
+      "sha256": "CFC7749B96F63BD31C3C42B5C471BF756814053E847C10F3EB003417BC523D30",
+      "gitBlobSha1": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+      "sourceCommit": "7e163021e59cca4f8e1e35a7c828b5c6b7915953",
+      "sourceUrl": "https://github.com/google/flatbuffers/blob/7e163021e59cca4f8e1e35a7c828b5c6b7915953/LICENSE",
+      "provenance": "Original upstream license at exact version tag; BCE version is declared by its matching package source commit"
+    },
+    {
+      "component": "bce-python-sdk",
+      "version": "0.9.76",
+      "path": "licenses/Python/bce-python-sdk/0.9.76/LICENSE",
+      "bytes": 10173,
+      "sha256": "0CEC06E0E55FBC3DC5CEE4FCA9B607F66CB8F4E4DBCF3B3C013594DD156732E9",
+      "gitBlobSha1": "4947287f7b5ccb5d1e8b7b2d3aa5d89f322c160d",
+      "sourceCommit": "9e2b4caeea33cf6985908fa29ec5fea11af3e936",
+      "sourceUrl": "https://github.com/baidubce/bce-sdk-python/blob/9e2b4caeea33cf6985908fa29ec5fea11af3e936/LICENSE",
+      "provenance": "Original upstream license at commit whose SDK_VERSION is 0.9.76; all installed package Python blobs compared below"
+    }
+  ],
+  "pypdfium2WheelComparison": {
+    "matchingInstalledNonMetadataFiles": 45,
+    "missingNonMetadataFiles": [],
+    "differentNonMetadataFiles": []
+  },
+  "unresolvedOriginalLicenseDocuments": [],
+  "networkRequests": null,
+  "bceVersionCommitComparison": {
+    "commit": "9e2b4caeea33cf6985908fa29ec5fea11af3e936",
+    "matchedPythonFiles": 207,
+    "differentPythonFiles": [],
+    "missingPythonFiles": [],
+    "versionDeclaration": "Installed SDK_VERSION = 0.9.76 and its blob matches upstream"
+  },
+  "networkScope": "Read-only upstream GitHub license/version/tree queries; original files downloaded via connector; no local data uploaded. Historical discovery errors retained outside public addition bundle."
+}

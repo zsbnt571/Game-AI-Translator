@@ -1,5 +1,5 @@
 {
-  "sourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v0.6.0.176-preview.1/Fusion-0.6.0.176-Source.zip",
+  "release": "1.1.0.127",
   "archives": [
     {
       "file": "BepInEx-5b766a3-source.zip",
@@ -37,7 +37,16 @@
       "file": "UnityDoorstop-4.5.0-source.zip",
       "bytes": 109881,
       "sha256": "7f0c963104aa08bf5fefef8ff85e7fecd8306838f5af3101487d9db4e9188d63"
+    },
+    {
+      "file": "Dobby-1.0.5-source.zip",
+      "bytes": 768106,
+      "sha256": "00C0A582FC69EFD52AA3A95449D27882384B653EB0E6524B79E796E8A8EF807D",
+      "sourceUrl": "https://codeload.github.com/BepInEx/Dobby/zip/888d971214900374edbca6206fad6ded8a2c1311",
+      "sourceCommit": "888d971214900374edbca6206fad6ded8a2c1311",
+      "license": "Apache-2.0"
     }
   ],
-  "distributionNote": "BepInEx is the documented two-reference-excluded distribution copy; other archives retain the earlier public baseline hashes."
+  "distributionNote": "Current corresponding-source archive inventory. Historical ARCHIVES.json is retained as provenance, not the current release download link. BepInEx retains its documented exclusions; no game/Unity assembly grant is made.",
+  "sourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v1.1.0-preview.3%2Bdialogue.5/Fusion-1.1.0-Preview3-Source.zip"
 }

@@ -32,6 +32,7 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
         var split=new WC.GridSplitter{Width=4,Background=WM.Brushes.Transparent,FocusVisualStyle=null,HorizontalAlignment=W.HorizontalAlignment.Stretch,VerticalAlignment=W.VerticalAlignment.Stretch,ResizeDirection=WC.GridResizeDirection.Columns,ResizeBehavior=WC.GridResizeBehavior.PreviousAndNext};
         W.Automation.AutomationProperties.SetAutomationId(split,"LibrarySidebarSplitter");
         W.Automation.AutomationProperties.SetName(split,UiLanguage.Text("调整侧栏宽度"));
+        WpfUiLanguage.Property(split,W.Automation.AutomationProperties.NameProperty,"调整侧栏宽度");
         // A compact grip indicates keyboard focus; never outline the full page height.
         split.Template=(WC.ControlTemplate)W.Markup.XamlReader.Parse("""
           <ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" TargetType="GridSplitter"><Grid Background="{TemplateBinding Background}"><Border x:Name="Grip" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Height="32" Width="2" CornerRadius="1" Background="{DynamicResource Fusion.Accent}" Visibility="Collapsed"/></Grid><ControlTemplate.Triggers><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Grip" Property="Visibility" Value="Visible"/></Trigger></ControlTemplate.Triggers></ControlTemplate>
@@ -51,6 +52,7 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
         searchFrame.Children.Add(placeholder);
         var searchIcon=new WC.Image{Source=WpfDrawing.Icon("search",UiTheme.Current.SecondaryText),Width=18,Height=18,HorizontalAlignment=W.HorizontalAlignment.Left,Margin=new W.Thickness(10,0,0,0),IsHitTestVisible=false};searchFrame.Children.Add(searchIcon);filters.Children.Add(searchFrame);
         W.Automation.AutomationProperties.SetName(search,UiLanguage.Text("搜索名称、标签或便签"));search.ToolTip=UiLanguage.Text("搜索名称、标签或便签");
+        WpfUiLanguage.Property(search,W.Automation.AutomationProperties.NameProperty,"搜索名称、标签或便签");WpfUiLanguage.Property(search,W.FrameworkElement.ToolTipProperty,"搜索名称、标签或便签");
         var view=new WC.StackPanel{Orientation=WC.Orientation.Horizontal,VerticalAlignment=W.VerticalAlignment.Center};
         view.Children.Add(filter);covers=WpfThemeResources.Button("","grid",()=>{host.WpfSetLibraryList(false);Refresh();},true);list=WpfThemeResources.Button("","list",()=>{host.WpfSetLibraryList(true);Refresh();});
         covers.Margin=list.Margin=new W.Thickness(10,0,0,0);covers.Padding=list.Padding=new W.Thickness(7);view.Children.Add(covers);view.Children.Add(list);WC.Grid.SetColumn(view,1);filters.Children.Add(view);WC.Grid.SetRow(filters,1);body.Children.Add(filters);

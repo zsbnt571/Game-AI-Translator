@@ -110,7 +110,7 @@ public sealed partial class MainForm
     }
     private async Task WriteRenpyBatchAsync(bool value)
     {
-        if(_renpyDataBusy||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection||!ReferenceEquals(connection,_renpyDataSnapshotConnection))return;
+        if(_renpyDataBusy||SelectedScriptTranslationSession()?.Enabled!=true||_selectedGame is not {} game||SelectedScriptTranslationSession()?.Connection is not {Connected:true} connection||!ReferenceEquals(connection,_renpyDataSnapshotConnection))return;
         var rows=SelectedRenpyRows().Where(r=>r.GetProperty("kind").GetString()=="bool"&&r.GetProperty("value").ValueKind!=(value?JsonValueKind.True:JsonValueKind.False)).ToArray();
         if(rows.Length==0){RenpyHint="请选择需要更改的开关项。数值项不会被批量开启或关闭。";return;}
         var changes=new JsonArray();foreach(var row in rows)changes.Add(new JsonObject{["entry"]=row.GetProperty("id").GetString(),["value"]=value});

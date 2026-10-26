@@ -20,6 +20,7 @@
 #include <cwchar>
 #include "MinHook.h"
 #include "json.hpp"
+#include "WolfSessionFiles.h"
 
 namespace WolfTestScreen {
 using Json=nlohmann::json;
@@ -51,9 +52,12 @@ static std::wstring ObjectName(HANDLE handle){
     value.resize(wcsnlen(value.c_str(),value.size()));return value;
 }
 static bool NoReparseChain(const Path::path& value){
-    if(!value.is_absolute())return false;Path::path at;
-    for(const auto& part:value){at/=part;DWORD flags=GetFileAttributesW(at.c_str());
+    if(!value.is_absolute())return false;
+    for(auto at=value;!at.empty();){
+        std::wstring native;if(!WolfSessionFiles::NativePath(at,native))return false;
+        DWORD flags=GetFileAttributesW(native.c_str());
         if(flags==INVALID_FILE_ATTRIBUTES||(flags&FILE_ATTRIBUTE_REPARSE_POINT))return false;
+        auto parent=at.parent_path();if(parent==at)break;at=std::move(parent);
     }return true;
 }
 static bool PrivateDesktop(DWORD thread){
@@ -66,8 +70,8 @@ static bool PrivateDesktop(DWORD thread){
 static bool MarkedCopy(){
     wchar_t exe[32768];DWORD n=GetModuleFileNameW(nullptr,exe,32768);if(!n||n>=32768)return false;
     Path::path marker=Path::path(exe).parent_path()/L".fusion-test-copy";
-    if(!NoReparseChain(marker)||!Path::is_regular_file(marker))return false;
-    std::ifstream file(marker,std::ios::binary);std::string content(128,'\0');file.read(content.data(),content.size());content.resize((size_t)file.gcount());
+    std::wstring native;if(!NoReparseChain(marker)||!WolfSessionFiles::NativePath(marker,native)||!Path::is_regular_file(Path::path(native)))return false;
+    std::ifstream file(Path::path(native),std::ios::binary);std::string content(128,'\0');file.read(content.data(),content.size());content.resize((size_t)file.gcount());
     if(!file.eof())return false;while(!content.empty()&&(content.back()=='\r'||content.back()=='\n'||content.back()==' '))content.pop_back();
     return content=="FusionTranslationTestCopy/1";
 }
@@ -175,7 +179,8 @@ static HRESULT WINAPI PresentHook(IDirect3DDevice9* device,const RECT* source,co
 static bool Install(const std::wstring& sessionDirectory){
     std::lock_guard<std::mutex> lock(requestGate);if(installed.load())return true;
     expectedDesktop=Environment(L"FUSION_WOLF_TEST_DESKTOP");session=sessionDirectory;
-    if(!Allowed()||session.empty()||Environment(L"FUSION_WOLF_SESSION")!=session||!NoReparseChain(Path::path(session))||!Path::is_directory(session)){installError="isolated-copy-or-private-desktop-check-failed";return false;}
+    std::wstring nativeSession;
+    if(!Allowed()||session.empty()||Environment(L"FUSION_WOLF_SESSION")!=session||!NoReparseChain(Path::path(session))||!WolfSessionFiles::NativePath(Path::path(session),nativeSession)||!Path::is_directory(Path::path(nativeSession))){installError="isolated-copy-or-private-desktop-check-failed";return false;}
     // Dynamic loading avoids adding graphics dependencies to the normal bridge.
     HMODULE library=LoadLibraryExW(L"d3d9.dll",nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);
     if(!library){installError="system-d3d9-unavailable";installHr=HRESULT_FROM_WIN32(GetLastError());return false;}
@@ -207,15 +212,16 @@ static bool WriteBitmap(Frame& result){
     if(!Allowed()||Environment(L"FUSION_WOLF_SESSION")!=session||!NoReparseChain(Path::path(session)))return false;
     auto name=L"wolf-backbuffer-"+std::to_wstring(GetCurrentProcessId())+L"-"+std::to_wstring(result.ticket)+L".bmp";
     Path::path final=Path::path(session)/name,temp=final;temp+=L".tmp";
+    std::wstring nativeFinal,nativeTemp;if(!WolfSessionFiles::NativePath(final,nativeFinal)||!WolfSessionFiles::NativePath(temp,nativeTemp))return false;
     BITMAPFILEHEADER file={};BITMAPINFOHEADER bitmap={};file.bfType=0x4d42;file.bfOffBits=sizeof(file)+sizeof(bitmap);file.bfSize=file.bfOffBits+(DWORD)result.pixels.size();
     bitmap.biSize=sizeof(bitmap);bitmap.biWidth=result.info["width"].get<LONG>();bitmap.biHeight=-result.info["height"].get<LONG>();
     bitmap.biPlanes=1;bitmap.biBitCount=32;bitmap.biCompression=BI_RGB;bitmap.biSizeImage=(DWORD)result.pixels.size();
-    HANDLE output=CreateFileW(temp.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_WRITE_THROUGH,nullptr);
+    HANDLE output=CreateFileW(nativeTemp.c_str(),GENERIC_WRITE,0,nullptr,CREATE_NEW,FILE_ATTRIBUTE_NORMAL|FILE_FLAG_OPEN_REPARSE_POINT|FILE_FLAG_WRITE_THROUGH,nullptr);
     if(output==INVALID_HANDLE_VALUE)return false;
     auto write=[&](const void* data,DWORD size){DWORD count=0;return WriteFile(output,data,size,&count,nullptr)&&count==size;};
     bool ok=write(&file,sizeof(file))&&write(&bitmap,sizeof(bitmap))&&write(result.pixels.data(),(DWORD)result.pixels.size());CloseHandle(output);
-    if(!ok){DeleteFileW(temp.c_str());return false;}
-    if(!MoveFileExW(temp.c_str(),final.c_str(),MOVEFILE_WRITE_THROUGH)){DeleteFileW(temp.c_str());return false;}
+    if(!ok){DeleteFileW(nativeTemp.c_str());return false;}
+    if(!MoveFileExW(nativeTemp.c_str(),nativeFinal.c_str(),MOVEFILE_WRITE_THROUGH)){DeleteFileW(nativeTemp.c_str());return false;}
     result.written=true;result.info["path"]=final.u8string();result.info["fileBytes"]=file.bfSize;result.info["stage"]="bitmap-written";return true;
 }
 static Json Request(const Json& query=Json::object()){

@@ -1,0 +1,767 @@
+{
+  "schema": "fusion127-license-provenance-v1",
+  "files": [
+    {
+      "component": "SharpGen.Runtime/2.4.2-beta",
+      "path": "licenses/NuGet/SharpGen.Runtime/2.4.2-beta/LICENSE.txt",
+      "sha256": "1CC7ABD1E97575838535484BEF6E4AB14E81681DDF7837672ACEDE5FCA1D4E30",
+      "bytes": 1101,
+      "sourceUrl": "https://github.com/SharpGenTools/SharpGenTools/blob/6990bcafe124a4c22515ad19cee5a081da8db67b/LICENSE.txt",
+      "gitBlobSha1": "79650e8328873caf2474c61b58409a8966e40b3f",
+      "sourceRef": "6990bcafe124a4c22515ad19cee5a081da8db67b",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "SharpGen.Runtime.COM/2.4.2-beta",
+      "path": "licenses/NuGet/SharpGen.Runtime.COM/2.4.2-beta/LICENSE.txt",
+      "sha256": "1CC7ABD1E97575838535484BEF6E4AB14E81681DDF7837672ACEDE5FCA1D4E30",
+      "bytes": 1101,
+      "sourceUrl": "https://github.com/SharpGenTools/SharpGenTools/blob/6990bcafe124a4c22515ad19cee5a081da8db67b/LICENSE.txt",
+      "gitBlobSha1": "79650e8328873caf2474c61b58409a8966e40b3f",
+      "sourceRef": "6990bcafe124a4c22515ad19cee5a081da8db67b",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Vortice.Direct3D11/3.8.3",
+      "path": "licenses/NuGet/Vortice.Direct3D11/3.8.3/LICENSE",
+      "sha256": "82BD4E84D144BEBBB519ED05899F0CEAEAF2E0F95160AC32FD8CC388710C76D0",
+      "bytes": 1090,
+      "sourceUrl": "https://github.com/amerkoleci/Vortice.Windows/blob/9e609cb9439c9872aa1b339f177e40ec96f77239/LICENSE",
+      "gitBlobSha1": "15fd3b8dd0e0f4474555ad0d248ecb68a278b7d1",
+      "sourceRef": "9e609cb9439c9872aa1b339f177e40ec96f77239",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Vortice.DirectX/3.8.3",
+      "path": "licenses/NuGet/Vortice.DirectX/3.8.3/LICENSE",
+      "sha256": "82BD4E84D144BEBBB519ED05899F0CEAEAF2E0F95160AC32FD8CC388710C76D0",
+      "bytes": 1090,
+      "sourceUrl": "https://github.com/amerkoleci/Vortice.Windows/blob/9e609cb9439c9872aa1b339f177e40ec96f77239/LICENSE",
+      "gitBlobSha1": "15fd3b8dd0e0f4474555ad0d248ecb68a278b7d1",
+      "sourceRef": "9e609cb9439c9872aa1b339f177e40ec96f77239",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Vortice.DXGI/3.8.3",
+      "path": "licenses/NuGet/Vortice.DXGI/3.8.3/LICENSE",
+      "sha256": "82BD4E84D144BEBBB519ED05899F0CEAEAF2E0F95160AC32FD8CC388710C76D0",
+      "bytes": 1090,
+      "sourceUrl": "https://github.com/amerkoleci/Vortice.Windows/blob/9e609cb9439c9872aa1b339f177e40ec96f77239/LICENSE",
+      "gitBlobSha1": "15fd3b8dd0e0f4474555ad0d248ecb68a278b7d1",
+      "sourceRef": "9e609cb9439c9872aa1b339f177e40ec96f77239",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Vortice.Mathematics/2.1.0",
+      "path": "licenses/NuGet/Vortice.Mathematics/2.1.0/LICENSE",
+      "sha256": "CF72351FA2E9F2EB181AF7FD508DD73DA1D84BA43575CB98F7AF22F26A81AF5E",
+      "bytes": 1090,
+      "sourceUrl": "https://github.com/amerkoleci/Vortice.Mathematics/blob/fa05ec6dcba48f3f7331791da6dc7f3d866b2ad6/LICENSE",
+      "gitBlobSha1": "be64e3ef2e11e0663137d98e59cf1a229946b374",
+      "sourceRef": "fa05ec6dcba48f3f7331791da6dc7f3d866b2ad6",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Blake3/3.0.2",
+      "path": "licenses/NuGet/Blake3/3.0.2/license.txt",
+      "sha256": "7F7D75677FB85A9A2CB8146E5A96EEC2D574654CE54E5C70A820531ECE14B073",
+      "bytes": 1628,
+      "sourceUrl": "https://github.com/xoofx/Blake3.NET/blob/bc622edf7faa06d1a63c0f2f165c5f7c567a2e32/license.txt",
+      "gitBlobSha1": "e091cb9a18e5b3b40dd10b699b0f68e4a345d8f0",
+      "sourceRef": "bc622edf7faa06d1a63c0f2f165c5f7c567a2e32",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "CUE4Parse/1.2.2.202609",
+      "path": "licenses/NuGet/CUE4Parse/1.2.2.202609/LICENSE",
+      "sha256": "C71D239DF91726FC519C6EB72D318EC65820627232B2F796219E87DCF35D0AB4",
+      "bytes": 11357,
+      "sourceUrl": "https://github.com/FabianFG/CUE4Parse/blob/b4e95441bcf0c975eb3adb68c0fb44c740c2cf62/LICENSE",
+      "gitBlobSha1": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "sourceRef": "b4e95441bcf0c975eb3adb68c0fb44c740c2cf62",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "CUE4Parse/1.2.2.202609",
+      "path": "licenses/NuGet/CUE4Parse/1.2.2.202609/NOTICE",
+      "sha256": "2BA6F27ABEE88BD99392CDDAA72E34693C0460A91394F73029CEE2C8889E8AF8",
+      "bytes": 22204,
+      "sourceUrl": "https://github.com/FabianFG/CUE4Parse/blob/b4e95441bcf0c975eb3adb68c0fb44c740c2cf62/NOTICE",
+      "gitBlobSha1": "1ec7d0f71b17f7d64e9a793545e3332a80a76147",
+      "sourceRef": "b4e95441bcf0c975eb3adb68c0fb44c740c2cf62",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Fmod5Sharp/3.1.0",
+      "path": "licenses/NuGet/Fmod5Sharp/3.1.0/LICENSE",
+      "sha256": "C31AB18D3300B0666925B29071E5C60459EE12D7740B8ECDE556FC83D3EA948D",
+      "bytes": 1066,
+      "sourceUrl": "https://github.com/SamboyCoding/Fmod5Sharp/blob/d9df2cbcc1aa478d7de9fcb64f83f7ba49f23258/LICENSE",
+      "gitBlobSha1": "931d0fc9aabf4f3bd8e2b5134f16c56b1b212937",
+      "sourceRef": "d9df2cbcc1aa478d7de9fcb64f83f7ba49f23258",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Fmod5Sharp/3.1.0",
+      "path": "licenses/NuGet/Fmod5Sharp/3.1.0/NOTICE",
+      "sha256": "E94BFB333DE4F2D11AFAB8AEC4FF1EFB8A21F7F58C1701B42965309D4B32C57F",
+      "bytes": 1653,
+      "sourceUrl": "https://github.com/SamboyCoding/Fmod5Sharp/blob/d9df2cbcc1aa478d7de9fcb64f83f7ba49f23258/NOTICE",
+      "gitBlobSha1": "760e0b1101a8fa3ae374254e5f3993777b45e139",
+      "sourceRef": "d9df2cbcc1aa478d7de9fcb64f83f7ba49f23258",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "GenericReader/2.3.0",
+      "path": "licenses/NuGet/GenericReader/2.3.0/LICENSE",
+      "sha256": "92B7DEB769992D1737239CD5928EBD27E4D768E9671E54096224B46BCDF28BBB",
+      "bytes": 1067,
+      "sourceUrl": "https://github.com/NotOfficer/GenericReader/blob/225929b6e5455745fd4588c23dcfdad8e12035a4/LICENSE",
+      "gitBlobSha1": "d30311f05531cef74d4bb2f642848185641406e8",
+      "sourceRef": "225929b6e5455745fd4588c23dcfdad8e12035a4",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "IndexRange/1.1.0",
+      "path": "licenses/NuGet/IndexRange/1.1.0/LICENSE",
+      "sha256": "1DF7D72BC50ABA52EFBE5FB56EF4BB2CD682494F1C2370823A846FA9083433EB",
+      "bytes": 1079,
+      "sourceUrl": "https://github.com/bgrainger/IndexRange/blob/0ee6e541467a6d6519af8d8adfe1edad748fc8a2/LICENSE",
+      "gitBlobSha1": "1c25cd391cc4998f9f55694351267ff5811e7ec7",
+      "sourceRef": "0ee6e541467a6d6519af8d8adfe1edad748fc8a2",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "MemoryPack/1.21.4",
+      "path": "licenses/NuGet/MemoryPack/1.21.4/LICENSE.md",
+      "sha256": "49877BF1474E33FDA62F80825CD8CDE3B9272E645796B6AB8137054F8D9D5D29",
+      "bytes": 1070,
+      "sourceUrl": "https://github.com/Cysharp/MemoryPack/blob/0f2fe0827907940768293b7bb81b9605a7d8cba8/LICENSE.md",
+      "gitBlobSha1": "4df7b31ebdb02ea17fa07150ae60a57d2e90622c",
+      "sourceRef": "0f2fe0827907940768293b7bb81b9605a7d8cba8",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "MemoryPack.Core/1.21.4",
+      "path": "licenses/NuGet/MemoryPack.Core/1.21.4/LICENSE.md",
+      "sha256": "49877BF1474E33FDA62F80825CD8CDE3B9272E645796B6AB8137054F8D9D5D29",
+      "bytes": 1070,
+      "sourceUrl": "https://github.com/Cysharp/MemoryPack/blob/0f2fe0827907940768293b7bb81b9605a7d8cba8/LICENSE.md",
+      "gitBlobSha1": "4df7b31ebdb02ea17fa07150ae60a57d2e90622c",
+      "sourceRef": "0f2fe0827907940768293b7bb81b9605a7d8cba8",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "MemoryPack.Generator/1.21.4",
+      "path": "licenses/NuGet/MemoryPack.Generator/1.21.4/LICENSE.md",
+      "sha256": "49877BF1474E33FDA62F80825CD8CDE3B9272E645796B6AB8137054F8D9D5D29",
+      "bytes": 1070,
+      "sourceUrl": "https://github.com/Cysharp/MemoryPack/blob/0f2fe0827907940768293b7bb81b9605a7d8cba8/LICENSE.md",
+      "gitBlobSha1": "4df7b31ebdb02ea17fa07150ae60a57d2e90622c",
+      "sourceRef": "0f2fe0827907940768293b7bb81b9605a7d8cba8",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "OffiUtils/3.2.0",
+      "path": "licenses/NuGet/OffiUtils/3.2.0/LICENSE",
+      "sha256": "92B7DEB769992D1737239CD5928EBD27E4D768E9671E54096224B46BCDF28BBB",
+      "bytes": 1067,
+      "sourceUrl": "https://github.com/NotOfficer/Utils/blob/3c6391fac38e2de58eb6bcfa399bba78645bce4f/LICENSE",
+      "gitBlobSha1": "d30311f05531cef74d4bb2f642848185641406e8",
+      "sourceRef": "3c6391fac38e2de58eb6bcfa399bba78645bce4f",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Oodle.NET/2.2.0",
+      "path": "licenses/NuGet/Oodle.NET/2.2.0/LICENSE",
+      "sha256": "92B7DEB769992D1737239CD5928EBD27E4D768E9671E54096224B46BCDF28BBB",
+      "bytes": 1067,
+      "sourceUrl": "https://github.com/NotOfficer/Oodle.NET/blob/6a6b78bc3c145eddd6a3ae139fd95d6678049e12/LICENSE",
+      "gitBlobSha1": "d30311f05531cef74d4bb2f642848185641406e8",
+      "sourceRef": "6a6b78bc3c145eddd6a3ae139fd95d6678049e12",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "OodleSharp/0.0.1",
+      "path": "licenses/NuGet/OodleSharp/0.0.1/LICENSE",
+      "sha256": "50753D4318C48681638939E5EBCF0A699D229A3BC4E747145DC26C9C1EEB902D",
+      "bytes": 1063,
+      "sourceUrl": "https://github.com/NotOfficer/OodleSharp/blob/716d8b9ce3bd74ece37097d2b5e5ef67ef0c48c5/LICENSE",
+      "gitBlobSha1": "403b1e2871cf393f1d5e05ca4ebd6d619fc28599",
+      "sourceRef": "716d8b9ce3bd74ece37097d2b5e5ef67ef0c48c5",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Serilog/4.3.1",
+      "path": "licenses/NuGet/Serilog/4.3.1/LICENSE",
+      "sha256": "73BA74DFAA520B49A401B5D21459A8523A146F3B7518A833EEA5EFA85130BF68",
+      "bytes": 10273,
+      "sourceUrl": "https://github.com/serilog/serilog/blob/5625030e8f8fceca2e3180575aba174751ef7add/LICENSE",
+      "gitBlobSha1": "37ec93a14fdcd0d6e525d97c0cfa6b314eaa98d8",
+      "sourceRef": "5625030e8f8fceca2e3180575aba174751ef7add",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Serilog.Sinks.Console/6.1.1",
+      "path": "licenses/NuGet/Serilog.Sinks.Console/6.1.1/LICENSE",
+      "sha256": "B40930BBCF80744C86C46A12BC9DA056641D722716C378F5659B9E555EF833E1",
+      "bytes": 11357,
+      "sourceUrl": "https://github.com/serilog/serilog-sinks-console/blob/b3cb1f042f5636161b831fa8816d70d865a5eec4/LICENSE",
+      "gitBlobSha1": "8dada3edaf50dbc082c9a125058f25def75e625a",
+      "sourceRef": "b3cb1f042f5636161b831fa8816d70d865a5eec4",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "Zlib-ng.NET/1.2.0",
+      "path": "licenses/NuGet/Zlib-ng.NET/1.2.0/LICENSE",
+      "sha256": "92B7DEB769992D1737239CD5928EBD27E4D768E9671E54096224B46BCDF28BBB",
+      "bytes": 1067,
+      "sourceUrl": "https://github.com/NotOfficer/Zlib-ng.NET/blob/1e6ae3cb5ed91f1ec743103039d3ac345babd179/LICENSE",
+      "gitBlobSha1": "d30311f05531cef74d4bb2f642848185641406e8",
+      "sourceRef": "1e6ae3cb5ed91f1ec743103039d3ac345babd179",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "K4os.Compression.LZ4/1.3.8",
+      "path": "licenses/NuGet/K4os.Compression.LZ4/1.3.8/LICENSE",
+      "sha256": "EF5A021FC2AE3658F4AD8D2526C87FB2CF394285F47ABFB784CF73A27FFD9522",
+      "bytes": 1073,
+      "sourceUrl": "https://github.com/MiloszKrajewski/K4os.Compression.LZ4/blob/1.3.8/LICENSE",
+      "gitBlobSha1": "f691b2ae5cac0811207960864f6dba12bbafc6e3",
+      "sourceRef": "1.3.8",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "K4os.Compression.LZ4.Streams/1.3.8",
+      "path": "licenses/NuGet/K4os.Compression.LZ4.Streams/1.3.8/LICENSE",
+      "sha256": "EF5A021FC2AE3658F4AD8D2526C87FB2CF394285F47ABFB784CF73A27FFD9522",
+      "bytes": 1073,
+      "sourceUrl": "https://github.com/MiloszKrajewski/K4os.Compression.LZ4/blob/1.3.8/LICENSE",
+      "gitBlobSha1": "f691b2ae5cac0811207960864f6dba12bbafc6e3",
+      "sourceRef": "1.3.8",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "K4os.Hash.xxHash/1.0.8",
+      "path": "licenses/NuGet/K4os.Hash.xxHash/1.0.8/LICENSE",
+      "sha256": "EF5A021FC2AE3658F4AD8D2526C87FB2CF394285F47ABFB784CF73A27FFD9522",
+      "bytes": 1073,
+      "sourceUrl": "https://github.com/MiloszKrajewski/K4os.Hash.xxHash/blob/1.0.8/LICENSE",
+      "gitBlobSha1": "f691b2ae5cac0811207960864f6dba12bbafc6e3",
+      "sourceRef": "1.0.8",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "NAudio.Core/2.2.1",
+      "path": "licenses/NuGet/NAudio.Core/2.2.1/license.txt",
+      "sha256": "303E01786B271EB464B3F43D18A375F2F17D37BC708A37C2FDF45B289FB5BFAA",
+      "bytes": 1059,
+      "sourceUrl": "https://github.com/naudio/NAudio/blob/v2.2.1/license.txt",
+      "gitBlobSha1": "2b12392bb9c5206f1e4f2284ffc01adc01310bc2",
+      "sourceRef": "v2.2.1",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "SubstreamSharp/1.0.3",
+      "path": "licenses/NuGet/SubstreamSharp/1.0.3/Licence.txt",
+      "sha256": "DBD0C6D4E869C98C3CCF20AEE30EB2191D8553A377641FAC045B0F9746CA4189",
+      "bytes": 1059,
+      "sourceUrl": "https://github.com/connorhaigh/SubstreamSharp/blob/v1.0.3/Licence.txt",
+      "gitBlobSha1": "f773893686cf5f375533d55a7a1b9eabdeee4ffa",
+      "sourceRef": "v1.0.3",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "VGAudio/2.2.1",
+      "path": "licenses/NuGet/VGAudio/2.2.1/LICENSE",
+      "sha256": "852BCC033A46C62F99FB5FFD43B3241BA2C0C440C6034AA2114505F2C4F03C4A",
+      "bytes": 1067,
+      "sourceUrl": "https://github.com/Thealexbarney/VGAudio/blob/v2.2.1/LICENSE",
+      "gitBlobSha1": "853b46db127831eb9f8e8a7a8576e41c98619be4",
+      "sourceRef": "v2.2.1",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "Mono.Cecil/0.11.3",
+      "path": "licenses/NuGet/Mono.Cecil/0.11.3/LICENSE.txt",
+      "sha256": "13D58ECBED676511C0C4C4009BFF107025E50007FF5E7901DC562700EC62509E",
+      "bytes": 1098,
+      "sourceUrl": "https://github.com/jbevain/cecil/blob/0.11.3/LICENSE.txt",
+      "gitBlobSha1": "afd0ae6818ed67ef4fef7edeb7e9580b9ef27bf8",
+      "sourceRef": "0.11.3",
+      "evidence": "Exact version tag matches original package version"
+    },
+    {
+      "component": "ZstdSharp.Port/0.8.8",
+      "path": "licenses/NuGet/ZstdSharp.Port/0.8.8/LICENSE",
+      "sha256": "9A6A7216E532C4EE4F78881D31FB641C27148EB01B2D0E8E3235FFE9A70A662C",
+      "bytes": 1074,
+      "sourceUrl": "https://github.com/oleg-st/ZstdSharp/blob/2cd0c019693bc786a5fe5c3be94e107b24e7267e/LICENSE",
+      "gitBlobSha1": "234d7ce9965bee988350e903ea1d7a6bdde67b21",
+      "sourceRef": "2cd0c019693bc786a5fe5c3be94e107b24e7267e",
+      "evidence": "Repository commit declared by original exact-version NuGet nuspec"
+    },
+    {
+      "component": "AssetsTools.NET/3.0.5",
+      "path": "licenses/NuGet/AssetsTools.NET/3.0.5/LICENSE.txt",
+      "sha256": "AB26018F961D37D489BCD0F8277B602D1A41586CDA867E59173778C7214AE29F",
+      "bytes": 1083,
+      "sourceUrl": "https://raw.githubusercontent.com/nesrak1/AssetsTools.NET/2d66992b60d583d6d82dd6e278d3946cf5827286/LICENSE",
+      "sourceRef": "2d66992b60d583d6d82dd6e278d3946cf5827286",
+      "evidence": "Exact package declares MIT; existing full original notice verified in prior source inventory. Package does not declare precise source commit; no exact source revision claim."
+    },
+    {
+      "component": "AssetsTools.NET.MonoCecil/3.0.4",
+      "path": "licenses/NuGet/AssetsTools.NET.MonoCecil/3.0.4/LICENSE.txt",
+      "sha256": "AB26018F961D37D489BCD0F8277B602D1A41586CDA867E59173778C7214AE29F",
+      "bytes": 1083,
+      "sourceUrl": "https://raw.githubusercontent.com/nesrak1/AssetsTools.NET/2d66992b60d583d6d82dd6e278d3946cf5827286/LICENSE",
+      "sourceRef": "2d66992b60d583d6d82dd6e278d3946cf5827286",
+      "evidence": "Exact package declares MIT; existing full original notice verified in prior source inventory. Package does not declare precise source commit; no exact source revision claim."
+    },
+    {
+      "component": "Microsoft.NETCore.Platforms/1.1.0",
+      "path": "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/dotnet_library_license.txt",
+      "sha256": "F1DB688D8481C91A452FABCEA5060A23DA9EA5088329B58C478A040E2E426297",
+      "bytes": 9451,
+      "sourceArchiveSha256": "15E338D24B5C39B4099389CC612841EB51FF13C07BB4829F97D39B27420E7023",
+      "sourceEntry": "dotnet_library_license.txt",
+      "evidence": "Original exact-version local NuGet package"
+    },
+    {
+      "component": "Microsoft.NETCore.Platforms/1.1.0",
+      "path": "licenses/NuGet/Microsoft.NETCore.Platforms/1.1.0/ThirdPartyNotices.txt",
+      "sha256": "0684B2349427EE28E392AE8914645832E59731DBA8A38A984F72B3FB8769C76B",
+      "bytes": 1617,
+      "sourceArchiveSha256": "15E338D24B5C39B4099389CC612841EB51FF13C07BB4829F97D39B27420E7023",
+      "sourceEntry": "ThirdPartyNotices.txt",
+      "evidence": "Original exact-version local NuGet package"
+    },
+    {
+      "component": "NETStandard.Library/1.6.1",
+      "path": "licenses/NuGet/NETStandard.Library/1.6.1/dotnet_library_license.txt",
+      "sha256": "F1DB688D8481C91A452FABCEA5060A23DA9EA5088329B58C478A040E2E426297",
+      "bytes": 9451,
+      "sourceArchiveSha256": "88D6A7D62C7B46D9DC1960BD023019DAC93BD03A313AC9843A0435D1F5E6E0FC",
+      "sourceEntry": "dotnet_library_license.txt",
+      "evidence": "Original exact-version local NuGet package"
+    },
+    {
+      "component": "NETStandard.Library/1.6.1",
+      "path": "licenses/NuGet/NETStandard.Library/1.6.1/ThirdPartyNotices.txt",
+      "sha256": "0684B2349427EE28E392AE8914645832E59731DBA8A38A984F72B3FB8769C76B",
+      "bytes": 1617,
+      "sourceArchiveSha256": "88D6A7D62C7B46D9DC1960BD023019DAC93BD03A313AC9843A0435D1F5E6E0FC",
+      "sourceEntry": "ThirdPartyNotices.txt",
+      "evidence": "Original exact-version local NuGet package"
+    },
+    {
+      "component": "Infrablack.UE4Config/0.7.2.97",
+      "path": "licenses/NuGet/Infrablack.UE4Config/0.7.2.97/LICENSE",
+      "sha256": "97D10A0EB0BAF9F3786F1530B659B01BE67399BE45C19E028E4963C8C66BD65C",
+      "bytes": 1097,
+      "sourceUrl": "https://github.com/Wortex17/UE4Config/blob/master/LICENSE",
+      "gitBlobSha1": "3133509710a233b45bf704881cfac4ebcb0e3d38",
+      "immutableBlobUrl": "https://api.github.com/repos/Wortex17/UE4Config/git/blobs/3133509710a233b45bf704881cfac4ebcb0e3d38",
+      "evidence": "Exact-version original NuGet package explicitly declares MIT. Full upstream original copyright/license is retained by immutable blob identity; exact package build commit is not declared and is not inferred."
+    },
+    {
+      "component": "LZMA-SDK/22.1.1",
+      "path": "licenses/NuGet/LZMA-SDK/22.1.1/LICENSE",
+      "sha256": "CBB9D941B9BF6BDB083BB64BA28E927B5FCBC6B14996B3143CFEFF0C437E0BA8",
+      "bytes": 1066,
+      "sourceUrl": "https://github.com/monemihir/LZMA-SDK/blob/master/LICENSE",
+      "gitBlobSha1": "c70feb0a7ce67f3c6ef021ea0d0884511fc550a2",
+      "immutableBlobUrl": "https://api.github.com/repos/monemihir/LZMA-SDK/git/blobs/c70feb0a7ce67f3c6ef021ea0d0884511fc550a2",
+      "evidence": "Exact-version original NuGet package explicitly declares MIT. Full upstream original copyright/license is retained by immutable blob identity; exact package build commit is not declared and is not inferred."
+    },
+    {
+      "component": "OggVorbisEncoder/1.2.2",
+      "path": "licenses/NuGet/OggVorbisEncoder/1.2.2/LICENSE",
+      "sha256": "E7A8F4642A4D68142EED0D5F8BC8D5C21C482D9F081B221D0EF445DAE857C4BE",
+      "bytes": 1069,
+      "sourceUrl": "https://github.com/SteveLillis/.NET-Ogg-Vorbis-Encoder/blob/master/LICENSE",
+      "gitBlobSha1": "34a1e420ae2045b1fac3d091d487c4f309d2ac9b",
+      "immutableBlobUrl": "https://api.github.com/repos/SteveLillis/.NET-Ogg-Vorbis-Encoder/git/blobs/34a1e420ae2045b1fac3d091d487c4f309d2ac9b",
+      "evidence": "Exact-version original NuGet package explicitly declares MIT. Full upstream original copyright/license is retained by immutable blob identity; exact package build commit is not declared and is not inferred."
+    },
+    {
+      "component": "Oodle.NET/2.2.0",
+      "path": "licenses/NuGet/Oodle.NET/2.2.0/oodle.net.nuspec",
+      "sha256": "E883001F613E20467BAD0761179343DFB11BA540E9F594B4EFA41AFD2A4C2422",
+      "bytes": 930,
+      "evidence": "Original exact-version NuGet nuspec. This open-source wrapper metadata is distinct from excluded proprietary oo2core native binaries."
+    },
+    {
+      "component": "OodleSharp/0.0.1",
+      "path": "licenses/NuGet/OodleSharp/0.0.1/oodlesharp.nuspec",
+      "sha256": "4B893B2895EDECEFF2C21E15912E6CA3EB7EB7A1E3DDF658474E3BBD607F5EC9",
+      "bytes": 868,
+      "evidence": "Original exact-version NuGet nuspec. This open-source wrapper metadata is distinct from excluded proprietary oo2core native binaries."
+    },
+    {
+      "component": "Dobby/1.0.5",
+      "path": "licenses/Dobby/1.0.5/LICENSE",
+      "sha256": "43070E2D4E532684DE521B885F385D0841030EFA2B1A20BAFB76133A5E1379C1",
+      "bytes": 11356,
+      "sourceCommit": "888d971214900374edbca6206fad6ded8a2c1311",
+      "sourceUrl": "https://github.com/BepInEx/Dobby/blob/888d971214900374edbca6206fad6ded8a2c1311/LICENSE",
+      "evidence": "BepInEx source pinsv1.0.5; upstream release asset contains byte-identical bundled Dobby DLL."
+    },
+    {
+      "component": "Magick.NET-Q8-AnyCPU/14.16.0",
+      "path": "licenses/NuGet/Magick.NET-Q8-AnyCPU/14.16.0/License.txt",
+      "sha256": "3DDF9BE5C28FE27DAD143A5DC76EEA25222AD1DD68934A047064E56ED2FA40C5",
+      "bytes": 11560,
+      "sourceUrl": "https://github.com/dlemstra/Magick.NET/blob/474ebe6f28152415426a1791f6cc3b76c8067a39/License.txt",
+      "gitBlobSha1": "75b52484ea471f882c29e02693b4f02dba175b5e",
+      "sourceRef": "474ebe6f28152415426a1791f6cc3b76c8067a39",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Magick.NET.Core/14.16.0",
+      "path": "licenses/NuGet/Magick.NET.Core/14.16.0/License.txt",
+      "sha256": "3DDF9BE5C28FE27DAD143A5DC76EEA25222AD1DD68934A047064E56ED2FA40C5",
+      "bytes": 11560,
+      "sourceUrl": "https://github.com/dlemstra/Magick.NET/blob/474ebe6f28152415426a1791f6cc3b76c8067a39/License.txt",
+      "gitBlobSha1": "75b52484ea471f882c29e02693b4f02dba175b5e",
+      "sourceRef": "474ebe6f28152415426a1791f6cc3b76c8067a39",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.Common/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/License.txt",
+      "sha256": "AE48DF11A335DC1A615F4F938B69CBA73BCF4485C4F97AF49B38EFB0F216353B",
+      "bytes": 1115,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/License.txt",
+      "gitBlobSha1": "a616ed188dfce68ee308f674350ad242d8588c2b",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/License.txt",
+      "sha256": "AE48DF11A335DC1A615F4F938B69CBA73BCF4485C4F97AF49B38EFB0F216353B",
+      "bytes": 1115,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/License.txt",
+      "gitBlobSha1": "a616ed188dfce68ee308f674350ad242d8588c2b",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/License.txt",
+      "sha256": "AE48DF11A335DC1A615F4F938B69CBA73BCF4485C4F97AF49B38EFB0F216353B",
+      "bytes": 1115,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/License.txt",
+      "gitBlobSha1": "a616ed188dfce68ee308f674350ad242d8588c2b",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.Scripting.Common/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/License.txt",
+      "sha256": "AE48DF11A335DC1A615F4F938B69CBA73BCF4485C4F97AF49B38EFB0F216353B",
+      "bytes": 1115,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/License.txt",
+      "gitBlobSha1": "a616ed188dfce68ee308f674350ad242d8588c2b",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.Common/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "sha256": "9879407362C623CA2AF5D0460A556D25A2FA1AFBAA6530707963FC7166102D4D",
+      "bytes": 524150,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/THIRD-PARTY-NOTICES.txt",
+      "gitBlobSha1": "d0a0148ee29a98bb1c99dd750ca915306f86124d",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "sha256": "9879407362C623CA2AF5D0460A556D25A2FA1AFBAA6530707963FC7166102D4D",
+      "bytes": 524150,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/THIRD-PARTY-NOTICES.txt",
+      "gitBlobSha1": "d0a0148ee29a98bb1c99dd750ca915306f86124d",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "sha256": "9879407362C623CA2AF5D0460A556D25A2FA1AFBAA6530707963FC7166102D4D",
+      "bytes": 524150,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/THIRD-PARTY-NOTICES.txt",
+      "gitBlobSha1": "d0a0148ee29a98bb1c99dd750ca915306f86124d",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "Microsoft.CodeAnalysis.Scripting.Common/5.9.0",
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/THIRD-PARTY-NOTICES.txt",
+      "sha256": "9879407362C623CA2AF5D0460A556D25A2FA1AFBAA6530707963FC7166102D4D",
+      "bytes": 524150,
+      "sourceUrl": "https://github.com/dotnet/roslyn/blob/35d9211b841e7613c1d2f8f5af6d628ace696c4c/THIRD-PARTY-NOTICES.txt",
+      "gitBlobSha1": "d0a0148ee29a98bb1c99dd750ca915306f86124d",
+      "sourceRef": "35d9211b841e7613c1d2f8f5af6d628ace696c4c",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "SharpZipLib/1.4.2",
+      "path": "licenses/NuGet/SharpZipLib/1.4.2/LICENSE.txt",
+      "sha256": "D7FBBC16F871BF24FA5624C7EAF945054B778985F32676DCACBA41FDDCA61133",
+      "bytes": 1072,
+      "sourceUrl": "https://github.com/icsharpcode/SharpZipLib/blob/33f64eb0f28cdd2b084cb822fcc224c7c5aba553/LICENSE.txt",
+      "gitBlobSha1": "f4597ac929a3206971bb0f8549cf937916082266",
+      "sourceRef": "33f64eb0f28cdd2b084cb822fcc224c7c5aba553",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "System.CommandLine/2.0.11",
+      "path": "licenses/NuGet/System.CommandLine/2.0.11/LICENSE.TXT",
+      "sha256": "AE48DF11A335DC1A615F4F938B69CBA73BCF4485C4F97AF49B38EFB0F216353B",
+      "bytes": 1115,
+      "sourceUrl": "https://github.com/dotnet/dotnet/blob/e2f47b0110ed922f21a1522da67279133ce28f32/LICENSE.TXT",
+      "gitBlobSha1": "a616ed188dfce68ee308f674350ad242d8588c2b",
+      "sourceRef": "e2f47b0110ed922f21a1522da67279133ce28f32",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "System.CommandLine/2.0.11",
+      "path": "licenses/NuGet/System.CommandLine/2.0.11/THIRD-PARTY-NOTICES.txt",
+      "sha256": "4BEF6A7E7B359869D751C9FF70274A80A0F626927AFA5A0681583C1B1861267B",
+      "bytes": 265585,
+      "sourceUrl": "https://github.com/dotnet/dotnet/blob/e2f47b0110ed922f21a1522da67279133ce28f32/THIRD-PARTY-NOTICES.txt",
+      "gitBlobSha1": "d5b8eb06d5e9047fafc8449a253b3761d0447313",
+      "sourceRef": "e2f47b0110ed922f21a1522da67279133ce28f32",
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "component": "runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128",
+      "path": "licenses/NuGet/runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128/LICENSE",
+      "sha256": "890D98DBD0B27E24F3A33DBA95C708BE7ECDF6DC3A93F7C02F9EB5762A84E521",
+      "bytes": 1034,
+      "sourceUrl": "https://github.com/CoreCompat/libgdiplus-packaging/blob/master/LICENSE",
+      "gitBlobSha1": "d34d46a451447658b5b69fc323526a4e3dae30ed",
+      "sourceRef": null,
+      "evidence": "Original upstream notice at exact package repository commit where declared; otherwise immutable upstream license blob, not a claim of exact source commit."
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.11/LICENSE.TXT",
+      "bytes": 1139,
+      "sha256": "D7A68596AB69B06F51CA278A6545148E4269A9381C26D597C13DF5D88E08CF5B",
+      "sourceEntry": "LICENSE.TXT",
+      "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.win-x64/10.0.11/microsoft.netcore.app.runtime.win-x64.10.0.11.nupkg",
+      "packageSha256": "822B247BDDBD88A290A8072BE89815FFEAC26E5AAC0D41B1EAB95FDA5279F443",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.11/THIRD-PARTY-NOTICES.TXT",
+      "bytes": 78041,
+      "sha256": "6D15E10A101C6BFFF2AB4429ED061BF76C456FC4B23AD6B03E0D0F8377148A21",
+      "sourceEntry": "THIRD-PARTY-NOTICES.TXT",
+      "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.win-x64/10.0.11/microsoft.netcore.app.runtime.win-x64.10.0.11.nupkg",
+      "packageSha256": "822B247BDDBD88A290A8072BE89815FFEAC26E5AAC0D41B1EAB95FDA5279F443",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.NETCore.App.Runtime.win-x64/10.0.11/Microsoft.NETCore.App.Runtime.win-x64.nuspec",
+      "bytes": 1022,
+      "sha256": "F92D0844565DB77C85B246F69C71BA2FD769678400B82EDBB24C370620AD8F76",
+      "sourceEntry": "Microsoft.NETCore.App.Runtime.win-x64.nuspec",
+      "component": "Microsoft.NETCore.App.Runtime.win-x64/10.0.11",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.win-x64/10.0.11/microsoft.netcore.app.runtime.win-x64.10.0.11.nupkg",
+      "packageSha256": "822B247BDDBD88A290A8072BE89815FFEAC26E5AAC0D41B1EAB95FDA5279F443",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Magick.NET-Q8-AnyCPU/14.16.0/Notice.txt",
+      "bytes": 426524,
+      "sha256": "8CC37261F943609B6F2B3C55BEFC32926B606F7F335A20CC7EAC0EA6E1FFFB63",
+      "sourceEntry": "Notice.txt",
+      "component": "Magick.NET-Q8-AnyCPU/14.16.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/magick.net-q8-anycpu/14.16.0/magick.net-q8-anycpu.14.16.0.nupkg",
+      "packageSha256": "306882E1F11B7394140FDDACE3411DD4CC10CE479B61A2A7D7203CD50DBAD463",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Magick.NET-Q8-AnyCPU/14.16.0/Magick.NET-Q8-AnyCPU.nuspec",
+      "bytes": 1802,
+      "sha256": "A11124D3387C63C2C88D8F84E575A5A7F029323A9ABCC2A0F7B0154F9EC54306",
+      "sourceEntry": "Magick.NET-Q8-AnyCPU.nuspec",
+      "component": "Magick.NET-Q8-AnyCPU/14.16.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/magick.net-q8-anycpu/14.16.0/magick.net-q8-anycpu.14.16.0.nupkg",
+      "packageSha256": "306882E1F11B7394140FDDACE3411DD4CC10CE479B61A2A7D7203CD50DBAD463",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Magick.NET.Core/14.16.0/Copyright.txt",
+      "bytes": 116,
+      "sha256": "0B68E9A3C1456E76D84D57DD42DA6FC1C71195A5AD2A466ED480B42E22AAA054",
+      "sourceEntry": "Copyright.txt",
+      "component": "Magick.NET.Core/14.16.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/magick.net.core/14.16.0/magick.net.core.14.16.0.nupkg",
+      "packageSha256": "B34D4E9472B7E7961461D1B62C08873143BF56DCED2D82C01B415525C4B3F244",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Magick.NET.Core/14.16.0/Magick.NET.Core.nuspec",
+      "bytes": 1638,
+      "sha256": "2BAAD1EC2575C5409F326CCCDB73F0B9A0414034B73FDA434D9D5ECDDFD7FE05",
+      "sourceEntry": "Magick.NET.Core.nuspec",
+      "component": "Magick.NET.Core/14.16.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/magick.net.core/14.16.0/magick.net.core.14.16.0.nupkg",
+      "packageSha256": "B34D4E9472B7E7961461D1B62C08873143BF56DCED2D82C01B415525C4B3F244",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/ThirdPartyNotices.rtf",
+      "bytes": 2183,
+      "sha256": "EF4678850E7E3AAF9297F07E5C4060D477854E545CCF8E2EF8452D65A7B2EFAF",
+      "sourceEntry": "ThirdPartyNotices.rtf",
+      "component": "Microsoft.CodeAnalysis.Common/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.common/5.9.0/microsoft.codeanalysis.common.5.9.0.nupkg",
+      "packageSha256": "77EFD4715C24C8CD6B36F9B92980A2F5A86E4A7B53648D4F1CA3B79A3933A429",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Common/5.9.0/Microsoft.CodeAnalysis.Common.nuspec",
+      "bytes": 2482,
+      "sha256": "EEBEB51BC61715D495498EFAFFF6F7077CBE53D4C7DEED2988D9ED0CC902D2B3",
+      "sourceEntry": "Microsoft.CodeAnalysis.Common.nuspec",
+      "component": "Microsoft.CodeAnalysis.Common/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.common/5.9.0/microsoft.codeanalysis.common.5.9.0.nupkg",
+      "packageSha256": "77EFD4715C24C8CD6B36F9B92980A2F5A86E4A7B53648D4F1CA3B79A3933A429",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/ThirdPartyNotices.rtf",
+      "bytes": 2183,
+      "sha256": "EF4678850E7E3AAF9297F07E5C4060D477854E545CCF8E2EF8452D65A7B2EFAF",
+      "sourceEntry": "ThirdPartyNotices.rtf",
+      "component": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp/5.9.0/microsoft.codeanalysis.csharp.5.9.0.nupkg",
+      "packageSha256": "7602C3DBAA122268F3B26C6CC0DD02EB9224DEA9442ED27AF5C3FE56D643993F",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp/5.9.0/Microsoft.CodeAnalysis.CSharp.nuspec",
+      "bytes": 2650,
+      "sha256": "CDB47F1A6D4DC3A22615DEECC1F920C1FCB6DFB4ED27313AB1E3B1CCDF9405DE",
+      "sourceEntry": "Microsoft.CodeAnalysis.CSharp.nuspec",
+      "component": "Microsoft.CodeAnalysis.CSharp/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp/5.9.0/microsoft.codeanalysis.csharp.5.9.0.nupkg",
+      "packageSha256": "7602C3DBAA122268F3B26C6CC0DD02EB9224DEA9442ED27AF5C3FE56D643993F",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/ThirdPartyNotices.rtf",
+      "bytes": 2183,
+      "sha256": "EF4678850E7E3AAF9297F07E5C4060D477854E545CCF8E2EF8452D65A7B2EFAF",
+      "sourceEntry": "ThirdPartyNotices.rtf",
+      "component": "Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp.scripting/5.9.0/microsoft.codeanalysis.csharp.scripting.5.9.0.nupkg",
+      "packageSha256": "61FF8463C1DEBF44BFC4CA4BC31A6A74DBBCB44C6163FDE1B05DDB851114AA79",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0/Microsoft.CodeAnalysis.CSharp.Scripting.nuspec",
+      "bytes": 3193,
+      "sha256": "4ECC8DD95BC5F141528B9201D4276F59BAE788BD4CB982CB14A93C19999D4328",
+      "sourceEntry": "Microsoft.CodeAnalysis.CSharp.Scripting.nuspec",
+      "component": "Microsoft.CodeAnalysis.CSharp.Scripting/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.csharp.scripting/5.9.0/microsoft.codeanalysis.csharp.scripting.5.9.0.nupkg",
+      "packageSha256": "61FF8463C1DEBF44BFC4CA4BC31A6A74DBBCB44C6163FDE1B05DDB851114AA79",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/ThirdPartyNotices.rtf",
+      "bytes": 2183,
+      "sha256": "EF4678850E7E3AAF9297F07E5C4060D477854E545CCF8E2EF8452D65A7B2EFAF",
+      "sourceEntry": "ThirdPartyNotices.rtf",
+      "component": "Microsoft.CodeAnalysis.Scripting.Common/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.scripting.common/5.9.0/microsoft.codeanalysis.scripting.common.5.9.0.nupkg",
+      "packageSha256": "058777A379E2BD6B004EB8BC8D81AAEB25F09443D80979F2BA46794F434B5345",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/Microsoft.CodeAnalysis.Scripting.Common/5.9.0/Microsoft.CodeAnalysis.Scripting.Common.nuspec",
+      "bytes": 2760,
+      "sha256": "03ED5BC053D8D89D4324406C469D99AF59679C7BA2BE8C0FD06C41FE36EEB8A3",
+      "sourceEntry": "Microsoft.CodeAnalysis.Scripting.Common.nuspec",
+      "component": "Microsoft.CodeAnalysis.Scripting.Common/5.9.0",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.codeanalysis.scripting.common/5.9.0/microsoft.codeanalysis.scripting.common.5.9.0.nupkg",
+      "packageSha256": "058777A379E2BD6B004EB8BC8D81AAEB25F09443D80979F2BA46794F434B5345",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128/runtime.osx.10.10-x64.CoreCompat.System.Drawing.nuspec",
+      "bytes": 941,
+      "sha256": "6F2F7D0E2CA211BE2E3A453A26ADF6CE8C20057610BC09F59D40EB482BDB8F18",
+      "sourceEntry": "runtime.osx.10.10-x64.CoreCompat.System.Drawing.nuspec",
+      "component": "runtime.osx.10.10-x64.CoreCompat.System.Drawing/6.0.5.128",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/runtime.osx.10.10-x64.corecompat.system.drawing/6.0.5.128/runtime.osx.10.10-x64.corecompat.system.drawing.6.0.5.128.nupkg",
+      "packageSha256": "BA998CD7FD4D19FA01AE935F6DA031141AAA0E8FAF439783900FD697151C5DD8",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/SharpZipLib/1.4.2/SharpZipLib.nuspec",
+      "bytes": 1569,
+      "sha256": "BCBD41DE9F4C1EA78144211B4B4A0A5ADC1945C63CAA9D6DF76687D885F03628",
+      "sourceEntry": "SharpZipLib.nuspec",
+      "component": "SharpZipLib/1.4.2",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/sharpziplib/1.4.2/sharpziplib.1.4.2.nupkg",
+      "packageSha256": "FE0895AA2930A2B1B65CAA9F37DB8BCA35125EBDF9CC1B99D855F6AFC5FF5946",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "path": "licenses/NuGet/System.CommandLine/2.0.11/System.CommandLine.nuspec",
+      "bytes": 1182,
+      "sha256": "474A8CA61943A51D0DAACA3DA199A1727FD6BFA57D85889077778D703C91D5C2",
+      "sourceEntry": "System.CommandLine.nuspec",
+      "component": "System.CommandLine/2.0.11",
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/system.commandline/2.0.11/system.commandline.2.0.11.nupkg",
+      "packageSha256": "489F2AFCF55E477A7011BE7F5E1EE182AE955B303F396C76ED42EDE6AC1A384C",
+      "evidence": "Original exact-version NuGet package; downloaded for static inspection only"
+    },
+    {
+      "component": "Newtonsoft.Json/13.0.4",
+      "path": "licenses/NuGet/Newtonsoft.Json/13.0.4/LICENSE.md",
+      "sha256": "B98A397897FF55F76CDDC380041507A95A896B2946E0188703BF0496793D6516",
+      "bytes": 1104,
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/newtonsoft.json/13.0.4/newtonsoft.json.13.0.4.nupkg",
+      "evidence": "Original exact-version NuGet cache notice; binary hash matches original package"
+    },
+    {
+      "component": "Newtonsoft.Json/13.0.4",
+      "path": "licenses/NuGet/Newtonsoft.Json/13.0.4/newtonsoft.json.nuspec",
+      "sha256": "F4BC224D57A21FB481F1DC655C3FDE6F2E5B8CE80A9448E74A5721A51932ADF3",
+      "bytes": 2413,
+      "sourceUrl": "https://api.nuget.org/v3-flatcontainer/newtonsoft.json/13.0.4/newtonsoft.json.13.0.4.nupkg",
+      "evidence": "Original exact-version NuGet cache notice; binary hash matches original package"
+    },
+    {
+      "component": "Underanalyzer",
+      "path": "licenses/GameMaker/Underanalyzer/LICENSE",
+      "sha256": "4B89D4518BD135AB4EE154A7BCE722246B57A98C3D7EFC1A09409898160C2BD1",
+      "bytes": 16724,
+      "sourceArchive": "third-party-source/Underanalyzer-4ff50a8-source.zip",
+      "sourceEntry": "Underanalyzer-4ff50a866b4c1a7acee8cebe6a56d6a48709b453/LICENSE",
+      "evidence": "Original license from included corresponding source archive"
+    },
+    {
+      "component": "UndertaleModTool",
+      "path": "licenses/GameMaker/UndertaleModTool/LICENSE",
+      "sha256": "8CEB4B9EE5ADEDDE47B31E975C1D90C73AD27B6B165A1DCD80C7C545EB65B903",
+      "bytes": 35147,
+      "sourceArchive": "third-party-source/UndertaleModTool-0.9.2.0-source.zip",
+      "sourceEntry": "UndertaleModTool-0.9.2.0/LICENSE.txt",
+      "evidence": "Original license from included corresponding source archive"
+    }
+  ],
+  "scope": "Original full licenses and notices; no universal license substitution; exact source revision claims only where supported by stated evidence."
+}

@@ -13,22 +13,28 @@ internal static class PortableDataStorage
         var locationFile=System.IO.Path.Combine(applicationRoot,"data-location.json");
         if(!File.Exists(locationFile))return DataContinuity.Resolve(applicationRoot)??System.IO.Path.Combine(applicationRoot,"data");
         if(new FileInfo(locationFile).Length>16384)throw new IOException("数据位置配置无法读取，未使用其他位置。");
-        var location=JsonSerializer.Deserialize<Location>(File.ReadAllText(locationFile))??throw new IOException("数据位置配置为空。");
-        var target=AppDataPaths.ValidateExplicitRoot(System.IO.Path.GetFullPath(location.Path,applicationRoot));
+        byte[] descriptor=File.ReadAllBytes(locationFile);
+        ReadOnlySpan<byte> json=descriptor;
+        if(json.Length>=3&&json[0]==0xEF&&json[1]==0xBB&&json[2]==0xBF)json=json[3..];
+        var location=JsonSerializer.Deserialize<Location>(json)??throw new IOException("数据位置配置为空。");
+        var target=PortableDataMigration.ResolveLocationTarget(applicationRoot,descriptor);
         if(location.RequireExisting&&!Directory.Exists(target))throw new IOException("已有数据目录不可用，请检查数据位置；未创建空库代替。");
         if(location.CopyFrom is { } source)
         {
+            source=AppDataPaths.ValidateExplicitRoot(System.IO.Path.GetFullPath(source,applicationRoot));
             CopyForRelocation(source,target,location.MigrationId);
-            WriteJson(locationFile,new Location(target));
+            WriteJson(locationFile,new Location(PortableDataMigration.PortablePath(target,applicationRoot)));
         }
         return target;
     }
     internal static void RequestLocation(string target)
     {
+        using var operation=PortableDataMigration.AcquireLocationLock(AppContext.BaseDirectory);
+        PortableDataMigration.EnsureNoPendingLocationChange(AppContext.BaseDirectory,AppDataPaths.Root);
         target=AppDataPaths.ValidateExplicitRoot(target);
-        if(Same(target,AppDataPaths.Root)){WriteJson(LocationFile,new Location(target));return;}
+        if(Same(target,AppDataPaths.Root)){WriteJson(LocationFile,new Location(PortableDataMigration.PortablePath(target,AppContext.BaseDirectory)));return;}
         ValidateDestination(AppDataPaths.Root,target);
-        WriteJson(LocationFile,new Location(target,AppDataPaths.Root,Guid.NewGuid().ToString("N")));
+        WriteJson(LocationFile,new Location(PortableDataMigration.PortablePath(target,AppContext.BaseDirectory),PortableDataMigration.PortablePath(AppDataPaths.Root,AppContext.BaseDirectory),Guid.NewGuid().ToString("N")));
     }
     internal static bool Same(string a,string b)=>string.Equals(System.IO.Path.GetFullPath(a).TrimEnd('\\'),System.IO.Path.GetFullPath(b).TrimEnd('\\'),StringComparison.OrdinalIgnoreCase);
     private static void ValidateDestination(string source,string target)

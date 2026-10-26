@@ -113,6 +113,7 @@ internal sealed partial class NativeGameLibraryGrid
             WM.TextOptions.SetTextRenderingMode(this, WM.TextRenderingMode.ClearType);
             WM.RenderOptions.SetBitmapScalingMode(this, WM.BitmapScalingMode.LowQuality);
             W.Automation.AutomationProperties.SetName(this, "游戏库");
+            WpfUiLanguage.Property(this,W.Automation.AutomationProperties.NameProperty,"游戏库");
             MouseDown += (_, e) =>
             {
                 if (e.ChangedButton is WI.MouseButton.XButton1 or WI.MouseButton.XButton2) return;

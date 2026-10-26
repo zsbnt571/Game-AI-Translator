@@ -142,7 +142,7 @@ internal sealed class ScreenshotRebuildSegments : Control
             {
                 ApplicationLanguage.English=>new[]{"Image","Translated","Source","Text"}[i],
                 ApplicationLanguage.Russian=>new[]{"Снимок","Перевод","Оригинал","Текст"}[i],
-                _=>ScreenshotRebuildPane.ViewTitle((ScreenshotPaneView)i)
+                _=>UiLanguage.Text(ScreenshotRebuildPane.ViewTitle((ScreenshotPaneView)i))
             };
             TextRenderer.DrawText(g, title, Font, box, color, TextFormatFlags.NoPadding | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine);
         }

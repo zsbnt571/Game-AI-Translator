@@ -23,11 +23,30 @@ namespace Fusion.UnityEmbedded
             return complete.Length>=2;
         }
     }
+    // Shared by resource preparation and runtime lookup. A bare named token is
+    // data, not an instruction to evaluate game expressions. Preserve syntax,
+    // exclude formatting/escaped brackets, and never infer a player's value.
+    internal static class DisplayTemplateTokens
+    {
+        const string SquareControls="b|i|u|s|color|font|font_size|size|scale|scalex|scaley|tag|offsetx|offsety|spacing|opacity|url|img|center|right|left|fill|table|cell|wave|shake|tornado|rainbow|pulse|fade|outline_size|outline_color|bgcolor|fgcolor|dropcap|p|br|lb|rb|quote|code|list|ul|ol|li|tr|td|th|sub|sup|strike";
+        const string Square=@"(?<![\[\\])\[(?!(?i:"+SquareControls+@")\])[A-Za-z_][A-Za-z_0-9]{0,63}\](?!\])";
+        static readonly Regex Token=new Regex(@"\{[A-Za-z_0-9][A-Za-z_0-9]*\}|:[A-Za-z_][A-Za-z_0-9]*:|<(?!COLOR>|STYLE>|SPRITE>|SPACE>|FONT>|SIZE>|ALPHA>|LINK>)[A-Z][A-Z0-9_]{2,}>|"+Square);
+        internal static Match[] Matches(string source)
+        {
+            if(string.IsNullOrEmpty(source)||source.Length>24000)return new Match[0];
+            var matches=Token.Matches(source);var result=new Match[matches.Count];matches.CopyTo(result,0);return result;
+        }
+        internal static bool IsSquareVariable(string code)
+        {
+            if(string.IsNullOrEmpty(code)||code[0]!='[')return false;
+            var matches=Matches(code);return matches.Length==1&&matches[0].Index==0&&matches[0].Length==code.Length;
+        }
+    }
     // Exact template matching only; ambiguous templates and damaged placeholders
     // remain live-translation candidates. No game names, paths or scripts involved.
     internal sealed class TextLookup
     {
-        sealed class Template { internal string[] Parts,Tokens;internal string Text; }
+        sealed class Template { internal string Source;internal string[] Parts,Tokens; }
         sealed class Entry {internal string Key,Text,Prefix;internal Template Template;}
         readonly Dictionary<string,Dictionary<string,Template>> templates=new Dictionary<string,Dictionary<string,Template>>(StringComparer.Ordinal);
         readonly Dictionary<string,Entry> indexed=new Dictionary<string,Entry>(StringComparer.Ordinal);
@@ -43,7 +62,6 @@ namespace Fusion.UnityEmbedded
             if(source.Length<24||source.Length>6000||source.IndexOfAny(new[]{'<','>','{','}','[',']','\\','\0'})>=0)return null;
             return Space.Replace(source.Trim()," ");
         }
-        static readonly Regex Token=new Regex(@"\{[A-Za-z_0-9][A-Za-z_0-9]*\}|:[A-Za-z_][A-Za-z_0-9]*:|<(?!COLOR>|STYLE>|SPRITE>|SPACE>|FONT>|SIZE>|ALPHA>|LINK>)[A-Z][A-Z0-9_]{2,}>");
         static readonly Regex Wrapper=new Regex(@"^(\s*)<([A-Za-z]+)(?:=[^>\r\n]*)?>(.*)</\2>(\s*)$",RegexOptions.Singleline);
         internal void Rebuild(Dictionary<string,string> cache)
         {
@@ -65,8 +83,8 @@ namespace Fusion.UnityEmbedded
             memo.Clear();UpdateCount++;
             var entry=new Entry{Key=PlainKey(source),Text=text};indexed[source]=entry;
             if(entry.Key!=null)ChangeVariant(entry.Key,text,1);
-            var tokens=Token.Matches(source);
-            if(tokens.Count>0&&tokens.Count<=8&&Token.Replace(source,"").Length>=12)
+            var tokens=DisplayTemplateTokens.Matches(source);int tokenLength=0;foreach(var token in tokens)tokenLength+=token.Length;
+            if(tokens.Length>0&&tokens.Length<=8&&source.Length-tokenLength>=12)
             {
                 var parts=new List<string>();var names=new List<string>();int cursor=0;bool valid=true;
                 foreach(Match token in tokens)
@@ -79,7 +97,7 @@ namespace Fusion.UnityEmbedded
                     parts.Add(source.Substring(cursor));entry.Prefix=source.Substring(0,Math.Min(4,tokens[0].Index));
                     Dictionary<string,Template> bucket;
                     if(!templates.TryGetValue(entry.Prefix,out bucket))templates[entry.Prefix]=bucket=new Dictionary<string,Template>(StringComparer.Ordinal);
-                    bucket[source]=entry.Template=new Template{Parts=parts.ToArray(),Tokens=names.ToArray(),Text=text};
+                    bucket[source]=entry.Template=new Template{Source=source,Parts=parts.ToArray(),Tokens=names.ToArray()};
                 }
             }
             return true;
@@ -112,40 +130,85 @@ namespace Fusion.UnityEmbedded
             }
             return position==source.Length?values:null;
         }
-        internal bool TryGet(Dictionary<string,string> cache,string source,out string text){text=Lookup(cache,source,0);return text!=null;}
-        string Lookup(Dictionary<string,string> cache,string source,int depth)
+        static bool ValidTemplateText(Template candidate,string text)
         {
-            string text;if(cache.TryGetValue(source,out text)||memo.TryGetValue(source,out text))return text;
+            if(string.IsNullOrEmpty(text)||text.Length>24000)return false;
+            var expected=new Dictionary<string,int>(StringComparer.Ordinal);
+            foreach(var token in candidate.Tokens){int count;expected.TryGetValue(token,out count);expected[token]=count+1;}
+            foreach(var token in DisplayTemplateTokens.Matches(text))
+            {
+                int count;if(!expected.TryGetValue(token.Value,out count)||count==0)return false;expected[token.Value]=count-1;
+            }
+            foreach(var count in expected.Values)if(count!=0)return false;
+            return true;
+        }
+        static string Substitute(string text,Dictionary<string,string> values)
+        {
+            // Replace token spans once. A value containing another token's
+            // spelling must remain a value, not become a second substitution.
+            var result=new StringBuilder();int at=0;
+            foreach(var token in DisplayTemplateTokens.Matches(text))
+            {result.Append(text,at,token.Index-at);result.Append(values[token.Value]);at=token.Index+token.Length;}
+            result.Append(text,at,text.Length-at);return result.ToString();
+        }
+        internal bool TryGetTemplate(string source,Func<string,string> read,out string text)
+        {return TryGetTemplate(source,read,null,out text);}
+        bool TryGetTemplate(string source,Func<string,string> read,TextLookup fallback,out string text)
+        {
+            text=null;if(string.IsNullOrEmpty(source)||source.Length>6000||read==null)return false;
+            var candidates=new Dictionary<string,Template>(StringComparer.Ordinal);
+            foreach(var index in fallback==null?new[]{this}:new[]{this,fallback})
+            {
+                for(int n=0;n<=Math.Min(4,source.Length);n++)
+                {
+                    Dictionary<string,Template> bucket;if(!index.templates.TryGetValue(source.Substring(0,n),out bucket))continue;
+                    foreach(var candidate in bucket.Values)
+                    {
+                        if(candidates.ContainsKey(candidate.Source))continue;
+                        if(candidates.Count>=256)return false;candidates.Add(candidate.Source,candidate);
+                    }
+                }
+            }
+            foreach(var candidate in candidates.Values)
+            {
+                var values=MatchTemplate(candidate,source);if(values==null)continue;
+                string current=read(candidate.Source);if(!ValidTemplateText(candidate,current))continue;
+                string result=Substitute(current,values);
+                if(text!=null&&text!=result){text=null;return false;}text=result;
+            }
+            // Resolver results are deliberately not memoized: profiles, manual
+            // corrections and terminology can change independently of this index.
+            return text!=null;
+        }
+        internal bool TryGet(Dictionary<string,string> cache,string source,out string text)
+        {text=Lookup(cache,source,0,null,null);return text!=null;}
+        internal bool TryGet(Dictionary<string,string> cache,string source,out string text,TextLookup fallback,Dictionary<string,string> fallbackCache)
+        {text=Lookup(cache,source,0,fallback,fallbackCache);return text!=null;}
+        string Lookup(Dictionary<string,string> cache,string source,int depth,TextLookup fallback,Dictionary<string,string> fallbackCache)
+        {
+            string text;if(cache.TryGetValue(source,out text)||fallbackCache!=null&&fallbackCache.TryGetValue(source,out text))return text;
+            // An overlay's authority can change in either dictionary. It must
+            // not reuse a memo created for another fallback/profile context.
+            if(fallback==null&&memo.TryGetValue(source,out text))return text;
             if(depth>8)return null;
             var wrapper=Wrapper.Match(source);
             if(wrapper.Success&&wrapper.Groups[3].Value.IndexOf("</"+wrapper.Groups[2].Value+">",StringComparison.Ordinal)<0)
             {
-                string body=Lookup(cache,wrapper.Groups[3].Value,depth+1);
+                string body=Lookup(cache,wrapper.Groups[3].Value,depth+1,fallback,fallbackCache);
                 if(body!=null)text=source.Substring(0,wrapper.Groups[3].Index)+body+source.Substring(wrapper.Groups[3].Index+wrapper.Groups[3].Length);
             }
             string trimmed=source.Trim();
             if(text==null&&trimmed!=source&&trimmed.Length>0)
-            {string body=Lookup(cache,trimmed,depth+1);if(body!=null){int at=source.IndexOf(trimmed,StringComparison.Ordinal);text=source.Substring(0,at)+body+source.Substring(at+trimmed.Length);}}
+            {string body=Lookup(cache,trimmed,depth+1,fallback,fallbackCache);if(body!=null){int at=source.IndexOf(trimmed,StringComparison.Ordinal);text=source.Substring(0,at)+body+source.Substring(at+trimmed.Length);}}
             if(text==null)
             {
-                string key=PlainKey(source);if(key!=null)whitespace.TryGetValue(key,out text);
+                string key=PlainKey(source);if(key!=null&&!whitespace.TryGetValue(key,out text)&&fallback!=null)fallback.whitespace.TryGetValue(key,out text);
             }
             if(text==null)
             {
-                var candidates=new List<Template>();bool bounded=true;
-                for(int n=0;n<=Math.Min(4,source.Length);n++)
-                {
-                    Dictionary<string,Template> bucket;if(!templates.TryGetValue(source.Substring(0,n),out bucket))continue;
-                    if(candidates.Count+bucket.Count>256){bounded=false;break;}candidates.AddRange(bucket.Values);
-                }
-                if(bounded)foreach(var candidate in candidates)
-                {
-                    var values=MatchTemplate(candidate,source);if(values==null)continue;
-                    string result=candidate.Text;foreach(var value in values)result=result.Replace(value.Key,value.Value);
-                    if(text!=null&&text!=result){text=null;break;}text=result;
-                }
+                TryGetTemplate(source,key=>{string value;return cache.TryGetValue(key,out value)||fallbackCache!=null&&fallbackCache.TryGetValue(key,out value)?value:null;},fallback,out text);
             }
-            if(memo.Count>=4096)memo.Clear();memo[source]=text;return text;
+            if(fallback==null){if(memo.Count>=4096)memo.Clear();memo[source]=text;}return text;
         }
     }
 }

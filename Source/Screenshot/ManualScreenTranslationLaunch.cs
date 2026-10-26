@@ -1,11 +1,12 @@
 namespace ScreenshotTranslationUiTester;
 
-// This route never invokes installers, restorers or native bridge preparation.
-// A running game is attached to as-is. Only an explicit stopped-game request
-// may launch the existing installation; an unknown identity is not stopped.
+// A running game is captured as-is. An explicit stopped-game request uses the
+// ordinary launch preparation to remove only our recorded native components,
+// so requesting screen capture cannot silently restart an embedded translator.
+// Unknown process identity is never treated as stopped.
 internal static class ManualScreenTranslationLaunch
 {
-    internal static async Task<int?> EnsureRunningAsync(GameInfo game,IGameLaunchOperations operations,CancellationToken cancellation)
+    internal static async Task<int?> EnsureRunningAsync(GameInfo game,IGameLaunchOperations operations,CancellationToken cancellation,Action? beforePrepare=null)
     {
         cancellation.ThrowIfCancellationRequested();
         var state=await Task.Run(()=>operations.ProcessState(game),cancellation);
@@ -18,6 +19,14 @@ internal static class ManualScreenTranslationLaunch
             // Recheck after asynchronous UI work so a second launch cannot race
             // the game becoming visible during preparation.
             var current=operations.ProcessState(game);
+            cancellation.ThrowIfCancellationRequested();
+            if(current==FusionGameProcessState.Running)return null;
+            if(current!=FusionGameProcessState.Stopped)throw new IOException("游戏状态尚未确认，未重复启动。");
+            beforePrepare?.Invoke();
+            cancellation.ThrowIfCancellationRequested();
+            operations.PrepareOrdinary(game);
+            cancellation.ThrowIfCancellationRequested();
+            current=operations.ProcessState(game);
             cancellation.ThrowIfCancellationRequested();
             if(current==FusionGameProcessState.Running)return null;
             if(current!=FusionGameProcessState.Stopped)throw new IOException("游戏状态尚未确认，未重复启动。");

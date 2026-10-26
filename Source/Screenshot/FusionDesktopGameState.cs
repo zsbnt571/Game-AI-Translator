@@ -9,15 +9,20 @@ internal sealed record DesktopGameState(GameInfo Game,bool HasRecord,bool Instal
 // Detection describes an adapter candidate; it does not prove that this game's
 // current process has accepted the translation bridge. Keep these facts distinct.
 internal sealed record GameTranslationPresentation(string Badge,string Font,string Rendering,bool CanToggle,
-    bool Blocked,bool PendingVerification)
+    bool Blocked,bool PendingVerification,bool OrdinaryLaunch=false)
 {
-    internal static GameTranslationPresentation Resolve(GameInfo? game,bool connected,string? blockedReason)
+    internal const string OrdinaryLaunchHint="本次为普通启动，翻译未开启。请保存并退出游戏，再点击“翻译并启动”。";
+    internal static GameTranslationPresentation Resolve(GameInfo? game,bool connected,string? blockedReason,bool ordinaryLaunch=false,bool connecting=false)
     {
         bool supported=GameCapabilities.EmbeddedTranslation(game);
         if(connected&&supported)
             return new("组件已连接",game?.AdapterId=="wolf"?"保持游戏字号，缺字自动补齐":game?.AdapterId=="renpy"?"保持游戏字号":"跟随游戏原有字体","游戏文字内替换",true,false,false);
+        if(connecting&&supported)
+            return new(GameTranslationActivation.ConnectingTitle,"接入后确认","接入后确认",false,false,false);
         if(!string.IsNullOrWhiteSpace(blockedReason))
             return new("翻译未接入","未接入，暂不可用","翻译未接入",false,true,false);
+        if(supported&&ordinaryLaunch)
+            return new("翻译未开启","翻译开启后可用","翻译未开启",false,false,false,true);
         if(game?.Support==SupportLevel.Candidate)
             return new("待接入验证","接入后确认","接入后确认",false,false,true);
         return new(game?.Support==SupportLevel.Supported?"已有适配":"暂不支持内嵌翻译",
@@ -45,7 +50,7 @@ internal sealed partial class FusionAdapterInstaller
             Path.Combine(data,"Managed","Assembly-CSharp.dll"),Path.Combine(data,"Managed","Game.dll"),
             Path.Combine(data,"Managed","Unity.TextMeshPro.dll"),Path.Combine(data,"Managed","mscorlib.dll"),
             Path.Combine(data,"Mono","mono.dll"),Path.Combine(data,"Mono","EmbedRuntime","mono.dll")};
-        var stamp=new StringBuilder(game.ExePath).Append('|').Append(TranslationRoute.GenericTest(game.ExePath)).Append('|').Append(Directory.GetLastWriteTimeUtc(root).Ticks);
+        var stamp=new StringBuilder(game.ExePath).Append('|').Append(Directory.GetLastWriteTimeUtc(root).Ticks);
         foreach(var path in paths){var f=new FileInfo(path);stamp.Append('|').Append(f.Exists?f.Length:-1).Append(':').Append(f.Exists?f.LastWriteTimeUtc.Ticks:0);}
         return stamp.ToString();
     }
@@ -68,7 +73,7 @@ internal sealed partial class FusionAdapterInstaller
         if(detection!=detectionStamp||detectedGame is null)
         {detectedGame=GameDetector.Detect(game.ExePath);detectionStamp=DetectionStamp(detectedGame);force=true;}
         game=detectedGame;
-        var process=ProcessState(game);var cloud=Cloud(game);var supported=cloud||game.AdapterId=="mgi";
+        var process=ProcessState(game);
         if(EmbeddedGameAdapters.Handles(game))
         {
             string embeddedStamp="embedded|"+EmbeddedGameAdapters.InspectionStamp(game);
@@ -76,66 +81,8 @@ internal sealed partial class FusionAdapterInstaller
             bool embeddedInstalled=IsInstalled(game);desktopStamp=embeddedStamp;
             return desktopState=new(game,HasRecord(game),embeddedInstalled,embeddedInstalled?game.Engine+" 翻译组件":"未安装翻译组件","应用翻译",null,game.Details,process,"从软件启动后可随时开关翻译；已有译文优先显示，未译文本继续后台处理。");
         }
-        if(game.AdapterId=="renpy")return new(game,HasRecord(game),IsInstalled(game),IsInstalled(game)?"Ren’Py 翻译组件":"未安装翻译组件","应用翻译",null,game.Details,process,"翻译并启动即可边玩边翻译；普通启动会移出本软件的组件。");
-        if(!supported)return new(game,HasRecord(game),false,"此游戏尚无配套适配","安装翻译",null,game.Details,process,"未登记此构建的内嵌适配，可单独启动游戏。");
-        var configPath=InRoot(game,cloud?FusionCloudPayload.Config:ConfigRelative);
-        var paths=(cloud?(IEnumerable<string>)FusionCloudPayload.Files.Keys:new[]{PluginRelative}).Append(Ledger)
-            .Append(cloud?FusionCloudPayload.Config:ConfigRelative).Select(x=>InRoot(game,x)).ToArray();
-        var stamp=new StringBuilder(game.ExePath).Append('|').Append(FusionConfiguration.EditIdentity(settings)).Append('|').Append(key);
-        foreach(var path in paths){var f=new FileInfo(path);stamp.Append('|').Append(path).Append(':').Append(f.Exists?f.Length:-1).Append(':').Append(f.Exists?f.LastWriteTimeUtc.Ticks:0);}
-        var identity=stamp.ToString();
-        if(!force&&desktopStamp==identity&&desktopState is not null)return desktopState with{Process=process};
-        var record=HasRecord(game);var installed=IsInstalled(game);var pluginPath=InRoot(game,cloud?FusionCloudPayload.Plugin:PluginRelative);
-        var exists=File.Exists(pluginPath);var action="安装翻译";var plugin="未安装";var details=new List<string>();var hint="";
-        bool? matches=null;
-        if(exists)
-        {
-            var hash=FileHash(pluginPath);var wanted=cloud?FusionCloudPayload.Files[FusionCloudPayload.Plugin]:FusionPluginIdentity.Sha256;
-            var version=FileVersionInfo.GetVersionInfo(pluginPath).FileVersion;
-            if(hash==wanted){plugin=cloud?"配套插件 0.6.0.21":"配套 MGI 插件";action="重新应用";}
-            else
-            {
-                plugin="检测到插件 "+(string.IsNullOrWhiteSpace(version)?"（版本未确定）":version);
-                action="切换配套插件";
-                if(cloud&&Version.TryParse(version,out var actual)&&Version.TryParse(FusionCloudPayload.PluginVersion,out var carried))
-                {if(actual<carried)action="更新插件";else if(actual>carried)hint="当前插件较新；应用将换回配套 0.6.0.21，气泡字号问题仍未解决。";}
-                details.Add("安装的插件与本软件携带载荷不同。");
-            }
-            if(hash==wanted)
-                try{Verify(game);details.Add("配套载荷完整性已核对。");}
-                catch(Exception ex){plugin+=" · 文件需核对";action="修复配套插件";details.Add(SafeDiagnosticOutput.ExceptionSummary(ex));}
-        }
-        if(record&&!installed)hint+=(hint.Length>0?"\n":"")+"安装记录未完成或与所选游戏不匹配，请先修复安装或恢复。";
-        if(exists&&!record)hint+=(hint.Length>0?"\n":"")+"已有插件文件，但缺少本软件安装记录；安装前会检查备份与冲突。";
-        if(File.Exists(configPath))
-        {
-            try
-            {
-                var desired=ConfigValues(cloud?CloudConfiguration(settings,key):BuildLegacyConfiguration(settings,key));
-                var actual=ConfigValues(File.ReadAllText(configPath));
-                matches=desired.All(x=>actual.TryGetValue(x.Key,out var value)&&value==x.Value);
-            }
-            catch(Exception ex){details.Add("配置核对失败："+SafeDiagnosticOutput.ExceptionSummary(ex));}
-        }
-        else if(installed)matches=false;
-        if(action=="重新应用"&&matches==false)action="应用更改";
-        if(action is "更新插件" or "切换配套插件" or "修复配套插件")details.Add("应用时同时写入当前方案配置。");
-        if(installed)hint+=(hint.Length>0?"\n":"")+"带翻译启动时应用当前方案；普通启动会先恢复本软件的安装。";
-        if(hint.Length==0&&(action is "更新插件" or "切换配套插件" or "修复配套插件"))hint="应用时同时写入当前方案配置。";
-        details.Add("桌面 "+BuildIdentity.BuildVersion+"；配套插件 "+(cloud?FusionCloudPayload.PluginVersion:"MGI 原始载荷")+"。运行中实际加载的配置未经运行侧确认。");
-        desktopStamp=identity;
-        return desktopState=new(game,record,installed,plugin,action,matches,string.Join("\n",details),process,hint);
-    }
-    private static Dictionary<string,string> ConfigValues(string text)
-    {
-        var values=new Dictionary<string,string>(StringComparer.Ordinal);var section="";
-        foreach(var raw in text.Split('\n'))
-        {
-            var line=raw.Trim();if(line.Length==0||line.StartsWith('#')||line.StartsWith(';'))continue;
-            if(line.StartsWith('[')&&line.EndsWith(']')){section=line;continue;}
-            var split=line.IndexOf('=');if(split>=0)values[section+"|"+line[..split].Trim()]=line[(split+1)..].Trim();
-        }
-        return values;
+        if(game.AdapterId=="renpy")return new(game,HasRecord(game),IsInstalled(game),IsInstalled(game)?"Ren’Py 翻译组件":"未安装翻译组件","应用翻译",null,game.Details,process,"普通启动保持翻译关闭；游戏连接后，可在游玩时开启翻译。");
+        return new(game,HasRecord(game),false,"此游戏尚无配套适配","安装翻译",null,game.Details,process,"未登记此构建的内嵌适配，可单独启动游戏。");
     }
 }
 

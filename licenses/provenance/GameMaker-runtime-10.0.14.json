@@ -1,0 +1,2431 @@
+{
+  "schema": "fusion127-gamemaker-runtime-service-v1",
+  "oldRuntime": "10.0.11",
+  "newRuntime": "10.0.14",
+  "package": "Microsoft.NETCore.App.Runtime.win-x64",
+  "packageSha256": "A3EA61B4A2DA6D28E562DD1CDACF80EB4DD6B9727B0A2B47F9D6ABA90DBBCB1F",
+  "packageUrl": "https://api.nuget.org/v3-flatcontainer/microsoft.netcore.app.runtime.win-x64/10.0.14/microsoft.netcore.app.runtime.win-x64.10.0.14.nupkg",
+  "runtimeListSha256": "8014F30F93C243043F202E04CFEEB10BE5E44399735CEBE8451EE99478B67EA4",
+  "assetCount": 187,
+  "assets": [
+    {
+      "oldName": "Microsoft.CSharp.dll",
+      "oldSha256": "2D073FF1F059DDA2814C320AC5782536DC268B335E23E8E8B4D0D3B0833B617F",
+      "newName": "Microsoft.CSharp.dll",
+      "newSha256": "D8EA1FBBAAFDC9734420131C5D1F4624826E411BAD3E51D3EB4FB95AB154F66F",
+      "bytes": 980816,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/Microsoft.CSharp.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "Microsoft.VisualBasic.Core.dll",
+      "oldSha256": "6C267ACB79006291CDA2484BD9D39F289419B7D3448E1A1F30EF7C2AD7DCE82C",
+      "newName": "Microsoft.VisualBasic.Core.dll",
+      "newSha256": "578203D4915AA43283A3D6FA1083F4B80F333EF544E39FF0FCFDADA1B7499A7D",
+      "bytes": 1193768,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/Microsoft.VisualBasic.Core.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "15.0.0.0",
+        "fileVersion": "15.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "Microsoft.VisualBasic.dll",
+      "oldSha256": "6ADCDD16418823C4D27BC65C9EF07DF2EAC26215FAFC3D27EDA58AE44A4787B3",
+      "newName": "Microsoft.VisualBasic.dll",
+      "newSha256": "95AA41F885965447A62B59F1B3CE1677300C51C009048C8C677B961E98E99A72",
+      "bytes": 17192,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/Microsoft.VisualBasic.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "Microsoft.Win32.Primitives.dll",
+      "oldSha256": "07EE7D2780A74C523AF5CA4BABDC63D006FA896B3A1463C2E638C5BB2843F9B9",
+      "newName": "Microsoft.Win32.Primitives.dll",
+      "newSha256": "637ADB956E9E80549239F1707DB3885683504EFBFC2ED8EA93A3D187EF53789C",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/Microsoft.Win32.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "Microsoft.Win32.Registry.dll",
+      "oldSha256": "5F7623B92C1EF07C98546F63C83613F5F5F7AF6513DC52E2E9E11447B6C1C7F6",
+      "newName": "Microsoft.Win32.Registry.dll",
+      "newSha256": "143A613FC7C87E09C02CAC0CC1469F850120BED98C5A1602AD84FC42B6C1AE63",
+      "bytes": 116560,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/Microsoft.Win32.Registry.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.AppContext.dll",
+      "oldSha256": "36447D0E4C9C86352905726EAF37292C55CAED5B87C74C22836AE8B0334395C3",
+      "newName": "System.AppContext.dll",
+      "newSha256": "B03E016FA01D7CC9723044C7020940779E4AF59E29BDF47F72BC6ED9D9B1D257",
+      "bytes": 15184,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.AppContext.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Buffers.dll",
+      "oldSha256": "7EFC8DFEF9548771EC328610DE7B8E5C4308A8EA6B1CA73021F336FC00653176",
+      "newName": "System.Buffers.dll",
+      "newSha256": "9BD4590FA18B9A6509EFB5147158A6ABBE4799E82E0EFA9FA240102B6084872A",
+      "bytes": 15184,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Buffers.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Collections.Concurrent.dll",
+      "oldSha256": "569667E92DDA0AF323A9F289C6BBE7A046BAB7354F9FA0D37FC97404A0499ED3",
+      "newName": "System.Collections.Concurrent.dll",
+      "newSha256": "7F2AC0EC3BB9425017006CC750DC94A3C37ED175BA2F4EAA3F8F8E5CF35472E0",
+      "bytes": 231248,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Collections.Concurrent.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Collections.Immutable.dll",
+      "oldSha256": "623AD5FA5AC38C460DF0073F37FBB649E219AC486C926B822F77EBF02676D56C",
+      "newName": "System.Collections.Immutable.dll",
+      "newSha256": "CE2385891F525991C59D99A86CFAF8D5A81C56F24B01A433F42EB85071832121",
+      "bytes": 976680,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Collections.Immutable.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Collections.NonGeneric.dll",
+      "oldSha256": "8CF296B4868C0DEA441C452C50ED5C322837BF736A7C173F46DDA4EBDFEB4C0B",
+      "newName": "System.Collections.NonGeneric.dll",
+      "newSha256": "82AB716AB740669598D8CDA36A92690BCC4B01EBBA8B21C0C4F0A7A8EE1D9248",
+      "bytes": 104272,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Collections.NonGeneric.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Collections.Specialized.dll",
+      "oldSha256": "61702E1173C49F32E7B1804667A249F8709680F01859D46CF30E74197FEDC1C5",
+      "newName": "System.Collections.Specialized.dll",
+      "newSha256": "D9ED158EF29DF6146151D13260DDBB2310DA7150EB98C2637CE91D057F7786CB",
+      "bytes": 104232,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Collections.Specialized.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Collections.dll",
+      "oldSha256": "5AEA9C285F011D1E83F05834E12632EE5EBF65DA1D546E696F525AF47101A3B0",
+      "newName": "System.Collections.dll",
+      "newSha256": "78D429A901A73A09CDA6037BEFAA56B79BFA557000B2A69BA1C1210253C0B21D",
+      "bytes": 296744,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Collections.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ComponentModel.Annotations.dll",
+      "oldSha256": "BE6047DC8B7D2545C2DD099C6868D3736ECD81EA053C6714E9A6F92FF547358E",
+      "newName": "System.ComponentModel.Annotations.dll",
+      "newSha256": "F2C3FDA351505065EFFBB42E175E50B4C9BCB4C4F560EBACC868D50D29252EAB",
+      "bytes": 198480,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.Annotations.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ComponentModel.DataAnnotations.dll",
+      "oldSha256": "C4AD5B72E9461F82B6F5346AF3B2F4F46D76763DAAF51586943F99F1CC7D5AFB",
+      "newName": "System.ComponentModel.DataAnnotations.dll",
+      "newSha256": "F7675A194E2F444670B94D3D3866DD3DD16B48B332CC5811268FF903E6C17A65",
+      "bytes": 16680,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.DataAnnotations.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ComponentModel.EventBasedAsync.dll",
+      "oldSha256": "704D58B299577D640F365A4541089D99D8187B3071FF680599D3640251E470DA",
+      "newName": "System.ComponentModel.EventBasedAsync.dll",
+      "newSha256": "D060E7F58FEB609DB4F47E2A6DA25C4A9B406B97589004D4022D31D673AACC52",
+      "bytes": 46888,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.EventBasedAsync.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ComponentModel.Primitives.dll",
+      "oldSha256": "B671AE0E9463F65D2AD08366C890043FD570F7D3149BB57BC16B8D427D9684F5",
+      "newName": "System.ComponentModel.Primitives.dll",
+      "newSha256": "953DB884B5EDFC396ED4036413240E538CDBB858C06354D976D7B2E6CCCE7167",
+      "bytes": 79656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ComponentModel.TypeConverter.dll",
+      "oldSha256": "D24CA7BE9B39FF4117EDB0D207FF5AB1A0E1587557A3DAAA44391F0B04D93816",
+      "newName": "System.ComponentModel.TypeConverter.dll",
+      "newSha256": "8FAABCF0EA88A11425D247B19D9CC8A64A78A7C07FF977854CF4A9166E0415B7",
+      "bytes": 767824,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.TypeConverter.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ComponentModel.dll",
+      "oldSha256": "615F1D4F821D25F46E61BC70DD879B4129DAA754F42F427A23FA68C4DC74F09A",
+      "newName": "System.ComponentModel.dll",
+      "newSha256": "72B3608363E47F2CF3CF3FC9FE2FCEFB760E5292EBB9D650FA4CED3896DAB5F9",
+      "bytes": 30504,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ComponentModel.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Configuration.dll",
+      "oldSha256": "495B65CD3C8488FA39A4905F072D14B336A5851C87F1B70D3B57AFC565025A9F",
+      "newName": "System.Configuration.dll",
+      "newSha256": "C53F9278C6889D8562D616106413BF50198F452316B4C5002100C568D541428C",
+      "bytes": 19240,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Configuration.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Console.dll",
+      "oldSha256": "A50D6F54E509342C49B6B7C8D72684F68701FC97FADE19956D4618A4A30E84FA",
+      "newName": "System.Console.dll",
+      "newSha256": "8BE68E4CB2F0B64B5F37F7A7AA82DB2AE1648115A9B7B9381A3CFAC7CDB4AEB5",
+      "bytes": 169808,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Console.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Core.dll",
+      "oldSha256": "C4908DD3C89942880310CD1C19CC2DCA2C8CE3D564BE04BE80897CB7F5B9D351",
+      "newName": "System.Core.dll",
+      "newSha256": "F1DCF1577C6A675F1C85EE9F13D103495CE123ED232001646F4132D76C1480CB",
+      "bytes": 23376,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Core.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Data.Common.dll",
+      "oldSha256": "951BC9FF57EEA7C382EB75CC595A9598AFDE341DB853291B937BE37DA6CA3E81",
+      "newName": "System.Data.Common.dll",
+      "newSha256": "E6BE5F74D117B7300523041EC239D2C7B64FC495EF954F48F81CA71507E510C6",
+      "bytes": 2770768,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Data.Common.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Data.DataSetExtensions.dll",
+      "oldSha256": "ABD30BF053CE162967B8EE2B95E4A4A60DDF288BB959CD64DFC107BC6C7D762E",
+      "newName": "System.Data.DataSetExtensions.dll",
+      "newSha256": "65BD4CCAC3F6F062A68D2FF797BB3908B7F21F908C95A1E85729B8C5BBCB3B87",
+      "bytes": 15696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Data.DataSetExtensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Data.dll",
+      "oldSha256": "EF6E30CC3AA9C93CA43F58F3CDC763ED31614B35CE835BE57CB7DA57358D2734",
+      "newName": "System.Data.dll",
+      "newSha256": "DC01C232769D86816AF9D67E492902487BFC87F787F811CA098F42F4988AD789",
+      "bytes": 25384,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Data.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.Contracts.dll",
+      "oldSha256": "764267AEE046B300A4598EEA0FA328348EC496C01281B31D00573A25AD8BD58F",
+      "newName": "System.Diagnostics.Contracts.dll",
+      "newSha256": "BAEABF6461EB78165280FE2A0FCA951146DE0D8F672EC20A159AA1F431BB409A",
+      "bytes": 16168,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Contracts.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.Debug.dll",
+      "oldSha256": "44B71CB2BC82E2E93C99C095A0E493F3C4AFC0E50AAFE8E91849629DA295E6DC",
+      "newName": "System.Diagnostics.Debug.dll",
+      "newSha256": "BA04477089EE6FC9AE8C2A8E711905FE1D7A113C785CB168D28ECCAED435400B",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Debug.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.DiagnosticSource.dll",
+      "oldSha256": "3E8FF9BB002715F5AB50263F6FE7C340355A5A963C03821C3A240FFA36B9F223",
+      "newName": "System.Diagnostics.DiagnosticSource.dll",
+      "newSha256": "C84547EA80B944C4683901E03C2E0C00E462A7B12A3657F5F3E1474A5D52EDAF",
+      "bytes": 501584,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.DiagnosticSource.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.FileVersionInfo.dll",
+      "oldSha256": "CBF1DA7048153697F1C47175B61579E5F8E79E178D62B04787D626055ED9792E",
+      "newName": "System.Diagnostics.FileVersionInfo.dll",
+      "newSha256": "B86967674838E9E7465E171D334F6B970720EBCF005326E45C1C08E5720A0054",
+      "bytes": 46888,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.FileVersionInfo.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.Process.dll",
+      "oldSha256": "2B4871E02B366113C6CCF3B1436FADDE5E69FC0A3E3AC421E2FA0F7AF8C2BC3B",
+      "newName": "System.Diagnostics.Process.dll",
+      "newSha256": "1ACAEE1D612A45F2F287675B5B84DEFED1B34A90CC659641F97043F45076FBE7",
+      "bytes": 329552,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Process.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.StackTrace.dll",
+      "oldSha256": "6578CEF25CBA5DCD0F7C34F2BBE6FAD5C2CB59B601AB708C5F3E8D1DBFC60A95",
+      "newName": "System.Diagnostics.StackTrace.dll",
+      "newSha256": "C464FF65BB7A1EF7E70B0C610AEA951E8F71045CFDE50602832969AA02253B6E",
+      "bytes": 46928,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.StackTrace.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.TextWriterTraceListener.dll",
+      "oldSha256": "65FBEB64BD73D658860C4A65799C1E57EDC2D985E73FEC1FE585B1DC660B1C91",
+      "newName": "System.Diagnostics.TextWriterTraceListener.dll",
+      "newSha256": "A1656873DAE8B3F2A56714F5A9BCF179E8064A992943CD0B275E83310FD4EDFF",
+      "bytes": 67368,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.TextWriterTraceListener.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.Tools.dll",
+      "oldSha256": "4BFC11BEBAE21C6A604F090F8EC94CE2D76D57FCFEAFD8FFC9BEB139AF2A086E",
+      "newName": "System.Diagnostics.Tools.dll",
+      "newSha256": "DADE40A11C2594FC03C84D119050F8B4281077BBC28298E3C2F6D96673CB0667",
+      "bytes": 15184,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Tools.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.TraceSource.dll",
+      "oldSha256": "63E22E512F3DB18AB51D57663364479CE56FCD924085FD0D6BD136F299106FA6",
+      "newName": "System.Diagnostics.TraceSource.dll",
+      "newSha256": "248C392F7DF6BD5DE9BE9411DFBBD61FD6AE9EA6F896EB8A9DD6445CB54AF2F2",
+      "bytes": 141136,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.TraceSource.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Diagnostics.Tracing.dll",
+      "oldSha256": "3275B203F9EC3D62C6A6C57B0771513F99F5C3D81CB4505B77EE679165FED800",
+      "newName": "System.Diagnostics.Tracing.dll",
+      "newSha256": "B8274D672EE21B7AB2B579AEC0C55795CB9FB3E1F15E9B3C2EE07D90260A3FA2",
+      "bytes": 16168,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Diagnostics.Tracing.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Drawing.Primitives.dll",
+      "oldSha256": "E8C09040A03D506E08E8165CBA4E80CD2D69FB26629D7DF65B0D72C1A290C216",
+      "newName": "System.Drawing.Primitives.dll",
+      "newSha256": "5F04571DE46D5DEFEC5E946B618B7B1B10B9C613492A8089BA926D3DAD0C6916",
+      "bytes": 132944,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Drawing.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Drawing.dll",
+      "oldSha256": "9F68761F68125E3596C7AF69D56799CF3E08DC2947661069B433D3043FEED7DA",
+      "newName": "System.Drawing.dll",
+      "newSha256": "86FE6479C86F0F99358ADCB89ECBA5D3FB91A30D333545A17C00EF67D86A29F1",
+      "bytes": 20264,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Drawing.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Dynamic.Runtime.dll",
+      "oldSha256": "00B37B775253D8011E0220BACADDA3566224272EA787CB0C4CC24FA6B70643FF",
+      "newName": "System.Dynamic.Runtime.dll",
+      "newSha256": "3D645A280ED6D073664F229842847D8AF2DC2A7126CCF27C5EEBA2C55C08286D",
+      "bytes": 16168,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Dynamic.Runtime.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Formats.Asn1.dll",
+      "oldSha256": "AE3627515191E83D6EA062D3566AF536A587D8F04CA6CCE8AA71599B092D4A25",
+      "newName": "System.Formats.Asn1.dll",
+      "newSha256": "614C4E1729C2011B1E40424D7B00B3DD2B76CA7ABB438C62D93048C97D9AD44A",
+      "bytes": 239440,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Formats.Asn1.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Formats.Tar.dll",
+      "oldSha256": "D630C4DB760A4A793F7FF3DF0A3F6EDEEC40BCB94307E92AC493AD2D3EDA1EAA",
+      "newName": "System.Formats.Tar.dll",
+      "newSha256": "D8552ECE59785EE1790ED8D2BDAD03C0059C26A461F19C76D215C24AFF8AF190",
+      "bytes": 288552,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Formats.Tar.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Globalization.Calendars.dll",
+      "oldSha256": "885967ADB01EF10E764EF54A0F6D646FD41DEAB81BD80908407D0BA8F834DCAC",
+      "newName": "System.Globalization.Calendars.dll",
+      "newSha256": "CB2A60039ED7A7A797D133ECEE1755185305632B8C78D62DCAF0D2CCB4E15ED6",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Globalization.Calendars.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Globalization.Extensions.dll",
+      "oldSha256": "5DC6A7838A0B2F472FDC093FD1206C61DF3494C66D1E5BFB1081EE00A372F50B",
+      "newName": "System.Globalization.Extensions.dll",
+      "newSha256": "7D27AC98541E7E6E72DAB31AED4055FC9435B777BFCE0F50722440601EFD77BC",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Globalization.Extensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Globalization.dll",
+      "oldSha256": "28DB274E2CBB417C61C346D437A0C8265FC0B3BB93CBA7330E5EF75CB4D16226",
+      "newName": "System.Globalization.dll",
+      "newSha256": "E374EB513CB207833143AC4967155589087E4FB71A8AE9108EE1D64596B67484",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Globalization.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Compression.Brotli.dll",
+      "oldSha256": "F6AC00E499EC8F6CD60E092C83391EA9BC176BAABED66E9479DDCEA796DE3448",
+      "newName": "System.IO.Compression.Brotli.dll",
+      "newSha256": "B3525059B5751482765B660D86D90DE7E9728707C65D9CC5A63F1152EC43A952",
+      "bytes": 83792,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.Brotli.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Compression.FileSystem.dll",
+      "oldSha256": "AA87020C837176940637A4C672B2F2B33FD2517506FA12CAE1F655FF1E515CC6",
+      "newName": "System.IO.Compression.FileSystem.dll",
+      "newSha256": "3FAB44511B3E88C31430C987223F46C71DDA6F890A2D6ECB7B29031CCC4B6B5E",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.FileSystem.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Compression.ZipFile.dll",
+      "oldSha256": "88D270860E5C00343057793D6A9B63B7E4CFDF847E62D8161A6AC8D1AA4BFFB8",
+      "newName": "System.IO.Compression.ZipFile.dll",
+      "newSha256": "02096CE99B1FEF365D4BA9C03EDF0E18F7981DAC6943AB56676AD66D0BB2C9FF",
+      "bytes": 100136,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.ZipFile.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Compression.dll",
+      "oldSha256": "99FC38BD6A7DEFD709B7459FF7E454543C15442D1C295238094504B6301A1050",
+      "newName": "System.IO.Compression.dll",
+      "newSha256": "5F7C0695725D3485C86D0BF445C99BE1FD320F17B11048A905041FF187DD4CBC",
+      "bytes": 419624,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Compression.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.FileSystem.AccessControl.dll",
+      "oldSha256": "1D5F0B64AF1920709AA26D5B38991787B458EAA6DA8BB8D86B4BB46CA0434026",
+      "newName": "System.IO.FileSystem.AccessControl.dll",
+      "newSha256": "B14B8EE22BD83E07C6A004179B70AA7B2958791AEF5E834C5DE72C49308419FD",
+      "bytes": 104232,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.AccessControl.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.FileSystem.DriveInfo.dll",
+      "oldSha256": "9A7268C66CC9A63128C2D23C4ABB0EEC155E59F352F5A6859EECFF62912DAFBF",
+      "newName": "System.IO.FileSystem.DriveInfo.dll",
+      "newSha256": "1DC8CF48E1BF26700064F54E510FAB4AD0F5482AD113261A71807F9C194180DD",
+      "bytes": 55120,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.DriveInfo.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.FileSystem.Primitives.dll",
+      "oldSha256": "6BF2B62E83F43B9E2A679ABDCAB875F37280A36E4C6E9FEAB99A410AB43F846C",
+      "newName": "System.IO.FileSystem.Primitives.dll",
+      "newSha256": "A72218414270188A3D11FD291FF63C407F65F0A4FF8EBAA8351990649FDAA9C5",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.FileSystem.Watcher.dll",
+      "oldSha256": "A03F59C4562FE7C1E8F768765B1637239F145C37D4805C8C693AE48F426828EB",
+      "newName": "System.IO.FileSystem.Watcher.dll",
+      "newSha256": "C60472FBD6FF9BB4A909605AB9FD08462EEB1CB058CEC3DEB49A21F84E4AB602",
+      "bytes": 87848,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.Watcher.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.FileSystem.dll",
+      "oldSha256": "1D619955D7495E7E040C446FB1A24FA4FF4B9145F9A7D39DD90E92C59666930C",
+      "newName": "System.IO.FileSystem.dll",
+      "newSha256": "1FDCCF62B58857DA2D75F26F0FA31CE342E035E08B61F08A439088834C25A650",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.FileSystem.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.IsolatedStorage.dll",
+      "oldSha256": "66E5EF5D0E23B4EDD96F6D19B32D3E0A04CE57270D5AC55ACCED2BF177BBF68D",
+      "newName": "System.IO.IsolatedStorage.dll",
+      "newSha256": "BE0350B4AA7E08C5A88A0D887AEEE22E11144DC73F10805E36B2BB21440A6298",
+      "bytes": 87888,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.IsolatedStorage.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.MemoryMappedFiles.dll",
+      "oldSha256": "21B24BB967A254328E2644E2DBFE00E1205463663504819BBFCAE6F6B43D426D",
+      "newName": "System.IO.MemoryMappedFiles.dll",
+      "newSha256": "1C60D7B873037F161663CC1F98CCADAD1493195952B3F8DD318468AC451AC4AE",
+      "bytes": 83792,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.MemoryMappedFiles.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Pipelines.dll",
+      "oldSha256": "93CE5DDAFB25BA6AEAE208FFC750DA0F243F25E89FE7DBC5287E1D8B4F26A2E0",
+      "newName": "System.IO.Pipelines.dll",
+      "newSha256": "0306263C46F0FE7EBE87F4427D3365A23E92FAED787B81C54337349688662629",
+      "bytes": 190248,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Pipelines.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Pipes.AccessControl.dll",
+      "oldSha256": "D7C4E7F1A4CBADA634B82E5939DE9D9B3C87CC44BA8D4C1319BAE0A796083E3C",
+      "newName": "System.IO.Pipes.AccessControl.dll",
+      "newSha256": "E7AF8E95BC18598A4CF42DAAE14D61518BC9944ED68C11A0742765419F04F2C8",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Pipes.AccessControl.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.Pipes.dll",
+      "oldSha256": "244167C32B3DB092253E21A2301AFA1E763FC861CA8A2304CB29FEB773B85322",
+      "newName": "System.IO.Pipes.dll",
+      "newSha256": "E631DAD2C1C1657F40B512D15ED4A636D20341E8A0C6DF34F2CD7D9B20848836",
+      "bytes": 165672,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.Pipes.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.UnmanagedMemoryStream.dll",
+      "oldSha256": "A988846408ABF1513AC7AB81A9F72218FFCAB410B2A06CAF3844677604032075",
+      "newName": "System.IO.UnmanagedMemoryStream.dll",
+      "newSha256": "EE80874913BA2B3DC55F05ED18043EF40A42CEC0C2095A68A2825EC66E069C25",
+      "bytes": 15696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.UnmanagedMemoryStream.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.IO.dll",
+      "oldSha256": "7A820716EE9AB010EA624B9448EA1ACB4C78B0F79DFC9D98DB01B7F99C610B6A",
+      "newName": "System.IO.dll",
+      "newSha256": "7696915987CD96348E15E6B230394A9042E278BAF26D07D2414B99E8A66CE969",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.IO.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Linq.AsyncEnumerable.dll",
+      "oldSha256": "0009A3DA0DE5B968F777F715103C873A5DE5F1840B870C95F6B7C11AC05246C4",
+      "newName": "System.Linq.AsyncEnumerable.dll",
+      "newSha256": "2D74C61B46462F83D17C46FBDA7087977D293BD0F6808742910D0F6A29D5F5E8",
+      "bytes": 1292112,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Linq.AsyncEnumerable.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Linq.Expressions.dll",
+      "oldSha256": "F5D05F16C2F31AE822BCA8DB63019067C8D83B09376B0A60C38B9C98FA0E088F",
+      "newName": "System.Linq.Expressions.dll",
+      "newSha256": "EB9139D158B544C11B65CD32C6BFBBC2A11BFE5E9EC61ECC94999843AFD5CD2C",
+      "bytes": 3639080,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Linq.Expressions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Linq.Parallel.dll",
+      "oldSha256": "D8CDFA91B3CEDC1D928848A2724F230B130EE549E8B9008AD38E3ED10E8E9AF6",
+      "newName": "System.Linq.Parallel.dll",
+      "newSha256": "162297AA003A7A0951B3333418584F2DE68D9A31146E0C4EBBF3A275EF250EE4",
+      "bytes": 775976,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Linq.Parallel.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Linq.Queryable.dll",
+      "oldSha256": "EDDADCB60DD56A06EB83F6F1284F9AE42C181AF3CDE4B19350938B1930D6F531",
+      "newName": "System.Linq.Queryable.dll",
+      "newSha256": "03FD086266F5ED63A077DF4FDB5C69CE08799484AED94485965604148FC44461",
+      "bytes": 182056,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Linq.Queryable.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Linq.dll",
+      "oldSha256": "139264775432FAF15A813E607E1919EA869D3321079BA134FFA36B350577C271",
+      "newName": "System.Linq.dll",
+      "newSha256": "1C6886FB239A6AF59DA0DC1561D9F010E2E983A1E826D6E8F8A61F7EA42A3AF1",
+      "bytes": 698152,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Linq.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Memory.dll",
+      "oldSha256": "58A4DC8A9EFAC1FE0EE67138B0DDA35B2B812ADDC14C5D8251CC222B278A5C2D",
+      "newName": "System.Memory.dll",
+      "newSha256": "5BBEC55D9B01C664055180840B651B1B1F01C15F7F45EE84192B95A09F2C355B",
+      "bytes": 161576,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Memory.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Http.Json.dll",
+      "oldSha256": "552422BE522E40937DE77BDCAEE0575282D2F2D449B19DD81F1A3EF23E85B73F",
+      "newName": "System.Net.Http.Json.dll",
+      "newSha256": "651A91C2658632929BA7F50D415B2DB6151FD96969BE0B47E4F9672D648EC86F",
+      "bytes": 128808,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Http.Json.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Http.dll",
+      "oldSha256": "8AE9F649D43F1F3FB635170784BCB753D305BC36A42703B4B0BEDB15A29729F0",
+      "newName": "System.Net.Http.dll",
+      "newSha256": "FC7AD004BDACA8763DCB23AB3A5FB01C9AED9735F678563F4F03254C9C956F8F",
+      "bytes": 1746728,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Http.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.HttpListener.dll",
+      "oldSha256": "C3BBBB42561E9DE67DA6ACCD846FA710944D38B4BDE88EE111943EA4AFB5B82F",
+      "newName": "System.Net.HttpListener.dll",
+      "newSha256": "5E514D43D23325CEAEEABC00906F6F782424E8B2B01FC050EDE60559A8202851",
+      "bytes": 534312,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.HttpListener.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Mail.dll",
+      "oldSha256": "5E053F23212C0F0EB0EE1A17A94CED79AFD7D8D2175B35F2750B85EB570B5DB0",
+      "newName": "System.Net.Mail.dll",
+      "newSha256": "B65A90CDFDC51EE4A5C2CD4E0764EC42B46C8E098AAA6D4F57E8E8C3FB3560AA",
+      "bytes": 481064,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Mail.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.NameResolution.dll",
+      "oldSha256": "1003E24EAF96E8AA019B188FEFABAB4A6CA488D5C51E70600140BFA4DABE3BDA",
+      "newName": "System.Net.NameResolution.dll",
+      "newSha256": "CC5B82C8101E3AF2AB05DEA804D333109F954F32EC49A9E4E71E3679EF4D7D58",
+      "bytes": 124752,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.NameResolution.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.NetworkInformation.dll",
+      "oldSha256": "47B220C9A183125C8CF9E2A7B21B45947B3B1951412D719D7C5F047277C4927E",
+      "newName": "System.Net.NetworkInformation.dll",
+      "newSha256": "3B97A77BAB7F4A5215B12B7D0F16D47D6A617BCAFA59D6E4B9EFD3B695BBE0F7",
+      "bytes": 157480,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.NetworkInformation.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Ping.dll",
+      "oldSha256": "C337CAF03B0D50C7CF4A4822872BD34603D11E7F689D211ECAEA3EE74F65518A",
+      "newName": "System.Net.Ping.dll",
+      "newSha256": "2B91BECC5EA71A9B91F544DF76AD0C5A29A87798484B37B9C2F05A8A598F1AE3",
+      "bytes": 91984,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Ping.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Primitives.dll",
+      "oldSha256": "E678E0129A87751C624CBE2E3AB83D55055A091A5B77D8138F02255DEDA4B6C4",
+      "newName": "System.Net.Primitives.dll",
+      "newSha256": "01D8BEF670AC4265708686D37076D8D21DAF3152CD0E7B2AA264302C369F70BE",
+      "bytes": 210768,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Quic.dll",
+      "oldSha256": "A02B202989FF28ADEE64FAE1C9CC7290057CA2F234ED7A05C647617399E6D4C7",
+      "newName": "System.Net.Quic.dll",
+      "newSha256": "AE641F56BCAD5C06551F90B855D7A61C9BD401D0C0A9985CCD662DA860C3D5BB",
+      "bytes": 358184,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Quic.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Requests.dll",
+      "oldSha256": "F2735DD7ADBC04C505805E9F069F9D545F34F1FF689E2A9D6BCDA1A2480D3DA7",
+      "newName": "System.Net.Requests.dll",
+      "newSha256": "5E462536C5B743DBEF0522174A576ECB7BE0DD52C5074E64B7CA73BC7DC570D0",
+      "bytes": 374568,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Requests.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Security.dll",
+      "oldSha256": "1605BB05B7CD623DC79C8F4EC2E10EA5779B5BD343F909A9C0DECE472EE2A8F2",
+      "newName": "System.Net.Security.dll",
+      "newSha256": "C03A6CBA2D1E841F78293188B8356E0890A03AD9860EB5F602E69AC8DDD253C4",
+      "bytes": 665424,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Security.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.ServerSentEvents.dll",
+      "oldSha256": "792C085FFF01183AC597F69BF33DB289D7301AABDE1CC388904621A47EFE719C",
+      "newName": "System.Net.ServerSentEvents.dll",
+      "newSha256": "D39E3896FA6E4B42DCB6AABACE1E9D2F8C15C6ECFE10868668DD9DE119AA675B",
+      "bytes": 83752,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.ServerSentEvents.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.ServicePoint.dll",
+      "oldSha256": "9645242A547B02BC0CBFA78C365FE8CBF02869C182DEBE4CE37BAC32BE1CA42B",
+      "newName": "System.Net.ServicePoint.dll",
+      "newSha256": "DC7433871738FFB8CE7F7963CEE7FADC2103AB4B61E461A70E60D848625AE297",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.ServicePoint.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.Sockets.dll",
+      "oldSha256": "B4BF19B0C8E412B9D0F479FC5268BF44E04CA656CD121044CA51F2652595AF6C",
+      "newName": "System.Net.Sockets.dll",
+      "newSha256": "7E8787C401641F3D749847C552AD8C8C600896E1AAEAD24C93440039801DC98F",
+      "bytes": 530216,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.Sockets.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.WebClient.dll",
+      "oldSha256": "AB06CB5EAFF5CA00045DD847E167F0107A53114ACA47D26ED3500ADF38BD142B",
+      "newName": "System.Net.WebClient.dll",
+      "newSha256": "8CD16344C501AB69EE11EB1108EFB37D4C789DE9BF421BB3E8703800CA1A8B1D",
+      "bytes": 165672,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebClient.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.WebHeaderCollection.dll",
+      "oldSha256": "7ABFC26269A95CEC0D93CA2A6B8148AA45D504C8F50A62FBBBAD72408966D45A",
+      "newName": "System.Net.WebHeaderCollection.dll",
+      "newSha256": "F5973C353B9204E5C1CCEEC843707C7BE368293428D52F62BC746400346103B3",
+      "bytes": 63312,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebHeaderCollection.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.WebProxy.dll",
+      "oldSha256": "D6F5FBC775D7B1639C1740E3E10834F6FB729FC5FE7619B972DF79D528ABAF18",
+      "newName": "System.Net.WebProxy.dll",
+      "newSha256": "9BB235262AA0F2530FE8CADF095432438746DC3BF5D1090CAA7D0EB4EE2DCA7F",
+      "bytes": 42792,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebProxy.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.WebSockets.Client.dll",
+      "oldSha256": "FF5D42603B662A634857DCC6E1239547025D03794AEA4F84D624579765C23BA9",
+      "newName": "System.Net.WebSockets.Client.dll",
+      "newSha256": "9AE53FE2D695D041D834FE741C52A60D77031667DDE8078281CF56904AA65FB3",
+      "bytes": 104272,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebSockets.Client.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.WebSockets.dll",
+      "oldSha256": "36FEFD219495298B0B28A6BBF1D99FB9B2471467F5A0D382AF9730F0A32FC8F1",
+      "newName": "System.Net.WebSockets.dll",
+      "newSha256": "DC3632FF6A2F4118904EB64EDC433C0D79C497B3AD2C01E1287CC86DA14DE612",
+      "bytes": 243536,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.WebSockets.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Net.dll",
+      "oldSha256": "D7A4C693B1922E0E69AEE3597AC72C25E0A5E1D3AC2D1072D7D8DC854D27E488",
+      "newName": "System.Net.dll",
+      "newSha256": "1BB00C4E169C0A20AD8763F4105204C221B97E037464B5BACB6EC4B9D40E0AD7",
+      "bytes": 17232,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Net.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Numerics.Vectors.dll",
+      "oldSha256": "6BEAF983FA8C33D25160C7A77E185967E8F113A5C02E6DC27F05F26E1B34763C",
+      "newName": "System.Numerics.Vectors.dll",
+      "newSha256": "2025FBC96C75D61D82CEE26CCACB100D773A4E393630E2697A5C7BC6C4EE5A8E",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Numerics.Vectors.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Numerics.dll",
+      "oldSha256": "FD4F0BC0541231FC01C21CAB517A948019D4C9ADBF66F81B65B276298E6AB922",
+      "newName": "System.Numerics.dll",
+      "newSha256": "C39D8710B4ABA77631159B90E04ABD81B58FF3CC9FC8433621B76683CD6AEC9A",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Numerics.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ObjectModel.dll",
+      "oldSha256": "16D9A18630F1D33EC7A709AB2F31652C91EBDFBC7A5A481378AEBE2E1102FFC2",
+      "newName": "System.ObjectModel.dll",
+      "newSha256": "16F21D6DA2DB3CE7A1C0B904BC2F3658685156A2155E5AABA8A3D45F4BC06C74",
+      "bytes": 79696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ObjectModel.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Private.CoreLib.dll",
+      "oldSha256": "ED80A1A5DD066C0407AD59686F9AF90A4F3E55DBF3E4C973B53CC8C9D0706F82",
+      "newName": "System.Private.CoreLib.dll",
+      "newSha256": "69D56E12535D3A8F2F8F89AC8F97577E6DC788D26F2E7B69BE8FB5F6FF17FF28",
+      "bytes": 16033616,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Private.CoreLib.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Private.DataContractSerialization.dll",
+      "oldSha256": "631A7719E6E67E4F86E553031C56038EAFCA2AB5FA161C8CFF786A92838A0255",
+      "newName": "System.Private.DataContractSerialization.dll",
+      "newSha256": "4E329EDAC8F17617D2D46D2D472E21C48614276A9879F3F7B4BE2CB2841ED3F6",
+      "bytes": 2062120,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Private.DataContractSerialization.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Private.Uri.dll",
+      "oldSha256": "0546093EC627BF832C244BE56D9ACCA471778385C534E0107F2A6DC6A78F93D2",
+      "newName": "System.Private.Uri.dll",
+      "newSha256": "EB07DE9B8F80DBC1C2CAD80598E184A8369F6CBD9D105D50BCC6CD3428E61CE8",
+      "bytes": 255784,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Private.Uri.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Private.Xml.Linq.dll",
+      "oldSha256": "0F4D2BE70F3715853DCA3BD6C9B67DE7738A5F4EC6E9959F526EF1DBF1F7FA8E",
+      "newName": "System.Private.Xml.Linq.dll",
+      "newSha256": "3C2EDAF8C5FAFB005E25631B8ED48A64050BD126A8A5CBA2F84B6869D6A6DF47",
+      "bytes": 390992,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Private.Xml.Linq.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Private.Xml.dll",
+      "oldSha256": "D570B8CB9507F2FCAC88F80A2FE7597D3E2331A84F337820A7D794632A67ED5D",
+      "newName": "System.Private.Xml.dll",
+      "newSha256": "3467185933C682C10A67EB6B4EB78DF5A1DEBC63D4DEF7708D23DB9FB79780FC",
+      "bytes": 7788328,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Private.Xml.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.DispatchProxy.dll",
+      "oldSha256": "A08A235C45E6944B3A086F3DF03E55B38A5958E7126948847EB33261FE1CA10B",
+      "newName": "System.Reflection.DispatchProxy.dll",
+      "newSha256": "93B0F758FAC7AEF8EB3256174FE621AC9DE7DB98E044E22D4B6CDBF7B462C5A7",
+      "bytes": 75560,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.DispatchProxy.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.Emit.ILGeneration.dll",
+      "oldSha256": "5E38D9D71CE8FBAB210A590F20543B19A2BF0CF1265F3ED78D63519E3B73B979",
+      "newName": "System.Reflection.Emit.ILGeneration.dll",
+      "newSha256": "3F8D14D45F250218D9C66F158B7A218AC73D1F2DF75DBCF71A09F12F1711BF5F",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Emit.ILGeneration.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.Emit.Lightweight.dll",
+      "oldSha256": "C15BE07E2131FDC8806D47E222B58E545981C2A3E7DC9C069A6C6076271A291F",
+      "newName": "System.Reflection.Emit.Lightweight.dll",
+      "newSha256": "F43856D942AF20CD256A7358AFAD7FDB50DF4E9E307E29BEB34DFF8DBD094B6C",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Emit.Lightweight.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.Emit.dll",
+      "oldSha256": "B4208981583D74994AA4D855E12788676FDEBCE63BA848BE63A6E0A7FBE2CB3D",
+      "newName": "System.Reflection.Emit.dll",
+      "newSha256": "F0C3777EC9C76EEB3198DE980054247FDA2D184E8DD3D3693BC433613A6DF364",
+      "bytes": 309032,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Emit.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.Extensions.dll",
+      "oldSha256": "4E6967D52CBC95AE9EDA01B8D8705F59C2C56F8B69471EFAA6ECA8F0E22A9A6A",
+      "newName": "System.Reflection.Extensions.dll",
+      "newSha256": "8CCBD7BD124CBFAA1CFD9315D922DD693AD7ADE5D0436D246B188E02B40919DF",
+      "bytes": 15184,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Extensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.Metadata.dll",
+      "oldSha256": "97152D5C07E1E5D7F080F871EFF211CCDBECB2496E4EB1B086005CBD3656D431",
+      "newName": "System.Reflection.Metadata.dll",
+      "newSha256": "5AF6E802D91F1E404A95C55E23310185E7DE09ADAC62FFD6FD56B98A6B31B15D",
+      "bytes": 1156904,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Metadata.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.Primitives.dll",
+      "oldSha256": "D1BA728FAB43E22821A1B19C508667995C0DF10EE98D1F19E63AAC94098CA8F5",
+      "newName": "System.Reflection.Primitives.dll",
+      "newSha256": "9CC0088B3E2D6A0771063DAFD2C924538DFF5087C20610F7826A088A38C27AE0",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.TypeExtensions.dll",
+      "oldSha256": "FBF5445D2A288DDCE3BF163A6B692DBF97A10F6A17BB9DE7C0D2D71387C6E440",
+      "newName": "System.Reflection.TypeExtensions.dll",
+      "newSha256": "479A0A76D0360120F262CA9D501637916382A5D162F10C29D37B01888F5FD00D",
+      "bytes": 42832,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.TypeExtensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Reflection.dll",
+      "oldSha256": "80FB9E206044C6F1C02BCC6895E2CE432119C670EA12248A6CBA112AFA78A9B6",
+      "newName": "System.Reflection.dll",
+      "newSha256": "D3D7FA31B89606D7A5C10A26CED05A29D32AB2FB87A54F10C82CD74E8E19725D",
+      "bytes": 16168,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Reflection.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Resources.Reader.dll",
+      "oldSha256": "AE5E53448ADF49F3BB0E6FCC4DF836BCD413CE0EEEAAD0B94F7363AD238D71DD",
+      "newName": "System.Resources.Reader.dll",
+      "newSha256": "181CF4B3B528F7E2A3316FB792339320A1C40C96C7B45B726FF16257097276E3",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Resources.Reader.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Resources.ResourceManager.dll",
+      "oldSha256": "C3456835CFBD88D081A3EE4030CE533CB6FBB27AD0F60F954A5AE7D45B1422CD",
+      "newName": "System.Resources.ResourceManager.dll",
+      "newSha256": "06FBFFE507ABC62101F0466D1570CECB074EC6A432A1BA058D4B9360EA13764F",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Resources.ResourceManager.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Resources.Writer.dll",
+      "oldSha256": "A478BBFEAC355E728D914F6F5E1E893AB1454C6F92D28DA84FF0A75F04476277",
+      "newName": "System.Resources.Writer.dll",
+      "newSha256": "1DD70E4933C113A2A9963F79068A1E0FE52BCBB5DFAF54255DD41AF5B4E05D35",
+      "bytes": 50984,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Resources.Writer.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.CompilerServices.Unsafe.dll",
+      "oldSha256": "6F396205ABE594C9C72E618F4278657B4FF9DA9CD2BC17D8083481B287838ECC",
+      "newName": "System.Runtime.CompilerServices.Unsafe.dll",
+      "newSha256": "BB342E1FBACFE7589B71936FB000C36B54DDC96D578BC0888623E19549C1E6F3",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.CompilerServices.Unsafe.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.CompilerServices.VisualC.dll",
+      "oldSha256": "67483E224E8019D1D725876485A6FCA81DD977D5254CF26D79A26F2A73207FA9",
+      "newName": "System.Runtime.CompilerServices.VisualC.dll",
+      "newSha256": "657ABF22F77265E6E111FA0C6F55FA176373DD447FCC0F0C4145DA91FCDDA047",
+      "bytes": 30544,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.CompilerServices.VisualC.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Extensions.dll",
+      "oldSha256": "633F210388E326F0A2FBA3148312FB2900A9E0BA32F08015BB606ABC44A3D634",
+      "newName": "System.Runtime.Extensions.dll",
+      "newSha256": "F7E44A3F016421AF7130CCDD913C57419D3CD2A0F48E34BDD1295797F2535CF8",
+      "bytes": 17704,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Extensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Handles.dll",
+      "oldSha256": "834ED37905ECAFB69C3D33D1B659E5F8216CEF9995CBFCC7B2CF858752ADD880",
+      "newName": "System.Runtime.Handles.dll",
+      "newSha256": "B21415740DB52C068DDDEB4DC61E95A41EC23B1A4C1B1623FF6B65399C7C0FDD",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Handles.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.InteropServices.JavaScript.dll",
+      "oldSha256": "6FEDECFA2FB691E50175DCCF64860DA8DD147B9D64D942997259A79A7EDB77D5",
+      "newName": "System.Runtime.InteropServices.JavaScript.dll",
+      "newSha256": "1C91D7B7DD6DA38C6426A4BE35B3458EF3D127EA84533941528694E9DB1A145C",
+      "bytes": 51024,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.InteropServices.JavaScript.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.InteropServices.RuntimeInformation.dll",
+      "oldSha256": "506DC257F2F039746172057CF574992D4DB07E31F9338B0AB2D90E88D385C472",
+      "newName": "System.Runtime.InteropServices.RuntimeInformation.dll",
+      "newSha256": "F0B683AF8A5DB0F4CBAA2119F66BA93A01EE0DB8BA1079ACD01F01D247C111A6",
+      "bytes": 15696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.InteropServices.RuntimeInformation.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.InteropServices.dll",
+      "oldSha256": "9D0621F1E573BD20525287533BEA24EC7824813EADA7820A0C82252EDE072AB9",
+      "newName": "System.Runtime.InteropServices.dll",
+      "newSha256": "BDE2BB33524A73E2964CD47DDF753150D685B31EBB1C4779E66CA426B2B419BF",
+      "bytes": 112424,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.InteropServices.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Intrinsics.dll",
+      "oldSha256": "C44FC7C6F2AFF4A9C8B9A0B6ABFD2C1B65A762B69FA982FCFCA28C6001D022E3",
+      "newName": "System.Runtime.Intrinsics.dll",
+      "newSha256": "61CEDF60E24E672BBDE2869CEAEE84342D22823315AAE7FB7B768E9A6E6893A2",
+      "bytes": 17192,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Intrinsics.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Loader.dll",
+      "oldSha256": "C858230D105EC1225CD58EC22623BF59BDDEE9DFC7077D7F93957D3321EC55F7",
+      "newName": "System.Runtime.Loader.dll",
+      "newSha256": "B55E68BF26539914D8EB80718DC5B183F36D53C7FA20103F52C06796D33AA0C6",
+      "bytes": 15696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Loader.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Numerics.dll",
+      "oldSha256": "CADCA5367AEC4FB54DF4A81CD033C62228F3E100736EF9701AAFCD13123A5EF4",
+      "newName": "System.Runtime.Numerics.dll",
+      "newSha256": "46B0E0C9B0198446A5D4AE8579433A038D7F1199E0378EE6213A0390BDD9A99C",
+      "bytes": 354128,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Numerics.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Serialization.Formatters.dll",
+      "oldSha256": "AE2D71A1C6231A7E4C9F0264666ACF90F743460AE7983D5331E9AD0271E7AD88",
+      "newName": "System.Runtime.Serialization.Formatters.dll",
+      "newSha256": "18E20E41F0D87206FF1FBEDE425B7737BE7C554C1704AF3C684E83BBDEC63157",
+      "bytes": 124752,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Formatters.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "8.1.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Serialization.Json.dll",
+      "oldSha256": "7E44E9979E6C539E7AD22846AC9C6F250E888D28411BA88761122095DFED9727",
+      "newName": "System.Runtime.Serialization.Json.dll",
+      "newSha256": "87249D372D73FC7FCDC057BE0EFBA1C36FE7318AF832463DCFBF55FD067BFA97",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Json.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Serialization.Primitives.dll",
+      "oldSha256": "E15940836E5B22E89A0B7FEBFA0DE2F158855563D9CCA0AC36A84E4BE9E3E683",
+      "newName": "System.Runtime.Serialization.Primitives.dll",
+      "newSha256": "5981EF301F6A849AE73BFA0EEB4956992FC15B00F705C35F208EAF6793A37AB3",
+      "bytes": 38696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Serialization.Xml.dll",
+      "oldSha256": "286BBAFD589189F1D684831C33DD81A4650E12B73DB70920BA5D4E0A477FD33A",
+      "newName": "System.Runtime.Serialization.Xml.dll",
+      "newSha256": "AB0C54734D37E5AAC3F726FE7806FF8DE5C5BCE757F7993135540154A72ADE79",
+      "bytes": 16680,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.Xml.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.Serialization.dll",
+      "oldSha256": "2092AD8E233C2A01A8DCC640AB218C1EABC059F6BEBAAA8F81D1CE8225A939A0",
+      "newName": "System.Runtime.Serialization.dll",
+      "newSha256": "39DA6E91E025583C2D51A5180614CF278BDF7F6D850C4C011422869EFCA625CE",
+      "bytes": 17192,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.Serialization.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Runtime.dll",
+      "oldSha256": "EF6D37D9334FCDF7C7E4B9590B730EB5BA623192D47F0CBE4EC478962625E586",
+      "newName": "System.Runtime.dll",
+      "newSha256": "D6B4189C8E9AFCE3629B27C902C198A54AD3A355EC8409D3880B3B68FB1CF445",
+      "bytes": 44840,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Runtime.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.AccessControl.dll",
+      "oldSha256": "5FDA871AC0AB09BA62884BA4160B5C84F8D9513D16C773B7D01E3B82DAE905B4",
+      "newName": "System.Security.AccessControl.dll",
+      "newSha256": "C83DCE7B6B0737D14771C9AD38A8726787A91472BE503D8F911BFE91668EFADB",
+      "bytes": 227112,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.AccessControl.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Claims.dll",
+      "oldSha256": "CA5A036A17ED63C6F90D92570C657BCEC451DC2C894B1FFFF0688855B61E455C",
+      "newName": "System.Security.Claims.dll",
+      "newSha256": "77C7616C8F073677F8A057EF032B21D8F6DFEB19179B936BD54BAB268E71CBF5",
+      "bytes": 100136,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Claims.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.Algorithms.dll",
+      "oldSha256": "35677214A8B8388D82FF5BF45789790FA048612F6ACA8B8F71EFB3AA93EF70B1",
+      "newName": "System.Security.Cryptography.Algorithms.dll",
+      "newSha256": "0E5DE3978293221C0E36BF52786ABEA8F7B74EBF06DE58C9717DB4507E59AC10",
+      "bytes": 17232,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Algorithms.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.Cng.dll",
+      "oldSha256": "328A4EA1C05177E97F65A24D68268C96674BBFBCFB5BC3906229EEA2C46AC6D2",
+      "newName": "System.Security.Cryptography.Cng.dll",
+      "newSha256": "9198B7E57489278215A2489D66D9D52C7A9D65AE7ABE399CC9D27D1B23DEBBF6",
+      "bytes": 16208,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Cng.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.Csp.dll",
+      "oldSha256": "0BE1DED6AC6B8BDC53D0D49BB01292770F9A022FE7D2D2F1A480223ECA5CA6BA",
+      "newName": "System.Security.Cryptography.Csp.dll",
+      "newSha256": "2774B21002A29479DE3523F8781D1411E4990575B50F1316D6A9CD490980C2DB",
+      "bytes": 16168,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Csp.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.Encoding.dll",
+      "oldSha256": "09FBBD2934040BA1260775F34A8B901F5F9EDEC9BD1A2203B3726686006B7829",
+      "newName": "System.Security.Cryptography.Encoding.dll",
+      "newSha256": "070ABB893BB963B2A846AD8B8C1354563C7B362D1C492EEC53538FC28A871001",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Encoding.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.OpenSsl.dll",
+      "oldSha256": "695EBDF0901AFD27B7504DD4FDBC504A5AAE8EA87D3B342DA800789A6A94A732",
+      "newName": "System.Security.Cryptography.OpenSsl.dll",
+      "newSha256": "E2A8CBA098EC00D19D043750E8A19374CC65D1A498B9EB15DBFFE0EECC579B32",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.OpenSsl.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.Primitives.dll",
+      "oldSha256": "C4D76A73F7147DF7999B371ADBC091850984A40CD45F4D0464E85424DE412E30",
+      "newName": "System.Security.Cryptography.Primitives.dll",
+      "newSha256": "89E9947EE1E7839EEAC2C9C0B37A2B0C0433FF338DADEC6380FAC1EAE375FFD3",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.Primitives.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.X509Certificates.dll",
+      "oldSha256": "BCBCD0C436BFD24052AE4F7A3785B434436CBC18E6465F0BE19437A453872CF3",
+      "newName": "System.Security.Cryptography.X509Certificates.dll",
+      "newSha256": "398E55927B3CFD070BC8D204740E50D012CB78F7A2DCB968A33869B4AA54E067",
+      "bytes": 16680,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.X509Certificates.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Cryptography.dll",
+      "oldSha256": "BEE61E6BDEFF9FB0C4F3CBF9D48E9D1D97D12A8BB85D1EEAB9178E818B582EEE",
+      "newName": "System.Security.Cryptography.dll",
+      "newSha256": "B043B1ED136164FD69606A9E7F26F1FC05D0C7CB888C0C00E3B58544623CC7E5",
+      "bytes": 2549544,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Cryptography.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Principal.Windows.dll",
+      "oldSha256": "ED56739AABC1FB6F81E8F71DB89531BEEA985550F654D4D0E6C9A64C67E4E349",
+      "newName": "System.Security.Principal.Windows.dll",
+      "newSha256": "25F1D31F27D8E9A97FA203160DBF9A8A7BE8188328AC74516002D0AC071961D9",
+      "bytes": 177960,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Principal.Windows.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.Principal.dll",
+      "oldSha256": "F4E101D9D1B328868CD91199CA441E4EE273047FE96DD6EC34A1E889E523DA21",
+      "newName": "System.Security.Principal.dll",
+      "newSha256": "D1CDBAE10415E4F384ECDF34CD6E427F7C1D67BB6549B7E15193006428734BB4",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.Principal.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.SecureString.dll",
+      "oldSha256": "F371FB101973637A772E44F75B48D66540466A914F61E4B1F4AE7EB01DAD1B62",
+      "newName": "System.Security.SecureString.dll",
+      "newSha256": "3347281129D6CFC4A5C912DBB9F803878C99CC60D125CA5F2ADBC4718CCF348A",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.SecureString.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Security.dll",
+      "oldSha256": "2A0EE1358A507F20BB9099AFB2C79745212BCA44C1102E580C20742ECCA560D5",
+      "newName": "System.Security.dll",
+      "newSha256": "E81926EDD150A900FA0D6832AA813B2C3DFB156E7116A7CCA2D96640FF24E438",
+      "bytes": 18216,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Security.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ServiceModel.Web.dll",
+      "oldSha256": "948E182337526B0DECAAB7A9274C1BDE5BE3E419B076CFE0161A335E22643AC3",
+      "newName": "System.ServiceModel.Web.dll",
+      "newSha256": "9537A9D13C43511FB95B6D30DDA7817851B23E864503FA336626522499B51D24",
+      "bytes": 16680,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ServiceModel.Web.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ServiceProcess.dll",
+      "oldSha256": "04E5CA5A4DF4D31E8E6B527CE5A16B6F150A256384B2CBDABEEBA1F6974CFA99",
+      "newName": "System.ServiceProcess.dll",
+      "newSha256": "13FB65E12DEEC9AC60A8342DEC6CAEFF8D35B56DC142CDABFAB2745620D46FD0",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ServiceProcess.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Text.Encoding.CodePages.dll",
+      "oldSha256": "56582910B3C0D17F10DC2EAFC8E5746C6F23B57AF56D7F0D4CD208F06ECE1E28",
+      "newName": "System.Text.Encoding.CodePages.dll",
+      "newSha256": "E3F7A38A01CD863716D83AE322A007A2D052044CD8BFC2B5B1C268AC05C9D931",
+      "bytes": 861992,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encoding.CodePages.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Text.Encoding.Extensions.dll",
+      "oldSha256": "2B63801416706C7817193A742FC8648C4AFD6697CA342D4A2DEB30450B99218D",
+      "newName": "System.Text.Encoding.Extensions.dll",
+      "newSha256": "FBBC0DDE38272605B8B95271CCA7202CA04D5FA115ACBCEE936E1BED611FD23C",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encoding.Extensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Text.Encoding.dll",
+      "oldSha256": "4C140DE2FDD2C673ECE196892E28786B85200B8F315FC9BB2DE7AEB862372D9D",
+      "newName": "System.Text.Encoding.dll",
+      "newSha256": "F1531DCAB1FE59529829A1A241953A5E55EF8340C8CF1A21C053EEB7C48E2A84",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encoding.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Text.Encodings.Web.dll",
+      "oldSha256": "2C459F175331339B8580DEC1842879B3F0532100FA426B97A1B74E1B5DEE95D7",
+      "newName": "System.Text.Encodings.Web.dll",
+      "newSha256": "319EB068C30AE985653A31911086141F5BA26B99E0CE7FF083F455AD42D4C584",
+      "bytes": 124752,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Text.Encodings.Web.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Text.Json.dll",
+      "oldSha256": "ED5F0F3773C89948471E3691F31963EA00D3577E17296AC4DFB97772E78B6FA3",
+      "newName": "System.Text.Json.dll",
+      "newSha256": "FF440FD7D4AE3D5A6D080C1EBAAAE7D5F4145EA162AB12BF8931E92B4311F469",
+      "bytes": 1890088,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Text.Json.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Text.RegularExpressions.dll",
+      "oldSha256": "B8494BA41DA52018409CCCD851753717C6BD035FCCDF5E4D5AC83E420D4678F4",
+      "newName": "System.Text.RegularExpressions.dll",
+      "newSha256": "244BE34F8333FF60B1FA87F54FEEA7E8338E2FF96FDB148A4D4BF12B7C981C86",
+      "bytes": 1034024,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Text.RegularExpressions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.AccessControl.dll",
+      "oldSha256": "EEC9D6F83EC123602039EC449B402C1BCB74FF00518EB87F8D007558E48C2B89",
+      "newName": "System.Threading.AccessControl.dll",
+      "newSha256": "6F4B852763D9BDF83013893F294CD021A0EFD84243374E52E148D8B665EBC8EC",
+      "bytes": 75560,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.AccessControl.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Channels.dll",
+      "oldSha256": "FF8DCB281D2D35F01DBDF72E766E431C397F9DB063F22F61A9A85F7BD173F5E8",
+      "newName": "System.Threading.Channels.dll",
+      "newSha256": "26F3F523AE3A685B462C1B192AC752CFA8DA5DB5BA4E2714B2E64635E717A4D6",
+      "bytes": 157480,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Channels.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Overlapped.dll",
+      "oldSha256": "A0EF0237E67A16A347A8ED9B9286E3ACEF358AEB4A23463323C2EFDF646FC0F5",
+      "newName": "System.Threading.Overlapped.dll",
+      "newSha256": "9442E2B745620403121FF4868FD430A2178029C22AE6A8DCAC77D957ADA4BE42",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Overlapped.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Tasks.Dataflow.dll",
+      "oldSha256": "83A9B71C298BA233393EB1CDBDA26380CB2D50CEFD2FD645B0BA1C34C7AECA9F",
+      "newName": "System.Threading.Tasks.Dataflow.dll",
+      "newSha256": "BBF7DE8812C20B8E61F9833D72814DD858C4781FA35500B2374C7E5F19D3A246",
+      "bytes": 472872,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.Dataflow.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Tasks.Extensions.dll",
+      "oldSha256": "6EC70446F8FAEFAA167A0E3360468203CB03FFAB90369644E92C22DC650A9CD5",
+      "newName": "System.Threading.Tasks.Extensions.dll",
+      "newSha256": "B35A1FAEECC0FB706B06F470A13FB3B1D2ADDFEF1CD5A81FB1BDBD75AD6C8FDD",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.Extensions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Tasks.Parallel.dll",
+      "oldSha256": "FF17DD0DDD3F2DEBDACED18F39B9F8A205630BAEB3DE20BBF0630935A8605AA6",
+      "newName": "System.Threading.Tasks.Parallel.dll",
+      "newSha256": "2853F090EF0C1BD47F91800EF71B0B44084B1F703B3B699919466E065BA2FEE2",
+      "bytes": 132904,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.Parallel.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Tasks.dll",
+      "oldSha256": "D95CEE14D0DBB97D8F8A8F4DCC5EEFA35F394F9D94B0FA0BF29068786AEE6A06",
+      "newName": "System.Threading.Tasks.dll",
+      "newSha256": "A908649B99249E9533D674ED8838F2CACE1F6A4071D848BF9EDF7B96DC4EBC5F",
+      "bytes": 16680,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Tasks.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Thread.dll",
+      "oldSha256": "7B451DE5E88ADFDB49765BC0745A12E377318534D02E6BF81660C285A7AA6664",
+      "newName": "System.Threading.Thread.dll",
+      "newSha256": "5E1C4834ABD41D88F79872557C69D20502E2D220BDE333870E31D1A1EB4EACD2",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Thread.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.ThreadPool.dll",
+      "oldSha256": "9E3BF9838FF48525E4F2FD1C7646956BA00183977C7E4762D999670AA901E101",
+      "newName": "System.Threading.ThreadPool.dll",
+      "newSha256": "2135197F9CBC09004CA02055BF54B5E3D0E2D7A9D61C477E4EF129321EB0B4C2",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.ThreadPool.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.Timer.dll",
+      "oldSha256": "5B21F38133328E8017BB7A4651007738CE76FCFA673AF267B4C8B5E857D572D7",
+      "newName": "System.Threading.Timer.dll",
+      "newSha256": "A7763EBA808803FAAB8E904FD5B467D9C7DD5C18DDD9A584D7C686F08D27E10E",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.Timer.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Threading.dll",
+      "oldSha256": "CADF13029AC996ABACECCFD7C242E55888B669246163342A3B335EEE9851B531",
+      "newName": "System.Threading.dll",
+      "newSha256": "6C2137FB877E647A6C0F8909DB8CA7AF1E6FE95F19C6E531F6A74539FABCC6AD",
+      "bytes": 83792,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Threading.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Transactions.Local.dll",
+      "oldSha256": "CB3D436592FE994BA8F570CC7CB021EF347730E96E52E3B8695B7C7BD79A3967",
+      "newName": "System.Transactions.Local.dll",
+      "newSha256": "213DF40904A1B088FCE848EB34BBC91785CEE298632E06670518D306536AF23B",
+      "bytes": 640808,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Transactions.Local.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Transactions.dll",
+      "oldSha256": "9BA6785FAF04DE3B018A7E6BDB349C538CA861ADD4A3558C693FE4C9EF905335",
+      "newName": "System.Transactions.dll",
+      "newSha256": "BFFFD1196ACF43FC9C88EBB561BB3A964EDE3D8269BBA09CF3258EAD1AB4FCC4",
+      "bytes": 16720,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Transactions.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.ValueTuple.dll",
+      "oldSha256": "63E0EAC320A2EAC02F418E186232405427E036D9CE9DD80951923280308CFE59",
+      "newName": "System.ValueTuple.dll",
+      "newSha256": "03A5049C71A54D9E8C2F2B9180529804D3E956AD6432A0668946115B29D3A830",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.ValueTuple.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Web.HttpUtility.dll",
+      "oldSha256": "03841EE0B42C5ED0D4B58C185E9CFA57A939C479256943644062B918CF595A08",
+      "newName": "System.Web.HttpUtility.dll",
+      "newSha256": "1097A135CE82145A8F7DBACC0B8A4D8951E067652814FF6D9FFF0927B21706CE",
+      "bytes": 63312,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Web.HttpUtility.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Web.dll",
+      "oldSha256": "45B1D8E331AEB3D4006AFE64CDE59EDDAC958968D6C432DF3F869982D94996F0",
+      "newName": "System.Web.dll",
+      "newSha256": "5FC03752AD1C79C05BDF71CFC841F7C16CFCC4366365D8F7F31E22CFF3CADD7F",
+      "bytes": 15144,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Web.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Windows.dll",
+      "oldSha256": "5898D03D2707C44B55883BC475F8C3AA779738A439DB6EC2ABBF9E0FAC82E6D5",
+      "newName": "System.Windows.dll",
+      "newSha256": "B2A12218C022EBA72D8ACBC36C012211F965BB49C2FE92C0AAF0964EE785C800",
+      "bytes": 15696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Windows.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.Linq.dll",
+      "oldSha256": "06BE8D12AB41B70960703EC77899DA99E0A93A6D125E77E7F8154AB071220D54",
+      "newName": "System.Xml.Linq.dll",
+      "newSha256": "F66DAA73628BD932749377AA5094EBAD056A63748223ED0DEDB4B7DCD49E22B9",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.Linq.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.ReaderWriter.dll",
+      "oldSha256": "9ED86FCB4A068F56C61CE4D595D91B57DF12999820BB11659E9A4B45103305ED",
+      "newName": "System.Xml.ReaderWriter.dll",
+      "newSha256": "496DC55783342234033FE7162F618938691F25DD818633CDD386DBA6E4E1C271",
+      "bytes": 21800,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.ReaderWriter.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.Serialization.dll",
+      "oldSha256": "868E566390C0A0800253511B757644433C512989A213F32153464A4611667D8B",
+      "newName": "System.Xml.Serialization.dll",
+      "newSha256": "4A38C5A78410D11D32DF42565312306EEFC1BEE5C73A6C5C8C661B0CF1AC0717",
+      "bytes": 16168,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.Serialization.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.XDocument.dll",
+      "oldSha256": "58CF36935545FDF661B64DC2F8C57B7066D2A380252D194EDB6708895A50E6A7",
+      "newName": "System.Xml.XDocument.dll",
+      "newSha256": "FD3C02115F7AD89770A70F18F83C8E4CDF8C78BB4F88046923F3285FA853C7F4",
+      "bytes": 15696,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XDocument.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.XPath.XDocument.dll",
+      "oldSha256": "75B319F01C19A9C1C8B08B6A26BB44E3329DA177D974BA90D1A4A40BBA3E7D3B",
+      "newName": "System.Xml.XPath.XDocument.dll",
+      "newSha256": "D68C378B07F099610B2EDA021A232499CAC2D6B96FCE72B20A4F0B07EFC85513",
+      "bytes": 30504,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XPath.XDocument.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.XPath.dll",
+      "oldSha256": "8E21C30F514E711D8446C4EEC9FE92CB8156EFEAA476E67A26F17BA0A21E593F",
+      "newName": "System.Xml.XPath.dll",
+      "newSha256": "03C3C78E671C3ABF1D10C830EB67B8761BEC7B6DCC0AE74462736DF3616434DD",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XPath.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.XmlDocument.dll",
+      "oldSha256": "E6D348CE2E40D5F8E767F3863F3217F6075F3E4E331270BE1D13E45430F87811",
+      "newName": "System.Xml.XmlDocument.dll",
+      "newSha256": "FC671E921CA4CAE98C3B1CD0AD0FDF1E75F115917C9FA0826F194EFBD149C1BA",
+      "bytes": 15656,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XmlDocument.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.XmlSerializer.dll",
+      "oldSha256": "96D2EF2D9503BCB06D4AA9F8E15EFDF3AE94C30B9DB4211DA75020D0690238D2",
+      "newName": "System.Xml.XmlSerializer.dll",
+      "newSha256": "8E9BD064B432D8617038F2100B8268B8F46E4C22A6C09395AD0519E657C8801B",
+      "bytes": 17704,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.XmlSerializer.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "10.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.Xml.dll",
+      "oldSha256": "3BF8CF7C17A8EC51EF64A48707DBCBB0359E466A7903BB564A4C74228D895E32",
+      "newName": "System.Xml.dll",
+      "newSha256": "8B35480D266706F1C8DB8E70216A72BA26D3FB25725F8A1131731E4D380410EF",
+      "bytes": 23336,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.Xml.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "System.dll",
+      "oldSha256": "72F6FA05B4C1696D7D50F8A93086165980276CE6661F0F8A77FE426028309720",
+      "newName": "System.dll",
+      "newSha256": "EA77299C8AE8751E2868343EFC838167B2612C58863690B83692DE4D66A34578",
+      "bytes": 50512,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/System.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "WindowsBase.dll",
+      "oldSha256": "2586159B2C347D39A93BEBCBD8811A6DC05D0252202B24CEBF2E28188F8CE7AB",
+      "newName": "WindowsBase.dll",
+      "newSha256": "A88115B54A4782631612F995F857624994143E783ACA58DFE2FE0800417A49E6",
+      "bytes": 16208,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/WindowsBase.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "mscorlib.dll",
+      "oldSha256": "A2C8875B7823B631AE669C6E78DC4B58BB577CE30206CCC03DBBC56981E1714E",
+      "newName": "mscorlib.dll",
+      "newSha256": "5FF7B9C14324371CAB67E190165015103701045EBC36EDCB8A829E5505C2C765",
+      "bytes": 59688,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/mscorlib.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "4.0.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "netstandard.dll",
+      "oldSha256": "CE09CEF0D758196F2467F320D840C03202453EFE9FB1920DDDD24EA8277BBBB3",
+      "newName": "netstandard.dll",
+      "newSha256": "2844417955D5B11F8434FCC969F52BC09104F438AE2F4D5595C36C355D06E270",
+      "bytes": 100648,
+      "packageEntry": "runtimes/win-x64/lib/net10.0/netstandard.dll",
+      "type": "Managed",
+      "metadata": {
+        "assemblyVersion": "2.1.0.0",
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "Microsoft.DiaSymReader.Native.amd64.dll",
+      "oldSha256": "315A61C47C41B8D4C815F4274BB6584C1D24B4640C7EEDC354ED5B03A9A1361E",
+      "newName": "Microsoft.DiaSymReader.Native.amd64.dll",
+      "newSha256": "70E4B89978CE57EF87B28F4921F3140C383B04AA96E7F3BDB3C4EBB898FD8A72",
+      "bytes": 2377016,
+      "packageEntry": "runtimes/win-x64/native/Microsoft.DiaSymReader.Native.amd64.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "14.50.35738.0"
+      }
+    },
+    {
+      "oldName": "System.IO.Compression.Native.dll",
+      "oldSha256": "5869C7B088D1886F19F91B8BE0D4B6DB89DDB07DCFB02FB7DD759C92EF722919",
+      "newName": "System.IO.Compression.Native.dll",
+      "newSha256": "CE43BB776A6DF4ABE190D0E77096046475709F8E8B0C823E10CB7B39099C32A4",
+      "bytes": 937296,
+      "packageEntry": "runtimes/win-x64/native/System.IO.Compression.Native.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "clretwrc.dll",
+      "oldSha256": "E9F9CCAA20A91570E6E505FD85197B86E8E6582B67864A8630C1A82AFB9866A7",
+      "newName": "clretwrc.dll",
+      "newSha256": "4B848B0ED6AD94A455A85E93CD0C10FAEF62F349C7CE6F39415AE55AF72655D0",
+      "bytes": 317776,
+      "packageEntry": "runtimes/win-x64/native/clretwrc.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "clrgc.dll",
+      "oldSha256": "83A829823C333BFBCF0BD82BC015A61AF10CE136D8EB7933B28D97C9193C578B",
+      "newName": "clrgc.dll",
+      "newSha256": "EBFB09F29CFDC3CD269A4A5BCCC0BC6E4E7AFCE9A7D263E43CB52BDEC98E9E43",
+      "bytes": 674088,
+      "packageEntry": "runtimes/win-x64/native/clrgc.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "clrgcexp.dll",
+      "oldSha256": "D006BE1E64E796161C8F3ABB462C23753D86103A82282013B1C5309C76613F1F",
+      "newName": "clrgcexp.dll",
+      "newSha256": "936C6122BB95DF8BB6C7552E93AC01E426BFA5A5081DD7FC774703E05EDB2D04",
+      "bytes": 711464,
+      "packageEntry": "runtimes/win-x64/native/clrgcexp.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "clrjit.dll",
+      "oldSha256": "E7BF743E7BF9A01C8C2BCDC0D828212FD8DFC285BE9D4EC21962BECF456DF648",
+      "newName": "clrjit.dll",
+      "newSha256": "E33038C23F32074683E170B0EA74DAE6EE74A05BB5E8EF6C9FD4CC43771B34CF",
+      "bytes": 2095912,
+      "packageEntry": "runtimes/win-x64/native/clrjit.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "coreclr.dll",
+      "oldSha256": "C98C3078A4F2495DD7D3CED967C7A6981545194ED163454703580B740F435521",
+      "newName": "coreclr.dll",
+      "newSha256": "1BC65B8D45474B19ADF3CA85CE881087AFF599FFC72B2C1A323E878227757B65",
+      "bytes": 4613456,
+      "packageEntry": "runtimes/win-x64/native/coreclr.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "createdump.exe",
+      "oldSha256": "D34B488BD20B87AAA8F1739AA834B877F76B22FF9EF1BDEC7D0386A307F42A89",
+      "newName": "createdump.exe",
+      "newSha256": "DA50D230F70332385B86C44F9DC3F571B60340F8B603BC0E2F201B5A19240ACD",
+      "bytes": 71552,
+      "packageEntry": "runtimes/win-x64/native/createdump.exe",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "hostfxr.dll",
+      "oldSha256": "44F97E946B36415176DBC56A4426565A5E9B3E722C0AD579E20A749E3C0C7BCD",
+      "newName": "hostfxr.dll",
+      "newSha256": "5B9358572DAA76176F97F1BB80FE764B24EE1BC2CCE0579230E7F9A28E3FBBED",
+      "bytes": 379728,
+      "packageEntry": "runtimes/win-x64/native/hostfxr.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "hostpolicy.dll",
+      "oldSha256": "DED1D42C38688A1CACD20026B1F981C22FD583F621B7123296EF0F2AF9CD656D",
+      "newName": "hostpolicy.dll",
+      "newSha256": "84275DC570382246B4B36EBB3094C2B38190C2FD80998D1DA20B95DFCAE1C546",
+      "bytes": 378664,
+      "packageEntry": "runtimes/win-x64/native/hostpolicy.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "mscordaccore.dll",
+      "oldSha256": "C1B92DA5356BB36F4AB55AA54B2D25A8A27518CF7A456EB4957DDFE94E2D428C",
+      "newName": "mscordaccore.dll",
+      "newSha256": "4A9B277D882A52F19B89047748E6AB1043C1582F834B20423C8C7F16A76B6EA3",
+      "bytes": 1356120,
+      "packageEntry": "runtimes/win-x64/native/mscordaccore.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "mscordaccore_amd64_amd64_10.0.1126.37416.dll",
+      "oldSha256": "C1B92DA5356BB36F4AB55AA54B2D25A8A27518CF7A456EB4957DDFE94E2D428C",
+      "newName": "mscordaccore_amd64_amd64_10.0.1426.52326.dll",
+      "newSha256": "4A9B277D882A52F19B89047748E6AB1043C1582F834B20423C8C7F16A76B6EA3",
+      "bytes": 1356120,
+      "packageEntry": "runtimes/win-x64/native/mscordaccore_amd64_amd64_10.0.1426.52326.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "mscordbi.dll",
+      "oldSha256": "F3553412AF82AB90180A0D412DD87B7BFC087043484A572DC2DCE07ECA9906FA",
+      "newName": "mscordbi.dll",
+      "newSha256": "31081748CDAC21D8734422CB3188070C4F49CB9FD85051A7605BBB7337A7331F",
+      "bytes": 1237336,
+      "packageEntry": "runtimes/win-x64/native/mscordbi.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "mscorrc.dll",
+      "oldSha256": "0C5EFACADABAF31E07E131FE7E9150454FB1DD148222A053A2F743551D42184C",
+      "newName": "mscorrc.dll",
+      "newSha256": "9EB4EC98C78E698E0C25E9088A5670EAAD1E12AB4DF066EB3803C495DC0031CE",
+      "bytes": 133928,
+      "packageEntry": "runtimes/win-x64/native/mscorrc.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "10.0.1426.52326"
+      }
+    },
+    {
+      "oldName": "msquic.dll",
+      "oldSha256": "24DA0BF4D7B7E0ADB598297D170FA547F94F398BD6F2B515AE87F0A207C999C7",
+      "newName": "msquic.dll",
+      "newSha256": "7B32A336B638570BFF7B2F4782EBDC05B8C70FAC76FDB412F3E8A3C181C32A61",
+      "bytes": 537400,
+      "packageEntry": "runtimes/win-x64/native/msquic.dll",
+      "type": "Native",
+      "metadata": {
+        "fileVersion": "2.5.11.0"
+      }
+    }
+  ],
+  "businessRecompiled": false,
+  "baselineEvidence": "licenses/provenance/gamemaker-binary-exact-nuget-matches.json",
+  "note": "Only the runtimepack-owned assets and runtimepack metadata are serviced. Business assemblies, apphost and other packages remain byte-identical. The old DAC is retained in a separate local audit backup."
+}

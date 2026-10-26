@@ -43,10 +43,16 @@ __pycache__/
 **/dependencies.json
 **/runtime-payloads/
 
-# Current .176 local build inputs and private data
+# Local build inputs and private data
 Build/
 Dependencies/
 data/
 *.pyc
 Source/UnrealCatalog/Native/oo2core*
 Source/Plugin/References/UnityEngine*.dll
+
+# Release archive metadata is generated after the source commit.
+/package-info.json
+/public-files.json
+/package-files.sha256
+

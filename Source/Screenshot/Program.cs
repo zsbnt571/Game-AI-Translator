@@ -8,6 +8,10 @@ internal static class Program
     {
         try
         {
+            var noCredential=ArgumentValue(args,"--verify-api-no-credential=");
+            if(noCredential is not null){ApplicationConfiguration.Initialize();Environment.ExitCode=ApiNoCredentialSelfTests.RunAsync(noCredential).GetAwaiter().GetResult();return;}
+            var localModel=ArgumentValue(args,"--verify-local-model=");
+            if(localModel is not null){ApplicationConfiguration.Initialize();Environment.ExitCode=ApiNoCredentialSelfTests.RunLocalAsync(localModel,ArgumentValue(args,"--local-endpoint=")??throw new ArgumentException("Explicit local endpoint required."),ArgumentValue(args,"--local-model=")??throw new ArgumentException("Explicit model required.")).GetAwaiter().GetResult();return;}
             ScreenshotRebuildSelfTests.ValidateLaunch(args);
             DesktopStages.Start();
             args = FusionRuntime.Prepare(args);

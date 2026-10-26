@@ -34,6 +34,17 @@ internal static class WpfUiLanguage
         source.Display=UiLanguage.Text(source.Raw);
         if(value!=source.Display)target.SetCurrentValue(property,source.Display);
     }
+    // Callers that own the source caption must supply it explicitly. Different
+    // commands can share a translation (for example German Zurück for Back and
+    // Previous); reverse lookup cannot reconstruct the intended command.
+    internal static void Property(W.DependencyObject target,W.DependencyProperty property,string canonicalSource)
+    {
+        if(!Sources.TryGetValue(target,out var properties))
+        {properties=new();Sources.Add(target,properties);Properties.Add(new(target));}
+        if(!properties.TryGetValue(property,out var source))properties[property]=source=new(canonicalSource);
+        source.Raw=canonicalSource;source.Display=UiLanguage.Text(canonicalSource);
+        if(!Equals(target.GetValue(property),source.Display))target.SetCurrentValue(property,source.Display);
+    }
     internal static void Dialog(W.DependencyObject root)
     {
         if(root is W.Window)Property(root,W.Window.TitleProperty);
