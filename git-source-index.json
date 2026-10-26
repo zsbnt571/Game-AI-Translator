@@ -1,7 +1,7 @@
 {
   "schema": "Fusion.GitSourceInventory.v2",
-  "version": "1.1.0.127",
-  "release": "1.1.0-preview.3+dialogue.5",
+  "version": "1.1.127",
+  "release": "1.1.127",
   "files": [
     {
       "path": ".gitattributes",
@@ -25,18 +25,18 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 6423,
-      "sha256": "0957d8d3ed23593c39674e658a69f0847c372b98f0e77aa2dc6d94106d3cb7e7"
+      "bytes": 3164,
+      "sha256": "16946036890fe4db7b68fa0936948a649bb337c1af45562113683e16a53eebff"
     },
     {
       "path": "README.md",
-      "bytes": 5569,
-      "sha256": "c5403eb03025241ca0f85078a792a2cfa5b7d1c0757e4091c21c1666b2f02ba0"
+      "bytes": 2788,
+      "sha256": "1f12ed0a8d59e65659c98e398aaa352d3daceffbac443fac34de7f2e2dad462c"
     },
     {
       "path": "README.ru.md",
-      "bytes": 11216,
-      "sha256": "c257c5f3a5e8a14d2c464af43994eee2b344d42a6bcafe8ca47016e465347fce"
+      "bytes": 4968,
+      "sha256": "41675c964c594ee5e256ca1ea61a4d671a4daeba8516830577b2758934868dd6"
     },
     {
       "path": "Source/CoverCapture/CoverClientArea.cs",
@@ -5195,63 +5195,63 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 3952,
-      "sha256": "cd15adfd99fc4c5fc9ca134c6eabc3090cf9cdf82e66727f7ba34282fc26f2dd"
+      "bytes": 3791,
+      "sha256": "b962589135063240ba6d832aedfc67fa75d09f2cf53a808cd6e204f6b07133f9"
     },
     {
       "path": "docs/BUILD.en.md",
-      "bytes": 6767,
-      "sha256": "460879fe14147cd2cc4f7f92e128a92aec79ca36582185ece9997e6c6fe564d9"
+      "bytes": 6801,
+      "sha256": "a3103b06c1a9bb24f10832d6748fa86b733d0240642efa3315fa0ca6582c9de5"
     },
     {
       "path": "docs/BUILD.md",
-      "bytes": 5954,
-      "sha256": "b1bd14ad5c952001f1d4cb519f423d10e95cb031790163ea3939bc377c697471"
+      "bytes": 5738,
+      "sha256": "97b72e36c2f81850651a49315b60fe8b56bb28d6ae5fe4ee1512e90d0b9f0344"
     },
     {
       "path": "docs/BUILD.ru.md",
-      "bytes": 10412,
-      "sha256": "2cfc6d6cb3fc60f13bc878c21d083af40f29a0d14256991fa5c5d952624fc37b"
+      "bytes": 10648,
+      "sha256": "4fabf4059994fe64f6572b68216e68102d3856b9cf1fb53f9463e0f8a017a76b"
     },
     {
       "path": "docs/GAMEMAKER-RUNTIME-SERVICING.md",
-      "bytes": 1858,
-      "sha256": "044a0997777fa7e81cdd0c0caff62d547594ab23cd9e2fdfacf40cce28d35f92"
+      "bytes": 1865,
+      "sha256": "eae9c32b843ac7a9f03acb3b8c509c0a826c801c30d506714d0b52c4d10f2166"
     },
     {
       "path": "docs/KNOWN-ISSUES.en.md",
-      "bytes": 7736,
-      "sha256": "e8a1f82208e2b5fe1d0c501c87d64eca9f246c0ae9b4240e4f81d73f4180148e"
+      "bytes": 1586,
+      "sha256": "24fb8b65c10c86294e82559e80e0673257e101567b0ce59ba1cdba28cf154894"
     },
     {
       "path": "docs/KNOWN-ISSUES.md",
-      "bytes": 6506,
-      "sha256": "e61dfd296f99015f4a9415f69c7fc0a6888f8b8135180bb9e44f1a4f1061d7c1"
+      "bytes": 1279,
+      "sha256": "5617248e16a1f1a1bdab2b8b882749a3fa7d6b6091938601bed638b3bda39971"
     },
     {
       "path": "docs/KNOWN-ISSUES.ru.md",
-      "bytes": 13420,
-      "sha256": "fb711448fd41cda60c89b00457a9ad2a39f715d72d7ec613f6e4b5da93f06ecf"
+      "bytes": 2644,
+      "sha256": "a64972493e4a92e3a5cf00cbc918d04a6e0fc572554f2a952ef57d5d3ecf591b"
     },
     {
-      "path": "docs/RELEASE-NOTES-1.1.0.127.en.md",
-      "bytes": 8771,
-      "sha256": "3db0f36ec0bb1523a985be8519e547dc39ce86b466e1f6bd0c06f2bb4bf95f3a"
+      "path": "docs/RELEASE-NOTES-1.1.127.en.md",
+      "bytes": 1624,
+      "sha256": "b644673210ac5c269eee9db652b6c16bf5163a8bcda8a5c244f8956c4fb64fcf"
     },
     {
-      "path": "docs/RELEASE-NOTES-1.1.0.127.md",
-      "bytes": 7591,
-      "sha256": "f44dd2138a6e79291b6669d15b419a0a53072c869d2987bfc7b9f1f5778dd73d"
+      "path": "docs/RELEASE-NOTES-1.1.127.md",
+      "bytes": 1378,
+      "sha256": "954fbc14b3f33295e772dc163c69510a9bf692c038c06bee0d9acdbb945dc2ce"
     },
     {
-      "path": "docs/RELEASE-NOTES-1.1.0.127.ru.md",
-      "bytes": 15190,
-      "sha256": "be6feb631e354cb9b28e032177c5376d2bae442ea762600a8dea8a12f015563e"
+      "path": "docs/RELEASE-NOTES-1.1.127.ru.md",
+      "bytes": 2436,
+      "sha256": "cae063935debc5c104866c7d55d79c2e59f0f530be66dd45bae46d8333238a77"
     },
     {
-      "path": "docs/VALIDATION-1.1.0.127.md",
-      "bytes": 8667,
-      "sha256": "085b5dec1a82eac57751cb5ab5837a87b374b89a0b97dca9621fac66631d83b4"
+      "path": "docs/VALIDATION-1.1.127.md",
+      "bytes": 1148,
+      "sha256": "9641c241839bf38e4e6b36bb7c53be0e300f28f4ddda2690b74954b197271c02"
     },
     {
       "path": "licenses/DefoldCatalogNotice.txt",
@@ -6445,8 +6445,8 @@
     },
     {
       "path": "licenses/README.md",
-      "bytes": 2367,
-      "sha256": "7bd56bcea6e002d35b28bbc1e0f1edd9705276b044c4ea4a15f1cbf245e3821f"
+      "bytes": 2219,
+      "sha256": "a22cc395c580eb5b9895fe83afa23c731d648745a1813f206075a1570588fb31"
     },
     {
       "path": "licenses/RELEASE-127-COMPONENTS.json",
@@ -6710,18 +6710,18 @@
     },
     {
       "path": "third-party-source/ARCHIVES-127.json",
-      "bytes": 2750,
-      "sha256": "840659019d048f810fc03f3d70d20c76ce99ce3cb8c4a5a8dfd6077823fd9744"
+      "bytes": 2721,
+      "sha256": "7508d6c2eff4b4f42d95bb512c8ab790bfad7abf2ec60df4221604dc6afc41a2"
     },
     {
       "path": "third-party-source/ARCHIVES.json",
-      "bytes": 2750,
-      "sha256": "840659019d048f810fc03f3d70d20c76ce99ce3cb8c4a5a8dfd6077823fd9744"
+      "bytes": 2721,
+      "sha256": "7508d6c2eff4b4f42d95bb512c8ab790bfad7abf2ec60df4221604dc6afc41a2"
     },
     {
       "path": "third-party-source/README.md",
-      "bytes": 3132,
-      "sha256": "e565c80cb3fa69c4b941065489eb4c4e846f74a3d766b5153aef6984c8b19e1a"
+      "bytes": 2984,
+      "sha256": "625b01c0c888904433c0ddccc3cb3256279d5422bd95b9fcd0631cff41e7af23"
     },
     {
       "path": "third-party-source/SOURCES.json",
@@ -6743,11 +6743,6 @@
     "SOURCE-MANIFEST.json",
     "git-source-index.json"
   ],
-  "scope": "Git-tracked export only. Complete redistributable inputs are in Fusion-1.1.0-Preview3-Source.zip.",
-  "completeSourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v1.1.0-preview.3%2Bdialogue.5/Fusion-1.1.0-Preview3-Source.zip",
-  "nestedIgnoredPayloadMetadata": [
-    "Source/SpeedBridge/Payload/native-speed-manifest.json",
-    "Source/SpeedBridge/Payload/native-speed-x64.json",
-    "Source/SpeedBridge/Payload/native-speed-x86.json"
-  ]
+  "scope": "Git-tracked export only. Redistributable build inputs are in Fusion-1.1.127-Source.zip. External build requirements are documented in docs/BUILD.en.md.",
+  "completeSourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v1.1.127/Fusion-1.1.127-Source.zip"
 }

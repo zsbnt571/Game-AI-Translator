@@ -1,6 +1,6 @@
 # Third-party notices / 第三方声明 / Сторонние компоненты
 
-**Fusion 1.1.0.127 · 1.1.0-preview.3+dialogue.5**
+**Fusion 1.1.127**
 
 Project-owned code retains the existing **GPL-3.0-only** declaration. This navigation document does not relicense third-party code, models, fonts or runtimes. Original copyright and license documents remain with the components.
 
@@ -21,7 +21,7 @@ Current notice additions cover Microsoft.Web.WebView2 1.0.2849.39, SkiaSharp and
 
 BepInEx, UnityDoorstop, Il2CppInterop, Disarm, UndertaleModTool and Underanalyzer retain original license texts in their corresponding source materials. The BepInEx distribution copy omits exactly two Unity engine compile-reference DLLs; both upstream and distribution hashes are recorded. Other retained source members and notices are not rewritten by that trimming.
 
-The complete source asset for this version is **Fusion-1.1.0-Preview3-Source.zip**, linked from [GitHub Releases](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.0-preview.3%2Bdialogue.5). Git source and automatic Source code archives omit binary inputs; use the complete source asset when those materials are required. Do not substitute an old 176 source attachment for this version.
+The complete source asset for this version is **Fusion-1.1.127-Source.zip**, linked from [GitHub Releases](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.127). Git source and automatic Source code archives omit binary inputs; use the complete source asset when those materials are required. Do not substitute an old 176 source attachment for this version.
 
 Games, extracted game code, saves and proprietary Unity compile references are not granted redistribution rights by this inventory. Proprietary Oodle decompression DLLs are excluded; open-source wrapper license metadata is a separate category and remains subject to its own terms. The optional GPU components, where separately supplied, retain their original vendor notices and require a compatible user-installed driver.
 
@@ -29,4 +29,4 @@ File hashes establish identity, not blanket licensing permission. Original LGPL 
 
 [简体中文](README.md) · [English](README.en.md) · [Русский](README.ru.md)
 
-Runtime servicing covers the six .NET 8/10 locations described in [Validation](docs/VALIDATION-1.1.0.127.md). The legacy IL2CPP loader still includes .NET 6.0.7 and retains its own pinned notices; this round does not relicense or upgrade that runtime. Serviced runtime versions, notices and file identities are recorded separately from the retained legacy loader.
+Applicable bundled runtimes use .NET 8.0.33 and 10.0.14. The legacy IL2CPP loader still includes .NET 6.0.7 and retains its original notices. These runtime updates do not relicense any component. Runtime and file identities are recorded in the package manifests.

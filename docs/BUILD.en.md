@@ -1,11 +1,11 @@
-# Build and source materials — 1.1.0.127
+# Build and source materials — 1.1.127
 
 [简体中文](BUILD.md) · [Русский](BUILD.ru.md)
 
 ## Choose the right materials
 
-- **Fusion-1.1.0-Preview3.zip** is the complete runnable application.
-- **Fusion-1.1.0-Preview3-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
+- **Fusion-1.1.127.zip** is the complete runnable application.
+- **Fusion-1.1.127-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
 - **Git source and GitHub's automatic Source code archives** omit binary dependencies. They are useful for review and contributions, but are not the complete set of ready-to-build inputs.
 
 Start with the complete source asset from the same version. Do not mix historical payloads or arbitrary DLLs from game directories. Initial NuGet restore may need network access. A complete source asset does not establish that all toolchains can rebuild everything offline from scratch.
@@ -22,7 +22,8 @@ From the source root containing Source and tools:
 
 Use -DotNet to select a dotnet executable. The script creates a fresh Build directory and refuses existing output. The historical main project is Source/Screenshot/ScreenshotTranslationUiTester.csproj; it builds GameTranslator.
 
-This entry point uses some supplied precompiled adapter resources. It does not rebuild every Unity plugin, native bridge, runtime or model from scratch. Byte-identical reproducibility and a complete clean-machine rebuild are not established by a desktop build. [Validation](VALIDATION-1.1.0.127.md) separates the public build from the retained local installation build.
+
+This entry point uses some bundled prebuilt adapter resources. It does not rebuild every Unity plugin, native bridge, runtime or model from scratch, and does not establish byte-for-byte reproducibility or a full clean-machine rebuild.
 
 For the release build, publish the desktop, cover helper and UnitySchema with `RuntimeFrameworkVersion=8.0.33`; the script also explicitly passes `UnitySchemaRuntimeVersion=8.0.33` to the main project. Publish UnrealCatalog with `RuntimeFrameworkVersion=10.0.14`. Use the same properties for Restore and Publish. Updating the system runtime does not update a self-contained package. The supplied GameMaker tool is serviced separately with the .NET 10.0.14 runtime in both the source dependency and application copies; this does not rebuild its business code. The legacy IL2CPP loader retains .NET 6.0.7 and must not be switched to another major runtime without compatibility work.
 
@@ -63,3 +64,5 @@ Original third-party notices and corresponding-source records remain. The BepInE
 
 [Home](../README.en.md)
 
+
+Ordinary users should run the complete application package. External Unity/framework references described above are developer build inputs, not prerequisites for launching Fusion.

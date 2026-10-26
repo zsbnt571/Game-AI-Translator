@@ -1,4 +1,4 @@
-# GameMaker CLI runtime servicing for Fusion 1.1.0.127
+# GameMaker CLI runtime servicing for Fusion 1.1.127
 
 The bundled UndertaleModCli business assemblies and application executable retain their reviewed upstream bytes. This release services their self-contained Microsoft .NET runtime from 10.0.11 to 10.0.14 using the original official NuGet package, without recompiling the tool's business code.
 

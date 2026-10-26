@@ -1,11 +1,11 @@
-# 构建与源码材料 — 1.1.0.127
+# 构建与源码材料 — 1.1.127
 
 [English](BUILD.en.md) · [Русский](BUILD.ru.md)
 
 ## 选择正确的材料
 
-- **Fusion-1.1.0-Preview3.zip** 是完整可运行程序包。
-- **Fusion-1.1.0-Preview3-Source.zip** 是完整源码资产，附带该版本对应的可分发依赖、原始许可与构建材料。
+- **Fusion-1.1.127.zip** 是完整可运行程序包。
+- **Fusion-1.1.127-Source.zip** 是完整源码资产，附带该版本对应的可分发依赖、原始许可与构建材料。
 - **Git仓库及GitHub自动Source code归档** 不包含完整二进制依赖。它们适合查看代码和提交变更，不等于开箱即用的全部构建输入。
 
 从同一版本的完整源码资产开始最直接。不要混用历史版本的载荷或任意游戏目录中的DLL。第一次NuGet还原可能需要网络；完整源码资产不等于已经证明所有工具链均可完全离线、从零重建。
@@ -22,7 +22,7 @@
 
 可通过-DotNet选择dotnet程序。脚本创建新的Build目录，已有输出时拒绝覆盖。主工程的历史文件名是Source/Screenshot/ScreenshotTranslationUiTester.csproj，生成的应用名称是GameTranslator。
 
-此入口使用随源码保留的部分已编译适配资源；不会从零重建每个Unity插件、原生桥、运行库和模型。当前构建结果不等于已证明逐字节可复现或在全新系统上完整重建。独立公发构建与本地安装构建的身份和验收见[验证记录](VALIDATION-1.1.0.127.md)。
+此入口使用随源码保留的部分已编译适配资源；不会从零重建每个Unity插件、原生桥、运行库和模型。当前构建结果不等于已证明逐字节可复现或在全新系统上完整重建。公开程序包的检查范围见[验证记录](VALIDATION-1.1.127.md)。
 
 发布构建对主程序、封面辅助和UnitySchema使用 `RuntimeFrameworkVersion=8.0.33`；脚本也向主工程显式传入 `UnitySchemaRuntimeVersion=8.0.33`。UnrealCatalog使用 `RuntimeFrameworkVersion=10.0.14`。Restore和Publish必须使用相同属性；仅更新系统运行时不会更新自包含程序包。GameMaker随附工具在对应源码依赖目录和程序包目录内单独服务其.NET 10.0.14运行时，不因此重编译业务工具。旧IL2CPP加载器内的.NET 6.0.7保持原版本，不能跨主版本直接替换。
 
@@ -30,7 +30,6 @@
 
 ## Unity引用只在本地提供
 
-公开材料不附带Source/Plugin/References中的五个编译引用：mscorlib.dll、System.dll、System.Core.dll、UnityEngine.dll、UnityEngine.UI.dll，也不包含游戏程序集。前三份旧Mono引用因来源未钉住而保留在私有原件，不随本次公开源码分发。需要独立重建相关插件时，从合法来源在本地提供匹配引用；不要提交到Git或公开归档。
 
 旧插件入口支持外部引用目录：
 
@@ -63,3 +62,5 @@ Mono6工程支持以下真实属性：
 
 [返回首页](../README.md)
 
+
+仅编译独立旧插件时，需要在本地提供合法取得的 mscorlib.dll、System.dll、System.Core.dll、UnityEngine.dll、UnityEngine.UI.dll 等匹配引用。普通用户运行完整程序包不需要这些编译材料。

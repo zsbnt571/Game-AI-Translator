@@ -1,5 +1,5 @@
 {
-  "release": "1.1.0.127",
+  "release": "1.1.127",
   "archives": [
     {
       "file": "BepInEx-5b766a3-source.zip",
@@ -48,5 +48,5 @@
     }
   ],
   "distributionNote": "Current corresponding-source archive inventory. Historical ARCHIVES.json is retained as provenance, not the current release download link. BepInEx retains its documented exclusions; no game/Unity assembly grant is made.",
-  "sourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v1.1.0-preview.3%2Bdialogue.5/Fusion-1.1.0-Preview3-Source.zip"
+  "sourceAsset": "https://github.com/zsbnt571/Game-AI-Translator/releases/download/v1.1.127/Fusion-1.1.127-Source.zip"
 }

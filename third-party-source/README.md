@@ -1,6 +1,6 @@
-# Corresponding third-party sources — Fusion 1.1.0.127
+# Corresponding third-party sources — Fusion 1.1.127
 
-The complete **Fusion-1.1.0-Preview3-Source.zip** contains the corresponding third-party source archives under third-party-source. Obtain it from the [matching release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.0-preview.3%2Bdialogue.5).
+The complete **Fusion-1.1.127-Source.zip** contains the corresponding third-party source archives under third-party-source. Obtain it from the [matching release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.127).
 
 Git source and GitHub's automatic Source code archives omit binary build inputs and archived dependency bodies. They retain source references and inventories; they are not replacements for the complete source asset.
 
@@ -26,10 +26,10 @@ All other upstream members, source content and notices are preserved without con
 
 Rebuilding those upstream Unity components requires legally obtained matching Unity references supplied locally. Do not commit or redistribute game assemblies or restricted Unity compile references.
 
-当前完整源码附件为Fusion-1.1.0-Preview3-Source.zip，不再使用旧176附件作为当前入口。BepInEx仅裁剪上述两份Unity引用，原下载与分发副本的哈希分开记录；其余源码和许可保持原文。
+当前完整源码附件为Fusion-1.1.127-Source.zip，不再使用旧176附件作为当前入口。BepInEx仅裁剪上述两份Unity引用，原下载与分发副本的哈希分开记录；其余源码和许可保持原文。
 
-Полный архив текущей версии — Fusion-1.1.0-Preview3-Source.zip. Старый архив 176 не заменяет его. В BepInEx удалены только две указанные ссылки Unity; исходный и распространяемый хеши различаются, остальной код и лицензии сохранены.
+Полный архив текущей версии — Fusion-1.1.127-Source.zip. Старый архив 176 не заменяет его. В BepInEx удалены только две указанные ссылки Unity; исходный и распространяемый хеши различаются, остальной код и лицензии сохранены.
 
 [Third-party notices](../THIRD_PARTY_NOTICES.md) · [Build instructions](../docs/BUILD.en.md)
 
-Runtime servicing covers the six .NET 8/10 locations described in [Validation](../docs/VALIDATION-1.1.0.127.md). The legacy IL2CPP loader still includes .NET 6.0.7 and retains its own pinned notices; this round does not relicense or upgrade that runtime. Serviced runtime versions, notices and file identities are recorded separately from the retained legacy loader.
+Applicable bundled runtimes use .NET 8.0.33 and 10.0.14. The legacy IL2CPP loader still includes .NET 6.0.7 and retains its original notices. These runtime updates do not relicense any component. Runtime and file identities are recorded in the package manifests.
