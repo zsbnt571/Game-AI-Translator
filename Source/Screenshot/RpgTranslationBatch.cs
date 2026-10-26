@@ -65,6 +65,15 @@ internal static class RpgTranslationBatch
         if(payload.Count==0)return result;
         ApiSettings ProviderSettings(ApiSettings settings)
         {
+            // Read evidence from each complete original before engine control
+            // tokens are protected. This runs only for actual cache misses;
+            // ordinary cache identities and stored translations are unchanged.
+            if(AutomaticGenderAgreement.Applies(settings))
+            {
+                var originals=requestSources.Where(p=>dialogueContexts?.GetValueOrDefault(p.Value)?.Roles is null)
+                    .ToDictionary(p=>payload.Count==1?"source":p.Key,p=>p.Value,StringComparer.Ordinal);
+                settings=AutomaticGenderAgreement.Attach(settings,originals);
+            }
             settings=GameDialogueContexts.Attach(settings,dialogueContexts,requestSources);
             if(literalContext.Count==0)return settings;
             var copy=ApiSettingsSnapshot.Copy(settings);

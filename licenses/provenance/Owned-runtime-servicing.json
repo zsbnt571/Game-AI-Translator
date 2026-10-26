@@ -2,7 +2,7 @@
   "schema": "Fusion.PublicRuntimeProvenance.v1",
   "method": "Four project-owned components republished from matching public source with the standard .NET SDK, self-contained win-x64.",
   "sdk": "10.0.103",
-  "mainAssemblySha256": "EEBB1E4D45BA396D86C68DE663C2BF3E07B9781262717670B2E98A54E726EEF1",
+  "mainAssemblySha256": "B313C1805A5A68854DE13AAC069EAEE9A584B7BCD815CDBDAFC72818F77B5790",
   "securityUpdate": "https://devblogs.microsoft.com/dotnet/dotnet-october-2026-oob-security-updates/",
   "officialPackages": [
     {

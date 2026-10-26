@@ -50,6 +50,10 @@ internal sealed class GameDialogueContexts
             var roles=settings is not null&&GameDialogueRoles.Applies(settings)&&roleBlockedSources?.Contains(text)!=true?GameDialogueRoles.Read(row,previous.GetArrayLength()):null;
             var originals=previous.EnumerateArray().Select(s=>s.GetString()!).ToArray();
             if(roles is not null&&!roles.HasExplicitEvidence(originals))roles=null;
+            // Current explicit facts outrank preceding speaker declarations.
+            // Remove prior role identity before any hot role-cache lookup; the
+            // current-original provider policy can handle this item itself.
+            if(roles is not null&&AutomaticGenderAgreement.BlocksInheritedEvidence(text))roles=null;
             var context=GameDialogueContext.Create(originals,roles);
             if(context is null||context.Previous.Contains(text,StringComparer.Ordinal))continue;
             if(values.TryGetValue(text,out var before)&&before.Identity==context.Identity)continue;
@@ -89,7 +93,7 @@ internal sealed class GameDialogueContextCache
 {
     internal sealed record Entry(string Text,string Context,string Terms,string[]? Previous=null);
     private readonly ConcurrentDictionary<string,Entry> entries=new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string,Entry> validated=new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<(string Source,EmbeddedTextSyntax Syntax),Entry> validated=new();
     internal static GameDialogueContextCache Load(string path)
     {
         var result=new GameDialogueContextCache();
@@ -105,22 +109,23 @@ internal sealed class GameDialogueContextCache
         catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException){}
         return result;
     }
-    internal bool TryGet(string source,GameDialogueContext context,ApiSettings settings,IReadOnlyDictionary<string,string> terms,out string text)
+    internal bool TryGet(string source,GameDialogueContext context,ApiSettings settings,IReadOnlyDictionary<string,string> terms,out string text,EmbeddedTextSyntax syntax=EmbeddedTextSyntax.Renpy)
     {
         text="";
         if(!entries.TryGetValue(source,out var entry)||entry.Context!=context.Identity||entry.Terms!=context.TermsStamp(terms,source))return false;
-        if(!validated.TryGetValue(source,out var checkedEntry)||!ReferenceEquals(checkedEntry,entry))
-        {if(!AutomaticTranslationQuality.Displayable(source,entry.Text,settings,terms,EmbeddedTextSyntax.Renpy))return false;validated[source]=entry;}
+        var validationKey=(source,syntax);
+        if(!validated.TryGetValue(validationKey,out var checkedEntry)||!ReferenceEquals(checkedEntry,entry))
+        {if(!AutomaticTranslationQuality.Displayable(source,entry.Text,settings,terms,syntax))return false;validated[validationKey]=entry;}
         text=entry.Text;return true;
     }
     internal void Accept(string source,string text,GameDialogueContext context,IReadOnlyDictionary<string,string> terms)
     {if(entries.Count<50000||entries.ContainsKey(source))entries[source]=new(text,context.Identity,context.TermsStamp(terms,source),context.Previous.ToArray());}
     // Editor-only rows never enter context-free runtime/startup caches.
-    internal Dictionary<string,string> ForEditor(ApiSettings settings,IReadOnlyDictionary<string,string> terms)
+    internal Dictionary<string,string> ForEditor(ApiSettings settings,IReadOnlyDictionary<string,string> terms,EmbeddedTextSyntax syntax=EmbeddedTextSyntax.Renpy)
     {
         var result=new Dictionary<string,string>(StringComparer.Ordinal);
         foreach(var pair in entries)
-            if(pair.Value.Previous is {} previous&&GameDialogueContext.Create(previous) is {} context&&TryGet(pair.Key,context,settings,terms,out var text))result[pair.Key]=text;
+            if(pair.Value.Previous is {} previous&&GameDialogueContext.Create(previous) is {} context&&TryGet(pair.Key,context,settings,terms,out var text,syntax))result[pair.Key]=text;
         return result;
     }
     internal Dictionary<string,Entry> Snapshot()=>new(entries,StringComparer.Ordinal);

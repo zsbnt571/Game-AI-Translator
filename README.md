@@ -1,4 +1,4 @@
-# Game AI Translator · Fusion 1.1.127
+# Game AI Translator · Fusion 1.1.128
 
 **简体中文** | [English](README.en.md) | [Русский](README.ru.md)
 
@@ -6,7 +6,7 @@ Fusion 是面向 Windows x64 的游戏翻译工具，提供支持引擎的游戏
 
 ## 下载和使用
 
-从[发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.127)下载 **Fusion-1.1.127.zip**，完整解压后运行 **GameTranslator.exe**。保留整个文件夹，不要只取出 EXE。程序包已包含 .NET、Python 和 OCR 组件，无需另外安装这些组件。
+从[发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.128)下载 **Fusion-1.1.128.zip**，完整解压后运行 **GameTranslator.exe**。保留整个文件夹，不要只取出 EXE。程序包已包含 .NET、Python 和 OCR 组件，无需另外安装这些组件。
 
 1. 在“设置 → 翻译方案”中配置兼容的翻译 API，或连接已经运行的本地模型服务。
 2. 选择目标翻译语言，保存并测试连接。服务确实不需要密钥时，勾选“不需要 API 密钥”。
@@ -20,14 +20,14 @@ Fusion 是面向 Windows x64 的游戏翻译工具，提供支持引擎的游戏
 - 改进支持引擎的资源读取、预翻译和缓存复用。
 - 改进普通启动后的翻译控制，翻译和游戏修改分别开关。
 - 在支持的适配器中选择、预览和恢复自定义字体，默认字体适配保持原有行为。
-- **角色性别与语法一致：当前仅支持部分 Ren'Py 场景。** 能确认说话角色，且存在明确英文性别或代词信息时，可辅助英语、西班牙语、法语、德语和俄语翻译。其他引擎尚未接入同样的角色信息。不增加用户设置；信息不明确时沿用原流程。
+- **自动性别语法辅助，无需额外设置。** 共用流程可利用同一条英文原文中的明确证据，辅助英、西、法、德、俄翻译；部分 Ren'Py 场景还可利用跨台词角色信息。未知或冲突时保持正常流程，目前不支持所有引擎的跨台词角色识别。
 
-中文、日语、韩语和普通翻译缓存保持原有行为。详见[更新说明](docs/RELEASE-NOTES-1.1.127.md)和[已知限制](docs/KNOWN-ISSUES.md)。
+中文、日语、韩语和普通翻译缓存保持原有行为。详见[更新说明](docs/RELEASE-NOTES-1.1.128.md)和[已知限制](docs/KNOWN-ISSUES.md)。
 
 ## 更新与开发资料
 
 更新前正常退出 Fusion，备份软件实际使用的数据目录，再单独解压新包。保留旧版本，避免两个版本同时写同一数据目录。
 
-**Fusion-1.1.127-Source.zip** 是完整开发源码附件。GitHub 自动生成的 Source code 压缩包不含全部二进制构建输入，也不是运行程序包。[编译说明](docs/BUILD.md)仅供开发者使用，普通用户运行软件不需要编译。
+**Fusion-1.1.128-Source.zip** 是完整开发源码附件。GitHub 自动生成的 Source code 压缩包不含全部二进制构建输入，也不是运行程序包。[编译说明](docs/BUILD.md)仅供开发者使用，普通用户运行软件不需要编译。
 
-项目自有代码采用 GPL-3.0-only，其他组件见[第三方声明](THIRD_PARTY_NOTICES.md)。[验证说明](docs/VALIDATION-1.1.127.md)列出实际检查范围。可在 [Issues](https://github.com/zsbnt571/Game-AI-Translator/issues) 提交复现步骤，请勿附带密钥或个人数据。
+项目自有代码采用 GPL-3.0-only，其他组件见[第三方声明](THIRD_PARTY_NOTICES.md)。[验证说明](docs/VALIDATION-1.1.128.md)列出实际检查范围。可在 [Issues](https://github.com/zsbnt571/Game-AI-Translator/issues) 提交复现步骤，请勿附带密钥或个人数据。

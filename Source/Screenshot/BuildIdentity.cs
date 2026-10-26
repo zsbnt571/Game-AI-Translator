@@ -17,6 +17,7 @@ public static class BuildIdentity
             var info=typeof(BuildIdentity).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"";
             var preview=System.Text.RegularExpressions.Regex.Match(info,@"^(\d+\.\d+\.\d+)-preview\.(\d+)(?:\+.*)?$");
             if(preview.Success)return preview.Groups[1].Value+" Preview "+preview.Groups[2].Value;
+            if(System.Text.RegularExpressions.Regex.IsMatch(info,@"^\d+\.\d+\.\d+$"))return info;
             return BuildVersion+(LocalWpfCandidate.Length>0?" wpf"+LocalWpfCandidate:"");
         }
     }

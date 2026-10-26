@@ -109,9 +109,16 @@ internal sealed class RpgTranslationSession : IDisposable
     {
         var document=latest??System.Threading.Volatile.Read(ref workspaceDocument);
         if(TryManual(source,document,out text))return true;
-        if(dialogueContexts.TryGet(source,out var context))return context.Roles is null
-            ?dialogueCache.TryGet(source,context,cacheSettings,document.Terms,out text)
-            :dialogueRoleCache.TryGet(source,context,cacheSettings,document.Terms,out text);
+        if(dialogueContexts.TryGet(source,out var context))
+        {
+            if(context.Roles is null)return dialogueCache.TryGet(source,context,cacheSettings,document.Terms,out text,options.Syntax);
+            if(dialogueRoleCache.TryGet(source,context,cacheSettings,document.Terms,out text,options.Syntax))return true;
+            if(GameDialogueContext.Create(context.Previous) is {} legacyContext
+                &&dialogueCache.TryGet(source,legacyContext,cacheSettings,document.Terms,out text,options.Syntax))return true;
+            // Role agreement is an enhancement. Until a validated variant is
+            // available, retain the usable ordinary translation and its receipt.
+            // Never relabel that fallback as a successful role translation.
+        }
         string key=options.DisplayBoundaryWhitespace?DisplayBoundaryAliases.Key(source):source;
         text=cache.GetValueOrDefault(source,"");
         if(text.Length==0&&options.DisplayBoundaryWhitespace&&System.Threading.Volatile.Read(ref boundaryAliases).TryGetValue(key,out var original)
@@ -164,7 +171,7 @@ internal sealed class RpgTranslationSession : IDisposable
     // Writeback can already contain a newly saved manual correction while the
     // periodic queue refresh is still pending. Readback must see that revision.
     private bool HasRoleContext(string source)=>dialogueContexts.TryGet(source,out var context)&&context.Roles is not null;
-    internal string Lookup(string source)=>!languagePolicy.AllowsSelectedText(source)||!selectedCatalogueSources.ContainsKey(source)&&!languagePolicy.AllowsRuntime(source)?"":TryNative(source,out var text,workspace.Snapshot())?text:HasRoleContext(source)?"":displayCache.GetValueOrDefault(source,"");
+    internal string Lookup(string source)=>!languagePolicy.AllowsSelectedText(source)||!selectedCatalogueSources.ContainsKey(source)&&!languagePolicy.AllowsRuntime(source)?"":TryNative(source,out var text,workspace.Snapshot())?text:displayCache.GetValueOrDefault(source,"");
     private readonly Dictionary<string,(int Attempts,DateTime Due,string Code)> failures=new(StringComparer.Ordinal);
     private bool dirty,roleDirty,savingNativeCache,savingRoleCache;
     private string cacheSaveError="";
@@ -484,7 +491,7 @@ internal sealed class RpgTranslationSession : IDisposable
         foreach(var p in displayCache)if(!displayGlossary.Matches(p.Key,p.Value,workspaceDocument.Terms)&&
             !(cache.TryGetValue(p.Key,out var nativeValue)&&nativeGlossary.Matches(p.Key,nativeValue,workspaceDocument.Terms)&&
               AutomaticTranslationQuality.Valid(p.Key,nativeValue,cacheSettings,workspaceDocument.Terms,options.Syntax)))staleGlossary.Add(p.Key);
-        foreach(var p in dialogueCache.ForEditor(cacheSettings,workspaceDocument.Terms))
+        foreach(var p in dialogueCache.ForEditor(cacheSettings,workspaceDocument.Terms,options.Syntax))
             if(!AutomaticTranslationQuality.Valid(p.Key,p.Value,cacheSettings,workspaceDocument.Terms,options.Syntax))provisional.Add(p.Key);
         // Preparation is a game-thread operation too. Switching away after its
         // publication can leave the receipt pending for as long as the game is
@@ -666,7 +673,6 @@ internal sealed class RpgTranslationSession : IDisposable
             var readOnlySources=new HashSet<string>(StringComparer.Ordinal);
             var writableSources=new HashSet<string>(StringComparer.Ordinal);
             var aheadObserved=new HashSet<string>(StringComparer.Ordinal);
-            bool roleIndexPending=false,roleIndexTimedOut=false;DateTime roleIndexDeadline=DateTime.MaxValue;
             bool RuntimeFragmentAllowed(string source)
             {
                 if(options.Syntax!=EmbeddedTextSyntax.Wolf||source.Trim(' ','\r','\n','\t').EnumerateRunes().Take(2).Count()!=1||catalog.Contains(source))return true;
@@ -686,7 +692,7 @@ internal sealed class RpgTranslationSession : IDisposable
             }
             bool RuntimeAllowed(string source)=>RpgTranslationText.HasTranslatableText(source,options.Syntax)&&language.AllowsRuntime(source)&&RuntimeFragmentAllowed(source);
             bool MayTranslate(string source)=>catalog.Contains(source)||(observed.Contains(source)||aheadObserved.Contains(source)||readOnlySources.Contains(source))&&RuntimeAllowed(source);
-            bool HasTranslation(string source)=>TryNative(source,out _)||!HasRoleContext(source)&&!writableSources.Contains(source)&&displayCache.ContainsKey(source);
+            bool HasTranslation(string source)=>TryNative(source,out _)||(!writableSources.Contains(source)||HasRoleContext(source))&&displayCache.ContainsKey(source);
             bool Complete(string source)=>TryManual(source,workspaceDocument,out _)||!provisional.Contains(source)&&TryNative(source,out _);
             var forced=new HashSet<string>(staleGlossary.Concat(provisional),StringComparer.Ordinal);
             void TrackReusedQuality(string source,string text)
@@ -717,20 +723,18 @@ internal sealed class RpgTranslationSession : IDisposable
             void ReadDialogueContexts(JsonElement receipt)
             {
                 if(!renpy)return;
-                if(GameDialogueRoles.Applies(cacheSettings)&&receipt.TryGetProperty("speakerAttributionContract",out var roleContract)
-                    &&roleContract.ValueKind==JsonValueKind.String&&roleContract.GetString()==GameDialogueRoles.Contract
-                    &&receipt.TryGetProperty("speakerAttributionReady",out var readyState)&&readyState.ValueKind is JsonValueKind.True or JsonValueKind.False)
-                {
-                    bool pending=!readyState.GetBoolean();
-                    if(pending&&!roleIndexPending){roleIndexDeadline=DateTime.UtcNow.AddSeconds(8);roleIndexTimedOut=false;}
-                    roleIndexPending=pending;
-                }
+                // Metadata readiness never blocks the ordinary translation
+                // queue. No readiness state is retained across bridge epochs.
+                // A failure already recorded for an ordinary request keeps its
+                // original retry/evidence path even if attribution arrives later.
+                foreach(string source in failures.Keys)if(!HasRoleContext(source))roleBlockedSources.Add(source);
                 foreach(string source in dialogueContexts.Read(receipt,cacheSettings,roleBlockedSources))
                 {
-                    if(TryNative(source,out var ready)){cachedCatalogUpdates[source]=ready;continue;}
-                    // A newly attributed role cannot inherit a previously sent
-                    // context-free/other-role result while its request is pending.
-                    if(dialogueContexts.TryGet(source,out var changed)&&changed.Roles is not null)cachedCatalogUpdates[source]=source;
+                    if(TryNative(source,out var ready))cachedCatalogUpdates[source]=ready;
+                    else if(HasRoleContext(source)&&displayCache.TryGetValue(source,out var display))cachedCatalogUpdates[source]=display;
+                    // Preserve the displayed ordinary result while optional
+                    // enhancement is pending; never replace it with source text.
+                    if(!NeedsTranslation(source))continue;
                     if(!MayTranslate(source)||active.Contains(source))continue;
                     if(observed.Contains(source))visible.Enqueue(source);
                     else backlog.Enqueue(source);
@@ -1147,8 +1151,23 @@ internal sealed class RpgTranslationSession : IDisposable
                         if(hasManual)
                         {forced.Remove(source);failures.Remove(source);provisional.Remove(source);updates[source]=corrected;resolvedIssues.Add(source);continue;}
                         string requestToken=currentDocument.Requests.GetValueOrDefault(source,"");
-                        if(dialogueContexts.Stamp(source)!=(job.Contexts.TryGetValue(source,out var previousContext)?previousContext.Identity:""))
-                        {if(!hasManual){forced.Add(source);failures.Remove(source);visible.Enqueue(source);}continue;}
+                        bool hadContext=job.Contexts.TryGetValue(source,out var previousContext);
+                        // Late role metadata must not discard a usable ordinary
+                        // request already in flight. It keeps its original cache
+                        // identity; it is never accepted as a role-cache result.
+                        bool ordinaryRoleUpgrade=(!hadContext||previousContext!.Roles is null)
+                            &&dialogueContexts.TryGet(source,out var currentContext)&&currentContext.Roles is not null
+                            &&(!hadContext||previousContext!.Previous.SequenceEqual(currentContext.Previous,StringComparer.Ordinal));
+                        if(dialogueContexts.Stamp(source)!=(hadContext?previousContext!.Identity:"")&&!ordinaryRoleUpgrade)
+                        {
+                            if(!hasManual)
+                            {
+                                forced.Add(source);
+                                if(!HasRoleContext(source)&&previousContext?.Roles is null)failures.Remove(source);
+                                visible.Enqueue(source);
+                            }
+                            continue;
+                        }
                         if((job.Contexts.TryGetValue(source,out var termContext)?termContext.TermsStamp(job.Terms,source):TranslationGlossary.Stamp(job.Terms,source))
                             !=(job.Contexts.TryGetValue(source,out termContext)?termContext.TermsStamp(currentDocument.Terms,source):TranslationGlossary.Stamp(currentDocument.Terms,source)))
                         {if(!hasManual){forced.Add(source);failures.Remove(source);visible.Enqueue(source);}continue;}
@@ -1169,8 +1188,7 @@ internal sealed class RpgTranslationSession : IDisposable
                                 // comes back worse; it remains visibly pending.
                                 if(TryNativeUnwrapped(source,out var previousValue)&&previousValue.Length>0)
                                 {text=previousValue;retainedPrevious=true;}
-                                else if(readOnlySources.Contains(source)&&!(job.Contexts.TryGetValue(source,out var roleContext)&&roleContext.Roles is not null)
-                                    &&displayCache.TryGetValue(source,out previousValue)&&previousValue.Length>0)
+                                else if(readOnlySources.Contains(source)&&displayCache.TryGetValue(source,out previousValue)&&previousValue.Length>0)
                                 {text=previousValue;retainedPrevious=true;}
                                 provisional.Add(source);forced.Add(source);
                                 int count=failures.GetValueOrDefault(source).Attempts+1;
@@ -1205,7 +1223,9 @@ internal sealed class RpgTranslationSession : IDisposable
                             providerPause.Observe(reason,DateTime.UtcNow);
                             failures[source]=(count,count<4?DateTime.UtcNow.AddSeconds(Math.Min(60,2*Math.Pow(3,count-1))):DateTime.MaxValue,reason);
                             string reply=results is RpgTranslationBatchResult evidence?evidence.Replies.GetValueOrDefault(source,""):"";
-                            string? retained=provisional.Contains(source)?TryNativeUnwrapped(source,out var oldValue)?oldValue:HasRoleContext(source)?null:displayCache.GetValueOrDefault(source):null;
+                            bool retainRoleFallback=job.Contexts.TryGetValue(source,out var failedContext)&&failedContext.Roles is not null;
+                            string? retained=provisional.Contains(source)||retainRoleFallback
+                                ?TryNativeUnwrapped(source,out var oldValue)?oldValue:displayCache.GetValueOrDefault(source):null;
                             newIssues.Add(TranslationAttemptStatus.Evidence(source,reason,count,reply,job.Terms,provisional.Contains(source),retained));}
                     }
                 }
@@ -1278,10 +1298,6 @@ internal sealed class RpgTranslationSession : IDisposable
                 visible.Promote(currentPriority);
                 // Two bounded background requests leave two slots for visible text. No duplicate or cancelled batch replay.
                 var awaitingNames=new List<(string Source,bool Foreground)>();
-                var awaitingRoles=new List<(string Source,bool Foreground)>();
-                if(roleIndexPending&&!roleIndexTimedOut&&DateTime.UtcNow>=roleIndexDeadline)
-                {roleIndexTimedOut=true;AppLog.Write("translation-context","Role attribution preparation timed out; continuing the existing translation path.");}
-                bool AwaitRoleIndex(string source)=>roleIndexPending&&!roleIndexTimedOut&&!roleBlockedSources.Contains(source);
                 while(jobs.Count<4&&!providerPause.Blocked(DateTime.UtcNow))
                 {
                     var work=new List<string>();bool foreground=false;
@@ -1293,7 +1309,6 @@ internal sealed class RpgTranslationSession : IDisposable
                         // batch response cannot repeatedly hold the whole menu.
                         if(work.Count>0&&failures.ContainsKey(visible.Peek()))break;
                         var source=visible.Dequeue();
-                        if(AwaitRoleIndex(source)){awaitingRoles.Add((source,true));continue;}
                         if(terminology.IsPreparing(source,cacheSettings)){awaitingNames.Add((source,true));continue;}
                         if(MayTranslate(source)&&NeedsTranslation(source)&&(!failures.TryGetValue(source,out var failure)||failure.Due<=DateTime.UtcNow)&&active.Add(source)){work.Add(source);foreground=true;if(failures.ContainsKey(source))break;}
                     }
@@ -1307,7 +1322,6 @@ internal sealed class RpgTranslationSession : IDisposable
                             bool singleRetry=failures.TryGetValue(next,out var retry)&&TranslationAttemptStatus.RetryIndividually(retry.Code);
                             if(singleRetry&&work.Count>0)break;
                             var source=upcoming.Count>0?upcoming.Dequeue():backlog.Dequeue();aheadQueued.Remove(source);
-                            if(AwaitRoleIndex(source)){awaitingRoles.Add((source,false));continue;}
                             if(terminology.IsPreparing(source,cacheSettings)){awaitingNames.Add((source,false));continue;}
                             if(!MayTranslate(source)||!NeedsTranslation(source)||failures.TryGetValue(source,out var failure)&&failure.Due>DateTime.UtcNow||!active.Add(source))continue;
                             work.Add(source);chars+=source.Length;if(singleRetry)break;
@@ -1326,7 +1340,6 @@ internal sealed class RpgTranslationSession : IDisposable
                     jobs.Add(new(sources,RpgTranslationBatch.Translate(sources,prompts.Single,prompts.Batch,Provider,jobCancellation.Token,renpy,options.Syntax,doc.Terms,templates,progress:progress,bypassTemplates:bypassTemplates,dialogueContexts:contexts),foreground,jobCancellation,sources.ToDictionary(s=>s,s=>doc.Requests.GetValueOrDefault(s,""),StringComparer.Ordinal),doc.Terms,progress,contexts));
                 }
                 foreach(var waiting in awaitingNames)if(waiting.Foreground)visible.Enqueue(waiting.Source);else backlog.Enqueue(waiting.Source);
-                foreach(var waiting in awaitingRoles)if(waiting.Foreground)visible.Enqueue(waiting.Source);else backlog.Enqueue(waiting.Source);
                 // Dispatch current-screen work and apply ready results before
                 // asking for another directory page. Pace pages without starving
                 // them while the foreground is active; an in-flight IPC request

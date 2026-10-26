@@ -322,6 +322,10 @@ public sealed class TranslationService
     private static HttpRequestMessage BuildBatchRequestCore(IReadOnlyList<TranslationItem> items, ApiSettings settings,
         bool targetedRecovery,IReadOnlyDictionary<string,ContentRecoveryFeedback>? contentFeedback=null)
     {
+        // This request is constructed after recovery-cache lookup. Evidence is
+        // confined to each item's own original; neighbours are not role IDs.
+        if(AutomaticGenderAgreement.Applies(settings))
+            settings=AutomaticGenderAgreement.Attach(settings,items.ToDictionary(i=>i.Id,i=>i.Text,StringComparer.Ordinal));
         var input = SerializeStructuredInput(items);
         var prompt = targetedRecovery
             ? "Targeted missing-group recovery. Only translate and return the group IDs listed below. " +
@@ -461,10 +465,17 @@ public sealed class TranslationService
         return new(result, full, matches.Count > 0);
     }
 
-    private static HttpRequestMessage BuildPlainRequest(string text, ApiSettings settings) => BuildRequest(settings, [
-        new { role = "system", content = TranslationPromptBuilder.BuildPlainSystemPrompt(settings)+TranslationLanguageSpans.RequestGuidance(text,settings) },
-        new { role = "user", content = text }
-    ]);
+    private static HttpRequestMessage BuildPlainRequest(string text, ApiSettings settings)
+    {
+        // Embedded game requests already attach evidence from their unprotected
+        // originals in RpgTranslationBatch, preserving their per-item IDs.
+        if(settings.RequestKind==TranslationRequestKind.PlainOrScreenshot&&AutomaticGenderAgreement.Applies(settings))
+            settings=AutomaticGenderAgreement.Attach(settings,new Dictionary<string,string>(StringComparer.Ordinal){["source"]=text});
+        return BuildRequest(settings, [
+            new { role = "system", content = TranslationPromptBuilder.BuildPlainSystemPrompt(settings)+TranslationLanguageSpans.RequestGuidance(text,settings) },
+            new { role = "user", content = text }
+        ]);
+    }
 
     private static HttpRequestMessage BuildRequest(ApiSettings settings, object[] messages)
     {

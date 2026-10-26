@@ -1,11 +1,11 @@
-# Build and source materials — 1.1.127
+# Build and source materials — 1.1.128
 
 [简体中文](BUILD.md) · [Русский](BUILD.ru.md)
 
 ## Choose the right materials
 
-- **Fusion-1.1.127.zip** is the complete runnable application.
-- **Fusion-1.1.127-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
+- **Fusion-1.1.128.zip** is the complete runnable application.
+- **Fusion-1.1.128-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
 - **Git source and GitHub's automatic Source code archives** omit binary dependencies. They are useful for review and contributions, but are not the complete set of ready-to-build inputs.
 
 Start with the complete source asset from the same version. Do not mix historical payloads or arbitrary DLLs from game directories. Initial NuGet restore may need network access. A complete source asset does not establish that all toolchains can rebuild everything offline from scratch.

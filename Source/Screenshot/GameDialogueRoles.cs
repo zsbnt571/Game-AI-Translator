@@ -65,7 +65,7 @@ internal sealed class GameDialogueRoleCache
 {
     internal sealed record Entry(string Source,string Text,string Context,string Terms,string[] Previous,GameDialogueRoles Roles);
     private readonly ConcurrentDictionary<string,Entry> entries=new(StringComparer.Ordinal);
-    private readonly ConcurrentDictionary<string,Entry> validated=new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<(string Key,EmbeddedTextSyntax Syntax),Entry> validated=new();
     private static string Key(string source,GameDialogueContext context)=>context.Identity+":"+source;
     internal static GameDialogueRoleCache Load(string path)
     {
@@ -83,14 +83,15 @@ internal sealed class GameDialogueRoleCache
         catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException){}
         return result;
     }
-    internal bool TryGet(string source,GameDialogueContext context,ApiSettings settings,IReadOnlyDictionary<string,string> terms,out string text)
+    internal bool TryGet(string source,GameDialogueContext context,ApiSettings settings,IReadOnlyDictionary<string,string> terms,out string text,EmbeddedTextSyntax syntax=EmbeddedTextSyntax.Renpy)
     {
         text="";
         if(context.Roles is null||!GameDialogueRoles.Applies(settings))return false;
         string key=Key(source,context);
         if(!entries.TryGetValue(key,out var entry)||entry.Terms!=context.TermsStamp(terms,source))return false;
-        if(!validated.TryGetValue(key,out var checkedEntry)||!ReferenceEquals(checkedEntry,entry))
-        {if(!AutomaticTranslationQuality.Displayable(source,entry.Text,settings,terms,EmbeddedTextSyntax.Renpy))return false;validated[key]=entry;}
+        var validationKey=(key,syntax);
+        if(!validated.TryGetValue(validationKey,out var checkedEntry)||!ReferenceEquals(checkedEntry,entry))
+        {if(!AutomaticTranslationQuality.Displayable(source,entry.Text,settings,terms,syntax))return false;validated[validationKey]=entry;}
         text=entry.Text;return true;
     }
     internal void Accept(string source,string text,GameDialogueContext context,IReadOnlyDictionary<string,string> terms)
