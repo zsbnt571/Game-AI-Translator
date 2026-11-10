@@ -34,6 +34,9 @@ API(void*,il2cpp_class_get_method_from_name,void*,const char*,int);
 API(void*,il2cpp_class_get_methods,void*,void**);
 API(void*,il2cpp_class_get_parent,void*);
 API(void*,il2cpp_class_get_type,void*);
+API(void*,il2cpp_class_get_field_from_name,void*,const char*);
+API(void*,il2cpp_field_get_type,void*);
+API(void,il2cpp_field_get_value,void*,void*,void*);
 API(const char*,il2cpp_class_get_name,void*);
 API(const char*,il2cpp_class_get_namespace,void*);
 API(void*,il2cpp_type_get_object,void*);
@@ -70,5 +73,10 @@ static bool BindApis(){
  BIND(il2cpp_domain_get);BIND(il2cpp_domain_assembly_open);BIND(il2cpp_get_corlib);BIND(il2cpp_assembly_get_image);BIND(il2cpp_image_get_name);BIND(il2cpp_class_from_name);BIND(il2cpp_class_get_method_from_name);BIND(il2cpp_class_get_methods);BIND(il2cpp_class_get_parent);BIND(il2cpp_class_get_type);BIND(il2cpp_class_get_name);BIND(il2cpp_class_get_namespace);BIND(il2cpp_type_get_object);BIND(il2cpp_type_get_name);BIND(il2cpp_free);BIND(il2cpp_method_get_name);BIND(il2cpp_method_get_param);BIND(il2cpp_method_get_param_count);BIND(il2cpp_object_get_class);BIND(il2cpp_object_unbox);BIND(il2cpp_runtime_invoke);BIND(il2cpp_string_new);BIND(il2cpp_string_length);BIND(il2cpp_string_chars);BIND(il2cpp_array_length);BIND(il2cpp_gchandle_new);BIND(il2cpp_gchandle_get_target);BIND(il2cpp_gchandle_free);
  BIND(il2cpp_object_new);BIND(il2cpp_resolve_icall);BIND(il2cpp_array_new);
  BIND(il2cpp_gchandle_new_weakref);
+ // Optional framework identity readers must never disable ordinary translation.
+ Resolve((void**)&il2cpp_domain_get_assemblies,"il2cpp_domain_get_assemblies");
+ Resolve((void**)&il2cpp_class_get_field_from_name,"il2cpp_class_get_field_from_name");
+ Resolve((void**)&il2cpp_field_get_type,"il2cpp_field_get_type");
+ Resolve((void**)&il2cpp_field_get_value,"il2cpp_field_get_value");
  return ok;
 }

@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace ScreenshotTranslationUiTester;
 
@@ -55,6 +55,8 @@ public sealed class ApiSettings
     public string Model { get; set; } = "deepseek-v4-flash";
     public string AdvancedApiParameters { get; set; } = "";
     public string TargetLanguage { get; set; } = "Simplified Chinese";
+    public bool CharacterGenderEnhancementEnabled { get; set; }
+    internal CharacterGenderEnhancementPolicy.Epoch CharacterGenderEnhancementEpoch { get; set; } = CharacterGenderEnhancementPolicy.Current;
     public string OcrLanguage { get; set; } = "自动";
     public int FirstByteTimeoutSeconds { get; set; } = 30;
     [JsonPropertyName("CompleteRequestTimeoutSeconds")]
@@ -88,6 +90,10 @@ public sealed class ApiSettings
     public TranslationProviderKind TranslationProviderKind { get; set; } = TranslationProviderKind.OpenAiCompatible;
     public string ProviderDisplayName { get; set; } = "DeepSeek (OpenAI Compatible)";
     public TranslationStyle TranslationStyle { get; set; } = TranslationStyle.GameLocalization;
+    public string PromptPresetId { get; set; } = "";
+    public string PromptPresetText { get; set; } = "";
+    public string[] GlossaryPackIds { get; set; } = [];
+    [JsonIgnore] internal TranslationTermPack[]? LibraryPacks { get; set; }
     public string CustomTranslationPrompt { get; set; } = "";
     // Per-request transport contract, never serialized into a user's profile.
     internal TranslationRequestKind RequestKind { get; set; }
@@ -132,6 +138,8 @@ public sealed class ApiSettings
     [JsonConverter(typeof(ApplicationLanguagePreferenceConverter))]
     public ApplicationLanguage InterfaceLanguage { get; set; } = ApplicationLanguage.FollowSystem;
     public ApplicationThemeMode ThemeMode { get; set; } = ApplicationThemeMode.Night;
+    public UiIconColorMode IconColorMode { get; set; } = UiIconColorMode.Monochrome;
+    public int IconSize { get; set; } = 17;
     public string CustomThemeMainBackground { get; set; } = "#121722";
     public string CustomThemeSecondaryBackground { get; set; } = "#1D222C";
     public string CustomThemeText { get; set; } = "#F4F7FB";

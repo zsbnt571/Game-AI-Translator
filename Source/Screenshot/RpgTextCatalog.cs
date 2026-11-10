@@ -20,6 +20,9 @@ internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Un
     // an inactive language pack or prove that every row will be displayed.
     internal IReadOnlySet<string>? UnlocalizedSourceTexts {get;init;}
     internal IReadOnlySet<string>? PrioritySourceTexts {get;init;}
+    // Explicit parallel resource branches. These are not language guesses from
+    // the text, and must not authorize translating an inactive alternative.
+    internal IReadOnlyList<CatalogLanguageBranch> LanguageBranches {get;init;}=[];
     // Optional static extraction provenance. This never grants runtime writeback
     // or full-buffer authority on its own; older adapters may leave it empty.
     internal IReadOnlyList<EmbeddedCatalogSource> Sources {get;init;}=[];
@@ -29,6 +32,11 @@ internal sealed record RpgTextCatalogResult(string[] Texts,int Files,string[] Un
     // Keep Texts and Origins intact: a skipped sample is not an unread source.
     internal IReadOnlySet<string>? SkippedSourceTexts {get;init;}
     internal CatalogReadReport? Report {get;init;}
+    // Verified optional speaker evidence. It never replaces the source-only
+    // catalogue, and consumers must gate it by target language and cache policy.
+    internal IReadOnlyDictionary<string,GameDialogueContext> DialogueContexts {get;init;}=new Dictionary<string,GameDialogueContext>();
+    internal IReadOnlyDictionary<string,GameCharacterBinding> CharacterBindings {get;init;}=new Dictionary<string,GameCharacterBinding>();
+    internal IReadOnlyDictionary<string,string> CharacterRoster {get;init;}=new Dictionary<string,string>();
 }
 internal static class RpgTextCatalog
 {
@@ -70,16 +78,20 @@ internal static class RpgTextCatalog
             if(texts.Count>=limits.Texts){Issue(CatalogIssueKind.Limited,"达到本次文本条数上限，已提取文字保留");throw new ScanLimit();}
             texts.Add(value);
         }
-        var origins=new CatalogOrigins();
+        var origins=new CatalogOrigins();var dialogue=new StaticDialogueContexts();bool mz=false;
+        IReadOnlyDictionary<string,string> characterRoster=new Dictionary<string,string>();
         var scriptText=new RpgScriptCatalog(()=>Check(false),()=>{Issue(CatalogIssueKind.Limited,"脚本文字关系达到本次读取上限，动态文字由实时接入继续补充");throw new ScanLimit();});
         RpgTextCatalogResult Finish()=>new(texts.ToArray(),files,issues.Select(i=>i.Source+"："+i.Reason).ToArray()){
             SelectedLanguage=preferredLanguage.Length>0?preferredLanguage:selectedLanguages.Count==1?selectedLanguages.Single():"",
             TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized,SkippedByLanguage=excluded.Except(texts).Count(),
-            Origins=origins.Items.Where(o=>texts.Contains(o.Text)).ToArray(),OriginsTruncated=origins.Truncated,Report=new(issues.Count==0,issues.ToArray())};
+            Origins=origins.Items.Where(o=>texts.Contains(o.Text)).ToArray(),OriginsTruncated=origins.Truncated,Report=new(issues.Count==0,issues.ToArray()),
+            DialogueContexts=dialogue.Finish(origins.Items,origins.Truncated||issues.Count>0,texts),
+            CharacterBindings=dialogue.FinishCharacters(origins.Items,origins.Truncated||issues.Count>0,texts),CharacterRoster=characterRoster};
         RpgMakerInstallation? install;
         try{install=archive is null?RpgMakerDataAdapter.Detect(exe):new("","",prefix,"packaged");}
         catch(Exception ex)when(ex is IOException or JsonException or UnauthorizedAccessException){Issue(CatalogIssueKind.Failed,"游戏入口资料未能读取");return Finish();}
         if(install is null){Issue(CatalogIssueKind.Unsupported,"未识别到可读取的 RPG Maker MV/MZ 数据结构");return Finish();}
+        mz=archive is null?install.Engine=="MZ":archive.Contains(prefix+"js/rmmz_core.js");
         void Exclude(JsonElement node,int depth=0)
         {
             Check();if(depth>32){Issue(CatalogIssueKind.Limited,"语言字段层级超过本次读取上限");return;}
@@ -190,7 +202,14 @@ internal static class RpgTextCatalog
                     // base-content provenance; arbitrary plugin/locale files do not.
                     unlocalizedSource=fileLocale is null&&Regex.IsMatch(current,@"^(?:Actors|Classes|Skills|Items|Weapons|Armors|Enemies|Troops|States|System|CommonEvents|Map\d+)\.json$",RegexOptions.IgnoreCase);
                     if(fileLocale is not null)selectedLanguages.Add(fileLocale);
-                    try{Walk(json.RootElement);origins.Json(json.RootElement,current,CatalogOrigins.Hash(image),archive is null?"":"web-package");}
+                    try
+                    {
+                        Walk(json.RootElement);
+                        if(unlocalizedSource&&current.Equals("Actors.json",StringComparison.OrdinalIgnoreCase))
+                            characterRoster=RpgCharacterRoster.Read(json.RootElement,mz,()=>Check(false));
+                        if(mz&&unlocalizedSource)dialogue.RpgMakerFile(json.RootElement,current,()=>Check(false));
+                        origins.Json(json.RootElement,current,CatalogOrigins.Hash(image),archive is null?"":"web-package");
+                    }
                     finally{trustedSource=false;unlocalizedSource=false;}
                 }
                 catch(Exception ex)when(ex is IOException or JsonException or UnauthorizedAccessException){Issue(CatalogIssueKind.Failed,ex is JsonException?"JSON 解析失败":"文件未能读取");}

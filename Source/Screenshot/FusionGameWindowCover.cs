@@ -136,7 +136,7 @@ internal static class GameWindowCover
             }
         }
     }
-    private sealed class CaptureJob:SafeHandleZeroOrMinusOneIsInvalid
+    internal sealed class CaptureJob:SafeHandleZeroOrMinusOneIsInvalid
     {
         [StructLayout(LayoutKind.Sequential)]private struct Basic
         {public long ProcessTime,JobTime;public uint Flags;public UIntPtr MinWorking,MaxWorking;public uint ActiveLimit;public UIntPtr Affinity;public uint Priority,Scheduling;}

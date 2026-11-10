@@ -27,7 +27,8 @@ internal static partial class PortableDataMigration
             var record = JsonSerializer.Deserialize<PendingRecord>(ReadBounded(path, 65536)) ?? throw Error("InvalidConfiguration");
             if (record.Version is not (1 or 2) || !Guid.TryParseExact(record.Migration.Id, "N", out _) ||
                 !Regex.IsMatch(record.SelectedDescriptorHash, "\\A[0-9A-F]{64}\\z")) throw Error("InvalidConfiguration");
-            ValidateRoot(record.Migration.SourceRoot); ValidateRoot(record.Migration.PreviousRoot);
+            // Provenance is not a source we read after the copy has committed.
+            NormalizeRecordedRoot(record.Migration.SourceRoot); NormalizeRecordedRoot(record.Migration.PreviousRoot);
             _ = RecordOrigin(record);
             byte[]? previous = record.PreviousDescriptor is null ? null : Convert.FromBase64String(record.PreviousDescriptor);
             if (DescriptorHash(previous) != record.PreviousDescriptorHash || (previous?.Length ?? 0) > 16384) throw Error("InvalidConfiguration");
@@ -41,28 +42,42 @@ internal static partial class PortableDataMigration
     {
         var (origin, id) = ImportedLocation(record.Migration.DestinationRoot) ?? throw Error("InvalidConfiguration");
         if (!string.Equals(id, record.Migration.Id, StringComparison.Ordinal)) throw Error("InvalidConfiguration");
-        if (record.Version == 2 && (record.ApplicationRoot is null || !Same(ValidateRoot(record.ApplicationRoot), origin)))
+        if (record.Version == 2 && (record.ApplicationRoot is null || !Same(NormalizeRecordedRoot(record.ApplicationRoot), origin)))
             throw Error("InvalidConfiguration");
         return origin;
     }
 
     private static (string Origin, string Id)? ImportedLocation(string target)
     {
-        target = ValidateRoot(target);
+        target = NormalizeRecordedRoot(target);
         if (!string.Equals(Path.GetFileName(target), "data", StringComparison.OrdinalIgnoreCase)) return null;
         string container = Path.GetDirectoryName(target)!;
         string imports = Path.GetDirectoryName(container)!;
         if (!string.Equals(Path.GetFileName(imports), "data-imports", StringComparison.OrdinalIgnoreCase)) return null;
         var match = Regex.Match(Path.GetFileName(container), "\\A[0-9]{8}-[0-9]{6}-(?<id>[0-9a-f]{32})\\z");
         if (!match.Success) return null;
-        return (ValidateRoot(Path.GetDirectoryName(imports)!), match.Groups["id"].Value);
+        return (NormalizeRecordedRoot(Path.GetDirectoryName(imports)!), match.Groups["id"].Value);
     }
 
     private static string RebaseInternal(string path, string origin, string app)
     {
-        path = ValidateRoot(path); origin = ValidateRoot(origin); app = ValidateRoot(app);
+        path = NormalizeRecordedRoot(path); origin = NormalizeRecordedRoot(origin); app = ValidateRoot(app);
         if (Same(path, origin)) return app;
-        return Within(path, origin) ? ValidateRoot(Path.Combine(app, Path.GetRelativePath(origin, path))) : path;
+        return Within(path, origin) ? NormalizeRecordedRoot(Path.Combine(app, Path.GetRelativePath(origin, path))) : path;
+    }
+
+    private static string NormalizeRecordedRoot(string value)
+    {
+        // Validate historical path syntax without probing its present filesystem
+        // state. Every location actually used still passes ValidateRoot separately.
+        if (string.IsNullOrWhiteSpace(value) || !Path.IsPathFullyQualified(value) ||
+            value.Length < 4 || value[1] != ':' || value[2] != '\\' || !char.IsLetter(value[0]) ||
+            value.Contains('/') || value[3..].Contains(':') || value.Split('\\').Skip(1).Any(x =>
+                x is "." or ".." || x.EndsWith(' ') || x.EndsWith('.')))
+            throw Error("InvalidPath");
+        string root = Path.GetFullPath(value).TrimEnd('\\');
+        if (root.Length <= 3) throw Error("InvalidPath");
+        return root;
     }
 
     private static string ResolveRecordedLocationTarget(string target, string app, byte[]? descriptor)
@@ -90,7 +105,7 @@ internal static partial class PortableDataMigration
     {
         var location = ImportedLocation(target);
         if (descriptor is null || location is null || Same(location.Value.Origin, app)) return target;
-        string candidate = RebaseInternal(target, location.Value.Origin, app);
+        string candidate = ValidateRoot(RebaseInternal(target, location.Value.Origin, app));
         string receiptPath = Path.Combine(Path.GetDirectoryName(candidate)!, "migration-receipt.json");
         if (!File.Exists(receiptPath)) return target;
         var record = ReadMigrationRecord(receiptPath);

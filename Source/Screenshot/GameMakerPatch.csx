@@ -30,6 +30,7 @@ var calls=original.SelectMany(c=>c.Instructions).Where(i=>i.Kind==UndertaleInstr
 if(calls.Length==0) throw new IOException("No supported standard text calls; custom renderers require further work");
 if(calls.Any(i=>i.ArgumentsCount!=shapes[i.ValueFunction.Name.Content][0]))throw new IOException("Unexpected text argument layout");
 var displayCatalog=FusionGameMakerDisplayCatalog.Read(Data,original);
+var chatterboxBindings=FusionChatterbox135.Find(Data,original,shapes);
 var literals=displayCatalog.Entries.Select(e=>e.text).ToArray();
 string gml=File.ReadAllText(bridge);
 // Only opt into automatic-target raster sizing when the game does not own the
@@ -65,10 +66,10 @@ using(var textures=new UndertaleModLib.Util.TextureWorker()) {
 }
 gml+="\nfunction fusion136_font_ink(_name) { switch(_name) {";
 foreach(var p in fontInk)gml+="case "+JsonConvert.SerializeObject(p.Key)+": return "+p.Value+";";
-gml+="} return -1; }\n";
+gml+="default: return -1;} }\n";
 gml+="\nfunction fusion147_font_pixel(_name) { switch(_name) {";
 foreach(var p in pixelFonts)gml+="case "+JsonConvert.SerializeObject(p.Key)+": return "+(p.Value?"true":"false")+";";
-gml+="} return false; }\n";
+gml+="default: return false;} }\n";
 foreach(string name in calls.Select(i=>i.ValueFunction.Name.Content).Distinct()) {
  if(name=="string_copy")continue; // Observation only; return the exact original substring.
  int argc=shapes[name][0], text=shapes[name][1];
@@ -86,6 +87,14 @@ foreach(string name in calls.Select(i=>i.ValueFunction.Name.Content).Distinct())
  // The layout chooses raster density from the actual draw target: readable
  // high-density GUI text or native-size surface text. Restore texture state.
  gml+="\nfunction fusion130_"+name+"("+args+") { var _v=fusion136_layout(_a2,"+(ext?"_a4,_a3,true":"-1,-1,false")+"); if(!_v[5]) return "+name+"("+args+"); var _filter=gpu_get_texfilter_ext(0); try { gpu_set_texfilter_ext(0,_v[6]); return "+target+"("+string.Join(",",mapped)+"); } finally { gpu_set_texfilter_ext(0,_filter); draw_set_font(_v[1]); } }\n";
+}
+foreach(var binding in chatterboxBindings) {
+ string getterName=binding.Getter.ValueFunction.Name.Content; if(getterName.StartsWith("gml_Script_"))getterName=getterName.Substring(11);
+ string getterArgs=string.Join(",",Enumerable.Range(0,binding.Getter.ArgumentsCount).Select(i=>"_a"+i));
+ string drawArgs=string.Join(",",Enumerable.Range(0,binding.Draw.ArgumentsCount).Select(i=>"_a"+i));
+ string site=JsonConvert.SerializeObject(binding.Site),sink=binding.Draw.ValueFunction.Name.Content;
+ gml+="\nfunction fusion135_get_"+binding.Site+"("+getterArgs+"){ var _value="+getterName+"("+getterArgs+"); try { if(IsChatterbox(_a0)) fusion135_role_observe("+site+",_a0,_a1,_value,ChatterboxGetContentSpeaker(_a0,_a1)); } catch(_error) {} return _value; }\n";
+ gml+="\nfunction fusion135_draw_"+binding.Site+"("+drawArgs+"){ fusion130_init(); var _s=global.fusion130_state,_prior=_s.roleActive; _s.roleActive=fusion135_role_enter("+site+",_a2); try { return fusion130_"+sink+"("+drawArgs+"); } finally { _s.roleActive=_prior; } }\n";
 }
 gml+="\nfusion130_init();\n";
 var group=new CodeImportGroup(Data){AutoCreateAssets=true,MainThreadAction=MainThreadAction};
@@ -115,12 +124,61 @@ foreach(var call in calls) {
  if(target==null)throw new IOException("Missing compiled wrapper: "+name);
  call.ValueFunction=target;replaced++;
 }
+foreach(var binding in chatterboxBindings) {
+ binding.Getter.ValueFunction=Data.Functions.First(f=>f.Name.Content=="gml_Script_fusion135_get_"+binding.Site||f.Name.Content=="fusion135_get_"+binding.Site);
+ binding.Draw.ValueFunction=Data.Functions.First(f=>f.Name.Content=="gml_Script_fusion135_draw_"+binding.Site||f.Name.Content=="fusion135_draw_"+binding.Site);
+}
+File.WriteAllText(Path.Combine(output,"chatterbox-bindings.json"),JsonConvert.SerializeObject(new{schema="fusion-chatterbox-flow/1",bindings=chatterboxBindings.Select(b=>new{b.Site,b.Code,b.GetterIndex,b.DrawIndex}),rule="Bounded linear bytecode flow from native Chatterbox getter into the complete draw argument; no intervening call or external branch entry."},Formatting.Indented));
 if(autoSurface){
     var target=Data.Functions.First(f=>f.Name.Content=="gml_Script_fusion149_draw_surface"||f.Name.Content=="fusion149_draw_surface");
     foreach(var call in surfaceCopies)call.ValueFunction=target;
 }
 File.WriteAllText(Path.Combine(output,"catalog.json"),JsonConvert.SerializeObject(new {schema="fusion-gamemaker-display/1",texts=literals,files=1,partial=true,entries=displayCatalog.Entries,failures=displayCatalog.Failures,limited=displayCatalog.Limited,excludedLocaleEntries=displayCatalog.ExcludedLocaleEntries,unresolvedSinks=displayCatalog.UnresolvedSinks}));
 File.WriteAllText(Path.Combine(output,"patch.json"),JsonConvert.SerializeObject(new {protocol=130,engine="GameMaker",saveName=Data.GeneralInfo.Name.Content,version=$"{Data.GeneralInfo.Major}.{Data.GeneralInfo.Minor}.{Data.GeneralInfo.Release}.{Data.GeneralInfo.Build}",bytecode=Data.GeneralInfo.BytecodeVersion,drawCallSites=replaced,catalog=literals.Length,originalCodeEntries=original.Length,logicStringsReplaced=0,logicMeasurementsReplaced=0,autoSurface,autoGui,fontInk,pixelFonts,fonts=Data.Fonts.Select(f=>new{name=f.Name.Content,size=f.EmSize,glyphs=f.Glyphs.Count})},Formatting.Indented));
+
+// FUSION_CHATTERBOX_FLOW_BEGIN -- independently compiled neutral bytecode tests.
+public static class FusionChatterbox135 {
+    public sealed class Binding { public string Site,Code; public int GetterIndex,DrawIndex; public UndertaleInstruction Getter,Draw; }
+    static string Name(UndertaleInstruction i){string n=i.ValueFunction?.Name.Content??"";return n.StartsWith("gml_Script_")?n.Substring(11):n;}
+    public static List<Binding> Find(UndertaleData data,UndertaleCode[] code,Dictionary<string,int[]> shapes){
+        var result=new List<Binding>();
+        if(!new[]{"ChatterboxGetContent","ChatterboxGetContentSpeaker","IsChatterbox"}.All(n=>data.Code.Count(c=>c.Name.Content=="gml_Script_"+n)==1))return result;
+        foreach(var entry in code.Take(10000)){
+            var ins=entry.Instructions;if(ins.Count>200000)continue;
+            var addresses=new long[ins.Count];long address=0;var targets=new HashSet<long>();
+            for(int n=0;n<ins.Count;n++){addresses[n]=address;address+=ins[n].CalculateInstructionSize();}
+            for(int n=0;n<ins.Count;n++)if(new[]{"B","Bt","Bf","PushEnv","PopEnv"}.Contains(ins[n].Kind.ToString())&&!ins[n].JumpOffsetPopenvExitMagic)targets.Add(addresses[n]+ins[n].JumpOffset);
+            for(int start=0;start<ins.Count&&result.Count<4096;start++){
+                var getter=ins[start];string name=Name(getter);
+                if(getter.Kind!=UndertaleInstruction.Opcode.Call||!(name=="ChatterboxGetContent"&&getter.ArgumentsCount==2||name=="ChatterboxGetContentSpeech"&&getter.ArgumentsCount>=2&&getter.ArgumentsCount<=3))continue;
+                var stack=Enumerable.Repeat(false,32).ToList();stack.Add(true);var locals=new Dictionary<string,bool>();
+                for(int next=start+1;next<Math.Min(ins.Count,start+65);next++){
+                    var i=ins[next];string kind=i.Kind.ToString();
+                    if(targets.Contains(addresses[next]))break;
+                    if(kind=="Conv"){if(stack.Count==0||stack[stack.Count-1]&&i.Type2!=UndertaleInstruction.DataType.Variable)break;continue;}
+                    if(kind=="PushI"||kind=="Push"||kind=="PushLoc"||kind=="PushGlb"||kind=="PushBltn"){
+                        bool value=false;
+                        if(i.Type1==UndertaleInstruction.DataType.Variable){
+                            if(i.ReferenceType!=UndertaleInstruction.VariableType.Normal||i.TypeInst==UndertaleInstruction.InstanceType.Stacktop)break;
+                            if(i.ValueVariable?.InstanceType==UndertaleInstruction.InstanceType.Local)locals.TryGetValue(i.ValueVariable.Name.Content,out value);
+                        }
+                        stack.Add(value);continue;
+                    }
+                    if(kind=="Pop"){
+                        if(stack.Count==0||i.ValueVariable?.InstanceType!=UndertaleInstruction.InstanceType.Local||i.ReferenceType!=UndertaleInstruction.VariableType.Normal)break;
+                        locals[i.ValueVariable.Name.Content]=stack[stack.Count-1];stack.RemoveAt(stack.Count-1);continue;
+                    }
+                    if(kind=="Call"&&shapes.TryGetValue(Name(i),out var shape)&&Name(i)!="string_copy"&&i.ArgumentsCount==shape[0]&&stack.Count>=i.ArgumentsCount&&stack[stack.Count-1-shape[1]]&&stack.Skip(stack.Count-i.ArgumentsCount).Count(v=>v)==1){
+                        if(!result.Any(b=>b.Draw==i))result.Add(new Binding{Site="s"+result.Count,Code=entry.Name.Content,GetterIndex=start,DrawIndex=next,Getter=getter,Draw=i});
+                    }
+                    break; // No call, arithmetic, control flow or mutation propagation.
+                }
+            }
+        }
+        return result;
+    }
+}
+// FUSION_CHATTERBOX_FLOW_END
 
 // FUSION_DISPLAY_CATALOG_BEGIN -- also exercised by the independent CLI fixtures.
 // Work backwards from display arguments. A bytecode literal, a member named

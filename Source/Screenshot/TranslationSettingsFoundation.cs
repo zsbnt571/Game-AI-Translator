@@ -35,7 +35,7 @@ public static class TranslationPromptBuilder
 
     public static string BuildSystemPrompt(ApiSettings settings)
     {
-        var style = TranslationStylePolicy.Guidance(settings.TranslationStyle);
+        var style = TranslationLibrary.Guidance(settings);
         var source = TranslationLanguagePolicy.Prompt(settings);
         var preserve = new List<string>();
         if (settings.PreserveIdentifiers) preserve.Add("IDs and codes");
@@ -67,7 +67,7 @@ public static class TranslationPromptBuilder
 
     public static string BuildBatchSystemPrompt(ApiSettings settings, IReadOnlyList<TranslationItem> items)
     {
-        var ordinary = BuildSystemPrompt(settings);
+        var ordinary = BuildSystemPrompt(settings) + TranslationLibrary.RequestGuidance(settings, items.Select(i=>i.Text));
         var languagePlanSettings=ApiSettingsSnapshot.Copy(settings);languagePlanSettings.RequestKind=TranslationRequestKind.GameJson;
         ordinary+=TranslationLanguageSpans.RequestGuidance(System.Text.Json.JsonSerializer.Serialize(
             items.ToDictionary(i=>i.Id,i=>i.Text),TranslationLanguageSpans.MessageJson),languagePlanSettings);
@@ -122,7 +122,7 @@ public static class TranslationCacheKeyBuilder
             settings.Model.Trim(),
             settings.PreserveIdentifiers, settings.PreserveNumbers, settings.PreserveVariables,
             TranslationPromptBuilder.Version, CoreTranslationContentValidator.ContractVersion, TranslationLanguagePolicy.Identity(settings));
-        return TranslationPromptBuilder.Sha256(identity+ChatRequestParameters.IdentitySuffix(settings));
+        return TranslationPromptBuilder.Sha256(identity+TranslationLibrary.PresetIdentity(settings)+TranslationLibrary.RequestGuidance(settings,items.Select(i=>i.Text))+ChatRequestParameters.IdentitySuffix(settings));
     }
 
     public static string NormalizeBaseUrl(string value)
@@ -143,6 +143,7 @@ public static class ApiSettingsSnapshot
     {
         SettingsSchemaVersion = s.SettingsSchemaVersion, TypographyConfigVersion=s.TypographyConfigVersion, ApiUrl = s.ApiUrl, ApiKey = s.ApiKey, AllowEmptyApiKey=s.AllowEmptyApiKey, Model = s.Model,
         TargetLanguage = s.TargetLanguage, OcrLanguage = s.OcrLanguage, AdvancedApiParameters = s.AdvancedApiParameters,
+        CharacterGenderEnhancementEnabled=s.CharacterGenderEnhancementEnabled, CharacterGenderEnhancementEpoch=s.CharacterGenderEnhancementEpoch,
         FirstByteTimeoutSeconds = s.FirstByteTimeoutSeconds, RequestTimeoutSeconds = s.RequestTimeoutSeconds,
         CleanupStrength = s.CleanupStrength, OcrEngine = s.OcrEngine, VisualModel = s.VisualModel,
         StructuredGroupingEnabled = s.StructuredGroupingEnabled, RoleClassificationEnabled = s.RoleClassificationEnabled,
@@ -154,6 +155,7 @@ public static class ApiSettingsSnapshot
         TranslationCacheEnabled = s.TranslationCacheEnabled, HistoryLimit = s.HistoryLimit,
         TranslationProvider = s.TranslationProvider, TranslationProviderKind = s.TranslationProviderKind,
         ProviderDisplayName = s.ProviderDisplayName, TranslationStyle = s.TranslationStyle,
+        PromptPresetId=s.PromptPresetId,PromptPresetText=s.PromptPresetText,GlossaryPackIds=[..s.GlossaryPackIds],LibraryPacks=s.LibraryPacks,
         CustomTranslationPrompt = s.CustomTranslationPrompt, RequestKind = s.RequestKind, CatalogLanguageHint=s.CatalogLanguageHint, PreserveIdentifiers = s.PreserveIdentifiers,
         RequestTerms=s.RequestTerms is null?null:new System.Collections.ObjectModel.ReadOnlyDictionary<string,string>(s.RequestTerms.ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal)),RequestTermsGuidance=s.RequestTermsGuidance,
         PreserveNumbers = s.PreserveNumbers, PreserveVariables = s.PreserveVariables,
@@ -170,7 +172,7 @@ public static class ApiSettingsSnapshot
         PreviewWindowWidth = s.PreviewWindowWidth, PreviewWindowHeight = s.PreviewWindowHeight,
         PreviewWindowMaximized = s.PreviewWindowMaximized,
         HasLastUserPreviewBounds=s.HasLastUserPreviewBounds,LastUserPreviewX=s.LastUserPreviewX,LastUserPreviewY=s.LastUserPreviewY,LastUserPreviewWidth=s.LastUserPreviewWidth,LastUserPreviewHeight=s.LastUserPreviewHeight,LastUserPreviewMaximized=s.LastUserPreviewMaximized,
-        InterfaceLanguage=s.InterfaceLanguage,ThemeMode=s.ThemeMode,CustomThemeMainBackground=s.CustomThemeMainBackground,CustomThemeSecondaryBackground=s.CustomThemeSecondaryBackground,CustomThemeText=s.CustomThemeText,CustomThemeSecondaryText=s.CustomThemeSecondaryText,CustomThemeAccent=s.CustomThemeAccent,CustomThemeBorder=s.CustomThemeBorder,
+        InterfaceLanguage=s.InterfaceLanguage,ThemeMode=s.ThemeMode,IconColorMode=s.IconColorMode,IconSize=s.IconSize,CustomThemeMainBackground=s.CustomThemeMainBackground,CustomThemeSecondaryBackground=s.CustomThemeSecondaryBackground,CustomThemeText=s.CustomThemeText,CustomThemeSecondaryText=s.CustomThemeSecondaryText,CustomThemeAccent=s.CustomThemeAccent,CustomThemeBorder=s.CustomThemeBorder,
         CloseMainWindowBehavior=s.CloseMainWindowBehavior,HistoryCleanupByCount=s.HistoryCleanupByCount,HistoryCleanupByAge=s.HistoryCleanupByAge,HistoryRetentionDays=s.HistoryRetentionDays,HistoryCleanupBySpace=s.HistoryCleanupBySpace,HistoryMaximumMegabytes=s.HistoryMaximumMegabytes,HistoryThumbnailSize=s.HistoryThumbnailSize,HistoryTextSize=s.HistoryTextSize,
         PreviewWindowSizingMode=s.PreviewWindowSizingMode,FixedPreviewWidth=s.FixedPreviewWidth,FixedPreviewHeight=s.FixedPreviewHeight,LastPreviewWidth=s.LastPreviewWidth,LastPreviewHeight=s.LastPreviewHeight,
         UiFontMode=s.UiFontMode,UiFontFamily=s.UiFontFamily,UiFontSize=s.UiFontSize,PreviewTextFontMode=s.PreviewTextFontMode,PreviewTextFontFamily=s.PreviewTextFontFamily,PreviewTextFontSize=s.PreviewTextFontSize,

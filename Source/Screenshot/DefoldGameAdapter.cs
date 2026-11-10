@@ -13,7 +13,7 @@ internal static class DefoldGameAdapter
     {
         using var stream=typeof(DefoldGameAdapter).Assembly.GetManifestResourceStream("Fusion.DefoldTranslationBridge.lua")??throw new IOException("内嵌组件缺失。");
         using var reader=new StreamReader(stream);
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("DefoldFontBuilder/179.7|DefoldReadback/179.7|DefoldDisplay/136|"+reader.ReadToEnd()+"|"+Hash(Path.Combine(AppContext.BaseDirectory,"adapters","gamemaker","bridge-font.otf")))));
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("DefoldFontBuilder/179.7|DefoldGlyphBank/135|DefoldArchive45/135|DefoldDisplay/136|"+reader.ReadToEnd()+"|"+Hash(Path.Combine(AppContext.BaseDirectory,"adapters","gamemaker","bridge-font.otf")))));
     });
     internal static string CurrentBridgeHash=>PayloadHash.Value;
     private static readonly string[] InputNames=["game.projectc","game.arci","game.arcd","game.dmanifest"];
@@ -42,7 +42,7 @@ internal static class DefoldGameAdapter
     internal static string InGame(string exe,string relative)=>GameMakerGameAdapter.InGame(exe,relative);
     internal static bool Candidate(string exe)
     {
-        try{using var s=File.OpenRead(InGame(exe,"game.arci"));Span<byte> b=stackalloc byte[4];s.ReadExactly(b);if(System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(b)!=4)return false;
+        try{using var s=File.OpenRead(InGame(exe,"game.arci"));Span<byte> b=stackalloc byte[4];s.ReadExactly(b);if(System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(b) is not (4 or 5))return false;
             string section="";bool shared=false;foreach(string raw in File.ReadLines(InGame(exe,"game.projectc"))){string line=raw.Trim();if(line.StartsWith('[')){section=line.Trim('[',']');continue;}int at=line.IndexOf('=');if(at<0)continue;string key=line[..at].Trim(),value=line[(at+1)..].Trim();if(section=="script"&&key=="shared_state")shared=value=="1";if(section=="resource"&&key=="uri"&&value.Length>0)return false;}return shared;
         }catch(Exception e)when(e is IOException or UnauthorizedAccessException){return false;}
     }
@@ -91,7 +91,7 @@ internal static class DefoldGameAdapter
         catch(UnauthorizedAccessException){/* The new adapter is complete; retain the old copy. */}
     }
     internal static string LuaBytes(byte[] b)=>"\""+string.Concat(b.Select(x=>"\\"+x.ToString("D3",System.Globalization.CultureInfo.InvariantCulture)))+"\"";
-    internal static byte[] WrapScript(byte[] original,string bridge,IEnumerable<string> nodeIds,bool gui)
+    internal static byte[] WrapScript(byte[] original,string bridge,IEnumerable<string> nodeIds,bool gui,string resourcePath="")
     {
         var module=Read(original);byte[] src=module.Single(x=>x.Number==1).Data;var source=Read(src);byte[]? code=source.SingleOrDefault(x=>x.Number==1)?.Data;
         var bytecode=source.SingleOrDefault(x=>x.Number==3)?.Data;var bytecode64=source.SingleOrDefault(x=>x.Number==4)?.Data;
@@ -101,12 +101,12 @@ internal static class DefoldGameAdapter
             load+="local original=assert(loadstring(bytes))\n";
         }else if(code is {Length:>0})load="local original=assert(loadstring("+LuaBytes(code)+"))\n";else throw new InvalidDataException("脚本内容为空。");
         string ids="{"+string.Join(",",nodeIds.Distinct().Select(x=>LuaBytes(Encoding.UTF8.GetBytes(x))))+"}";
-        string wrapper="local bridge=(function()\n"+bridge+"\nend)()\n"+load+"setfenv(original,getfenv(1));original()\nbridge.wrap(getfenv(1),"+ids+","+(gui?"true":"false")+")\n";
+        string wrapper="local bridge=(function()\n"+bridge+"\nend)()\n"+load+"setfenv(original,getfenv(1));original()\nbridge.wrap(getfenv(1),"+ids+","+(gui?"true":"false")+","+LuaBytes(Encoding.UTF8.GetBytes(resourcePath))+")\n";
         byte[] newSource=Write(source.Where(x=>x.Number is not (1 or 3 or 4)).Append(Bytes(1,Encoding.UTF8.GetBytes(wrapper))));return Replace(original,1,newSource);
     }
     internal static void Install(string exe)
     {
-        Stopped(exe);if(IsInstalled(exe))return;if(DefoldTextCatalog.Detect(exe) is null||!Candidate(exe))throw new InvalidDataException("当前接入支持本地 v4 资源包及共享脚本环境。");
+        Stopped(exe);if(IsInstalled(exe))return;if(DefoldTextCatalog.Detect(exe) is null||!Candidate(exe))throw new InvalidDataException("当前接入支持本地 v4/v5 资源包及共享脚本环境。");
         GameFontCoverage.RequireChinesePayload(Path.Combine(AppContext.BaseDirectory,"adapters/gamemaker/bridge-font.otf"));
         string folder=InGame(exe,Folder);string? previousRecordHash=null;
         if(Directory.Exists(folder)){var prior=ReadLedger(exe);ValidateOwned(exe,Folder,prior);previousRecordHash=Hash(InGame(exe,Folder+"/install.json"));}
@@ -129,17 +129,23 @@ internal static class DefoldGameAdapter
             var changes=new Dictionary<string,byte[]>(StringComparer.Ordinal);var fontCoverage=new Dictionary<string,DefoldFontBuilder.CoverageReport>(StringComparer.Ordinal);int scripts=0,fonts=0;
             foreach(string n in archive.Names)
             {
-                if(n.EndsWith(".scriptc",StringComparison.Ordinal)||n.EndsWith(".gui_scriptc",StringComparison.Ordinal)){if(++scripts>128)throw new InvalidDataException("脚本数量超过本次接入上限。");changes[n]=WrapScript(archive.Read(n),bridge,guis.GetValueOrDefault(n)??[],n.EndsWith(".gui_scriptc",StringComparison.Ordinal));}
+                if(n.EndsWith(".scriptc",StringComparison.Ordinal)||n.EndsWith(".gui_scriptc",StringComparison.Ordinal)){if(++scripts>128)throw new InvalidDataException("脚本数量超过本次接入上限。");changes[n]=WrapScript(archive.Read(n),bridge,guis.GetValueOrDefault(n)??[],n.EndsWith(".gui_scriptc",StringComparison.Ordinal),n);}
                 else if(n.EndsWith(".fontc",StringComparison.Ordinal)){
                     if(++fonts>16)throw new InvalidDataException("字库数量超过本次接入上限。");
-                    var extended=DefoldFontBuilder.ExtendWithCoverage(archive.Read(n),Path.Combine(AppContext.BaseDirectory,"adapters","gamemaker","bridge-font.otf"));
-                    changes[n]=extended.Bytes;fontCoverage[n]=extended.Coverage;
+                    byte[] original=archive.Read(n);string? bank=DefoldGlyphBank.Resource(original);
+                    string resource=bank??n;
+                    if(!changes.ContainsKey(resource))
+                    {
+                        string font=Path.Combine(AppContext.BaseDirectory,"adapters","gamemaker","bridge-font.otf");
+                        var extended=bank is null?DefoldFontBuilder.ExtendWithCoverage(original,font):DefoldGlyphBank.Extend(archive.Read(bank),font);
+                        changes[resource]=extended.Bytes;fontCoverage[resource]=extended.Coverage;
+                    }
                 }
             }
             if(scripts==0||fonts==0)throw new InvalidDataException("未找到可验证的脚本和字库。");archive.Write(stage,changes);
             foreach(string n in new[]{"game.projectc","game.dmanifest","game.public.der"})if(File.Exists(InGame(exe,n)))File.Copy(InGame(exe,n),Path.Combine(stage,n));
             var verified=DefoldArchive.VerifyWritten(Path.Combine(stage,Path.GetFileName(exe)),changes);
-            TranslationStorage.WriteJson(Path.Combine(stage,"font-coverage.json"),new{Version=1,Engine="Defold legacy embedded font",Fonts=fontCoverage,RenderingVerified=false});
+            TranslationStorage.WriteJson(Path.Combine(stage,"font-coverage.json"),new{Version=1,Engine="Defold inline font / glyph bank",Fonts=fontCoverage,RenderingVerified=false});
             TranslationStorage.WriteJson(Path.Combine(stage,"writeback-verification.json"),new{Version=1,Resources=verified,GameLoadVerified=false});
             File.WriteAllText(Path.Combine(stage,"bridge-version.txt"),"FusionDefold/136 "+CurrentBridgeHash,new UTF8Encoding(false));
             var owned=Directory.EnumerateFiles(stage).ToDictionary(p=>Path.GetFileName(p),Hash,StringComparer.Ordinal);

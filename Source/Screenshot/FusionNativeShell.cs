@@ -9,11 +9,11 @@ internal sealed class DesktopNavigationItem(string caption,Font font)
 public sealed partial class MainForm
 {
     private readonly Dictionary<string,DesktopNavigationItem> _nativeNavigation = new();
-    private static bool IsNativePage(string page) => page is "内嵌翻译" or "主页" or "设置";
+    private static bool IsNativePage(string page) => page is "内嵌翻译" or "主页" or "测试区" or "AI工具" or "设置";
     private void InitializeNativeShell()
     {
         try{_libraryPreferences=LibraryPreferencesStore.Load();}catch(Exception ex){AppLog.Write("library-settings",SafeDiagnosticOutput.ExceptionSummary(ex));}
-        foreach(var pair in new[]{("内嵌翻译","游戏库"),("主页","截图翻译"),("设置","设置")})_nativeNavigation[pair.Item1]=new(pair.Item2,Font);
+        foreach(var pair in new[]{("内嵌翻译","游戏库"),("主页","截图翻译"),("测试区","测试区"),("AI工具","AI 工具"),("设置","设置")})_nativeNavigation[pair.Item1]=new(pair.Item2,Font);
         _libraryNavigation.Navigate+=NavigateLibrary;_libraryNavigation.ContextRequested+=ShowLibraryFolderContext;
         FormClosed+=(_,_)=>_folderContext.Dispose();
         InitializeNativeScreenshotWorkspace();InitializeNativeLibrary();

@@ -27,12 +27,19 @@ internal static class UnityEmbeddedCatalog
         int metadataCount=0;bool objectLimitReached=false,readCompleted=true;
         var selected=new UnityTextResourceLanguageSelection(sourceLanguage,preferredLanguage);
         var localizedTables=new UnityLocalizedTableSelection(sourceLanguage,preferredLanguage);
-        var origins=new CatalogOrigins();string originFile="",originContainer="",originLocation="",originHash="",originContext="";
+        var origins=new CatalogOrigins();var dialogue=new StaticDialogueContexts();string originFile="",originContainer="",originLocation="",originHash="",originContext="";
         void Origin(string family,string location,string text,string? locale)
         {
             if(originFile.Length>0)origins.Add(new(text,originFile,originLocation+(location.Length>0?location:"/resource:"+family),originHash,"unity-resource","unicode",originContainer,locale??"",Context:originContext));
         }
         selected.ObserveOrigin=Origin;
+        void Character(string resource,UnityFrameworkText.CharacterSource source)
+        {
+            string database=GameCharacterBinding.Hash(string.Join("\0",originFile,originContainer,originLocation,resource));
+            dialogue.IsolatedCharacter(source.Text,"unityds:"+database+":actor:"+source.ActorId,source.DisplayName);
+        }
+        selected.ObserveCharacter=Character;
+        selected.ObserveNaninovelSource=body=>dialogue.NaninovelSource(body,cancellation.ThrowIfCancellationRequested);
         localizedTables.ObserveOrigin=(text,locale,path)=>Origin("StringTable",path,text,locale);
         string FileHash(string path)
         {
@@ -93,12 +100,14 @@ internal static class UnityEmbeddedCatalog
                         }
                         if(kind==114&&ReadLocalizedTable(value,localizedTables,cancellation,()=>Incomplete(identity,"文本字段层级超过本次读取上限")))continue;
                         if(kind==114&&ReadSharedTableMetadata(value,cancellation,reason=>Incomplete(identity,reason,CatalogIssueKind.Unsupported)))continue;
+                        var naninovelSources=new List<UnityNaninovelText.Source>();
                         if(kind==114&&UnityNaninovelText.Read(value,source=>
                         {
+                            naninovelSources.Add(source);
                             originContext=source.Context;
                             selected.AddValue("Naninovel/"+source.ScriptPath,null,source.Text,location:source.Location);
-                        },cancellation,reason=>Incomplete(identity,reason)))continue;
-                        if(kind==114&&UnityFrameworkText.Read(value,(text,locale,path)=>selected.AddValue(identity+"#"+asset.PathId,locale,text,location:path),cancellation,reason=>Incomplete(identity,reason)))continue;
+                        },cancellation,reason=>Incomplete(identity,reason))){dialogue.Naninovel(naninovelSources);continue;}
+                        if(kind==114&&UnityFrameworkText.Read(value,(text,locale,path)=>selected.AddValue(identity+"#"+asset.PathId,locale,text,location:path),cancellation,reason=>Incomplete(identity,reason),source=>Character("",source)))continue;
                         if(kind==49)
                         {
                             string name=value["m_Name"].AsString,body=value["m_Script"].AsString;
@@ -205,7 +214,11 @@ internal static class UnityEmbeddedCatalog
         var result=CompleteSelection(selected,localizedTables,sourceLanguage,fileCount,failures,readCompleted,issues,preferredLanguage);
         var admitted=result.Texts.ToHashSet(StringComparer.Ordinal);
         result=result with{Sources=scriptSources.Where(source=>admitted.Contains(source.Text)).ToArray(),
-            Origins=origins.Items.Where(o=>admitted.Contains(o.Text)&&(o.Language.Length==0||o.Language==result.SelectedLanguage)).ToArray(),OriginsTruncated=origins.Truncated};
+            Origins=origins.Items.Where(o=>admitted.Contains(o.Text)&&(o.Language.Length==0||o.Language==result.SelectedLanguage)).ToArray(),OriginsTruncated=origins.Truncated,
+            DialogueContexts=dialogue.Finish(origins.Items,origins.Truncated||!result.ReadCompleted,
+                admitted.Except(scriptSources.Select(s=>s.Text),StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal)),
+            CharacterBindings=dialogue.FinishCharacters(origins.Items,origins.Truncated||!result.ReadCompleted,
+                admitted.Except(scriptSources.Select(s=>s.Text),StringComparer.Ordinal).ToHashSet(StringComparer.Ordinal))};
         var skipped=UnityCatalogPlaceholder.Excluded(result);
         if(skipped.Count==0)return result;
         var report=result.Report??new CatalogReadReport(result.ReadCompleted,[]);

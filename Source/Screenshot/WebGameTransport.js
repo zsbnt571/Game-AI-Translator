@@ -8,7 +8,7 @@ function createFusionWebTransport(){
     function write(name,value){const p=path.join(dir,name),t=p+'.tmp';const data=JSON.stringify(value);if(Buffer.byteLength(data)>1048576)throw Error('Reply too large');fs.writeFileSync(t,data,{encoding:'utf8',flag:'w'});fs.renameSync(t,p);}
     let active=true,last=0,pending=null;const seed=read('startup.json',32*1024*1024);
     return {
-        startup:()=>JSON.stringify({enabled:env.FUSION_WEB_START==='1',entries:seed&&seed.secret===secret?seed.entries:{},customFontPath:env.FUSION_GAME_FONT_PATH||'',customFontFamily:env.FUSION_GAME_FONT_FAMILY||''}),
+        startup:()=>JSON.stringify({enabled:env.FUSION_WEB_START==='1',entries:seed&&seed.secret===secret?seed.entries:{},customFontPath:env.FUSION_GAME_FONT_PATH||'',customFontFamily:env.FUSION_GAME_FONT_FAMILY||'',customFontIndependent:env.FUSION_GAME_FONT_INDEPENDENT==='1'}),
         hello:()=>{write('hello.json',{secret,protocol:131,pid:process.pid});return true;},
         request:()=>{
             if(!active)return '';

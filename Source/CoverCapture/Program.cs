@@ -16,7 +16,7 @@ namespace FusionCoverCapture;
 
 internal sealed record Reply(string Code,string Message,int Width=0,int Height=0,long ElapsedMs=0,string? Image=null,int Error=0,string Quality="",int RejectedFrames=0,
     [property:System.Text.Json.Serialization.JsonIgnore(Condition=System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] DateTime? CapturedUtc=null);
-internal static class Program
+internal static partial class Program
 {
     internal const int OcrMaxPixels=32_000_000;
     internal const int OcrMaxPngBytes=48*1024*1024; // at most 64 MiB of base64
@@ -66,6 +66,7 @@ internal static class Program
     [DllImport("d3d11.dll")]private static extern int CreateDirect3D11DeviceFromDXGIDevice(IntPtr dxgi,out IntPtr device);
     private static int Main(string[] args)
     {
+        if(args.Length==6&&args[4]=="--record")return Record(args);
         var elapsed=Stopwatch.StartNew();
         // Parent assigns a kill-on-close Job before sending GO. No graphics work before this handshake.
         using var watchdog=new System.Threading.Timer(_=>Environment.Exit(3),null,9000,Timeout.Infinite);

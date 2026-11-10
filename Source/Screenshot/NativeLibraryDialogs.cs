@@ -13,7 +13,7 @@ internal sealed class NativeLibraryNoteDialog : NativeDialogWindow
     internal WC.ComboBox NoteColor { get; }
     internal WC.CheckBox Bookmark { get; }
     private readonly CancellationTokenSource lifetime;
-    internal NativeLibraryNoteDialog(RecentGame game, LibraryAnnotation annotation, Func<string, CancellationToken, Task<string>> translate, CancellationToken cancellation) : base("名称、标签与便签", 600, 620)
+    internal NativeLibraryNoteDialog(RecentGame game, LibraryAnnotation annotation, Func<string, CancellationToken, Task<string>> translate, CancellationToken cancellation) : base("编辑游戏资料", 600, 620)
     {
         lifetime = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
         OriginalName = NativeDialogControls.Input(game.Name); OriginalName.MaxLength = 160;

@@ -125,6 +125,29 @@ internal sealed class RecentGameStore
             Changed?.Invoke();return value;
         }
     }
+    internal RecentGame RelocateExisting(string id,string path)
+    {
+        path=Normalize(path);
+        // Revalidate before committing; a library relocation must never merge
+        // two identities (their notes and metadata belong to separate IDs).
+        if(!File.Exists(path)||!path.EndsWith(".exe",StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("请选择仍然存在的游戏 EXE 文件。");
+        lock(gate)
+        {
+            var old=games.FirstOrDefault(x=>x.Id==id)??throw new InvalidOperationException("该游戏记录已不存在。");
+            if(games.Any(x=>x.Id!=id&&StringComparer.OrdinalIgnoreCase.Equals(x.ExePath,path)))
+                throw new InvalidOperationException("该程序已属于另一个游戏记录，请选择本游戏的程序；两份笔记均已保留。");
+            bool changed=!StringComparer.OrdinalIgnoreCase.Equals(old.ExePath,path);
+            if(!changed)return old;
+            // The user relocated this existing named item, not a newly imported
+            // executable. Keep its displayed name through future detection.
+            var moved=old with{ExePath=path,NameSource=old.NameSource is "manual" or "window"?old.NameSource:"manual",
+                Icon=old.IconManual?old.Icon:null,IconStamp=null};
+            Commit(games.Select(x=>x.Id==id?moved:x).ToList());
+            identityVersions[id]=identityVersions.GetValueOrDefault(id)+1;
+            Changed?.Invoke();return moved;
+        }
+    }
     internal void SetSaved(string id,bool saved)
     {lock(gate){Commit(games.Select(x=>x.Id==id?x with{Saved=saved,SavedAt=saved?(x.SavedAt??DateTimeOffset.UtcNow):null}:x).ToList());Changed?.Invoke();}}
     internal void RemoveRecent(string id)

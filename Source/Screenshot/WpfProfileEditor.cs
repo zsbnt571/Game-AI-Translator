@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Globalization;
 using W = System.Windows;
 using WC = System.Windows.Controls;
@@ -25,6 +25,7 @@ internal sealed class WpfProfileEditor : IDisposable
     private bool syncing;
     internal WC.Border Defaults { get; }
     internal WC.Border Connection { get; }
+    internal WC.StackPanel Footer { get; } = new();
 
     internal WpfProfileEditor(IProfileEditorHost host)
     {
@@ -77,10 +78,10 @@ internal sealed class WpfProfileEditor : IDisposable
         testButton = Button("测试连接", "TestProfile", async () => await host.NativeTestProfileAsync());
         returnButton = Button(state.ReturnLabel, "ReturnProfile", () => host.NativeReturnFromProfile(true));
         backButton = Button("返回", "BackProfile", () => host.NativeReturnFromProfile(false));
-        Row(body, "", Actions(testButton, Button("保存 API 方案", "SaveProfile", () => host.NativeSaveProfile(), true), returnButton, backButton));
+        Row(Footer, "", Actions(testButton, Button("保存 API 方案", "SaveProfile", () => host.NativeSaveProfile(), true), returnButton, backButton));
         Identify(testStatus, "ProfileTestStatus"); Identify(saveStatus, "ProfileSaveStatus");
-        Row(body, "", testStatus); Row(body, "", saveStatus);
-        Row(body, "", Text("API 方案保存接口、密钥、模型、连接超时和高级参数。下方翻译内容独立保存，切换 API 方案不会改变它。"));
+        Row(Footer, "", testStatus); Row(Footer, "", saveStatus); body.Children.Add(Footer);
+        Row(body, "", Text("API 方案保存接口、密钥、模型、超时和高级参数。语言与提示请切换到“翻译内容”。"));
         common.SelectionChanged += (_, _) => Select(common, host.NativeSelectCommonProfile);
         editing.SelectionChanged += (_, _) => Select(editing, host.NativeSelectProfile);
         state.PropertyChanged += StateChanged;
@@ -171,7 +172,7 @@ internal sealed class WpfProfileEditor : IDisposable
     }
     private WC.TextBlock Text(string text)
     {
-        var block = Note(); chrome.Add(() => block.Text = UiLanguage.Text(text)); return block;
+        var block = Note(); chrome.Add(() => block.Text = WpfSettingsLayout.Text(text)); return block;
     }
     private WC.StackPanel Column(string heading)
     {
@@ -181,7 +182,7 @@ internal sealed class WpfProfileEditor : IDisposable
     }
     private WC.Grid Row(WC.StackPanel body, string label, W.FrameworkElement value)
     {
-        var row = new FieldRow { Margin = new(0, 0, 0, label.Length == 0 ? 12 : 16) };
+        var row = new WpfSettingsFieldRow { Margin = new(0, 0, 0, label.Length == 0 ? 12 : 16) };
         row.ColumnDefinitions.Add(new() { Width = new(206) }); row.ColumnDefinitions.Add(new() { Width = new(1, W.GridUnitType.Star) });
         var title = Text(label); title.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Text"); title.Margin = new(0, 6, 16, 0);
         row.Children.Add(title); WC.Grid.SetColumn(value, 1); row.Children.Add(value); body.Children.Add(row);
@@ -232,7 +233,7 @@ internal sealed class WpfProfileEditor : IDisposable
     }
     private static WC.WrapPanel Actions(params W.FrameworkElement[] items)
     {
-        var row = new WC.WrapPanel(); foreach (var item in items) { item.Margin = new(0, 0, 12, 4); row.Children.Add(item); } return row;
+        return WpfActionLayout.Row(items);
     }
     private static void Menu(WC.Button button, (string Text, Action Run)[] actions)
     {
@@ -247,12 +248,4 @@ internal sealed class WpfProfileEditor : IDisposable
     private static void Identify(W.DependencyObject element, string id) => W.Automation.AutomationProperties.SetAutomationId(element, id);
     public void Dispose() { state.PropertyChanged -= StateChanged; host.ProfileNameFocusRequested -= FocusName; }
     private sealed record ChoiceItem(string Id, string Text) { public override string ToString() => Text; }
-    private sealed class FieldRow : WC.Grid
-    {
-        protected override W.Size MeasureOverride(W.Size availableSize)
-        {
-            if (double.IsFinite(availableSize.Width)) ColumnDefinitions[0].Width = new(Math.Clamp(availableSize.Width / 4, 164, 206));
-            return base.MeasureOverride(availableSize);
-        }
-    }
 }

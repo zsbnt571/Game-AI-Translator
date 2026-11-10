@@ -35,9 +35,12 @@ internal sealed class RgssTranslationConnection : IEmbeddedTranslationConnection
         if(!RgssGameAdapter.IsInstalled(exe))throw new IOException("翻译组件不完整或游戏已更新，请重新应用翻译。");
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe),WindowStyle=ProcessWindowStyle.Normal};
         GameLaunchEnvironment.ClearSession(info);
-        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup);
+        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup,independent:true);
         GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
         info.Environment["FUSION_RGSS_SESSION"]=folder;info.Environment["FUSION_RGSS_SECRET"]=secret;
+        // Preserve this same checked directory for native Ruby runtimes whose
+        // ANSI File APIs cannot open a Unicode path. ASCII hex survives ENV.
+        info.Environment["FUSION_RGSS_SESSION_UTF16_HEX"]=Convert.ToHexString(Encoding.Unicode.GetBytes(folder));
         info.Environment["FUSION_RGSS_TRANSLATION"]=translationAtStartup?"1":"0";info.Environment["FUSION_RGSS_OWNER_PID"]=Environment.ProcessId.ToString();return info;
     }
     [DllImport("kernel32.dll",CharSet=CharSet.Unicode)]private static extern bool QueryFullProcessImageName(IntPtr process,uint flags,StringBuilder path,ref uint length);

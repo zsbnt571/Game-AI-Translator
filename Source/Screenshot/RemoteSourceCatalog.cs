@@ -26,7 +26,7 @@ internal static class RemoteSourceCatalog
             if(row.ValueKind!=JsonValueKind.Object||text.ValueKind!=JsonValueKind.String||
                 !row.TryGetProperty("source",out var source)||source.ValueKind!=JsonValueKind.String||source.GetString()!=text.GetString()||
                 !row.TryGetProperty("kind",out var kind)||kind.ValueKind!=JsonValueKind.String||
-                kind.GetString() is not ("translation_text" or "gettext" or "optimized_value" or "translation" or "translation_plural")||
+                kind.GetString() is not ("translation_text" or "gettext" or "optimized_value" or "translation" or "translation_plural" or "config_text")||
                 !row.TryGetProperty("resourceLocale",out var locale)||locale.ValueKind!=JsonValueKind.String||locale.GetString()!.Length>64||
                 !row.TryGetProperty("path",out var path)||path.ValueKind!=JsonValueKind.String||!ResourcePath(path.GetString()!))continue;
             string actual=GameSourceLanguageTracker.CanonicalLocale(locale.GetString());

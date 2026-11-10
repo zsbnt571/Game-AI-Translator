@@ -704,6 +704,43 @@ local function encodeResponse(id,ok,result,recoverable)
   errorCode=not ok and recoverable and deferredRestoreCode or nil,recoverable=not ok and recoverable or nil,
   pendingRestorations=pending,pendingRestoreCultures=cultures})
 end
+local fontPending
+local function fontReply(r,result,ok)
+ if ok then encodeResponse(r.id,true,result);return end
+ write('response-'..r.id..'.json',{id=r.id,secret=secret,ok=false,result=result,
+  error='Unreal custom font request was not accepted; current fonts and translation remain unchanged.',
+  errorCode='font-native-construction-unavailable'})
+end
+local function fontRequest(r)
+ -- Font discovery/rejection is independent of localization transactions. In
+ -- particular it must never enter rollback(), which disables translation and
+ -- restores accepted text. A file path alone is not a constructed UFontFace.
+ local ok,result=pcall(slate.fontState)
+ if not ok or type(result)~='table' then result={accepted=false,customFontActive=false,customFontSupported=false,
+  independent=true,independentOfTranslation=true,restartRequired=false,reason='native-font-construction-unavailable'} end
+ if r.op=='fontState' then encodeResponse(r.id,true,result);return end
+ if result.customFontSupported==true and not fontPending then
+  local submitted,id=pcall(slate.requestFont,r)
+  if submitted and type(id)=='number' then fontPending={request=r,nativeId=id,started=os.time()};return end
+ end
+ if r.mode=='default' and result.customFontSupported~=true and result.customFontActive~=true then
+  result.accepted=true;result.mode='default';result.reason='existing-default-adaptation-preserved'
+  encodeResponse(r.id,true,result);return
+ end
+ fontReply(r,result,false)
+end
+local function pollFont()
+ if not fontPending then return end
+ local ok,result=pcall(slate.fontState)
+ if ok and type(result)=='table' and result.id==fontPending.nativeId then
+  local current=fontPending;fontPending=nil;fontReply(current.request,result,result.accepted==true)
+ elseif os.time()-fontPending.started>=8 then
+  -- Native commands expire after five seconds and cannot apply after this
+  -- response. Font errors never enter localization's rollback transaction.
+  local current=fontPending;fontPending=nil
+  fontReply(current.request,{accepted=false,reason='font-request-expired'},false)
+ end
+end
 schedule(function()
   lib=StaticFindObject('/Script/Engine.Default__KismetTextLibrary')
   intl=StaticFindObject('/Script/Engine.Default__KismetInternationalizationLibrary')
@@ -810,6 +847,8 @@ local function pump()
   elseif ready and (enabled or busy) and os.time()-lastRequest>30 then interruptForRestore('timeout')
   elseif fresh and ready and r.op=='translationDisable' and busy then
    lastId=r.id;lastRequest=os.time();interruptForRestore('disable',r)
+  elseif fresh and ready and (r.op=='fontState' or r.op=='fontPreferences') then
+   lastId=r.id;lastRequest=os.time();fontRequest(r)
   elseif fresh and ready and not busy then
    lastId=r.id;lastRequest=os.time()
     schedule(function() return command(r) end,function(ok,result,cancelled,deferred) completeRequest(r,ok,result,cancelled,deferred) end,
@@ -819,6 +858,7 @@ local function pump()
  if ready and type(fonts.flushEvents)=='function' then fonts.flushEvents() end
  advanceBatch(os.clock()+0.003)
  if ready then slate.tick(enabled and not stopped and not shutdown) end
+ if ready then pcall(pollFont) end
  -- Maintenance gets a turn even if every engine frame carries a new poll.
  -- Start it after a completed response, so that response does not wait for a
  -- string-table key snapshot. Native calls themselves cannot be preempted.

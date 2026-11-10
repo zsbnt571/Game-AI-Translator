@@ -22,11 +22,12 @@ internal static class GameFontSettings
     internal const long MaximumFileBytes = 32 * 1024 * 1024;
     internal const string DefaultLabel = "保持当前字体适配（默认）";
     internal const string RestartHint = "连接后可保存并实时应用，也可随时恢复默认。翻译关闭时只保存选择；字号和布局继续由现有适配处理。";
+    internal const string IndependentHint = "连接后可实时更换字体，也可恢复默认；无需开启翻译。字体大小和布局继续沿用现有适配。";
     private static readonly ConcurrentDictionary<string, GameFontPreference> cache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly object preferenceGate = new();
     private static readonly Dictionary<string, long> revisions = new(StringComparer.OrdinalIgnoreCase);
-    internal static bool Supports(GameInfo? game) => game?.AdapterId is "unity-mono" or "unity-il2cpp" or "godot3" or "godot4" or "renpy" or "rpg-maker-mv" or "rpg-maker-mz" or "rgss" or "web-rpg" or "web-construct" or "web-tyrano" or "web-choicescript";
-    internal static bool SystemFamilyOnly(GameInfo game) => game.AdapterId == "rgss";
+    internal static bool Supports(GameInfo? game) => GameFontCapabilities.ForGame(game).Custom;
+    internal static bool SystemFamilyOnly(GameInfo game) => GameFontCapabilities.ForAdapter(game.AdapterId).SystemFamilyOnly;
     internal static string Storage(string exe) => System.IO.Path.Combine(AppDataPaths.Root, "game-fonts", Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(RecentGameStore.Normalize(exe).ToUpperInvariant()))));
     private static string Record(string exe) => System.IO.Path.Combine(Storage(exe), "preference.json");
     internal static GameFontPreference Read(string exe)
@@ -39,8 +40,42 @@ internal static class GameFontSettings
         if (!File.Exists(path)) return new();
         if (new FileInfo(path).Length > 16384) throw new IOException("游戏字体设置过大，请重新选择字体。");
         var preference=JsonSerializer.Deserialize<GameFontPreference>(File.ReadAllText(path)) ?? new();
-        return preference with { Family=preference.Family??"", Path=preference.Path??"", Hash=preference.Hash??"" };
+        preference = preference with { Family=preference.Family??"", Path=preference.Path??"", Hash=preference.Hash??"" };
+        return ResolveOwnedPreference(preference, System.IO.Path.GetDirectoryName(path)!);
     });
+    // A copied data directory owns its saved font bytes. Resolve only a verified
+    // content-addressed file in this game's current storage, even while the old
+    // absolute path still exists. The persisted preference remains untouched.
+    internal static GameFontPreference ResolveOwnedPreference(GameFontPreference preference, string storage)
+    {
+        if (!preference.Custom || preference.Hash.Length != 64 || !preference.Hash.All(Uri.IsHexDigit) || preference.Path.Length == 0)
+            return preference;
+        try
+        {
+            string extension = System.IO.Path.GetExtension(preference.Path);
+            if (extension.ToLowerInvariant() is not (".ttf" or ".otf" or ".ttc") ||
+                !System.IO.Path.GetFileName(preference.Path).Equals(preference.Hash + extension, StringComparison.OrdinalIgnoreCase))
+                return preference;
+            string owned = System.IO.Path.Combine(storage, "files", preference.Hash + extension);
+            AppDataPaths.RejectReparsePoints(owned);
+            if (!File.Exists(owned)) return preference;
+            string digest;
+            using (var input = new FileStream(owned, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                if (input.Length is < 1 or > MaximumFileBytes) return preference;
+                digest = Convert.ToHexString(SHA256.HashData(input));
+            }
+            AppDataPaths.RejectReparsePoints(owned);
+            return digest.Equals(preference.Hash, StringComparison.OrdinalIgnoreCase)
+                ? preference with { Path = owned, Hash = digest } : preference;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            // Failed relocation keeps the existing preference/error behavior;
+            // it never rewrites user data or changes the ordinary translation.
+            return preference;
+        }
+    }
     internal static GameFontPreferenceStamp Capture(string exe)
     {
         lock (preferenceGate) return new(ReadCore(exe), revisions.GetValueOrDefault(Record(exe)));
@@ -137,6 +172,8 @@ internal static class GameFontSettings
             else
             {
                 string source = System.IO.Path.GetFullPath(file);
+                if((game.AdapterId is "gamemaker" or "wolf" or "yukar-bakin" or "defold" or "unreal")&&System.IO.Path.GetExtension(source).Equals(".ttc",StringComparison.OrdinalIgnoreCase))
+                    throw new IOException("此游戏需要独立的 TTF 或 OTF 字体文件，已保留之前的字体选择。");
                 var inspected = Inspect(source);
                 byte[] bytes = File.ReadAllBytes(source);
                 if (bytes.LongLength > MaximumFileBytes) throw new IOException("字体文件不能超过 32 MB。");
@@ -171,7 +208,56 @@ internal static class GameFontSettings
             return new(previous, WritePreference(game.ExePath, next));
         }
     }
-    internal static void ApplyLaunch(ProcessStartInfo start, string exe, bool translationAtStartup)
+    internal static void ApplyLaunch(ProcessStartInfo start, string exe, bool translationAtStartup, bool independent = false)
+    {
+        start.Environment.Remove("FUSION_GAME_FONT_INDEPENDENT");
+        try
+        {
+            ApplyLaunchCore(start,exe,translationAtStartup || independent,true);
+            if (independent) start.Environment["FUSION_GAME_FONT_INDEPENDENT"] = "1";
+        }
+        catch (Exception ex) when (independent && ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        {
+            // A stale preference must not prevent an ordinary game launch.
+            // Reconciliation reports it after the authenticated connection is ready.
+            start.Environment.Remove(PathVariable); start.Environment.Remove(FamilyVariable);
+        }
+    }
+    // GameMaker receives bytes through its own session sandbox, so a separate
+    // shortened desktop runtime copy would be unused and lose source ownership.
+    internal static void ApplyGameMakerLaunch(ProcessStartInfo start,string exe,bool translationAtStartup,bool independent=false)
+    {
+        start.Environment.Remove("FUSION_GAME_FONT_INDEPENDENT");
+        try
+        {
+            ApplyLaunchCore(start,exe,translationAtStartup||independent,false);
+            if(independent)start.Environment["FUSION_GAME_FONT_INDEPENDENT"]="1";
+        }
+        catch(Exception ex) when(independent && ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        {start.Environment.Remove(PathVariable);start.Environment.Remove(FamilyVariable);}
+    }
+    // WOLF owns a process-lifetime glyph cache. Select before its first glyph;
+    // never switch that face underneath cached bitmaps or tie it to translation.
+    internal static void ApplyWolfLaunch(ProcessStartInfo start,string exe)
+    {
+        start.Environment.Remove("FUSION_WOLF_FONT_FAILED");
+        start.Environment.Remove("FUSION_WOLF_FONT_HASH");
+        try
+        {
+            // This native loader reads Unicode extended paths itself, so keep
+            // the owned file instead of publishing a second short-path copy.
+            ApplyLaunchCore(start,exe,true,false);
+            if(start.Environment.ContainsKey(PathVariable))start.Environment["FUSION_WOLF_FONT_HASH"]=Read(exe).Hash;
+        }
+        catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or JsonException or ArgumentException)
+        {
+            start.Environment.Remove(PathVariable);start.Environment.Remove(FamilyVariable);
+            start.Environment["FUSION_WOLF_FONT_FAILED"]="1";
+            // A missing custom font must not stop the game or its translation.
+            // The preference is retained so the UI can explain and repair it.
+        }
+    }
+    private static void ApplyLaunchCore(ProcessStartInfo start,string exe,bool translationAtStartup,bool prepareRuntimeFile)
     {
         start.Environment.Remove(PathVariable); start.Environment.Remove(FamilyVariable);
         if (!translationAtStartup) return;
@@ -195,7 +281,7 @@ internal static class GameFontSettings
             if (Convert.ToHexString(SHA256.HashData(bytes)) != preference.Hash)
                 throw new IOException("自定义字体文件缺失或已改变，请重新选择或恢复默认。");
             AppDataPaths.RejectReparsePoints(path);
-            start.Environment[PathVariable] = GameFontRuntimeFiles.Prepare(path, bytes, preference.Hash);
+            start.Environment[PathVariable] = prepareRuntimeFile?GameFontRuntimeFiles.Prepare(path, bytes, preference.Hash):path;
             // Use the font's own English face identity for runtime lookup. Some
             // engines enumerate only this alias; an arbitrary localized name
             // silently falls back to a different face. The displayed/saved

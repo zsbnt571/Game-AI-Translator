@@ -31,7 +31,7 @@ internal static class AutomaticGenderAgreement
     private readonly record struct Statement(string Text,char Terminator);
 
     internal static bool Applies(ApiSettings settings)=>settings.TargetLanguage is {Length:<=64}
-        &&TranslationLanguagePolicy.Canonical(settings.TargetLanguage) is "en" or "es" or "fr" or "de" or "ru";
+        &&CharacterGenderEnhancementPolicy.Applies(settings);
 
     // A standalone explicit fact can supersede an earlier fact even though it
     // does not need extra agreement guidance on its own.

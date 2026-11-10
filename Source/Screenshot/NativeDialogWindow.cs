@@ -64,9 +64,9 @@ internal class NativeDialogWindow : W.Window, IWin32Window, IDisposable
 
 internal static class NativeDialogControls
 {
-    internal static WC.TextBlock Text(string text, double? size = null)
+    internal static WC.TextBlock Text(string text, double? size = null, bool localize = true)
     {
-        var block = new NativeLocalizedTextBlock { Text = text, TextWrapping = W.TextWrapping.Wrap, Margin = new(0, 4, 0, 12) };
+        var block = new NativeLocalizedTextBlock { Localize = localize, Text = text, TextWrapping = W.TextWrapping.Wrap, Margin = new(0, 4, 0, 12) };
         if(size is { } value)block.FontSize=value;return block;
     }
     internal static WC.TextBox Input(string text = "", bool multiline = false, bool readOnly = false)
@@ -87,12 +87,12 @@ internal static class NativeDialogControls
     }
     internal static WC.Button Button(string text, Action action, bool primary = false)
     {
-        var button = new WC.Button { Content = text, MinHeight = 36, MinWidth = 92, Padding = new(14, 7, 14, 7), Margin = new(0, 0, 8, 8) };
+        var button = WpfActionLayout.NormalButton(new WC.Button { Content = text, MinWidth = 92, Margin = new(0, 0, 8, 8) });
         WpfUiLanguage.Property(button,WC.ContentControl.ContentProperty,UiLanguage.Original(text));
         if (primary) button.SetResourceReference(WC.Control.BackgroundProperty, "Fusion.Accent");
         button.Click += (_, _) => action(); return button;
     }
-    internal static WC.WrapPanel Row(params W.UIElement[] elements) { var row = new WC.WrapPanel(); foreach (var element in elements) row.Children.Add(element); return row; }
+    internal static WC.WrapPanel Row(params W.UIElement[] elements) => WpfActionLayout.Row(elements.Cast<W.FrameworkElement>().ToArray());
     internal static WC.StackPanel Column(params W.UIElement[] elements) { var column = new WC.StackPanel(); foreach (var element in elements) column.Children.Add(element); return column; }
     internal static WC.Grid Layout(W.UIElement body, W.UIElement actions, bool scroll = true)
     {

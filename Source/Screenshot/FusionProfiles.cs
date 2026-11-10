@@ -24,17 +24,17 @@ internal sealed partial class FusionConfiguration
             if(id is not null&&!next.Profiles.ContainsKey(id))throw new InvalidOperationException("方案引用无效，未保存任何更改。");
         foreach(var id in next.GameProfiles.Values) if(!next.Profiles.ContainsKey(id)) throw new InvalidOperationException("游戏方案引用无效，未保存更改。");
         Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-        var tmp=_path+".tmp";var json=FusionSecrets.Serialize(next);
+        var tmp=_path+".tmp";var json=FusionSecrets.Serialize(next, _path);
         try
         {
             using(var stream=new FileStream(tmp,FileMode.Create,FileAccess.Write,FileShare.None))
             {var bytes=Encoding.UTF8.GetBytes(json);stream.Write(bytes);stream.Flush(true);}
-            var reload=FusionSecrets.Deserialize<FusionState>(File.ReadAllText(tmp));
+            var reload=FusionSecrets.Deserialize<FusionState>(File.ReadAllText(tmp), tmp);
             if(JsonSerializer.Serialize(reload)!=JsonSerializer.Serialize(next))throw new IOException("保存内容复核失败。");
             File.Move(tmp,_path,true);
-            State=FusionSecrets.Deserialize<FusionState>(File.ReadAllText(_path));
+            State=FusionSecrets.Deserialize<FusionState>(File.ReadAllText(_path), _path);
         }
-        finally{if(File.Exists(tmp))File.Delete(tmp);}
+        finally{UnavailableCredentials.Forget(tmp);if(File.Exists(tmp))File.Delete(tmp);}
     }
     private void MigrateProfiles()
     {
@@ -57,9 +57,11 @@ internal sealed partial class FusionConfiguration
             if(provenEmpty&&!referenced)
             {
                 next.ArchivedTemplates[name]=ApiSettingsSnapshot.Copy(p);
+                UnavailableCredentials.CopyField(_path, "/Profiles/" + UnavailableCredentials.Field(name) + "/ApiKey", "/ArchivedTemplates/" + UnavailableCredentials.Field(name) + "/ApiKey");
                 next.MigrationNotes.Add(name+"：与首次导入的空预设逐字段一致且无引用，移入模板；原记录归档保留。");continue;
             }
             var id=ids[name];next.Profiles[id]=ApiSettingsSnapshot.Copy(p);
+            UnavailableCredentials.CopyField(_path, "/Profiles/" + UnavailableCredentials.Field(name) + "/ApiKey", "/Profiles/" + id + "/ApiKey");
             next.ProfileInfo[id]=new(){Name=name,Origin=name.StartsWith("内嵌 · ")?"旧内嵌导入":name=="公共 · R4"?"R4 导入":"现有 Fusion 记录",Draft=Missing(p).Count>0};
         }
         string Map(string name)
@@ -119,7 +121,9 @@ internal sealed partial class FusionConfiguration
     {
         if(content.HasEmptyCombination)throw new InvalidOperationException("请至少选择一种需要翻译的原文语言。");
         var snapshot=new ApiSettings();content.ApplyTo(snapshot);
+        bool enhancementChanged=State.TranslationContent?.CharacterGenderEnhancementEnabled!=content.CharacterGenderEnhancementEnabled;
         Change(next=>next.TranslationContent=TranslationContentSettings.From(snapshot));
+        if(enhancementChanged)CharacterGenderEnhancementPolicy.InvalidateEnabledRequests();
     }
     internal void DeleteProfile(string id,string? replacementId=null)
     {

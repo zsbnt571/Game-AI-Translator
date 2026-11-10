@@ -82,6 +82,9 @@ internal sealed class WpfWorkspaceWindow : W.Window
     private readonly WpfLibraryWorkspace library;
     private readonly WpfSettingsWorkspace settings;
     private readonly WpfScreenshotWorkspace screenshots;
+    private WpfTestWorkspace? tests;
+    private WpfAiToolsWorkspace? aiTools;
+    private WC.Grid workspace = null!;
     private readonly WC.Border border = new();
     private readonly WC.Grid caption = new() { Height = 40 };
     private readonly WC.StackPanel tabs = new() { Orientation = WC.Orientation.Horizontal };
@@ -97,6 +100,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
     private readonly System.Windows.Shapes.Path pinGlyph = CaptionGlyph(CaptionGeometry("M 5,2 H 11 L 10.5,7 L 13,10 H 3 L 5.5,7 Z M 8,10 V 14"));
     private readonly Dictionary<string, (WC.Button Button, WC.Border Line)> navigation = [];
     private readonly Dictionary<string, (string Text, Font Font, int Dpi)> navigationMetrics = [];
+    private readonly Dictionary<string,double> navigationPreferredWidths = [];
     private readonly WC.TextBlock product = new() { Text = "FUSION R1", FontFamily = new("Segoe UI"), FontSize = 12, VerticalAlignment = W.VerticalAlignment.Center };
     private readonly WC.TextBlock version = new() { Text = BuildIdentity.VersionLabel, FontFamily = new("Segoe UI"), FontSize = 10.667, VerticalAlignment = W.VerticalAlignment.Center };
     private readonly WC.Image brand = new() { Width = 24, Height = 24, VerticalAlignment = W.VerticalAlignment.Center };
@@ -140,7 +144,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
         identity.Children.Add(product); WC.Canvas.SetLeft(product, 42); WC.Canvas.SetTop(product, 12);
         identity.Children.Add(version); WC.Canvas.SetLeft(version, 123); WC.Canvas.SetTop(version, 13);
         caption.Children.Add(identity);
-        foreach (var pair in new[] { ("内嵌翻译", "游戏库"), ("主页", "截图翻译"), ("设置", "设置") })
+        foreach (var pair in new[] { ("内嵌翻译", "游戏库"), ("主页", "截图翻译"), ("测试区", "测试区"), ("AI工具", "AI 工具"), ("设置", "设置") })
         {
             var button = Button(pair.Item2, 88, () => main.WpfNavigate(pair.Item1));
             var line = new WC.Border { Height = 2, VerticalAlignment = W.VerticalAlignment.Bottom };
@@ -158,7 +162,7 @@ internal sealed class WpfWorkspaceWindow : W.Window
         PrepareButton(close, "关闭", 44, Close);
         commands.Children.Add(pin); commands.Children.Add(theme); commands.Children.Add(minimize); commands.Children.Add(maximize); commands.Children.Add(close);
         WC.Grid.SetColumn(commands, 3); caption.Children.Add(commands); root.Children.Add(caption);
-        var workspace=new WC.Grid();WC.Grid.SetRow(workspace,1);root.Children.Add(workspace);
+        workspace=new WC.Grid();WC.Grid.SetRow(workspace,1);root.Children.Add(workspace);
         main.AttachWpfWorkspace(this);
 
         main.WpfLibraryAttached();library=new(main);workspace.Children.Add(library);
@@ -173,10 +177,10 @@ internal sealed class WpfWorkspaceWindow : W.Window
         Loaded += (_, _) => { main.StartWpfServices(); RefreshChrome(); };
         Activated += (_, _) => { if (!main.IsDisposed) main.WpfWindowActivated(); };
         Deactivated += (_, _) => { if (!main.IsDisposed) main.WpfWindowDeactivated(); };
-        SizeChanged += (_, _) => main.NativeHostResized();
+        SizeChanged += (_, _) => { main.NativeHostResized(); RefreshCaptionLayout(); };
         IsVisibleChanged += (_, _) => main.NativeHostVisibilityChanged();
         StateChanged += (_, _) => { main.NativeHostResized(); RefreshWindowState(); };
-        Closed += (_, _) => { workspaceRefresh.Dispose(); library.Dispose(); screenshots.Dispose(); settings.Dispose(); if (!main.IsDisposed) main.Dispose(); };
+        Closed += (_, _) => { workspaceRefresh.Dispose(); tests?.Dispose(); aiTools?.Dispose(); library.Dispose(); screenshots.Dispose(); settings.Dispose(); if (!main.IsDisposed) main.Dispose(); };
         RefreshChrome();
     }
     private WC.Button Button(string text, double width, Action action)
@@ -225,7 +229,8 @@ internal sealed class WpfWorkspaceWindow : W.Window
         presenter.SetValue(W.FrameworkElement.VerticalAlignmentProperty, W.VerticalAlignment.Center);
         panel.AppendChild(presenter);
         button.Template = new WC.ControlTemplate(typeof(WC.Button)) { VisualTree = panel };
-        W.Automation.AutomationProperties.SetName(button, text);
+        WpfUiLanguage.Property(button,W.Automation.AutomationProperties.NameProperty,text);
+        WpfUiLanguage.Property(button,W.FrameworkElement.ToolTipProperty,text);
         W.Shell.WindowChrome.SetIsHitTestVisibleInChrome(button, true);
         button.MouseEnter += (_, _) => RefreshCaptionButtonBackground(button, true);
         button.MouseLeave += (_, _) => RefreshCaptionButtonBackground(button, false);
@@ -252,19 +257,22 @@ internal sealed class WpfWorkspaceWindow : W.Window
         foreach (var pair in navigation)
         {
             var original = main.WpfNavigationButton(pair.Key);
+            var navigationText = pair.Key=="AI工具"?AiToolsText.Text("AiTools"):original.Text;
             var button = pair.Value.Button;
-            button.Content = original.Text;
-            var metrics = (original.Text, original.Font, main.DeviceDpi);
+            button.Content = navigationText;
+            var metrics = (navigationText, original.Font, main.DeviceDpi);
             if (!navigationMetrics.TryGetValue(pair.Key, out var previous) || previous != metrics)
             {
-                button.Width = Math.Max(88, TextRenderer.MeasureText(original.Text, original.Font).Width * 96d / main.DeviceDpi + 32);
+                navigationPreferredWidths[pair.Key] = Math.Max(88, TextRenderer.MeasureText(navigationText, original.Font).Width * 96d / main.DeviceDpi + 32);
                 navigationMetrics[pair.Key] = metrics;
             }
             button.Background = WpfDrawing.Brush(p.Main);
             button.Foreground = WpfDrawing.Brush(main.WpfPage == pair.Key ? p.Accent : p.Text);
             pair.Value.Line.Background = WpfDrawing.Brush(main.WpfPage == pair.Key ? p.Accent : p.Border);
-            W.Automation.AutomationProperties.SetName(button, original.Text);
+            W.Automation.AutomationProperties.SetName(button, navigationText);
+            button.ToolTip = navigationText;
         }
+        RefreshCaptionLayout();
         foreach (var button in new[] { pin, theme, minimize, maximize, close })
         { RefreshCaptionButtonBackground(button,button.IsMouseOver); button.Foreground = WpfDrawing.Brush(p.SecondaryText); }
         bool dark=p.Main.GetBrightness()<.5f;
@@ -283,6 +291,20 @@ internal sealed class WpfWorkspaceWindow : W.Window
         RefreshWorkspace();
     }
     private void RefreshWindowState() => maximizeGlyph.Data = WindowState == W.WindowState.Maximized ? RestoreGeometry : MaximizeGeometry;
+    private void RefreshCaptionLayout()
+    {
+        if(caption.ColumnDefinitions.Count<4)return;
+        double width=ActualWidth>0?ActualWidth:Width;
+        // At minimum width, reduce navigation padding before sacrificing the
+        // fixed window controls. Text and saved page identities stay unchanged.
+        double preferred=navigationPreferredWidths.Values.Sum();
+        double trim=navigation.Count>0?Math.Clamp((preferred-(width-2-220-40))/navigation.Count,0,24):0;
+        foreach(var pair in navigation)if(navigationPreferredWidths.TryGetValue(pair.Key,out double desired))pair.Value.Button.Width=desired-trim;
+        double identityWidth=Math.Clamp(width-2-220-navigation.Values.Sum(x=>x.Button.Width),40,237);
+        caption.ColumnDefinitions[0].Width=new W.GridLength(identityWidth);
+        version.Visibility=identityWidth>=190?W.Visibility.Visible:W.Visibility.Collapsed;
+        product.Visibility=identityWidth>=120?W.Visibility.Visible:W.Visibility.Collapsed;
+    }
     internal void RefreshWorkspace()
     {
         if (main.IsDisposed) return;
@@ -301,6 +323,12 @@ internal sealed class WpfWorkspaceWindow : W.Window
         library.Visibility=game?W.Visibility.Visible:W.Visibility.Collapsed;
         if(settings is not null) { settings.Visibility=configuration?W.Visibility.Visible:W.Visibility.Collapsed; if(configuration)settings.Refresh(); }
         if(screenshots is not null) { screenshots.Visibility=shot?W.Visibility.Visible:W.Visibility.Collapsed; if(shot)screenshots.Refresh(); }
+        bool testing=main.WpfPage=="测试区";
+        if(testing && tests is null){tests=new(main.NativeTrialConfiguration);workspace.Children.Add(tests);}
+        if(tests is not null){tests.Visibility=testing?W.Visibility.Visible:W.Visibility.Collapsed;tests.SetActive(testing);}
+        bool assisting=main.WpfPage=="AI工具";
+        if(assisting && aiTools is null){aiTools=new(main);workspace.Children.Add(aiTools);}
+        if(aiTools is not null){aiTools.Visibility=assisting?W.Visibility.Visible:W.Visibility.Collapsed;if(assisting)aiTools.Refresh();}
         if(game)library.Refresh();
     }
     protected override void OnClosing(CancelEventArgs e)

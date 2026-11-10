@@ -65,7 +65,7 @@ internal static class TranslationStylePolicy
     };
 
     internal const string FidelityHint = "所有风格都以准确、自然、贴合语境为先。四字词和成语可以用，但不硬凑、不改原意。";
-    internal const string ProfileHint = "翻译内容由截图和游戏翻译共用，与 API 方案无关。点击“保存翻译内容”后用于新截图任务，已运行的游戏下次启动生效。已有译文保留，如需更新可在“译文与术语”中重译。";
+    internal const string ProfileHint = "翻译内容由截图和游戏翻译共用，与 API 方案无关。角色增强开关可在游戏运行时保存并应用；其他内容保存后用于新截图任务，已运行的游戏下次启动生效。已有译文保留，可在“译文与术语”中重译。";
 }
 
 internal static class TranslationStyleSelection

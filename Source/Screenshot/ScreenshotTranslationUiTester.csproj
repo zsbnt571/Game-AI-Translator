@@ -24,7 +24,8 @@
 
     <RootNamespace>ScreenshotTranslationUiTester</RootNamespace>
 
-    <Version>1.1.128</Version><FileVersion>1.1.0.128</FileVersion><AssemblyVersion>1.1.0</AssemblyVersion><InformationalVersion>1.1.128</InformationalVersion>
+    <Version>1.1.165</Version><FileVersion>1.1.0.165</FileVersion><AssemblyVersion>1.1.0</AssemblyVersion><InformationalVersion>1.1.165</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;obj-core-v2\**;bin-core-v2\**;obj-verify\**;bin-verify\**;obj-temporary-wda\**;bin-temporary-wda\**;obj-settings12\**;bin-settings12\**;obj-consolidation-task-a\**;bin-consolidation-task-a\**;obj-mega-r1\**;bin-mega-r1\**</DefaultItemExcludes>
 
   </PropertyGroup>
@@ -37,7 +38,12 @@
 
     <Content Include="..\RgssBridge\Payload\FusionRgss.dll" Link="adapters\rgss\FusionRgss.dll" CopyToOutputDirectory="PreserveNewest" />
 
+    <EmbeddedResource Include="TranslationLibrary.json" LogicalName="Fusion.TranslationLibrary.json" />
+    <Content Include="TranslationLibrary-LICENSES.txt" Link="licenses/TranslationLibrary-LICENSES.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <EmbeddedResource Include="UiEnglish.json" LogicalName="Fusion.UiEnglish.json" />
+    <EmbeddedResource Include="EngineIcons\*.svg" LogicalName="Fusion.EngineIcons.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="EngineIcons\Original\*.png" LogicalName="Fusion.EngineIcons.Original.%(Filename)%(Extension)" />
+    <Content Include="EngineIcons\Licenses\*" Link="licenses\EngineIcons\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
 
     <EmbeddedResource Include="UiRussian.json" LogicalName="Fusion.UiRussian.json" />
 
@@ -50,6 +56,10 @@
     <EmbeddedResource Include="..\WolfBridge\LayoutPattern.txt" LogicalName="Fusion.WolfLayoutPattern.txt" />
 
     <EmbeddedResource Include="..\WolfBridge\Layout31Pattern.txt" LogicalName="Fusion.WolfLayout31Pattern.txt" />
+    <EmbeddedResource Include="..\WolfBridge\Layout373Pattern.txt" LogicalName="Fusion.WolfLayout373Pattern.txt" />
+
+    <EmbeddedResource Include="..\WolfBridge\Layout311Pattern.txt" LogicalName="Fusion.WolfLayout311Pattern.txt" />
+    <EmbeddedResource Include="..\WolfBridge\Layout339Pattern.txt" LogicalName="Fusion.WolfLayout339Pattern.txt" />
 
     <EmbeddedResource Include="..\WolfBridge\LegacyLayoutPattern.txt" LogicalName="Fusion.WolfLegacyLayoutPattern.txt" />
 
@@ -59,7 +69,7 @@
 
     <Content Include="..\WolfBridge\Licenses\*" Link="licenses\WolfNative\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
 
-    <EmbeddedResource Include="GameFontPolicy.js;WebGamePreload.js;WebGameMain.js;WebGameTransport.js;WebGameTranslation.js;ConstructGameSpeed.js;NovelWebTranslation.js;NovelGameData.js;NovelStateBridge.js;TranslationPairsHash.js" LogicalName="Fusion.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="GameCharacterRuntimeBridge.js;GameFontPolicy.js;WebGamePreload.js;WebGameMain.js;WebGameTransport.js;WebGameTranslation.js;ConstructGameSpeed.js;NovelWebTranslation.js;NovelGameData.js;NovelStateBridge.js;TranslationPairsHash.js" LogicalName="Fusion.%(Filename)%(Extension)" />
 
     <Content Include="..\..\Dependencies\GameMakerTool\*" Link="adapters\gamemaker\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
 
@@ -271,7 +281,7 @@
 
   </Target>
 
-</Project>
+<ItemGroup><AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo"><_Parameter1>AiTools138Tests</_Parameter1></AssemblyAttribute></ItemGroup></Project>
 
 
 

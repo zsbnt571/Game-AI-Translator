@@ -21,9 +21,20 @@ internal static class WolfGameAdapter
     internal static readonly Lazy<int[]> LayoutPattern=new(()=>Pattern("LayoutPattern"));
     private static readonly Lazy<int[]> LegacyLayoutPattern=new(()=>Pattern("LegacyLayoutPattern")),LegacyConvertPattern=new(()=>Pattern("LegacyConvertPattern"));
     private static readonly Lazy<int[]> Layout31Pattern=new(()=>Pattern("Layout31Pattern"));
+    private static readonly Lazy<int[]> Layout373Pattern=new(()=>Pattern("Layout373Pattern"));
+    private static readonly Lazy<int[]> Layout311Pattern=new(()=>Pattern("Layout311Pattern"));
+    private static readonly Lazy<int[]> Layout339Pattern=new(()=>Pattern("Layout339Pattern"));
     internal static int FindLayoutRva(string exe)
     {
         int current=FindPatternRva(exe,LayoutPattern.Value);if(current!=0)return current;
+        // Verified against the official 3.735 sample with native cache reset,
+        // actual font pixels, translation apply and original-text restoration.
+        current=FindPatternRva(exe,Layout373Pattern.Value);if(current!=0)return current;
+        // Same ECX / XMM2 / XMM3 + 12-byte stack contract, with native string
+        // payload at +24 and compiled text at +48. Exact prologue/data-flow
+        // patterns are independently checked; versions or filenames are not gates.
+        current=FindPatternRva(exe,Layout311Pattern.Value);if(current!=0)return current;
+        current=FindPatternRva(exe,Layout339Pattern.Value);if(current!=0)return current;
         // Separate 3.100 candidate ABI: the 24-byte payload at this+24 is
         // checked against compare/c_str/length callees. Startup transport is
         // tested separately; this is not a claim of complete scene coverage.
@@ -129,14 +140,29 @@ internal static class WolfGameAdapter
         foreach(string n in Owned)File.Delete(InGame(exe,Folder+"/"+n));File.Delete(InGame(exe,Folder+"/install.json"));
         if(!Directory.EnumerateFileSystemEntries(InGame(exe,Folder)).Any())Directory.Delete(InGame(exe,Folder));
     }
-    internal static ExperimentalRpgCatalog.Result DisplayBranches(ExperimentalRpgCatalog.Result r)=>r with{Entries=r.Entries.SelectMany(e=>WolfLanguageBranches.Sources(e.Text).Distinct(StringComparer.Ordinal).Select(text=>e with{Text=text})).ToArray()};
+    internal static ExperimentalRpgCatalog.Result DisplayBranches(ExperimentalRpgCatalog.Result r)
+    {
+        var expanded=r with{Entries=r.Entries.SelectMany(e=>WolfLanguageBranches.IsTemplate(e.Text)
+            ?WolfLanguageBranches.Alternatives(e.Text).Distinct().Select(part=>e with{Text=part.Text,Language=part.Language,LanguageGroup=e.Location+"/language-alternative"})
+            :new[]{e}).ToArray()};
+        return expanded with{SourceCatalog=Catalog(expanded)};
+    }
+    internal static bool CatalogFileRead(string status)=>status is "读取完成" or "未发现可提取字段" or "已补充引擎候选" or "未发现候选";
+    internal static CatalogReadIssue[] CatalogIssues(ExperimentalRpgCatalog.Result result)=>result.Files.Where(f=>!CatalogFileRead(f.Status)).Select(f=>new CatalogReadIssue(f.Status switch
+    {
+        "格式未支持"=>CatalogIssueKind.Unsupported,
+        "达到限制"=>CatalogIssueKind.Limited,
+        "读取失败" or "解析失败"=>CatalogIssueKind.Failed,
+        _=>CatalogIssueKind.Incomplete
+    },f.File,f.Detail)).ToArray();
     internal static RpgTextCatalogResult ReadCatalog(string exe,CancellationToken token,bool collect=false)
     {
         var r=collect?WolfEngineCollection.Read(exe,token,collect:true):ExperimentalRpgCatalog.Read(exe,token);
-        // Queue the alternatives actually displayed by the game, instead of a
-        // bilingual storage value which can never match a visible dialogue.
-        r=DisplayBranches(r);
-        var issues=r.Files.Where(f=>f.Status is not ("读取完成" or "未发现可提取字段")).Select(f=>new CatalogReadIssue(f.Status=="格式未支持"?CatalogIssueKind.Unsupported:f.Status=="达到限制"?CatalogIssueKind.Limited:CatalogIssueKind.Failed,f.File,f.Detail)).ToList();
+        return DisplayBranches(r).SourceCatalog!;
+    }
+    private static RpgTextCatalogResult Catalog(ExperimentalRpgCatalog.Result r)
+    {
+        var issues=CatalogIssues(r).ToList();
         issues.Insert(0,new(CatalogIssueKind.Incomplete,"WOLF","已读取支持的事件、游戏显示设置和配对数据库普通文本；已知格式及变量模板会优先复用预译，未知或有歧义的动态文字在游戏中补译。"));
         string Logical(string file)
         {
@@ -150,8 +176,8 @@ internal static class WolfGameAdapter
         var priority=r.Entries.Where(e=>e.Location.Contains(":102/",StringComparison.Ordinal)||e.Location.Contains("/display-db",StringComparison.Ordinal)||
             e.Text.Length<=48&&!e.Text.Any(c=>c is '\n' or '\r' or '。' or '！' or '？' or '!' or '?' or '.')&&
             e.Text.Count(c=>c==' ')<=5).Select(e=>e.Text).ToHashSet(StringComparer.Ordinal);
-        return new(r.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(f=>f.Status is "读取完成" or "未发现可提取字段"),[]){
+        return new(r.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),r.Files.Count(f=>CatalogFileRead(f.Status)),[]){
             Origins=r.Entries.Select(e=>ExperimentalRpgCatalog.Origin(e,"wolf-display-command")).ToArray(),
-            UnlocalizedSourceTexts=unlocalized,PrioritySourceTexts=priority,ReadCompleted=false,Report=new(false,issues.ToArray())};
+            UnlocalizedSourceTexts=unlocalized,PrioritySourceTexts=priority,LanguageBranches=CatalogLanguageBranches.FromEntries(r.Entries),ReadCompleted=false,Report=new(false,issues.ToArray())};
     }
 }

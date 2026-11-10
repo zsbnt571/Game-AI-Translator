@@ -72,11 +72,226 @@ module FusionRgss157
       end
     end
   end
+  # Session IPC only. Old native Ruby cannot address some Unicode absolute
+  # paths through File/Dir, including the UTF-8 path returned by Dir.pwd itself.
+  # Preserve the ordinary route whenever it works; never patch game file APIs.
+  class SessionFiles
+    def initialize(folder,encoded)
+      @folder=folder; @wide=nil; @api={}
+      return if File.directory?(folder) || !defined?(Win32API)
+      return unless encoded.is_a?(String) && encoded.size>=12 && encoded.size<=4096 && encoded.size%4==0 && encoded =~ /\A[0-9A-Fa-f]+\z/
+      raw=[encoded].pack('H*'); units=raw.unpack('v*')
+      return unless ((units[0]>=65 && units[0]<=90) || (units[0]>=97 && units[0]<=122)) && units[1]==58 && [47,92].include?(units[2])
+      return if units.any? { |c| c<32 || [34,42,60,62,63,124].include?(c) } || units[2,units.size].include?(58)
+      segment=[]
+      (units[3,units.size]+[92]).each do |c|
+        if [47,92].include?(c)
+          return if segment==[46] || segment==[46,46]
+          segment=[]
+        else segment << c
+        end
+      end
+      i=0
+      while i<units.size
+        c=units[i]
+        if c>=0xd800 && c<=0xdbff
+          i+=1; return unless i<units.size && units[i]>=0xdc00 && units[i]<=0xdfff
+        elsif c>=0xdc00 && c<=0xdfff then return
+        end
+        i+=1
+      end
+      @api[:attr]=Win32API.new('kernel32','GetFileAttributesW','P','L')
+      @api[:open]=Win32API.new('kernel32','CreateFileW','PLLPLLL','L')
+      @api[:size]=Win32API.new('kernel32','GetFileSize','LP','L')
+      @api[:read]=Win32API.new('kernel32','ReadFile','LPLPP','I')
+      @api[:write]=Win32API.new('kernel32','WriteFile','LPLPP','I')
+      @api[:close]=Win32API.new('kernel32','CloseHandle','L','I')
+      @api[:move]=Win32API.new('kernel32','MoveFileExW','PPL','I')
+      @api[:delete]=Win32API.new('kernel32','DeleteFileW','P','I')
+      @api[:first]=Win32API.new('kernel32','FindFirstFileW','PP','L')
+      @api[:next]=Win32API.new('kernel32','FindNextFileW','LP','I')
+      @api[:find_close]=Win32API.new('kernel32','FindClose','L','I')
+      @wide=raw
+      @wide=nil unless directory?
+    rescue StandardError
+      @wide=nil
+    end
+    def invalid?(handle); handle==0 || handle==-1 || handle==0xffffffff; end
+    def path(name=nil)
+      return @wide+"\0\0" unless name
+      raise IOError,'Invalid session filename' unless name =~ /\A[A-Za-z0-9][A-Za-z0-9_.-]{0,100}\z/ || name=='request-*.json'
+      @wide+[92].pack('v')+name.unpack('C*').pack('v*')+"\0\0"
+    end
+    def directory?
+      return File.directory?(@folder) unless @wide
+      attr=@api[:attr].call(path); attr!=-1 && attr!=0xffffffff && (attr&16)!=0 && (attr&1024)==0
+    end
+    def file?(name)
+      return File.file?(File.join(@folder,name)) unless @wide
+      attr=@api[:attr].call(path(name)); attr!=-1 && attr!=0xffffffff && (attr&16)==0 && (attr&1024)==0
+    end
+    def read(name,limit)
+      raise IOError,'Session read limit' unless limit.is_a?(Integer) && limit>0 && limit<=1048576
+      unless @wide
+        p=File.join(@folder,name); return nil unless File.file?(p) && File.size(p)<=limit
+        value=File.open(p,'rb') { |f| f.read(limit+1) }; return value.size<=limit ? value : nil
+      end
+      return nil unless file?(name)
+      handle=@api[:open].call(path(name),0x80000000,7,0,3,128,0); return nil if invalid?(handle)
+      begin
+        high=[0].pack('L'); size=@api[:size].call(handle,high)
+        return nil if size==-1 || size==0xffffffff || high.unpack('L')[0]!=0 || size>limit
+        return '' if size==0
+        buffer="\0"*size; received=[0].pack('L')
+        return nil if @api[:read].call(handle,buffer,size,received,0)==0 || received.unpack('L')[0]!=size
+        buffer
+      ensure @api[:close].call(handle)
+      end
+    end
+    def write(name,value)
+      size=value.respond_to?(:bytesize) ? value.bytesize : value.size
+      # Match the host's existing response ceiling; do not shrink the ordinary
+      # translation-poll budget when introducing Unicode-path support.
+      raise IOError,'Session write limit' if size>8388608
+      unless @wide
+        temp=File.join(@folder,name+'.tmp'); target=File.join(@folder,name)
+        File.open(temp,'wb') { |f| f.write(value) }; File.delete(target) if File.exist?(target); File.rename(temp,target); return true
+      end
+      temp=path(name+'.tmp'); target=path(name); handle=@api[:open].call(temp,0x40000000,0,0,2,128,0)
+      return false if invalid?(handle)
+      okay=false
+      begin
+        written=[0].pack('L'); okay=@api[:write].call(handle,value,size,written,0)!=0 && written.unpack('L')[0]==size
+      ensure @api[:close].call(handle)
+      end
+      okay=okay && @api[:move].call(temp,target,9)!=0
+      @api[:delete].call(temp) unless okay
+      okay
+    end
+    def entries
+      return Dir.entries(@folder) unless @wide
+      buffer="\0"*592; handle=@api[:first].call(path('request-*.json'),buffer)
+      return [] if invalid?(handle)
+      values=[]
+      begin
+        loop do
+          units=buffer[44,520].unpack('v*'); ending=units.index(0); units=units[0,ending] if ending
+          if units.all? { |c| c>0 && c<128 }
+            name=units.pack('C*'); values << name if name =~ /\Arequest-[0-9]{1,10}\.json\z/
+          end
+          raise IOError,'Session directory limit' if values.size>=4096
+          break if @api[:next].call(handle,buffer)==0
+        end
+      ensure @api[:find_close].call(handle)
+      end
+      values
+    end
+  end
   @folder=ENV['FUSION_RGSS_SESSION']; @secret=ENV['FUSION_RGSS_SECRET']; @enabled=ENV['FUSION_RGSS_TRANSLATION']=='1'
+  @files=SessionFiles.new(@folder,ENV['FUSION_RGSS_SESSION_UTF16_HEX'])
   @cache={}; @seen={}; @owners={}; @bytes=0; @epoch=1; @busy=false; @pending=nil; @reply=nil; @last=0; @stopped=false; @dirty=[]; @draws=0; @font_blocked=0; @limited=0
   @mutex=defined?(Mutex) ? Mutex.new : nil; @font_name=nil; @settling={}
   @font_pool={}; @metrics={}; @changed={}; @invalidate_all=false; @custom_font=false
+  @independent_font=ENV['FUSION_GAME_FONT_INDEPENDENT']=='1'
   @formatted_alias={}
+  @role_contract='fusion-character-runtime-1'; @role_enabled=false; @role_serial=0; @role_bindings={}; @role_facts={}
+  def self.role_reset(enabled=false)
+    @role_enabled=enabled; @role_bindings={}; @role_facts={}; @invalidate_all=true
+  end
+  def self.role_actor(name)
+    return nil unless name.is_a?(String) && name.size>0 && name.size<=800 && defined?($data_actors) && $data_actors.is_a?(Array) && $data_actors.size<=5000
+    token=/\A\\N\[([1-9][0-9]{0,7})\]\z/i.match(name)
+    id=token ? token[1].to_i : nil
+    unless id
+      return nil if name =~ /[\\<>\r\n]/
+      $data_actors.each_with_index do |data,n|
+        next unless data && data.respond_to?(:id) && data.id==n && n>0 && data.respond_to?(:name)
+        live=defined?($game_actors) && $game_actors ? $game_actors.instance_variable_get(:@data) : nil
+        actor=live.is_a?(Array) ? live[n] : nil
+        label=actor && actor.respond_to?(:name) ? actor.name : data.name
+        next unless name==data.name || name==label
+        return nil if id && id!=n
+        id=n
+      end
+    end
+    return nil unless id && $data_actors[id] && defined?($game_actors) && $game_actors
+    actor=$game_actors[id]
+    actor && actor.respond_to?(:id) && actor.id==id ? actor : nil
+  rescue StandardError
+    nil
+  end
+  def self.role_bind(window,raw,converted)
+    return unless window && window.respond_to?(:contents)
+    bitmap=window.contents; return unless bitmap && !bitmap.disposed?
+    @role_bindings.delete(bitmap.object_id)
+    # Author's YEA Ace namewindow protocol, not arbitrary dialogue prefixes.
+    return unless @enabled && @role_enabled && defined?($imported) && $imported && $imported['YEA-MessageSystem'] && window.respond_to?(:namebox_escape_characters)
+    return unless defined?($game_message) && $game_message && $game_message.respond_to?(:fusion157_all_text) && raw==$game_message.fusion157_all_text
+    normalized=raw.gsub(/\e/,'\\').gsub(/\\\\/,"\0")
+    names=normalized.scan(/\\N(?:C|R|[1-5])?<([^<>\r\n]{1,800})>/i)
+    return unless names.size==1
+    actor=role_actor(names[0][0]); return unless actor
+    source=utf8(converted)
+    # Complete plain paragraphs alone can be painted without resuming a Fiber.
+    return unless source && source.unpack('U*').size<=6000 && source !~ /[\\<>\x00-\x09\x0b-\x1f]/ && !source.strip.empty?
+    id='rgss:vxace:actor:'+actor.id.to_s; @role_serial+=1
+    facts=@role_facts[id] || []
+    row={'requestId'=>'r'+@role_serial.to_s,'source'=>source,'characterId'=>id,'displayName'=>actor.name.to_s,'evidence'=>facts[-3,3] || facts.dup}
+    facts << source if facts[-1]!=source; facts.shift while facts.size>3; @role_facts[id]=facts if @role_facts.size<256 || @role_facts.has_key?(id)
+    @role_bindings[bitmap.object_id]=[window,bitmap,row,nil,false,Time.now+3,raw.dup]
+    @seen.delete(raw); @seen.delete(source)
+  rescue StandardError
+    @role_bindings.delete(bitmap.object_id) if bitmap
+  end
+  def self.role_live(binding)
+    binding && binding[0].contents==binding[1] && !binding[1].disposed? && defined?($game_message) && $game_message && $game_message.respond_to?(:fusion157_all_text) && $game_message.fusion157_all_text==binding[6]
+  rescue StandardError
+    false
+  end
+  def self.role_poll(q)
+    accepted=[]
+    @role_bindings.delete_if { |id,binding| !role_live(binding) }
+    if @role_enabled && @enabled && q['characterRuntimeContract']==@role_contract && q['characterResults'].is_a?(Array)
+      q['characterResults'][0,16].each do |result|
+        next unless result.is_a?(Hash)
+        binding=@role_bindings.values.find { |b| b[2]['requestId']==result['requestId'] && b[2]['source']==result['source'] && b[2]['characterId']==result['characterId'] }
+        next unless binding
+        if result['pending']==true then binding[5]=Time.now+3
+        elsif result['fallback']==true then binding[3]=nil; binding[4]=true
+        else
+          target=utf8(result['text']); next unless target && target.unpack('U*').size<=12000 && target !~ /[\\<>\x00-\x09\x0b-\x1f]/ && !target.strip.empty?
+          binding[3]=target; binding[4]=false
+        end
+        accepted << result['requestId']; id=binding[1].object_id; @dirty << id unless @dirty.include?(id)
+      end
+    end
+    {'characterRuntimeContract'=>@role_enabled ? @role_contract : nil,'characterAccepted'=>accepted,'characterRequests'=>@role_enabled && @enabled ? @role_bindings.values[0,16].collect { |b| b[2] } : []}
+  end
+  def self.role_replay(bitmap,state)
+    binding=@role_bindings[bitmap.object_id]
+    return false unless @role_enabled && role_live(binding)
+    target=binding[3] || @cache[binding[2]['source']]
+    return false unless target && target !~ /[\\<>\x00-\x09\x0b-\x1f]/
+    rows=state[2]; return false if rows.empty? || rows.any? { |row| row[0]!=:draw_text || (row[1][row[1][0].is_a?(Rect) ? 2 : 5] || 0)!=0 || font_key(row[2])!=font_key(rows[0][2]) }
+    # Exact complete glyph sequence rejects partial pages and unrelated text.
+    visible=rows.collect { |row| row[1][row[1][0].is_a?(Rect) ? 1 : 4] }.join
+    return false unless visible==binding[2]['source'].gsub(/\n/,'')
+    rects=rows.collect { |row| a=row[1]; a[0].is_a?(Rect) ? a[0] : Rect.new(a[0],a[1],a[2],a[3]) }
+    x=rects.collect { |r| r.x }.min; y=rects.collect { |r| r.y }.min; height=rects[0].height; width=bitmap.width-x
+    return false unless height>0 && width>0 && rects.all? { |r| r.height==height }
+    bitmap.font=rows[0][2]; lines=[]
+    target.split(/\n/,-1).each do |part|
+      line=''
+      part.unpack('U*').each do |cp|
+        ch=[cp].pack('U'); if !line.empty? && bitmap.text_size(line+ch).width>width then lines << line; line=''; end
+        line << ch
+      end
+      lines << line
+    end
+    return false if lines.size*height>bitmap.height-y || lines.any? { |line| bitmap.text_size(line).width>width }
+    lines.each_with_index { |line,n| draw(bitmap,[x,y+n*height,width,height,line],false) }
+    @draws+=1; true
+  end
   # Render pacing is owned by Graphics.update in all three native RGSS APIs.
   # Preserve the game's frame_rate; fast-forward its existing Ruby loop rather
   # than scaling process clocks or calling an arbitrary scene method twice.
@@ -185,22 +400,19 @@ module FusionRgss157
     end
   end
   def self.diagnostic(error)
-    path=File.join(@folder,'bridge-error.txt')
-    File.open(path,'wb') { |f| f.write((error.class.to_s+': '+error.to_s+"\n"+(error.backtrace || [])[0,8].join("\n"))[0,4096]) }
+    @files.write('bridge-error.txt',(error.class.to_s+': '+error.to_s+"\n"+(error.backtrace || [])[0,8].join("\n"))[0,4096])
   rescue StandardError
     nil
   end
   def self.read(name,limit)
-    p=File.join(@folder,name); return nil unless File.file?(p) && File.size(p)<=limit
-    s=File.open(p,'rb') { |f| f.read(limit+1) }; return nil if s.size>limit
+    s=@files.read(name,limit); return nil unless s
     v=Json.new(s).parse; v.is_a?(Hash) && v['secret']==@secret ? v : nil
   rescue StandardError => error
     diagnostic(error) unless error.is_a?(IOError) || error.is_a?(SystemCallError)
     nil
   end
   def self.write(name,value)
-    temp=File.join(@folder,name+'.tmp'); path=File.join(@folder,name)
-    File.open(temp,'wb') { |f| f.write(Json.dump(value)) }; File.delete(path) if File.exist?(path); File.rename(temp,path); true
+    @files.write(name,Json.dump(value))
   rescue StandardError
     false
   end
@@ -546,7 +758,7 @@ module FusionRgss157
       bitmap.clear; bitmap.blt(0,0,state[1],Rect.new(0,0,bitmap.width,bitmap.height))
       state[8]={}
       stable=!@settling[bitmap.object_id] || Time.now-@settling[bitmap.object_id]>=0.12
-      draw_rows(bitmap,state[2],translate,stable)
+      draw_rows(bitmap,state[2],translate,stable) unless translate && role_replay(bitmap,state)
       state[7]=translate
     ensure bitmap.font=saved; @busy=was_busy
     end
@@ -610,7 +822,7 @@ module FusionRgss157
   def self.draw(bitmap,args,translate=true)
     return bitmap.fusion157_draw_text(*args) if @stopped
     copy=args.dup; index=copy[0].is_a?(Rect) ? 1 : 4; source=copy[index]; translated=translate && @enabled ? text(source) : source
-    if translated.is_a?(String) && translated!=source
+    result=if translated.is_a?(String) && (translated!=source || (@custom_font && @independent_font))
       original=font_copy(bitmap.font); f=font_copy(original)
       if @custom_font || translated.unpack('U*').any? { |c| c>=128 }
         if @font_name then f.name=@font_name
@@ -619,8 +831,8 @@ module FusionRgss157
       end
       rect=copy[0].is_a?(Rect) ? copy[0] : Rect.new(copy[0],copy[1],copy[2],copy[3]); copy[index]=translated
       begin
-        bitmap.font=f; f=bitmap.font; f.size=[f.size,rect.height].min if rect.height>=8
-        while f.size>8 && bitmap.text_size(translated).width>rect.width && rect.width>0
+        bitmap.font=f; f=bitmap.font; f.size=[f.size,rect.height].min if translated!=source && rect.height>=8
+        while translated!=source && f.size>8 && bitmap.text_size(translated).width>rect.width && rect.width>0
           f.size-=1
         end
         bitmap.fusion157_draw_text(*copy); @draws+=1
@@ -628,6 +840,8 @@ module FusionRgss157
       end
     else bitmap.fusion157_draw_text(*copy)
     end
+    @owners[bitmap.object_id][9]=@custom_font && @independent_font if @owners[bitmap.object_id]
+    result
   end
   def self.fail_display(error,bitmap=nil)
     diagnostic(error) unless @failure
@@ -714,6 +928,16 @@ module FusionRgss157
         def all_text; value=fusion157_all_text; FusionRgss157.capture(value); value; end
       end
     end
+    if defined?(Window_Message) && Window_Message.method_defined?(:convert_escape_characters) && !Window_Message.method_defined?(:fusion135_role_convert)
+      Window_Message.class_eval do
+        alias_method :fusion135_role_convert,:convert_escape_characters
+        def convert_escape_characters(text)
+          value=fusion135_role_convert(text)
+          FusionRgss157.role_bind(self,text,value)
+          value
+        end
+      end
+    end
   end
   def self.refresh
     deadline=Time.now+0.004
@@ -728,8 +952,8 @@ module FusionRgss157
       if @enabled
         sources=plan(state[0])[2]
         sources.each_key { |source| capture(source) unless @formatted_alias[source] }
-        replay(state[0],true) if sources.keys.any? { |source| @cache.has_key?(source) || (state[8] && paragraph_translation(source)) }
-      elsif state[7] || state[2].any? { |row| row[3] }
+        replay(state[0],true) if role_live(@role_bindings[id]) || (@custom_font && @independent_font) || state[9] || sources.keys.any? { |source| @cache.has_key?(source) || (state[8] && paragraph_translation(source)) }
+      elsif (@custom_font && @independent_font) || state[9] || state[7] || state[2].any? { |row| row[3] }
         replay(state[0],false)
       end
     end
@@ -748,19 +972,29 @@ module FusionRgss157
         raise 'Choose an installed font' if selected.empty? || selected.length>256 || selected =~ /[\x00-\x1f]/ || !Font.exist?(selected)
       end
       @font_name=selected; @custom_font=mode=='custom'; @font_pool={}; @metrics={}
-      @invalidate_all=true if @enabled
-      result={'accepted'=>true,'mode'=>mode,'enabled'=>@enabled,'writebackPending'=>@enabled,'restorePending'=>@enabled && mode=='default','restartRequired'=>false}
+      previous_independent=@independent_font; @independent_font=q['independent']==true
+      @invalidate_all=true if @enabled || @independent_font || previous_independent
+      result={'accepted'=>true,'mode'=>mode,'enabled'=>@enabled,'independent'=>@independent_font,'writebackPending'=>@enabled || @independent_font || previous_independent,'restorePending'=>(@enabled || @independent_font || previous_independent) && mode=='default','restartRequired'=>false}
     when 'speedEnable','speedDisable','gameSpeed' then result=speed_command(q)
     when 'translationPrepare'
       @epoch+=1; @seen={}; unless q['preserveStartup'] then @cache={}; @formatted_alias={}; @enabled=false; end
-      @invalidate_all=true; result={'epoch'=>@epoch}
+      role_reset(q['characterRuntimeContract']==@role_contract)
+      @invalidate_all=true; result={'epoch'=>@epoch,'characterRuntimeContract'=>@role_enabled ? @role_contract : nil}
     when 'translationEnable' then @enabled=true; @invalidate_all=true
     when 'translationDisable'
+      role_reset(false)
       if @enabled || !@cache.empty? then @enabled=false; @epoch+=1; @cache={}; @formatted_alias={}; @invalidate_all=true; end
       result={'epoch'=>@epoch,'restored'=>@dirty.empty? && !@invalidate_all,'restorePending'=>@dirty.size+(@invalidate_all ? 1 : 0)}
     when 'translationPoll'
+      roles=role_poll(q)
+      @role_bindings.each_value do |binding|
+        if @role_enabled && !binding[4] && Time.now<=binding[5]
+          @seen.delete(binding[2]['source']); @seen.delete(binding[6])
+        end
+      end
       texts=@seen.keys[0,128]; texts.each { |t| @seen.delete(t) }
       result={'epoch'=>@epoch,'enabled'=>@enabled,'texts'=>texts,'ahead'=>[],'writebacksConfirmed'=>@draws,'fontBlockedBindings'=>@font_blocked,'writebackPending'=>@dirty.size,'runtimeWarning'=>@failure || (@limited>0 ? 'Some drawing surfaces exceeded the refresh limit; original text is retained.' : '')}
+      result.update(roles)
     when 'translationApply'
       stored=0
       if q['epoch']==@epoch && q['entries'].is_a?(Array)
@@ -817,7 +1051,7 @@ module FusionRgss157
     end
   end
   def self.start
-    return unless @secret =~ /\A[0-9A-Fa-f]{64}\z/ && File.directory?(@folder)
+    return unless @secret =~ /\A[0-9A-Fa-f]{64}\z/ && @files.directory?
     ['Noto Sans CJK SC','Microsoft YaHei','SimHei','SimSun'].each { |name| if Font.exist?(name) then @font_name=name; break; end }
     @default_font_name=@font_name
     selected=ENV['FUSION_GAME_FONT_FAMILY'].to_s
@@ -856,7 +1090,7 @@ module FusionRgss157
       hello={'secret'=>@secret,'protocol'=>157,'engine'=>'rgss','pid'=>Process.pid,'ruby'=>RUBY_VERSION,'font'=>@font_name.to_s}
       until @stopped
         write('hello.json',hello) unless @hello
-        @hello=true if File.file?(File.join(@folder,'hello.json'))
+        @hello=true if @files.file?('hello.json')
         reply=nil; sync { reply=@reply }
         if reply && write('response-'+reply['id'].to_s+'.json',reply)
           @last=reply['id']; sync { @reply=nil }
@@ -864,7 +1098,7 @@ module FusionRgss157
         if read('stop.json',1024)
           sync { @pending={'op'=>'stop'} } unless @closing
         elsif !@reply && !@pending
-          candidates=Dir.entries(@folder).select { |n| n =~ /\Arequest-[0-9]{1,10}\.json\z/ && n[8,n.size-13].to_i>@last }
+          candidates=@files.entries.select { |n| n =~ /\Arequest-[0-9]{1,10}\.json\z/ && n[8,n.size-13].to_i>@last }
           name=candidates.max { |a,b| a[8,a.size-13].to_i <=> b[8,b.size-13].to_i }
           q=name ? read(name,262144) : nil
           if q && q['id'].is_a?(Integer) && q['id']>@last && q['op'].is_a?(String)

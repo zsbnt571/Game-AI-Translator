@@ -36,10 +36,11 @@ static std::atomic<unsigned long long> displayHits{0},measureHits{0},captures{0}
 static std::atomic<unsigned> errors{0};
 static std::mutex telemetry;
 static std::unordered_map<std::wstring,ULONGLONG> visible;
-struct Snapshot {std::wstring original,display;bool changed=false;};
+namespace SlateFont {void Service();void BeginScope();void EndScope();}
+struct Snapshot {std::wstring original,display;bool changed=false;unsigned long long fontRevision=0;};
 static thread_local unsigned depth=0;
 static thread_local std::unordered_map<void*,Snapshot> snapshots;
-struct Scope {Scope(){++depth;++scopes;}~Scope(){--depth;}};
+struct Scope {Scope(){if(!depth)SlateFont::Service();SlateFont::BeginScope();++depth;++scopes;}~Scope(){SlateFont::EndScope();--depth;}};
 using Text=const FStringView*(__fastcall*)(const void*);
 // UE4 FVector2D has constructors: MSVC returns it through the hidden second
 // argument, even though its storage is only eight bytes.
@@ -66,6 +67,7 @@ static bool Copy(const FStringView* view,wchar_t* data,int* size) {
 static std::wstring ReadText(const FStringView* v){wchar_t buffer[6001];int n=0;return Copy(v,buffer,&n)?std::wstring(buffer,n):std::wstring();}
 static std::wstring Wide(const std::string& v){int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,v.data(),(int)v.size(),nullptr,0);std::wstring s(n,0);if(n)MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,v.data(),(int)v.size(),s.data(),n);return s;}
 static std::string Utf8(const std::wstring& v){int n=WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,v.data(),(int)v.size(),nullptr,0,nullptr,nullptr);std::string s(n,0);if(n)WideCharToMultiByte(CP_UTF8,WC_ERR_INVALID_CHARS,v.data(),(int)v.size(),s.data(),n,nullptr,nullptr);return s;}
+#include "SlateFont.h"
 static std::shared_ptr<OwnedString> Resolve(const std::wstring& source){
  if(!active.load(std::memory_order_acquire)||source.empty())return {};
  auto current=std::atomic_load(&cache);auto i=current->find(source);return i==current->end()?nullptr:i->second;
@@ -77,17 +79,19 @@ static void Observe(const std::wstring& s){
 }
 static const FStringView* __fastcall ToString(const void* text){
  auto raw=originalText(text);if(!depth)return raw;
- try{auto s=ReadText(raw);Observe(s);auto found=Resolve(s);if(found){++displayHits;return &found->view;}}
+ try{auto s=ReadText(raw);Observe(s);auto found=Resolve(s);SlateFont::ConsiderText(found?found->value:s);if(found){++displayHits;return &found->view;}}
  catch(...){++errors;}return raw;
 }
 static void* __fastcall MeasureString(void* self,void* result,const void* text,const void* font,float scale){
+ // FString measurement can be a rich-text subrun. It alone does not prove
+ // complete widget text for font coverage; require the FText scope observation.
  if(depth)try{auto source=ReadText((const FStringView*)text);Observe(source);auto found=Resolve(source);if(found){++measureHits;return originalStringMeasure(self,result,&found->view,font,scale);}}catch(...){++errors;}
  return originalStringMeasure(self,result,text,font,scale);
 }
 static void* __fastcall MeasureText(void* self,void* result,const void* text,const void* font,float scale){
  // Simple text uses a font-measure overload that may inline FText::ToString.
  // Substitute through the public FString overload only inside a text widget.
- if(depth)try{auto source=ReadText(originalText(text));Observe(source);auto found=Resolve(source);if(found){++measureHits;return originalStringMeasure(self,result,&found->view,font,scale);}}catch(...){++errors;}
+ if(depth)try{auto source=ReadText(originalText(text));Observe(source);auto found=Resolve(source);SlateFont::ConsiderText(found?found->value:source);if(found){++measureHits;return originalStringMeasure(self,result,&found->view,font,scale);}}catch(...){++errors;}
  return originalTextMeasure(self,result,text,font,scale);
 }
 static void* __fastcall Compute(void* self,void* result,float scale){Scope scope;return originalMeasure(self,result,scale);}
@@ -99,11 +103,14 @@ static bool __fastcall Identical(void* self,const void* text){
  try{
   auto s=ReadText(originalText(text));if(s.empty())return same;Observe(s);
   auto found=Resolve(s);auto display=found?found->value:s;
+  SlateFont::ConsiderText(display);
   if(snapshots.size()>=4096&&!snapshots.count(self))snapshots.clear();
   auto& previous=snapshots[self];
   // A cache arrival or disable invalidates this display snapshot exactly once.
   // Ordinary unchanged frames retain the engine's own cached layout.
-  previous.changed=previous.original!=s||previous.display!=display;
+  auto fontVersion=SlateFont::revision.load();
+  previous.changed=previous.original!=s||previous.display!=display||previous.fontRevision!=fontVersion;
+  previous.fontRevision=fontVersion;
   previous.original=std::move(s);previous.display=std::move(display);
   if(previous.changed){++refreshes;return false;}
  }catch(...){++errors;}return same;
@@ -163,6 +170,72 @@ static bool FontOverload(HANDLE process,DWORD64 base,const wchar_t* argument,ULO
  if(!SymEnumSymbols(process,base,"FSlateFontMeasure::Measure",FindMeasure,&q)||q.count!=1)return false;
  *result=q.address;return true;
 }
+struct FontConstructorSearch {HANDLE process;DWORD64 base;void* address=nullptr;unsigned count=0;};
+static BOOL CALLBACK FindFontConstructor(PSYMBOL_INFO symbol,ULONG,void* context){
+ auto& q=*(FontConstructorSearch*)context;ULONG count=0,children=0;
+ if(symbol->Tag!=SymTagFunction||symbol->Size<14||symbol->ModBase!=q.base||
+ !SymGetTypeInfo(q.process,q.base,symbol->TypeIndex,TI_GET_COUNT,&count)||count!=4||
+ !SymGetTypeInfo(q.process,q.base,symbol->TypeIndex,TI_GET_CHILDRENCOUNT,&children)||children!=3)return TRUE;
+ struct {ULONG Count,Start,ids[3];} ids{3,0,{}};
+ if(!SymGetTypeInfo(q.process,q.base,symbol->TypeIndex,TI_FINDCHILDREN,&ids))return TRUE;
+ for(unsigned i=0;i<3;i++){
+  ULONG type=0,tag=0,related=0,basic=0;ULONG64 bytes=0;
+  if(!SymGetTypeInfo(q.process,q.base,ids.ids[i],TI_GET_TYPE,&type)||!SymGetTypeInfo(q.process,q.base,type,TI_GET_SYMTAG,&tag)||!SymGetTypeInfo(q.process,q.base,type,TI_GET_LENGTH,&bytes))return TRUE;
+  if(i==0){
+   if(tag!=SymTagPointerType||bytes!=8||!SymGetTypeInfo(q.process,q.base,type,TI_GET_TYPE,&related)||
+      !SymGetTypeInfo(q.process,q.base,related,TI_GET_SYMTAG,&tag)||tag!=SymTagBaseType||
+      !SymGetTypeInfo(q.process,q.base,related,TI_GET_BASETYPE,&basic)||basic!=3||
+      !SymGetTypeInfo(q.process,q.base,related,TI_GET_LENGTH,&bytes)||bytes!=2)return TRUE;
+  }else if(i==1){if(tag!=SymTagBaseType||bytes!=4||!SymGetTypeInfo(q.process,q.base,type,TI_GET_BASETYPE,&basic)||basic!=6)return TRUE;}
+  else{
+   PWSTR name=nullptr;if(tag!=12||bytes!=1||!SymGetTypeInfo(q.process,q.base,type,TI_GET_SYMNAME,&name))return TRUE;
+   bool match=wcscmp(name,L"EFontHinting")==0;LocalFree(name);if(!match)return TRUE;
+  }
+ }
+ q.address=(void*)symbol->Address;++q.count;return TRUE;
+}
+static bool FontConstructor(HANDLE process,DWORD64 base,void** result){
+ FontConstructorSearch q{process,base};
+ if(!SymEnumSymbols(process,base,"FSlateFontInfo::FSlateFontInfo",FindFontConstructor,&q)||q.count!=1)return false;
+ *result=q.address;return true;
+}
+static bool FontIdentityFields(HANDLE process,DWORD64 base){
+ alignas(SYMBOL_INFO) unsigned char buffer[sizeof(SYMBOL_INFO)+1024]={};auto symbol=(SYMBOL_INFO*)buffer;symbol->SizeOfStruct=sizeof(SYMBOL_INFO);symbol->MaxNameLen=1024;
+ if(!SymGetTypeFromName(process,base,"FSlateFontInfo",symbol)||!NamedType(process,base,symbol->TypeIndex,L"FSlateFontInfo",88))return false;
+ ULONG count=0;if(!SymGetTypeInfo(process,base,symbol->TypeIndex,TI_GET_CHILDRENCOUNT,&count)||count>512)return false;
+ std::vector<unsigned char> storage(sizeof(TI_FINDCHILDREN_PARAMS)+sizeof(ULONG)*count);auto children=(TI_FINDCHILDREN_PARAMS*)storage.data();children->Count=count;children->Start=0;
+ if(!SymGetTypeInfo(process,base,symbol->TypeIndex,TI_FINDCHILDREN,children))return false;
+ const wchar_t* wanted[]={L"FontObject",L"CompositeFont",L"TypefaceFontName"};const unsigned widths[]={8,16,8};unsigned hits[3]={};
+ for(ULONG i=0;i<count;i++){
+  PWSTR name=nullptr;if(!SymGetTypeInfo(process,base,children->ChildId[i],TI_GET_SYMNAME,&name))continue;
+  for(unsigned field=0;field<3;field++)if(wcscmp(name,wanted[field])==0){
+   ULONG type=0,offset=0;ULONG64 bytes=0;
+   if(SymGetTypeInfo(process,base,children->ChildId[i],TI_GET_TYPE,&type)&&SymGetTypeInfo(process,base,children->ChildId[i],TI_GET_OFFSET,&offset)&&
+      SymGetTypeInfo(process,base,type,TI_GET_LENGTH,&bytes)&&bytes==widths[field]&&offset+bytes<=88){SlateFont::identityOffsets[field]=offset;++hits[field];}
+  }
+  LocalFree(name);
+ }
+ for(unsigned i=0;i<3;i++){if(hits[i]!=1)return false;for(unsigned j=0;j<i;j++)if(SlateFont::identityOffsets[i]<SlateFont::identityOffsets[j]+widths[j]&&SlateFont::identityOffsets[j]<SlateFont::identityOffsets[i]+widths[i])return false;}
+ return true;
+}
+static BOOL CALLBACK FindFontKey(PSYMBOL_INFO symbol,ULONG,void* context){
+ auto& q=*(FontConstructorSearch*)context;ULONG count=0,children=0;
+ if(symbol->Tag!=SymTagFunction||symbol->Size<14||symbol->ModBase!=q.base||
+ !SymGetTypeInfo(q.process,q.base,symbol->TypeIndex,TI_GET_COUNT,&count)||count!=4||
+ !SymGetTypeInfo(q.process,q.base,symbol->TypeIndex,TI_GET_CHILDRENCOUNT,&children)||children!=3)return TRUE;
+ struct {ULONG Count,Start,ids[3];} ids{3,0,{}};if(!SymGetTypeInfo(q.process,q.base,symbol->TypeIndex,TI_FINDCHILDREN,&ids))return TRUE;
+ for(unsigned i=0;i<3;i++){
+  ULONG type=0,tag=0,related=0,basic=0;ULONG64 bytes=0;
+  if(!SymGetTypeInfo(q.process,q.base,ids.ids[i],TI_GET_TYPE,&type)||!SymGetTypeInfo(q.process,q.base,type,TI_GET_SYMTAG,&tag)||!SymGetTypeInfo(q.process,q.base,type,TI_GET_LENGTH,&bytes))return TRUE;
+  if(i<2){if(tag!=SymTagPointerType||bytes!=8||!SymGetTypeInfo(q.process,q.base,type,TI_GET_TYPE,&related)||!NamedType(q.process,q.base,related,i==0?L"FSlateFontInfo":L"FFontOutlineSettings",i==0?88:32))return TRUE;}
+  else if(tag!=SymTagBaseType||bytes!=4||!SymGetTypeInfo(q.process,q.base,type,TI_GET_BASETYPE,&basic)||basic!=8)return TRUE;
+ }
+ q.address=(void*)symbol->Address;++q.count;return TRUE;
+}
+static bool FontKeyConstructor(HANDLE process,DWORD64 base,void** result){
+ FontConstructorSearch q{process,base};if(!SymEnumSymbols(process,base,"FSlateFontKey::FSlateFontKey",FindFontKey,&q)||q.count!=1)return false;
+ *result=q.address;return true;
+}
 static bool Install(){
  if(Env(L"FUSION_UNREAL_ENGINE")!=L"4.27")return false;
  wchar_t name[32768];if(!GetModuleFileNameW(nullptr,name,32768))return false;
@@ -175,6 +248,7 @@ static bool Install(){
  auto base=ready?SymLoadModuleExW(symbols,nullptr,name,nullptr,(DWORD64)GetModuleHandleW(nullptr),0,nullptr,0):0;
  void *text=nullptr,*measure=nullptr,*paint=nullptr,*identical=nullptr,*equal=nullptr,*stringMeasure=nullptr,*textMeasure=nullptr;
  void *richMeasure=nullptr,*richPaint=nullptr;
+ void *fontConstructor=nullptr,*fontComposite=nullptr,*fontKey=nullptr;
  ready=base&&Function(symbols,base,"FText::ToString",1,SymTagPointerType,8,&text)&&
   Function(symbols,base,"STextBlock::ComputeDesiredSize",2,SymTagUDT,8,&measure)&&
   Function(symbols,base,"STextBlock::OnPaint",8,SymTagBaseType,4,&paint)&&
@@ -186,6 +260,8 @@ static bool Install(){
  // optional scope never grants broad process-wide text replacement.
  richTextScopes=ready&&Function(symbols,base,"SRichTextBlock::ComputeDesiredSize",2,SymTagUDT,8,&richMeasure)&&
   Function(symbols,base,"SRichTextBlock::OnPaint",8,SymTagBaseType,4,&richPaint)&&richMeasure!=measure&&richPaint!=paint;
+ bool customFont=ready&&FontConstructor(symbols,base,&fontConstructor)&&FontIdentityFields(symbols,base)&&FontKeyConstructor(symbols,base,&fontKey)&&
+  Function(symbols,base,"FSlateFontInfo::GetCompositeFont",1,SymTagPointerType,8,&fontComposite);
  if(base||ready)SymCleanup(symbols);else SymCleanup(symbols);SymSetOptions(old);CloseHandle(symbols);
  if(!ready)return false;
  if(MH_Initialize()!=MH_OK)return false;
@@ -193,6 +269,10 @@ static bool Install(){
  std::vector<Hook> hooks={{text,(void*)ToString,(void**)&originalText},{measure,(void*)Compute,(void**)&originalMeasure},{paint,(void*)OnPaint,(void**)&originalPaint},{identical,(void*)Identical,(void**)&originalIdentical},{equal,(void*)DisplayEqual,(void**)&originalEqual},{stringMeasure,(void*)MeasureString,(void**)&originalStringMeasure},{textMeasure,(void*)MeasureText,(void**)&originalTextMeasure}};
  if(richTextScopes){hooks.push_back({richMeasure,(void*)RichCompute,(void**)&originalRichMeasure});hooks.push_back({richPaint,(void*)RichPaint,(void**)&originalRichPaint});}
  for(auto& hook:hooks)if(MH_CreateHook(hook.address,hook.callback,hook.original)!=MH_OK){MH_Uninitialize();return false;}
+ if(customFont&&MH_CreateHook(fontComposite,(void*)SlateFont::GetComposite,(void**)&SlateFont::original)==MH_OK&&
+    MH_CreateHook(fontKey,(void*)SlateFont::MakeKey,(void**)&SlateFont::originalKey)==MH_OK){
+  SlateFont::construct=(SlateFont::Constructor)fontConstructor;SlateFont::installed=true;
+ }
  if(MH_EnableHook(MH_ALL_HOOKS)!=MH_OK){MH_Uninitialize();return false;}return true;
 }
 static DWORD WINAPI Worker(void*){
@@ -203,6 +283,8 @@ static DWORD WINAPI Worker(void*){
   std::atomic_store(&cache,std::shared_ptr<const Map>(map));active=false;
   unsigned id=0,stored=0;ULONGLONG lastHeartbeat=GetTickCount64();
   for(;;){
+   auto font=Read(L"slate-font-command.json",8192);
+   if(font.is_object()&&font.value("secret","")==secret)try{SlateFont::Submit(font);}catch(...){/* Font failure never disables localization. */}
    auto command=L"slate-command-"+std::to_wstring(id+1)+L".json";
    auto request=Read(command.c_str(),262144);
    if(request.is_object()&&request.value("secret","")==secret&&request.value("id",0u)>id){
@@ -215,7 +297,7 @@ static DWORD WINAPI Worker(void*){
    if(GetTickCount64()-lastHeartbeat>5000)active=false;
    json sources=json::array();
    {std::lock_guard<std::mutex> l(telemetry);auto now=GetTickCount64();for(auto i=visible.begin();i!=visible.end();)if(now-i->second>3000)i=visible.erase(i);else{if(sources.size()<256)sources.push_back(Utf8(i->first));++i;}}
-   Write({{"secret",secret},{"state","ready"},{"id",id},{"stored",stored},{"enabled",active.load()},{"entries",std::atomic_load(&cache)->size()},
+   Write({{"secret",secret},{"state","ready"},{"id",id},{"stored",stored},{"enabled",active.load()},{"entries",std::atomic_load(&cache)->size()},{"font",SlateFont::State()},
     {"richTextScopes",richTextScopes},{"scopes",scopes.load()},{"captures",captures.load()},{"displayHits",displayHits.load()},{"measureHits",measureHits.load()},{"layoutRefreshes",refreshes.load()},{"errors",errors.load()},{"texts",sources}});
    Sleep(100);
   }

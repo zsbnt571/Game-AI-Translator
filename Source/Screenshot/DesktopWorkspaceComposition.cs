@@ -4,6 +4,7 @@ namespace ScreenshotTranslationUiTester;
 // This boundary contains no copied state and no alternate UI implementation.
 public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, INovelWorkspaceHost, IRenpyWorkspaceHost, ISettingsWorkspaceHost, IDesktopSettingsHost, IProfileEditorHost, ITranslationContentHost
 {
+    ILibraryTagWorkspaceHost ILibraryWorkspaceHost.LibraryTags => this;
     System.Int32 ILibraryWorkspaceHost.DeviceDpi { get => DeviceDpi; }
     System.Drawing.Font ILibraryWorkspaceHost.Font { get => Font; }
     void ILibraryWorkspaceHost.NativeLibraryPresentation() => NativeLibraryPresentation();
@@ -35,6 +36,9 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     System.Windows.FrameworkElement? ILibraryWorkspaceHost.WpfUpperHeader { get => WpfUpperHeader; set => WpfUpperHeader = value; }
     System.String ILibraryWorkspaceHost.WpfUpperSection { get => WpfUpperSection; }
     IGameDetailsHost ILibraryWorkspaceHost.GameDetails => this;
+    GameNoteSelection? IGameDetailsHost.NativeGameNotes => _libraryArtworkRecord is {} record&&SameGame(record.ExePath,GamePathText)
+        ?new(record.Id,_libraryMetadata?.Get(record.Id).Note??""):null;
+    void IGameDetailsHost.NativeGameNotesSaved()=>ScheduleLibraryRefresh();
     ScreenshotTranslationUiTester.GameDetailPresentation IGameDetailsHost.GameDetail { get => GameDetail; }
     ModificationSpeedState IGameDetailsHost.NativeGameSpeedState => NativeGameSpeedState;
     Task IGameDetailsHost.NativeSetGameSpeed(double rate) => SetIndependentGameSpeedAsync(rate);
@@ -85,6 +89,7 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     void IRenpyWorkspaceHost.NativeRenpySearch(System.String query) => NativeRenpySearch(query);
     void IRenpyWorkspaceHost.NativeRenpySelect(System.Collections.Generic.IEnumerable<ScreenshotTranslationUiTester.RenpyVariableRow> rows) => NativeRenpySelect(rows);
     void IRenpyWorkspaceHost.NativeRenpySort(System.Int32 column) => NativeRenpySort(column);
+    AiToolsController ISettingsWorkspaceHost.CreateAiToolsController() => SharedAiController;
     void ISettingsWorkspaceHost.NativePrepareProfilePage() => NativePrepareProfilePage();
     void ISettingsWorkspaceHost.NativeSaveDesktopSettings() => NativeSaveDesktopSettings();
     System.String ISettingsWorkspaceHost.NativeSettingsDescription(System.Int32 page) => NativeSettingsDescription(page);
@@ -103,6 +108,7 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     void IDesktopSettingsHost.NativeBeginGameShortcut() => NativeBeginGameShortcut();
     System.String IDesktopSettingsHost.NativeBindingText(ScreenshotTranslationUiTester.InputActionId action) => NativeBindingText(action);
     System.String? IDesktopSettingsHost.NativeChooseStorageLocation() => NativeChooseStorageLocation();
+    System.String? IDesktopSettingsHost.NativeChooseAiStorageLocation() => NativeChooseAiStorageLocation147();
     System.String? IDesktopSettingsHost.NativeChooseMigrationSource() => NativeChooseMigrationSource();
     void IDesktopSettingsHost.NativeChooseThemeColor(System.String property) => NativeChooseThemeColor(property);
     System.String IDesktopSettingsHost.NativeCredentialStatus { get => NativeCredentialStatus; }
@@ -124,6 +130,8 @@ public sealed partial class MainForm : ILibraryWorkspaceHost, IGameDetailsHost, 
     void IDesktopSettingsHost.NativeSetBinding(ScreenshotTranslationUiTester.InputActionId action, ScreenshotTranslationUiTester.InputBinding binding) => NativeSetBinding(action, binding);
     void IDesktopSettingsHost.NativeSetGameShortcut(System.String value) => NativeSetGameShortcut(value);
     void IDesktopSettingsHost.NativeSetTheme(ScreenshotTranslationUiTester.ApplicationThemeMode theme) => NativeSetTheme(theme);
+    void IDesktopSettingsHost.NativeSetIconColorMode(ScreenshotTranslationUiTester.UiIconColorMode mode) => NativeSetIconColorMode(mode);
+    void IDesktopSettingsHost.NativePreviewIcons() => NativePreviewIcons();
     System.String IDesktopSettingsHost.NativeSettingsDescription(System.Int32 page) => NativeSettingsDescription(page);
     void IDesktopSettingsHost.NativeSettingsError(System.Exception ex) => NativeSettingsError(ex);
     System.String IDesktopSettingsHost.NativeSettingsPath { get => NativeSettingsPath; }

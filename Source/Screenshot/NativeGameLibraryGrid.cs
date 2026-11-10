@@ -17,8 +17,8 @@ internal sealed partial class NativeGameLibraryGrid:ILibraryGridSession
     public event Action<RecentGame,Point>? ContextRequested;
     public string EmptyText {get;set;}="把游戏拖到这里\n或点击右上角“导入游戏”";
     internal NativeGameLibraryGrid(){InitializeWpfCanvas();}
-    public void SetTiles(LibraryTile[] next,string? selectedPath,Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader=null){var old=tiles;RetainTileImages(next,loader);tiles=next;selected=selectedPath;selection.IntersectWith(next.Select(t=>t.Game.Id));if(!selecting&&old.Length==0&&selection.Count==0&&next.FirstOrDefault(t=>SamePath(t.Game.ExePath,selectedPath)) is {} chosen)selection.Add(chosen.Game.Id);foreach(var tile in old)tile.Dispose();Reflow();Invalidate();}
-    public void SelectPath(string? path){if(SamePath(selected,path))return;selected=path;if(tiles.FirstOrDefault(t=>SamePath(t.Game.ExePath,path)) is {} tile&&!selection.Contains(tile.Game.Id)){selection.Clear();selection.Add(tile.Game.Id);}Invalidate();}
+    public void SetTiles(LibraryTile[] next,string? selectedPath,Func<RecentGame,(Bitmap? Cover,Bitmap? Icon)>? loader=null){var old=tiles;RetainTileImages(next,loader);tiles=next;if(!BatchSelection)selected=selectedPath;int oldSelectionCount=selection.Count;selection.IntersectWith(next.Select(t=>t.Game.Id));if(!BatchSelection&&!selecting&&old.Length==0&&selection.Count==0&&next.FirstOrDefault(t=>SamePath(t.Game.ExePath,selectedPath)) is {} chosen)selection.Add(chosen.Game.Id);foreach(var tile in old)tile.Dispose();Reflow();Invalidate();if(oldSelectionCount!=selection.Count)SelectionChanged?.Invoke();}
+    public void SelectPath(string? path){if(BatchSelection||SamePath(selected,path))return;selected=path;if(tiles.FirstOrDefault(t=>SamePath(t.Game.ExePath,path)) is {} tile&&!selection.Contains(tile.Game.Id)){selection.Clear();selection.Add(tile.Game.Id);}Invalidate();}
     private int S(int n)=>(int)Math.Round(n*DeviceDpi/96f);
     // Reserve a stable scrollbar lane so appearing/disappearing scrollbars cannot
     // change the column count. Share remaining pixels across columns, not a blank strip.
@@ -59,20 +59,21 @@ internal sealed partial class NativeGameLibraryGrid:ILibraryGridSession
     private void OnMouseMove(MouseEventArgs e){if(selecting){UpdateBoxSelection(e.Location);return;}if(MoveScroll(e.Location))return;var i=Hit(e.Location);if(i!=hover){hover=i;Cursor=i>=0?Cursors.Hand:Cursors.Default;Invalidate();}}
     private void OnMouseLeave(EventArgs e){hover=-1;scrollHover=false;Invalidate();}
     private void OnMouseDown(MouseEventArgs e)
-    {if(e.Button is not (MouseButtons.Left or MouseButtons.Right))return;Focus();if(BeginScroll(e))return;int i=Hit(e.Location);if(e.Button==MouseButtons.Right){if(i>=0&&!selection.Contains(tiles[i].Game.Id))SelectIndex(i,Keys.None);return;}if(i<0){BeginBoxSelection(e.Location,Control.ModifierKeys);return;}SelectIndex(i,Control.ModifierKeys);}
-    private void OnMouseUp(MouseEventArgs e){if(selecting&&e.Button==MouseButtons.Left){UpdateBoxSelection(e.Location);selecting=false;Capture=false;Invalidate();return;}if(EndScroll())return;int i=Hit(e.Location);if(e.Button==MouseButtons.Right&&i>=0)ContextRequested?.Invoke(tiles[i].Game,e.Location);}
-    private void OnMouseDoubleClick(MouseEventArgs e){int i=Hit(e.Location);if(e.Button==MouseButtons.Left&&i>=0)GameActivated?.Invoke(tiles[i].Game);}
+    {if(e.Button is not (MouseButtons.Left or MouseButtons.Right))return;Focus();if(BeginScroll(e))return;int i=Hit(e.Location);if(e.Button==MouseButtons.Right){if(BatchSelection)return;if(i>=0&&!selection.Contains(tiles[i].Game.Id))SelectIndex(i,Keys.None);return;}if(i<0){BeginBoxSelection(e.Location,Control.ModifierKeys);return;}SelectIndex(i,Control.ModifierKeys);}
+    private void OnMouseUp(MouseEventArgs e){if(selecting&&e.Button==MouseButtons.Left){UpdateBoxSelection(e.Location);selecting=false;Capture=false;Invalidate();return;}if(EndScroll())return;int i=Hit(e.Location);if(!BatchSelection&&e.Button==MouseButtons.Right&&i>=0)ContextRequested?.Invoke(tiles[i].Game,e.Location);}
+    private void OnMouseDoubleClick(MouseEventArgs e){int i=Hit(e.Location);if(!BatchSelection&&e.Button==MouseButtons.Left&&i>=0)GameActivated?.Invoke(tiles[i].Game);}
     private void Choose(int index)=>SelectIndex(index,Keys.None);
     private void OnKeyDown(KeyEventArgs e)
     {
-        if(tiles.Length==0){if(pageScrollEnabled&&e.KeyCode is Keys.Home or Keys.End){SetScrollValue(e.KeyCode==Keys.Home?0:scrollMaximum);e.Handled=e.SuppressKeyPress=true;}return;}if(e.Control&&e.KeyCode==Keys.A){selection=tiles.Select(t=>t.Game.Id).ToHashSet();Invalidate();e.Handled=e.SuppressKeyPress=true;return;}if(e.KeyCode==Keys.Escape){selection.Clear();Invalidate();e.Handled=true;return;}
+        if(tiles.Length==0){if(pageScrollEnabled&&e.KeyCode is Keys.Home or Keys.End){SetScrollValue(e.KeyCode==Keys.Home?0:scrollMaximum);e.Handled=e.SuppressKeyPress=true;}return;}if(e.Control&&e.KeyCode==Keys.A){SelectAllVisible();e.Handled=e.SuppressKeyPress=true;return;}if(e.KeyCode==Keys.Escape){ClearSelection();e.Handled=true;return;}
         int i=Array.FindIndex(tiles,x=>StringComparer.OrdinalIgnoreCase.Equals(x.Game.ExePath,selected));
+        if(BatchSelection&&i>=0&&e.KeyCode is Keys.Enter or Keys.Space){SelectIndex(i,Keys.Control);e.Handled=e.SuppressKeyPress=true;return;}
         if(i>=0&&e.KeyCode==Keys.Enter){GameActivated?.Invoke(tiles[i].Game);e.Handled=e.SuppressKeyPress=true;return;}
-        if(i>=0&&(e.KeyCode==Keys.Apps||e.Shift&&e.KeyCode==Keys.F10)){var r=BoundsFor(i);ContextRequested?.Invoke(tiles[i].Game,new(r.Left+S(20),r.Top+S(20)));e.Handled=e.SuppressKeyPress=true;return;}
+        if(!BatchSelection&&i>=0&&(e.KeyCode==Keys.Apps||e.Shift&&e.KeyCode==Keys.F10)){var r=BoundsFor(i);ContextRequested?.Invoke(tiles[i].Game,new(r.Left+S(20),r.Top+S(20)));e.Handled=e.SuppressKeyPress=true;return;}
         int page=Math.Max(1,(ShelfMode?ViewportSize.Width:ViewportSize.Height)/(ShelfMode?Cell.Width:Cell.Height))*(ShelfMode?1:Columns);
         int n=e.KeyCode switch{Keys.Left=>i-1,Keys.Right=>i+1,Keys.Up=>i-Columns,Keys.Down=>i+Columns,Keys.Home=>0,Keys.End=>tiles.Length-1,Keys.PageUp=>i-page,Keys.PageDown=>i+page,_=>i};
         if(e.KeyCode is Keys.Left or Keys.Right or Keys.Up or Keys.Down or Keys.Home or Keys.End or Keys.PageUp or Keys.PageDown)
-        {n=Math.Clamp(n,0,tiles.Length-1);if(n!=i)SelectIndex(n,e.Modifiers);if(pageScrollEnabled&&e.KeyCode is Keys.Home or Keys.End)SetScrollValue(e.KeyCode==Keys.Home?0:scrollMaximum);else EnsureTileVisible(n);e.Handled=e.SuppressKeyPress=true;}
+        {n=Math.Clamp(n,0,tiles.Length-1);if(n!=i){if(BatchSelection&&(e.Modifiers&Keys.Shift)==0){selected=tiles[n].Game.ExePath;Invalidate();}else SelectIndex(n,e.Modifiers);}if(pageScrollEnabled&&e.KeyCode is Keys.Home or Keys.End)SetScrollValue(e.KeyCode==Keys.Home?0:scrollMaximum);else EnsureTileVisible(n);e.Handled=e.SuppressKeyPress=true;}
     }
     public void Dispose(){if(!IsDisposed){IsDisposed=true;wpfCanvas?.StopWheelMotion();ResetTileImages(null);DisposeInactiveImages();boxScrollTimer?.Stop();foreach(var tile in tiles)tile.Dispose();tiles=[];}}
 }

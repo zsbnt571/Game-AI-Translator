@@ -104,7 +104,8 @@ public sealed partial class MainForm
         if (WpfWorkspace.Enabled) AddSettingRow(table,"目标语言",new Panel{Name="NativeTranslationContent"});
         else
         {
-        foreach(var pair in new (string,Control)[]{("目标语言",_targetLanguageBox),("原文语言",LanguageCombinationPicker.WithMode(_sourceLanguageBox,_sourceLanguageChoices)),("翻译风格",_translationStyleBox)})AddSettingRow(table,pair.Item1,pair.Item2);
+        AddSettingRow(table,"目标语言",new TranslationTargetLanguageGroup(_targetLanguageBox,_characterGenderEnhancementBox));
+        foreach(var pair in new (string,Control)[]{("原文语言",LanguageCombinationPicker.WithMode(_sourceLanguageBox,_sourceLanguageChoices)),("翻译风格",_translationStyleBox)})AddSettingRow(table,pair.Item1,pair.Item2);
         _translationStyleDescription.Name="TranslationStyleDescription";
         AddSettingRow(table,"",_translationStyleDescription);
         AddSettingRow(table,"",Info(TranslationStylePolicy.FidelityHint));

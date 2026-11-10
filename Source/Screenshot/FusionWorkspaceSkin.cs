@@ -71,6 +71,14 @@ internal static class WorkspaceSkin
             case "expand":Line(new(14,3),new(21,3),new(21,10));Line(new(21,3),new(14,10));Line(new(3,14),new(3,21),new(10,21));Line(new(3,21),new(10,14));break;
             case "restore":Line(new(14,3),new(14,10),new(21,10));Line(new(14,10),new(21,3));Line(new(3,14),new(10,14),new(10,21));Line(new(3,21),new(10,14));break;
             case "calendar":g.DrawRectangle(p,3,5,18,17);Line(new(3,10),new(21,10));Line(new(7,2),new(7,7));Line(new(17,2),new(17,7));break;
+            case "history":
+                g.DrawArc(p,3,3,18,18,210,315);Line(new(3,3),new(3,8),new(8,8));Line(new(12,7),new(12,12),new(16,14));break;
+            case "star":
+                Line(new(12,2),new(15.1f,8.3f),new(22,9.3f),new(17,14.2f),new(18.2f,21),new(12,17.8f),new(5.8f,21),new(7,14.2f),new(2,9.3f),new(8.9f,8.3f),new(12,2));break;
+            case "tags":
+                Line(new(7,2),new(14,2),new(22,10),new(13,19),new(5,11),new(5,4),new(7,2));g.DrawEllipse(p,9,5,2,2);Line(new(2,7),new(2,14),new(10,22),new(13,22));break;
+            case "layers":
+                Line(new(12,3),new(22,8),new(12,13),new(2,8),new(12,3));Line(new(2,12),new(12,17),new(22,12));Line(new(2,16),new(12,21),new(22,16));break;
             case "tag":Line(new(3,3),new(13,3),new(22,12),new(12,22),new(3,13),new(3,3));g.DrawEllipse(p,7,7,3,3);break;
             case "trash":Line(new(4,6),new(20,6));Line(new(9,6),new(9,3),new(15,3),new(15,6));Line(new(6,6),new(7,22),new(17,22),new(18,6));Line(new(10,10),new(10,18));Line(new(14,10),new(14,18));break;
         }

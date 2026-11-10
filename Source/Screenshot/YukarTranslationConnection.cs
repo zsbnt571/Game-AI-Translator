@@ -24,6 +24,7 @@ internal sealed class YukarTranslationConnection : IEmbeddedTranslationConnectio
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=layout.Directory,CreateNoWindow=true};
         GameLaunchEnvironment.ClearSession(info);
         GameTestCopyEnvironment.Apply(info);
+        GameFontSettings.ApplyLaunch(info,exe,translationAtStartup,independent:true);
         info.Environment["FUSION_YUKAR_SESSION"]=folder;info.Environment["FUSION_YUKAR_SECRET"]=secret;info.Environment["FUSION_YUKAR_START"]=translationAtStartup?"1":"0";
         if(File.Exists(Path.Combine(Path.GetDirectoryName(exe)!,GameTestCopyEnvironment.Marker)))info.Environment["FUSION_YUKAR_TEST_MUTE"]="1";else info.Environment.Remove("FUSION_YUKAR_TEST_MUTE");
         info.FileName=YukarGameAdapter.Runner(exe);info.ArgumentList.Add(layout.Launcher is null?"--player":"--launcher");info.ArgumentList.Add(layout.Player);if(layout.Launcher is not null)info.ArgumentList.Add(layout.Launcher);return info;

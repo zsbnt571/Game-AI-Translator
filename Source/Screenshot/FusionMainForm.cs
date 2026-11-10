@@ -43,11 +43,14 @@ public sealed partial class MainForm
         var root=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,Margin=Padding.Empty};
         root.ColumnStyles.Add(new(SizeType.Percent,100));
         root.RowStyles.Add(new(SizeType.Percent,100));root.RowStyles.Add(new(SizeType.Absolute,22));
-        var sidebar=new LibrarySidebar{Dock=DockStyle.Fill,ColumnCount=1,RowCount=2,Padding=new(0,12,0,0),Margin=Padding.Empty};_libraryNavigationHost=sidebar;
+        var sidebar=new LibrarySidebar{Dock=DockStyle.Fill,ColumnCount=1,RowCount=3,Padding=new(0,12,0,0),Margin=Padding.Empty};_libraryNavigationHost=sidebar;
         sidebar.ColumnStyles.Add(new(SizeType.Percent,100));sidebar.RowStyles.Add(new(SizeType.Absolute,30));sidebar.RowStyles.Add(new(SizeType.Percent,100));
         var navigationTitle=WorkspaceLabel("游戏导航");navigationTitle.Margin=new(14,4,0,4);
         _libraryNavigation.Margin=Padding.Empty;
         sidebar.Controls.Add(navigationTitle,0,0);sidebar.Controls.Add(_libraryNavigation,0,1);
+        sidebar.RowStyles.Add(new(SizeType.Absolute,58));
+        var categorySettings=IconButton("分类显示设置","settings",(_,_)=>ConfigureLibraryTags());categorySettings.Dock=DockStyle.Fill;categorySettings.Margin=new(8);categorySettings.AccessibleName="分类显示设置";
+        sidebar.Controls.Add(categorySettings,0,2);
         _libraryNavigation.Navigate+=NavigateLibrary;
         _libraryNavigation.ContextRequested+=ShowLibraryFolderContext;
         FormClosed+=(_,_)=>_folderContext.Dispose();

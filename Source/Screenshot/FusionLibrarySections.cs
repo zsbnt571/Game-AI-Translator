@@ -1,4 +1,4 @@
-﻿namespace ScreenshotTranslationUiTester;
+namespace ScreenshotTranslationUiTester;
 
 internal static class LibrarySections
 {
@@ -22,7 +22,7 @@ internal static class LibrarySections
             _ when key.StartsWith("folder:")=>games.Where(x=>LibraryFolders.Contains(key[7..],x.ExePath)),
             _ when key.StartsWith("collection:")=>games.Where(x=>preferences?.Folders?.FirstOrDefault(f=>f.Id==key[11..]) is { } folder&&LibraryFolders.Contains(folder,x)),
             _ when key.StartsWith("engine:")=>games.Where(x=>(engines.GetValueOrDefault(x.ExePath)??"待识别")==key[7..]),
-            _ when key.StartsWith("tag:")=>games.Where(x=>metadata.Get(x.Id).Tags.Split([',','，',';','；'],StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries).Contains(key[4..])),
+            _ when key.StartsWith("tag:")=>games.Where(x=>LibraryCategories.Contains(preferences,x,metadata.Get(x.Id),key[4..])),
             _=>games
         };
     }
@@ -82,24 +82,18 @@ public sealed partial class MainForm
         Add(_sectionMenu,"全部游戏","all","grid");Add(_sectionMenu,"最近使用","recent","calendar");Add(_sectionMenu,"收藏","favorite","tag");
         _sectionMenu.Items.Add(new ToolStripSeparator());
         var folders=_sectionMenu.AddGroup("按文件夹","folder");
-        foreach(var folder in LibraryFolders.All(_libraryPreferences))
+        foreach(var folder in LibraryFolders.All(_libraryPreferences).Where(f=>!string.IsNullOrWhiteSpace(f.Root)))
             Add(folders,folder.Name+"  ·  "+games.Count(g=>LibraryFolders.Contains(folder,g)),"collection:"+folder.Id,"folder",folder.Root);
-        folders.AddAction("新建文件夹…","plus",(_,_)=>CreateLibraryFolder());
         folders.AddAction("添加游戏总目录…","folder",async(_,_)=>await ChooseLibraryRootAsync());
         var engines=_sectionMenu.AddGroup("按引擎","game");
         foreach(var group in games.GroupBy(x=>_libraryEngines.GetValueOrDefault(x.ExePath)??"待识别").OrderBy(x=>x.Key))
             Add(engines,group.Key+"  ·  "+group.Count(),"engine:"+group.Key,"game");
         var categories=_sectionMenu.AddGroup("我的分类","tag");
-        foreach(var tag in (_libraryPreferences.Categories??[]).Concat(games.SelectMany(x=>_libraryMetadata!.Get(x.Id).Tags.Split([',','，',';','；'],StringSplitOptions.TrimEntries|StringSplitOptions.RemoveEmptyEntries))).Distinct().OrderBy(x=>x))
+        foreach(var tag in LibraryCategories.Names(_libraryPreferences,games,_libraryMetadata!))
             Add(categories,tag,"tag:"+tag,"tag");
         if(categories.Items.Count==0)categories.AddAction("暂无分类，可在左侧新建","tag",(_,_)=>{},false);
         if(folders.Items.Count==0)folders.AddAction("导入游戏后显示文件夹","folder",(_,_)=>{},false);
         if(engines.Items.Count==0)engines.AddAction("暂无游戏","game",(_,_)=>{},false);
-        if(upper&&_recentSectionTotal>24)
-        {
-            _sectionMenu.Items.Add(new ToolStripSeparator());
-            _sectionMenu.AddAction($"在下方查看全部 {_recentSectionTotal} 项","list",(_,_)=>SetLibrarySection(false,chosen));
-        }
     }
     private void SetLibrarySection(bool upper,string key)
     {
@@ -110,6 +104,7 @@ public sealed partial class MainForm
             LibraryPreferencesStore.Save(next);_libraryPreferences=next;
             if(!upper)
             {
+                ResetLibraryTagNavigation();
                 _libraryFiltersLoading=true;
                 try{_libraryCollection="";_libraryScope="home";_libraryTag="";LibraryEngineIndex=0;LibraryFolderIndex=0;LibraryFilterIndex=0;LibrarySearchText="";}
                 finally{_libraryFiltersLoading=false;}

@@ -6,7 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>FusionCoverCapture</AssemblyName>
-    <Version>0.6.0.26</Version><AssemblyVersion>0.6.0.26</AssemblyVersion>
+    <Version>1.1.154</Version><AssemblyVersion>1.1.0.154</AssemblyVersion>
     <Platforms>AnyCPU</Platforms>
   </PropertyGroup>
   <ItemGroup>

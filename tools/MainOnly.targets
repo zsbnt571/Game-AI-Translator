@@ -1,0 +1,9 @@
+<Project>
+  <!-- Main-only publish. Supply matching verified helpers separately when assembling a complete distribution. -->
+  <Target Name="PublishGameCover" />
+  <Target Name="CopyGameCoverPublish" />
+  <Target Name="CopyGameCoverBuild" />
+  <Target Name="CopyOcrHelperBuild" />
+  <Target Name="CopyOcrHelperPublish" />
+  <Target Name="CopyYukarBridge" />
+</Project>

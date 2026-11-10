@@ -54,7 +54,7 @@ internal static class UnityNativeApiMap
     ["il2cpp_domain_get","il2cpp_domain_assembly_open","il2cpp_get_corlib","il2cpp_assembly_get_image","il2cpp_image_get_name","il2cpp_class_from_name","il2cpp_class_get_method_from_name","il2cpp_class_get_methods","il2cpp_class_get_parent","il2cpp_class_get_type","il2cpp_class_get_name","il2cpp_class_get_namespace","il2cpp_type_get_object","il2cpp_type_get_name","il2cpp_free","il2cpp_method_get_name","il2cpp_method_get_param","il2cpp_method_get_param_count","il2cpp_object_get_class","il2cpp_object_unbox","il2cpp_runtime_invoke","il2cpp_string_new","il2cpp_string_length","il2cpp_string_chars","il2cpp_array_length","il2cpp_gchandle_new","il2cpp_gchandle_new_weakref","il2cpp_gchandle_get_target","il2cpp_gchandle_free","il2cpp_object_new","il2cpp_resolve_icall","il2cpp_array_new"];
     // Optional callbacks use the same validated table as required APIs. Keep
     // their aliases in renamed-export players; absence still allows scanning.
-    internal static readonly string[] Optional=["il2cpp_method_get_object","il2cpp_method_get_return_type","il2cpp_class_from_type"];
+    internal static readonly string[] Optional=["il2cpp_method_get_object","il2cpp_method_get_return_type","il2cpp_class_from_type","il2cpp_domain_get_assemblies","il2cpp_class_get_field_from_name","il2cpp_field_get_type","il2cpp_field_get_value"];
     internal static Dictionary<string,string> Create(UnityEmbeddedGame game)
     {
         if(game.Backend!="IL2CPP"||game.Architecture!="x64")throw new IOException("原生运行时架构不支持。");

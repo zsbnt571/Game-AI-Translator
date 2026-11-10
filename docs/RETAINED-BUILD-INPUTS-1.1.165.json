@@ -1,0 +1,82 @@
+[
+  {
+    "path": "Source/NativeBridge/Payload/FusionUnityNative.dll",
+    "sha256": "562E76241E8108B46BD2B7C7A21197519F4523A26A8438153038B2A31E64F7CE",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/SpeedBridge/Payload/FusionSpeed.x64.dll",
+    "sha256": "12A73B60F812B22F471630D18A1D8CEAE59C8651FA0DE97801F091963780CF11",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/SpeedBridge/Payload/FusionSpeed.x86.dll",
+    "sha256": "480A921BB4401D624EAFEA9B16C266F8FA13742F3C0AAAE372ADCBD6BB93F1B5",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/SpeedBridge/Payload/FusionSpeedHost.x64.exe",
+    "sha256": "1199ADBE89E31E837C48B0315E5B10046ABD5301F45B5512FD7E44563A18B5C6",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/SpeedBridge/Payload/FusionSpeedHost.x86.exe",
+    "sha256": "0181C300A3F26407A0416B749F2024A207A7AE5C37860898B46F8B909A856DD4",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/RgssBridge/Payload/FusionRgss.dll",
+    "sha256": "92173F154772792A1DC906C325D8727BD90113ADBD63F7EA340C56CB4968BB81",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/WolfBridge/Payload/FusionWolf.dll",
+    "sha256": "18C668BE76EA94BAC6FC3CBABF5B2D96B0CB1463847388D461D11A7B7FB9FB2B",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/WolfBridge/Payload/FusionWolfLaunch.exe",
+    "sha256": "CDD62E99FD10167264D570673B8F952CF0BDD48F9914BCF661EAAD21A3E12314",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/UnrealBridge/UnrealRuntime.zip",
+    "sha256": "A345B9374297C9A75902D7D751627F263DB2DD92926A3A0C0774649986121729",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono64.zip",
+    "sha256": "1EBD71AE2D94FEB871AC7E8B6BD615C300A9946E376553B8120E53D06818F679",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono32.zip",
+    "sha256": "EE8F4F7CE21C79D0E90974A6EDFAC8C0DFC2981A928793C03A04E67C216662BD",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedMono6.zip",
+    "sha256": "0B767D558220ECE547D8A08D040F862A6600D57CFD40C663FCCACFD4C1E81D0A",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/Plugin/UnityEmbedded/Resources/UnityEmbeddedIl2Cpp64.zip",
+    "sha256": "1BB336E1A812C4F083B68716C6FEC48C6BD1F5561675A232765F5D1562D910CD",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Dependencies/GameMakerFont/bridge-font.otf",
+    "sha256": "2C76254F6FC379FDDFCE0A7E84FB5385BB135D3E399294F6EEB6680D0365B74B",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Dependencies/GameMakerFont/LICENSE.txt",
+    "sha256": "6A73F9541C2DE74158C0E7CF6B0A58EF774F5A780BF191F2D7EC9CC53EFE2BF2",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  },
+  {
+    "path": "Source/Plugin/UnityEmbedded/Resources/classdata.tpk",
+    "sha256": "129E1F80F930415DB6779FE6089AFA75280CB51462BCEE812BEAB6CD81A764C6",
+    "status": "retained verified 1.1.164 build input; not rebuilt in 1.1.165"
+  }
+]

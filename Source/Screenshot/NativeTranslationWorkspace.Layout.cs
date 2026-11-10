@@ -61,7 +61,7 @@ internal sealed partial class NativeTranslationWorkspace
         var editor = Pair(Field("完整原文 · 只读", original), Field("更正译文 · 保留变量和控制符", translated));
         editor.Margin = new(0, 0, 0, 8);
         entryLabel.Margin = new(0, 0, 0, 10); entryLabel.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted");
-        var editorActions = ActionRows(save, restore, retry, Action("重译本页问题", RetryPageAsync), Action("撤销上次译文修改", UndoAsync));
+        var editorActions = ActionRows(save, restore, retry, retryNow, Action("重译本页问题", RetryPageAsync), Action("撤销上次译文修改", UndoAsync));
         Identify(editorActions, "TranslationEditorActions", "");
         var texts = Table((toolbar, false), (grid.View, true), (pagination, false), (editor, false), (entryLabel, false), (editorActions, false));
 
@@ -76,7 +76,13 @@ internal sealed partial class NativeTranslationWorkspace
         termEvidence.Height=112;termEvidence.Margin=new(0,10,0,0);Identify(termEvidence,"TermEvidence","出现原句与译名冲突");
         var termForm = new WC.Border { Padding = new(14), Margin = new(0, 0, 0, 12), CornerRadius = new(6), BorderThickness = new(1), Child = Table((termFields, false), (keepTerm,false), (termActions, false)) };
         termForm.SetResourceReference(WC.Border.BorderBrushProperty, "Fusion.Border");
-        var termLayout = Table((Note("人物、地点、技能和物品等默认翻译；只有你选择后才保留原文。名称保持一致，句子按语境自然表达。任务和事件标题单独归类，不强制套进普通对白。人工更正保留。"), false), (Pair(Field("名称分类",termKind),Field("搜索词语与名称",termSearch)),false), (termCount,false), (termForm, false), (terms.View, true),(termEvidence,false));
+        termCharacterNote.Margin=new(0,8,0,0);termCharacterNote.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Muted");
+        var termLayout = Table((Note("人物、地点、技能和物品等默认翻译；只有你选择后才保留原文。名称保持一致，句子按语境自然表达。任务和事件标题单独归类，不强制套进普通对白。人工更正保留。"), false), (Pair(Field("名称分类",termKind),Field("搜索词语与名称",termSearch)),false), (termCount,false), (termForm, false), (terms.View, true),(termCharacterNote,false),(termCharacter,false),(termEvidence,false));
+        // Selecting a role can add details after a prior collapsed measurement.
+        // Reserve the actual row, not just the DataGrid's desired height, so
+        // the list cannot be clipped to zero by the newly visible editor.
+        termLayout.RowDefinitions[WC.Grid.GetRow(terms.View)].MinHeight=160;
+        terms.View.MinHeight=160;
 
         tabs.BorderThickness = new(0); tabs.Padding = new(0);
         AddTab("译文与问题", texts);
@@ -85,7 +91,7 @@ internal sealed partial class NativeTranslationWorkspace
         feedback.Margin = new(0, 12, 0, 0); feedback.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted");
         RefreshHeading();heading.SetResourceReference(WC.TextBlock.ForegroundProperty,"Fusion.Text");
         heading.FontWeight = W.FontWeights.SemiBold; heading.Margin = new(0, 0, 0, 14);
-        Content = NativeDialogControls.Layout(Table((heading, false), (tabs, true)), feedback, false);
+        Content = NativeDialogControls.Layout(Table((heading, false), (tabs, true)),NativeDialogControls.Column(feedback,cancelPreparation), false);
     }
 
     private void AddTab(string title, WC.Grid body)

@@ -39,11 +39,13 @@ public static class ConfigurationManager
             if (legacy is not null)
             {
                 var migrated = Read(legacy, out _);
+                UnavailableCredentials.CopyStore(legacy, path);
                 Save(path, migrated);
                 WriteMigrationRecord(path, legacy, migrated.ApiKey);
                 return migrated;
             }
         }
+        UnavailableCredentials.Forget(path);
         var fresh=new ApiSettings();
         if(AppDataPaths.HasExplicitRoot)Save(path,fresh);
         return fresh;
@@ -61,7 +63,7 @@ public static class ConfigurationManager
             Directory.CreateDirectory(directory);
             var temporaryPath = path + ".tmp";
             var backupPath = path + ".bak";
-            var json = FusionSecrets.Serialize(settings);
+            var json = FusionSecrets.Serialize(settings, path);
 
             File.WriteAllText(temporaryPath, json);
             using (var validation = JsonDocument.Parse(File.ReadAllText(temporaryPath)))
@@ -82,6 +84,7 @@ public static class ConfigurationManager
                 File.Move(temporaryPath, path);
             }
             SaveStageHook?.Invoke("AfterReplace");
+            UnavailableCredentials.Saved(path, "/ApiKey", settings.ApiKey);
         }
     }
 
@@ -167,6 +170,8 @@ public static class ConfigurationManager
         if(!Enum.IsDefined(settings.CaptureToolbarPlacement))settings.CaptureToolbarPlacement=CaptureToolbarPlacement.NearPointer;
         if(!Enum.IsDefined(settings.InterfaceLanguage))settings.InterfaceLanguage=ApplicationLanguage.SimplifiedChinese;
         if(!Enum.IsDefined(settings.ThemeMode))settings.ThemeMode=ApplicationThemeMode.Night;
+        if(!Enum.IsDefined(settings.IconColorMode))settings.IconColorMode=UiIconColorMode.Monochrome;
+        settings.IconSize=Math.Clamp(settings.IconSize,16,28);
         if(!Enum.IsDefined(settings.CloseMainWindowBehavior))settings.CloseMainWindowBehavior=CloseMainWindowBehavior.Exit;
         if(!Enum.IsDefined(settings.HistoryThumbnailSize))settings.HistoryThumbnailSize=HistoryThumbnailSize.Medium;
         settings.HistoryRetentionDays=Math.Clamp(settings.HistoryRetentionDays<=0?30:settings.HistoryRetentionDays,1,3650);
@@ -207,7 +212,7 @@ public static class ConfigurationManager
         var hasInterfaceLanguage = UiLanguage.HasSavedPreference(root);
         if (!hasInterfaceLanguage) settings.InterfaceLanguage = ApplicationLanguage.SimplifiedChinese;
 
-        settings.ApiKey = FusionSecrets.Unprotect(settings.ApiKey);
+        settings.ApiKey = UnavailableCredentials.LoadSingle(path, "/ApiKey", settings.ApiKey);
         SafeDiagnosticOutput.RegisterCredential(settings.ApiKey);
         var firstByteValue = DefaultFirstByteTimeoutSeconds;
         var hasFirstByte = root.TryGetProperty(nameof(ApiSettings.FirstByteTimeoutSeconds), out var firstByte)
@@ -281,6 +286,7 @@ public static class ConfigurationManager
         legacy.RequestTimeoutSeconds = DefaultCompleteRequestTimeoutSeconds;
         var blankBackup = path + $".blank-backup-{DateTime.Now:yyyyMMdd-HHmmss}";
         File.Copy(path, blankBackup, false);
+        UnavailableCredentials.CopyStore(legacyPath, path);
         Save(path, legacy);
         WriteRecoveryRecord(path, legacyPath, legacy.ApiKey);
     }

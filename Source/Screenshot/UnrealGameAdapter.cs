@@ -262,14 +262,34 @@ internal static class UnrealGameAdapter
         }
         File.Move(Record(exe),Path.Combine(archive,"install.json"));
     }
-    internal static void PrepareCatalog(string exe,UnrealEngine engine)
+    private static readonly ConcurrentDictionary<string,SemaphoreSlim> catalogJobs=new(StringComparer.OrdinalIgnoreCase);
+    internal static void PrepareCatalog(string exe,UnrealEngine engine,CancellationToken token=default)
     {
+        var gate=catalogJobs.GetOrAdd(Path.GetFullPath(engine.Runtime),_=>new(1,1));gate.Wait(token);
+        try{PrepareCatalogCore(exe,engine,token);}finally{gate.Release();}
+    }
+    private static void PrepareCatalogCore(string exe,UnrealEngine engine,CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
         SafePath(engine.Project,"Content\\Paks");
         var paks=Directory.GetFiles(engine.Paks).Where(p=>new[]{".pak",".utoc",".ucas"}.Contains(Path.GetExtension(p),StringComparer.OrdinalIgnoreCase)).OrderBy(p=>p,StringComparer.OrdinalIgnoreCase);
         var runtimeInfo=new FileInfo(engine.Runtime);
         string fingerprint="139.1|"+engine.Version+"|"+runtimeInfo.Length+":"+runtimeInfo.LastWriteTimeUtc.Ticks+"|"+string.Join("|",paks.Select(p=>{var f=new FileInfo(p);return f.Name+":"+f.Length+":"+f.LastWriteTimeUtc.Ticks;}));
         string catalog=Path.Combine(Storage(exe),"catalog.json"),stamp=catalog+".stamp";
-        if(File.Exists(catalog)&&File.Exists(stamp)&&File.ReadAllText(stamp)==fingerprint)return;
+        if(File.Exists(catalog)&&File.Exists(stamp)&&File.ReadAllText(stamp)==fingerprint)
+        {
+            try
+            {
+                if(new FileInfo(catalog).Length<=32*1024*1024)
+                {
+                    using var cached=JsonDocument.Parse(File.ReadAllText(catalog));
+                    var root=cached.RootElement;
+                    if(root.ValueKind==JsonValueKind.Object&&root.TryGetProperty("protocol",out var protocol)&&protocol.TryGetInt32(out int pv)&&pv==76
+                        &&root.TryGetProperty("entries",out var entries)&&entries.ValueKind==JsonValueKind.Array)return;
+                }
+            }
+            catch(Exception ex) when(ex is IOException or JsonException) { }
+        }
         Directory.CreateDirectory(Storage(exe));string temporary=catalog+"."+Guid.NewGuid().ToString("N")+".tmp";
         string worker=Path.Combine(AppContext.BaseDirectory,"tools","unreal-catalog","FusionUnrealCatalog.exe");
         if(!File.Exists(worker))throw new IOException("缺少虚幻文本提取工具。");
@@ -279,7 +299,10 @@ internal static class UnrealGameAdapter
         using var process=Process.Start(info)??throw new IOException("无法启动文本提取工具。");var stdout=process.StandardOutput.ReadToEndAsync();var stderr=process.StandardError.ReadToEndAsync();
         try
         {
-            if(!process.WaitForExit(90000)){process.Kill(true);throw new IOException("虚幻文本提取超时，游戏文件未改动。");}
+            using var timeout=CancellationTokenSource.CreateLinkedTokenSource(token);timeout.CancelAfter(90000);
+            try{process.WaitForExitAsync(timeout.Token).GetAwaiter().GetResult();}
+            catch(OperationCanceledException) when(!token.IsCancellationRequested){throw new IOException("虚幻文本提取超时，游戏文件未改动。");}
+            token.ThrowIfCancellationRequested();
             if(process.ExitCode!=0||!File.Exists(temporary))throw new IOException("虚幻资源提取失败："+SafeDiagnosticOutput.Summary(stderr.GetAwaiter().GetResult()));
             if(new FileInfo(temporary).Length>32*1024*1024)throw new IOException("虚幻文本目录超过限制。");
             using var doc=JsonDocument.Parse(File.ReadAllText(temporary));var data=doc.RootElement;
@@ -288,7 +311,10 @@ internal static class UnrealGameAdapter
             // An empty static catalogue is not proof that a running game has no
             // readable text. The bridge separately checks identity-preserving
             // runtime discovery before it registers any localization changes.
-            File.Move(temporary,catalog,true);File.WriteAllText(stamp,fingerprint);
+            token.ThrowIfCancellationRequested();
+            File.Move(temporary,catalog,true);
+            string stampTemp=temporary+".stamp";
+            try{File.WriteAllText(stampTemp,fingerprint);File.Move(stampTemp,stamp,true);}finally{if(File.Exists(stampTemp))File.Delete(stampTemp);}
         }
         finally{if(!process.HasExited){process.Kill(true);process.WaitForExit(5000);}if(File.Exists(temporary))File.Delete(temporary);}
     }

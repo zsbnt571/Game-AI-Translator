@@ -11,7 +11,8 @@ internal sealed class DefoldTranslationConnection : IEmbeddedTranslationConnecti
     private readonly string exe,folder,secret=Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
     private readonly SemaphoreSlim gate=new(1,1);private readonly CancellationTokenSource lifetime=new();
     private Process? peer;private int id;private bool ready,disposed;
-    internal DefoldTranslationConnection(string exe){this.exe=Path.GetFullPath(exe);folder=NativeGameSessionFiles.Create(exe,"defold");}
+    private readonly DefoldFontSession fonts;
+    internal DefoldTranslationConnection(string exe){this.exe=Path.GetFullPath(exe);folder=NativeGameSessionFiles.Create(exe,"defold",compact:true);fonts=new(this.exe,folder);}
     public bool Connected=>ready&&!disposed&&peer is not null&&!peer.HasExited;
     public void PrimeStartup(IReadOnlyDictionary<string,string> entries)
     {
@@ -23,7 +24,11 @@ internal sealed class DefoldTranslationConnection : IEmbeddedTranslationConnecti
     {
         if(!DefoldGameAdapter.IsInstalled(exe))throw new IOException("翻译资源不完整或游戏已更新，请重新应用翻译。");
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};GameLaunchEnvironment.ClearSession(info);GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
-        info.ArgumentList.Add(DefoldGameAdapter.InGame(exe,DefoldGameAdapter.Folder+"/game.projectc"));
+        info.ArgumentList.Add(fonts.PrepareLaunch());
+        info.Environment["FUSION_DEFOLD_FONT_RESTART"]=fonts.RestartRequired?"1":"0";
+        info.Environment["FUSION_DEFOLD_FONT_APPLIED"]=fonts.StartupApplied?"1":"0";
+        info.Environment["FUSION_DEFOLD_FONT_FAILED"]=fonts.StartupFailed?"1":"0";
+        info.Environment["FUSION_DEFOLD_FONT_HASH"]=fonts.StartupHash;
         info.Environment["FUSION_DEFOLD_SESSION"]=folder.Replace('\\','/');info.Environment["FUSION_DEFOLD_SECRET"]=secret;info.Environment["FUSION_DEFOLD_TRANSLATION"]=translationAtStartup?"1":"0";return info;
     }
     public void Launched(int pid){peer=Process.GetProcessById(pid);}
@@ -35,10 +40,15 @@ internal sealed class DefoldTranslationConnection : IEmbeddedTranslationConnecti
     }
     public async Task<JsonElement> RequestAsync(JsonObject request,CancellationToken cancellation=default)
     {
-        using var ct=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);ct.CancelAfter(15000);await gate.WaitAsync(ct.Token);
-        try{if(!Connected)throw new IOException("游戏连接已关闭。");int current=++id;var q=(JsonObject)request.DeepClone();q["id"]=current;q["secret"]=secret;string text=q.ToJsonString();if(Encoding.UTF8.GetByteCount(text)>262144)throw new IOException("翻译请求超过限制。");
+        if(request["op"]?.GetValue<string>()=="fontPreferences")
+        {
+            using var preparation=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);
+            request=await fonts.PrepareAsync((JsonObject)request.DeepClone(),preparation.Token);
+        }
+        using var ct=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);await gate.WaitAsync(ct.Token);ct.CancelAfter(15000);
+        try{if(!Connected)throw new IOException("游戏连接已关闭。");int current=++id;var q=(JsonObject)request.DeepClone();q["id"]=current;q["secret"]=secret;if(q["op"]?.GetValue<string>()=="fontPreferences")q["expires"]=DateTimeOffset.UtcNow.ToUnixTimeSeconds()+10;string text=q.ToJsonString();if(Encoding.UTF8.GetByteCount(text)>262144)throw new IOException("翻译请求超过限制。");
             await GodotFileTransport.PublishAsync(Path.Combine(folder,"request.json"),text,ct.Token);string response=Path.Combine(folder,"response-"+current+".json");
-            while(true){ct.Token.ThrowIfCancellationRequested();if(!Connected)throw new IOException("游戏连接已关闭。");if(await GodotFileTransport.ReadJsonAsync(response,ct.Token) is {} r){if(r.GetProperty("id").GetInt32()!=current||r.GetProperty("secret").GetString()!=secret||!r.GetProperty("ok").GetBoolean())throw new IOException("游戏未接受翻译请求。");File.Delete(response);return r.GetProperty("result").Clone();}await Task.Delay(20,ct.Token);}
+            while(true){ct.Token.ThrowIfCancellationRequested();if(!Connected)throw new IOException("游戏连接已关闭。");if(await GodotFileTransport.ReadJsonAsync(response,ct.Token) is {} r){if(r.GetProperty("id").GetInt32()!=current||r.GetProperty("secret").GetString()!=secret||!r.GetProperty("ok").GetBoolean())throw new IOException("游戏未接受翻译请求。");File.Delete(response);var result=r.GetProperty("result");if(result.TryGetProperty("fontError",out var fontError))throw new GameDataOperationException(fontError.GetString()??"Game font restoration could not be confirmed. Normal translation remains available.");return result.Clone();}await Task.Delay(20,ct.Token);}
         }finally{gate.Release();}
     }
     public void Dispose(){if(disposed)return;disposed=true;try{File.WriteAllText(Path.Combine(folder,"stop.json"),JsonSerializer.Serialize(new{secret}),new UTF8Encoding(false));}catch(IOException){}catch(UnauthorizedAccessException){}lifetime.Cancel();peer?.Dispose();}

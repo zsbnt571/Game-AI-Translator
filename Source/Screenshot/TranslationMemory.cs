@@ -98,7 +98,7 @@ internal static class TranslationMemory
             foreach(string route in new[]{storage,Path.Combine(storage,"generic-test")})
                 candidates.Add(Path.Combine(route,"translations",scope==TranslationCacheScope.Screen?"screen":"",basename));
             Dictionary<string,string>? merged=null;int imported=0,conflicts=0;
-            var terms=TranslationWorkspaceStore.For(exe,settings).Snapshot().Terms;
+            var terms=TranslationLibrary.WithPacks(TranslationWorkspaceStore.For(exe,settings).Snapshot(),settings).Terms;
             var receipts=TranslationGlossaryCache.Load(local.Path,local.Receipts);
             long bytes=local.Entries.Sum(p=>Cost(p.Key,p.Value));
             void Add(KeyValuePair<string,string> pair,TranslationGlossaryCache? sourceReceipts=null)

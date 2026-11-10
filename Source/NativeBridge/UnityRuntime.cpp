@@ -39,18 +39,21 @@ static std::map<int,Binding> bindings;
 static std::map<std::string,std::set<int>> sourceBindings;
 static std::deque<int> priorityRefresh;
 static std::set<int> priorityQueued;
+static void ForgetCharacter(int key);
+static void ForgetCustomFont(int key);
 static void Prioritize(int key){if(priorityQueued.size()<8192&&priorityQueued.insert(key).second)priorityRefresh.push_back(key);}
 static void Unindex(Binding& b){auto it=sourceBindings.find(b.source);if(it!=sourceBindings.end()){it->second.erase(b.key);if(it->second.empty())sourceBindings.erase(it);}}
-static void SourceChanged(Binding& b,const std::string& text){Unindex(b);b.source=text;b.latency={};if(Eligible(text))b.latency.Begin(GetTickCount64());if(Eligible(text))sourceBindings[text].insert(b.key);}
+static void SourceChanged(Binding& b,const std::string& text){ForgetCharacter(b.key);Unindex(b);b.source=text;b.latency={};if(Eligible(text))b.latency.Begin(GetTickCount64());if(Eligible(text))sourceBindings[text].insert(b.key);}
 
 static bool Alive(void* target){void* args[]={target};return target&&Bool(Invoke(objectAlive,nullptr,args));}
 
-static void Release(Binding& b){Unindex(b);priorityQueued.erase(b.key);if(b.weak)il2cpp_gchandle_free(b.weak);if(b.oldFont)il2cpp_gchandle_free(b.oldFont);if(b.oldMaterial)il2cpp_gchandle_free(b.oldMaterial);b={};}
-static void Restore(Binding& b,void* target){auto& f=families[b.family];b.glyphReady=false;b.checkedFont=nullptr;b.glyphText.clear();b.glyphMode.clear();RestoreFit(b.fit,target,f.klass);RestoreLegacy(b.legacy,target,f.klass);if(!b.applied.empty()){
- auto now=Text(Invoke(f.get,target));if(now==b.applied){void* args[]={il2cpp_string_new(b.source.c_str())};Invoke(f.set,target,args);if(Text(Invoke(f.get,target))!=b.source)return;}b.applied.clear();}
+static void Release(Binding& b){ForgetCharacter(b.key);ForgetCustomFont(b.key);Unindex(b);priorityQueued.erase(b.key);if(b.weak)il2cpp_gchandle_free(b.weak);if(b.oldFont)il2cpp_gchandle_free(b.oldFont);if(b.oldMaterial)il2cpp_gchandle_free(b.oldMaterial);b={};}
+static void RestoreFontState(Binding& b,void* target){auto& f=families[b.family];
  if(b.ownedFont){auto current=Invoke(f.getFont,target);auto material=f.getMaterial?Invoke(f.getMaterial,target):nullptr;auto restoreMaterial=material==b.ownedMaterial&&b.oldMaterial?il2cpp_gchandle_get_target(b.oldMaterial):material;Root held(restoreMaterial);if(current==b.ownedFont){auto original=b.oldFont?il2cpp_gchandle_get_target(b.oldFont):nullptr;if(original&&!Alive(original))return;void* args[]={original};Invoke(f.setFont,target,args);if(Invoke(f.getFont,target)!=original)return;}if(restoreMaterial&&f.setMaterial&&Alive(restoreMaterial)){void* args[]={restoreMaterial};Invoke(f.setMaterial,target,args);if(Invoke(f.getMaterial,target)!=restoreMaterial)return;}b.ownedFont=nullptr;b.ownedMaterial=nullptr;}
  if(b.oldMaterial){il2cpp_gchandle_free(b.oldMaterial);b.oldMaterial=0;}
  if(b.oldFont){il2cpp_gchandle_free(b.oldFont);b.oldFont=0;}}
+static void Restore(Binding& b,void* target){auto& f=families[b.family];b.glyphReady=false;b.checkedFont=nullptr;b.glyphText.clear();b.glyphMode.clear();RestoreFit(b.fit,target,f.klass);RestoreLegacy(b.legacy,target,f.klass);if(!b.applied.empty()){
+ auto now=Text(Invoke(f.get,target));if(now==b.applied){void* args[]={il2cpp_string_new(b.source.c_str())};Invoke(f.set,target,args);if(Text(Invoke(f.get,target))!=b.source)return;}b.applied.clear();}RestoreFontState(b,target);}
 #include "NativeFontLifetime.h"
 static void* EnsureFont(bool tmp){
  auto klass=Class("UnityEngine","Font");if(!klass)return nullptr;
@@ -96,9 +99,16 @@ static bool Covers(void* font,bool tmp,const std::string& text,bool* repaired=nu
  if(covered&&cache.size()<150000)cache.insert(text);return covered;
 }
 #include "NativeFontFallback.h"
+#include "NativeCustomFonts.h"
 static bool PrepareGlyphs(Binding& b,void* target,const std::string& text,bool& repaired){
  auto& f=families[b.family];auto prior=Invoke(f.getFont,target);auto now=GetTickCount64();
  repaired=false;
+ if(NativeCustomSelected()){
+  RestoreFontState(b,target);if(b.ownedFont)return false;
+  if(ApplyNativeCustom(b,target,text)){auto current=Invoke(f.getFont,target);repaired=!b.glyphReady||b.checkedFont!=current;b.checkedFont=current;b.glyphText=text;b.glyphReady=true;b.glyphMode="custom";return true;}
+ }
+ if(!RestoreNativeCustom(b,target))return false;
+ prior=Invoke(f.getFont,target);
  if(b.checkedFont&&b.checkedFont!=prior)fontChanges++;
  if(b.glyphReady&&b.checkedFont==prior&&Alive(prior)&&b.glyphText==text&&(!f.tmp||b.glyphRevision==tmpGlyphRevision)&&now<b.fontCheckAt)return true;
  bool wasReady=b.glyphReady;auto previous=b.checkedFont;
@@ -130,10 +140,11 @@ static bool PrepareGlyphs(Binding& b,void* target,const std::string& text,bool& 
  b.ownedFont=font;b.checkedFont=font;b.glyphMode="component";b.glyphReady=true;return true;
 }
 static const std::string* Lookup(const std::string& s){auto t=translations.find(s);if(t!=translations.end())return &t->second;auto early=startupTranslations.find(s);return early==startupTranslations.end()?nullptr:&early->second;}
+#include "NativeCharacters.h"
 static void Queue(const std::string& s){if(Eligible(s)&&visible.size()<4096&&queued.insert(s).second)visible.push_back(s);}
 static void Refresh(Binding& b,void* target){
  auto& f=families[b.family];bool wasActive=b.active;b.active=!f.active||Bool(Invoke(f.active,target));b.shown=false;
- if(!enabled){Restore(b,target);return;}if(!b.active)return;
+ if(!enabled){Restore(b,target);if(NativeCustomSelected()&&customIndependent&&!restoringDisconnect&&b.active){auto source=Text(Invoke(f.get,target));ApplyNativeCustom(b,target,source);}else RestoreNativeCustom(b,target);return;}if(!b.active)return;
  auto now=GetTickCount64();if(!wasActive&&Eligible(b.source))b.latency.Begin(now);auto text=Text(Invoke(f.get,target));
  if(!b.applied.empty()&&text!=b.applied){
   textOverwrites++;
@@ -143,12 +154,13 @@ static void Refresh(Binding& b,void* target){
  }
  if(b.applied.empty()&&b.source!=text){
   RestoreFit(b.fit,target,f.klass);RestoreLegacy(b.legacy,target,f.klass);SourceChanged(b,text);b.retryAt=0;b.fontBlocked=false;b.queueAt=0;b.glyphReady=false;
-  if(Eligible(text)){captured++;Queue(text);b.queueAt=now+15000;}
+  if(Eligible(text)){captured++;if(!CharacterWaiting(b,target))Queue(text);b.queueAt=now+15000;}
  }
- auto hit=Lookup(b.source);
+ auto hit=CharacterLookup(b,target);
  if(!hit){
-  if(b.ownedFont)Restore(b,target);
-  if(now>=b.queueAt){Queue(b.source);b.queueAt=now+15000;}
+  if(b.ownedFont||!b.applied.empty())Restore(b,target);
+  if(NativeCustomSelected())ApplyNativeCustom(b,target,b.source);else RestoreNativeCustom(b,target);
+  if(now>=b.queueAt&&!CharacterWaiting(b,target)){Queue(b.source);b.queueAt=now+15000;}
   return;
  }
  CacheReady(b.latency,now);
@@ -158,7 +170,11 @@ static void Refresh(Binding& b,void* target){
  if(!PrepareGlyphs(b,target,*hit,repaired)){FontReady(b.latency,false,GetTickCount64());Restore(b,target);b.fontBlocked=true;b.retryAt=now+1000;return;}
  FontReady(b.latency,true,GetTickCount64());b.fontBlocked=false;
  auto display=*hit;
- if(!f.tmp){
+ if(!f.tmp&&b.glyphMode=="custom"){
+  // External file faces are not necessarily visible to GDI. Preserve the
+  // engine's authored layout instead of fitting with an unrelated OS face.
+  RestoreLegacy(b.legacy,target,f.klass);
+ }else if(!f.tmp){
   if(repaired||!wasActive||b.legacy.input!=*hit||now>=b.fitAt){b.fitAt=now+500;display=PrepareLegacyLayout(b.legacy,target,f.klass,b.ownedFont,*hit);}
   else if(!b.legacy.display.empty())display=b.legacy.display;
  }
@@ -237,15 +253,16 @@ static Json LatencyProgress(){
  return {{"observedToCacheSamples",observedToCache.samples},{"observedToCacheLastMs",observedToCache.lastMs},{"observedToCacheMaxMs",observedToCache.maxMs},{"cacheToReadbackSamples",cacheToReadback.samples},{"cacheToReadbackLastMs",cacheToReadback.lastMs},{"cacheToReadbackMaxMs",cacheToReadback.maxMs},{"glyphWaitSamples",glyphWait.samples},{"glyphWaitLastMs",glyphWait.lastMs},{"glyphWaitMaxMs",glyphWait.maxMs},{"waitingForCache",cache},{"waitingForFont",font},{"waitingForReadback",control},{"oldestObservedMs",oldest},{"maxDiscoveryMs",maxDiscoveryMs},{"discoverySnapshots",discoverySnapshots},{"lastPumpAgeMs",now-lastPumpAt.load()}};
 }
 static Json Progress(){int shown=0,waiting=0,fonts=0;blocked=0;for(auto& p:bindings){auto& b=p.second;if(b.ownedFont)fonts++;if(!b.active)continue;if(b.fontBlocked)blocked++;if(b.shown)shown++;else if(enabled&&Lookup(b.source))waiting++;}
- return {{"latency",LatencyProgress()},{"latencySemantics","monotonic-first-active-observation-cache-glyph-and-control-readback-not-pixels"},{"epoch",epoch},{"enabled",enabled},{"bindings",bindings.size()},{"bindingLimit",8192},{"discoveryLimited",discoveryLimited},{"runtimeWarning",discoveryLimited?"本次运行部分文字控件扫描达到容量上限；场景变化后继续读取":""},{"mainThreadWake",wakeHook!=nullptr},{"wakeTicks",wakeTicks},{"renderTicks",renderTicks},{"textChangeHooks",installedTextHooks},{"enableHooks",installedEnableHooks},{"compiledPreRender",renderOriginal!=nullptr},{"priorityPending",priorityRefresh.size()},{"lastPumpAgeMs",GetTickCount64()-lastPumpAt.load()},{"countsSemantics","last-budgeted-control-readback-not-visible-glyphs"},{"rawCaptureCount",captured},{"rawCaptureCountSemantics","lifetime-component-source-transitions"},{"writebacksConfirmed",confirmed},{"writebacksFailed",failed},{"writebackPending",waiting},{"lastVerifiedBindings",shown},{"activeRenderedBindings",shown},{"activeCachedWaitingBindings",waiting},{"fontBlockedBindings",blocked},{"fontLifetimeResets",fontLifetimeResets},{"fontManagedFailures",fontManagedFailures},{"fontsOwned",fonts},{"fontStatus",blocked?"glyph-support-unavailable":"ready"},{"writebackCountSemantics","successful-text-set-and-readback-including-repeat-sources"},{"sameTextWritesSkipped",unchangedTextChecks},{"sourceOverwrites",textOverwrites},{"observedFontChanges",fontChanges},{"componentFontAssignments",fontAssignments},{"fallbackFontAttachments",fallbackAdds},{"fallbackFontRemovals",fallbackRemoves},{"fallbackFontErrors",fallbackErrors},{"fallbackFontLists",fallbackLeases.size()}};}
+ return {{"latency",LatencyProgress()},{"latencySemantics","monotonic-first-active-observation-cache-glyph-and-control-readback-not-pixels"},{"epoch",epoch},{"enabled",enabled},{"bindings",bindings.size()},{"bindingLimit",8192},{"discoveryLimited",discoveryLimited},{"runtimeWarning",discoveryLimited?"本次运行部分文字控件扫描达到容量上限；场景变化后继续读取":""},{"mainThreadWake",wakeHook!=nullptr},{"wakeTicks",wakeTicks},{"renderTicks",renderTicks},{"textChangeHooks",installedTextHooks},{"enableHooks",installedEnableHooks},{"compiledPreRender",renderOriginal!=nullptr},{"priorityPending",priorityRefresh.size()},{"lastPumpAgeMs",GetTickCount64()-lastPumpAt.load()},{"countsSemantics","last-budgeted-control-readback-not-visible-glyphs"},{"rawCaptureCount",captured},{"rawCaptureCountSemantics","lifetime-component-source-transitions"},{"writebacksConfirmed",confirmed},{"writebacksFailed",failed},{"writebackPending",waiting},{"lastVerifiedBindings",shown},{"activeRenderedBindings",shown},{"activeCachedWaitingBindings",waiting},{"fontBlockedBindings",blocked},{"fontLifetimeResets",fontLifetimeResets},{"fontManagedFailures",fontManagedFailures},{"fontsOwned",fonts},{"fontStatus",blocked?"glyph-support-unavailable":"ready"},{"writebackCountSemantics","successful-text-set-and-readback-including-repeat-sources"},{"sameTextWritesSkipped",unchangedTextChecks},{"sourceOverwrites",textOverwrites},{"observedFontChanges",fontChanges},{"componentFontAssignments",fontAssignments},{"fallbackFontAttachments",fallbackAdds},{"fallbackFontRemovals",fallbackRemoves},{"fallbackFontErrors",fallbackErrors},{"fallbackFontLists",fallbackLeases.size()},{"customFontMode",NativeCustomSelected()?"custom":"default"},{"customFontIndependent",customIndependent},{"customFontRevision",customFontRevision},{"customFontBindings",customFontLeases.size()},{"deferredComponents",customFontDeferred.size()},{"customFontRestorePending",!NativeCustomSelected()&&!customFontLeases.empty()},{"fontWarning",customFontDeferred.empty()?"":"Custom font unavailable for some components; default translation font retained."}};}
 static Json Handle(const Json& request){std::string op=request.value("op","");
- if(op=="translationPrepare"){if(!request.value("preserveStartup",false))startupTranslations.clear();epoch++;preparing=true;staged.clear();visible.clear();queued.clear();return {{"epoch",epoch}};}
+ if(op=="fontPreferences")return ApplyNativeFontPreferences(request);
+ if(op=="translationPrepare"){if(!request.value("preserveStartup",false))startupTranslations.clear();epoch++;preparing=true;staged.clear();visible.clear();queued.clear();ResetCharacters(request.value("characterRuntimeContract","")==characterContract);return {{"epoch",epoch},{"characterRuntimeContract",characterRuntime?Json(characterContract):Json(nullptr)}};}
  if(op=="translationEnable"){if(preparing){translations.swap(staged);staged.clear();preparing=false;}enabled=true;discoverAt=0;for(auto& p:bindings){p.second.retryAt=0;Queue(p.second.source);p.second.queueAt=GetTickCount64()+15000;}return {{"epoch",epoch},{"enabled",true}};}
- if(op=="translationDisable"){if(enabled||preparing)epoch++;enabled=false;ReleaseDiscovery();preparing=false;staged.clear();RefreshSlice();int n=PendingRestore();if(n==0)RemoveFallbacksSlice();n+=(int)fallbackLeases.size();return {{"epoch",epoch},{"enabled",false},{"restored",n==0},{"restorePending",n}};}
+ if(op=="translationDisable"){if(enabled||preparing)epoch++;enabled=false;ResetCharacters(false);ReleaseDiscovery();preparing=false;staged.clear();RefreshSlice();int n=PendingRestore();if(n==0)RemoveFallbacksSlice();n+=(int)fallbackLeases.size();return {{"epoch",epoch},{"enabled",false},{"restored",n==0},{"restorePending",n}};}
  if(op=="translationApply"){if(request.value("epoch",-1)!=epoch)throw std::runtime_error("Translation session changed; stale result rejected.");auto entries=request.at("entries");if(!entries.is_array()||entries.size()>128)throw std::runtime_error("Invalid translation batch");bool prime=request.value("prime",false);if(prime&&!preparing)throw std::runtime_error("No prepared session");auto& dest=prime?staged:translations;if(dest.size()+entries.size()>150000)throw std::runtime_error("Cache limit exceeded");
   for(auto& row:entries){auto s=row.at("source").get<std::string>();auto t=row.at("text").get<std::string>();if(!Eligible(s)||t.empty()||t.size()>96000)throw std::runtime_error("Invalid translation");}
   for(auto& row:entries){auto source=row.at("source").get<std::string>();dest[source]=row.at("text").get<std::string>();if(!prime){auto at=sourceBindings.find(source);if(at!=sourceBindings.end())for(int key:at->second){auto binding=bindings.find(key);if(binding!=bindings.end()){binding->second.retryAt=0;CacheReady(binding->second.latency,GetTickCount64());}Prioritize(key);}}}return {{"epoch",epoch},{"stored",entries.size()},{"applied",entries.size()},{"writebackConfirmed",false}};}
- if(op=="translationPoll"){Json result=Progress();result["texts"]=Json::array();result["ahead"]=Json::array();while(!visible.empty()&&result["texts"].size()<128){auto s=std::move(visible.front());visible.pop_front();queued.erase(s);result["texts"].push_back(s);}return result;}
+ if(op=="translationPoll"){Json result=Progress();result["texts"]=Json::array();result["ahead"]=Json::array();while(!visible.empty()&&result["texts"].size()<128){auto s=std::move(visible.front());visible.pop_front();queued.erase(s);result["texts"].push_back(s);}PollCharacters(request,result);return result;}
  if(op=="translationCatalog")return {{"total",0},{"next",0},{"skipped",0},{"texts",Json::array()}};
  if(op=="snapshot")return {{"generation",epoch},{"rows",Json::array()},{"state","translationOnly"}};
  if(op=="translationDiagnostics"){auto result=Progress();auto app=Class("UnityEngine","Application");for(auto key:{"companyName","productName","persistentDataPath","unityVersion"})result[key]=Text(Invoke(Method(app,(std::string("get_")+key).c_str(),0)));result["hookMode"]="native-runtime-api";result["preRenderAvailable"]=renderOriginal!=nullptr||renderTicks>0;result["legacyLayouts"]=legacyLayouts;result["legacyAspectCorrections"]=legacyAspectCorrections;result["legacyLayoutUnavailable"]=legacyLayoutUnavailable;result["maxTickMs"]=maxTickMs;result["maxDiscoveryMs"]=maxDiscoveryMs;result["cache"]=translations.size();result["startupExactCache"]=startupTranslations.size();DiagnosticBindings(request,result);return result;}
@@ -255,10 +272,10 @@ static std::mutex queueLock;static std::deque<std::shared_ptr<Request>> requests
 static bool Initialize(){auto object=Class("UnityEngine","Object"),array=Class("System","Array");if(!object||!array)return false;findObjects=ExactMethod(object,"FindObjectsOfType",{"System.Type"});arrayGet=ExactMethod(array,"GetValue",{"System.Int32"});objectAlive=Method(object,"op_Implicit",1);instanceId=Method(object,"GetInstanceID",0);if(!findObjects||!arrayGet||!objectAlive||!instanceId)return false;
  for(auto pair:std::vector<std::pair<const char*,const char*>>{{"UnityEngine.UI","Text"},{"TMPro","TextMeshProUGUI"},{"TMPro","TextMeshPro"}}){auto c=Class(pair.first,pair.second);if(!c)continue;Family f;f.klass=c;f.type=il2cpp_type_get_object(il2cpp_class_get_type(c));f.get=Method(c,"get_text",0);f.set=Method(c,"set_text",1);f.getFont=Method(c,"get_font",0);f.setFont=Method(c,"set_font",1);f.getMaterial=Method(c,"get_fontSharedMaterial",0);f.setMaterial=Method(c,"set_fontSharedMaterial",1);f.active=Method(c,"get_isActiveAndEnabled",0);f.tmp=std::string(pair.first)=="TMPro";if(f.type&&f.get&&f.set&&f.getFont&&f.setFont)families.push_back(f);}
  quitMethod=Method(Class("UnityEngine","Application"),"Internal_ApplicationQuit",0);canvasMethod=Method(Class("UnityEngine","Canvas"),"SendWillRenderCanvases",0);Log("ready families="+std::to_string(families.size())+" preRender="+std::to_string(canvasMethod!=nullptr));return !families.empty();}
-static void Tick(){auto begin=Clock::now();if(!ready){if(!Initialize())return;ready=true;InstallTextHooks();StartWake();}if(disconnectPending.exchange(false)){restoringDisconnect=true;enabled=false;preparing=false;staged.clear();epoch++;}
+static void Tick(){auto begin=Clock::now();if(!ready){if(!Initialize())return;ready=true;InstallTextHooks();StartWake();}if(disconnectPending.exchange(false)){restoringDisconnect=true;enabled=false;customIndependent=false;ResetCharacters(false);preparing=false;staged.clear();epoch++;}
  std::shared_ptr<Request> request;{std::lock_guard<std::mutex> guard(queueLock);if(!requests.empty()){request=requests.front();requests.pop_front();}}
  if(request){std::unique_lock<std::mutex> guard(request->lock);if(request->state==0){request->state=1;guard.unlock();Json response;int id=request->data.value("id",0);try{response={{"id",id},{"ok",true},{"result",Handle(request->data)}};}catch(const std::exception& e){response={{"id",id},{"ok",false},{"error",e.what()}};}guard.lock();request->response=std::move(response);request->state=2;guard.unlock();request->wake.notify_one();}}
- if(enabled)Discover();else ReleaseDiscovery();RefreshSlice();if(!enabled&&PendingRestore()==0){bool restored=RemoveFallbacksSlice();if(restoringDisconnect&&restored){restoringDisconnect=false;wakeFinished=true;Log("disconnect restoration completed");}}maxTickMs=std::max(maxTickMs,std::chrono::duration<double,std::milli>(Clock::now()-begin).count());}
+ if(enabled||NativeCustomSelected()&&customIndependent&&!restoringDisconnect)Discover();else ReleaseDiscovery();RefreshSlice();if(!enabled&&PendingRestore()==0){bool restored=RemoveFallbacksSlice();if(restoringDisconnect&&restored&&customFontLeases.empty()){restoringDisconnect=false;wakeFinished=true;Log("disconnect restoration completed");}}maxTickMs=std::max(maxTickMs,std::chrono::duration<double,std::milli>(Clock::now()-begin).count());}
 static bool UiRebuilding(){
  static void* graphics=nullptr,*layout=nullptr;
  if(!graphics||!layout){auto klass=Class("UnityEngine.UI","CanvasUpdateRegistry");graphics=Method(klass,"IsRebuildingGraphics",0);layout=Method(klass,"IsRebuildingLayout",0);}
@@ -307,4 +324,5 @@ static DWORD WINAPI Worker(void*){try{
  }catch(const std::exception& e){Log(std::string("stopped: ")+e.what());disconnectPending=true;return 2;}}
 extern "C" __declspec(dllexport) DWORD WINAPI FusionStart(Bootstrap* bootstrap){if(!bootstrap||bootstrap->size!=sizeof(Bootstrap)||!bootstrap->mainThread||bootstrap->root[1023]||started.exchange(1))return 1;config=*bootstrap;auto thread=CreateThread(nullptr,0,Worker,nullptr,0,nullptr);if(!thread)return 2;CloseHandle(thread);return 0;}
 BOOL WINAPI DllMain(HINSTANCE module,DWORD reason,LPVOID){if(reason==DLL_PROCESS_ATTACH)DisableThreadLibraryCalls(module);return TRUE;}
+
 

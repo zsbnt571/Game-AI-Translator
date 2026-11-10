@@ -9,6 +9,7 @@ namespace ScreenshotTranslationUiTester;
 // The same reader sees TextAsset/loose JSON and decoded serialized MonoBehaviours.
 internal static class UnityFrameworkText
 {
+    internal sealed record CharacterSource(string Text,string ActorId,string DisplayName);
     private readonly struct Node(JsonElement json,AssetTypeValueField? field=null)
     {
         internal bool Exists=>field is not null||json.ValueKind!=JsonValueKind.Undefined;
@@ -35,11 +36,11 @@ internal static class UnityFrameworkText
     }
     private static readonly HashSet<string> DialogueFields=new(StringComparer.OrdinalIgnoreCase)
         {"Dialogue Text","Menu Text","Display Name","Description","Title","Success Description","Failure Description"};
-    internal static bool Read(JsonElement root,Action<string,string?,string> add,CancellationToken token,Action<string> incomplete)
-        =>Read(new Node(root),add,token,incomplete);
-    internal static bool Read(AssetTypeValueField root,Action<string,string?,string> add,CancellationToken token,Action<string> incomplete)
-        =>Read(new Node(default,root),add,token,incomplete);
-    private static bool Read(Node root,Action<string,string?,string> add,CancellationToken token,Action<string> incomplete)
+    internal static bool Read(JsonElement root,Action<string,string?,string> add,CancellationToken token,Action<string> incomplete,Action<CharacterSource>? character=null)
+        =>Read(new Node(root),add,token,incomplete,character);
+    internal static bool Read(AssetTypeValueField root,Action<string,string?,string> add,CancellationToken token,Action<string> incomplete,Action<CharacterSource>? character=null)
+        =>Read(new Node(default,root),add,token,incomplete,character);
+    private static bool Read(Node root,Action<string,string?,string> add,CancellationToken token,Action<string> incomplete,Action<CharacterSource>? character)
     {
         Node source=root.Child("mSource");string prefix="/mSource";if(!source.Exists){source=root;prefix="";}
         if(source.Child("mTerms").Exists&&source.Child("mLanguages").Exists)
@@ -83,7 +84,56 @@ internal static class UnityFrameworkText
             foreach(var (name,child) in node.Children())
             {if(nodes>500000)break;if(name is not ("fields" or "scripts" or "conditions" or "variables" or "luaScript" or "sequence"))Walk(child,path+"/"+name.Replace("~","~0").Replace("/","~1"),depth+1);}
         }
-        Walk(root,"",0);return true;
+        Walk(root,"",0);
+        if(character is not null&&nodes<=500000)DialogueSystemCharacters(root,character,token);
+        return true;
+    }
+    private static void DialogueSystemCharacters(Node root,Action<CharacterSource> add,CancellationToken token)
+    {
+        // Dialogue System serializes the speaking actor in the entry's Actor
+        // field. Conversation-level defaults, names and Conversant are not a
+        // substitute. IDs are scoped to this database by the catalogue caller.
+        static Dictionary<string,string>? Fields(Node node)
+        {
+            var result=new Dictionary<string,string>(StringComparer.Ordinal);
+            var fields=node.Child("fields").Array();if(fields.Length>256)return null;
+            foreach(var field in fields)
+                if(field.Child("title").Text is {} title&&field.Child("value").Text is {} value)
+                {if(!result.TryAdd(title,value))return null;}
+            return result;
+        }
+        static bool NativeId(string value,out int id)=>int.TryParse(value,NumberStyles.None,CultureInfo.InvariantCulture,out id)&&id>0;
+        static bool Literal(string text)=>text.Length is >0 and <=600&&!text.Any(char.IsControl)&&text.IndexOfAny(['[',']','{','}','<','>','\\'])<0;
+        var actors=root.Child("actors").Array();var conversations=root.Child("conversations").Array();
+        if(actors.Length>10000||conversations.Length>10000)return;
+        var names=new Dictionary<int,string>();var ambiguous=new HashSet<int>();
+        foreach(var actor in actors)
+        {
+            token.ThrowIfCancellationRequested();
+            if(actor.Child("id").Number is not int id||id<=0)continue;
+            var fields=Fields(actor);
+            string name=fields?.GetValueOrDefault("Display Name")??fields?.GetValueOrDefault("Name")??"";
+            if(fields is null||name.Length is 0 or >200||name.Any(char.IsControl)||!names.TryAdd(id,name))ambiguous.Add(id);
+        }
+        int count=0;
+        foreach(var conversation in conversations)
+        {
+            token.ThrowIfCancellationRequested();var entries=conversation.Child("dialogueEntries").Array();
+            if(entries.Length>50000)return;
+            foreach(var entry in entries)
+            {
+                token.ThrowIfCancellationRequested();if(++count>50000)return;
+                var fields=Fields(entry);
+                if(fields is null||!fields.TryGetValue("Actor",out string? actor)||!NativeId(actor,out int actorId)
+                    ||ambiguous.Contains(actorId)||!names.TryGetValue(actorId,out string? name)
+                    ||!fields.TryGetValue("Dialogue Text",out string? text)||!Literal(text))continue;
+                // Scripts may change actor assignments or computed text. Do not
+                // execute or try to infer their effects from adjacent entries.
+                if(entry.Child("userScript").Text is {Length:>0}||entry.Child("luaScript").Text is {Length:>0}
+                    ||fields.TryGetValue("Script",out string? script)&&script.Length>0)continue;
+                add(new(text,actorId.ToString(CultureInfo.InvariantCulture),name));
+            }
+        }
     }
     internal static bool ReadNaninovel(string name,string body,Action<string,string> add,CancellationToken token,Action<string> incomplete)
     {

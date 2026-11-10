@@ -19,13 +19,28 @@ internal static class WolfLanguageBranches
             if(parts.Any(s=>s.Length<2)||Markers.Any(m=>parts.Any(s=>s.Contains(m,StringComparison.Ordinal))))continue;
             // Reject prose discussing tags: real alternatives contain different scripts.
             bool kana(string s)=>s.Any(c=>c is >= '\u3040' and <= '\u30ff');
-            bool latin(string s)=>s.Count(char.IsAsciiLetter)>=4;
+            bool latin(string s)=>s.Any(char.IsAsciiLetter);
             if(kana(parts[0])==kana(parts[1])&&latin(parts[0])==latin(parts[1]))continue;
             return(marker,parts);
         }
         return null;
     }
     internal static bool IsTemplate(string source)=>Split(source) is not null;
+    internal static IEnumerable<(string Text,string Language)> Alternatives(string source)
+    {
+        if(Split(source) is not {} split)yield break;
+        string locale=split.Marker switch{"[ENG]" or "[EN]"=>"en","[JPN]" or "[JP]"=>"ja","[CHS]"=>"zh","[CHT]"=>"zh-Hant","[KOR]"=>"ko",_=>""};
+        string prefix=Prefix.Match(split.Parts[0]).Value;
+        bool paired=prefix.Length>0&&Prefix.Match(split.Parts[1]).Value==prefix;
+        for(int i=0;i<split.Parts.Length;i++)
+        {
+            // The marker identifies the following branch. The other branch's
+            // alphabet is not a declaration of the game's active language.
+            string language=i==1?locale:"";
+            yield return(split.Parts[i],language);
+            if(paired&&split.Parts[i].Length>prefix.Length)yield return(split.Parts[i][prefix.Length..],language);
+        }
+    }
     internal static IEnumerable<string> Sources(string source)
     {
         if(Split(source) is not {} split){yield return source;yield break;}

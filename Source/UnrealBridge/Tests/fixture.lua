@@ -236,9 +236,11 @@ os.getenv=function(key)
  if key=='FUSION_UNREAL_SESSION'then return FIXTURE_FOLDER end
  if key=='FUSION_UNREAL_SECRET'then return secret end
  if key=='FUSION_UNREAL_TRANSLATION'then return FIXTURE_DORMANT and '0' or '1'end
+ if key=='FUSION_UNREAL_ENGINE' and FIXTURE_NATIVE_FONT then return '4.27' end
 end
 os.time=function()return 1000+math.floor(fixture.now)end
 os.clock=function()return fixture.now end
+if FIXTURE_NATIVE_FONT then package.loadlib=function()return function()end end end
 local realDofile=dofile
 local realOpen=io.open
 io.open=function(path,mode)

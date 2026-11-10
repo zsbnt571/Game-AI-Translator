@@ -27,6 +27,8 @@ using Json=nlohmann::json;
 namespace Path=std::filesystem;
 using Present=HRESULT(WINAPI*)(IDirect3DDevice9*,const RECT*,const RECT*,HWND,const RGNDATA*);
 static Present originalPresent=nullptr;
+static decltype(&StretchDIBits) originalStretch=nullptr;
+static decltype(&SetDIBitsToDevice) originalDib=nullptr;
 static std::wstring expectedDesktop,session;
 static std::mutex captureGate,requestGate;
 static std::condition_variable captured;
@@ -83,6 +85,48 @@ static bool Allowed(){
 static bool OwnedWindow(HWND window){
     DWORD pid=0;DWORD thread=GetWindowThreadProcessId(window,&pid);
     return window&&thread&&pid==GetCurrentProcessId()&&PrivateDesktop(thread);
+}
+// DxLib falls back to GDI presentation on a non-input desktop without a D3D
+// device. Copy only the pixel buffer already submitted by this marked process
+// to its own window. No screen/window pixels are ever read by this path.
+static void CaptureDib(HDC dc,const void* pixels,const BITMAPINFO* info,UINT usage){
+    auto ticket=pending.load();if(!ticket||!pixels||!info||usage!=DIB_RGB_COLORS)return;
+    HWND window=WindowFromDC(dc);if(!Allowed()||!OwnedWindow(window))return;
+    const auto& h=info->bmiHeader;
+    if(h.biSize!=sizeof(BITMAPINFOHEADER)||h.biWidth<=0||h.biWidth>8192||!h.biHeight||h.biHeight<-8192||h.biHeight>8192||
+        h.biPlanes!=1||(h.biBitCount!=16&&h.biBitCount!=24&&h.biBitCount!=32)||(h.biCompression!=BI_RGB&&h.biCompression!=BI_BITFIELDS))return;
+    int width=h.biWidth,height=abs(h.biHeight);if((unsigned long long)width*height>16*1024*1024)return;
+    {std::lock_guard<std::mutex> lock(captureGate);if(inFlight||pending.load()!=ticket)return;inFlight=ticket;pending=0;}
+    auto result=std::make_shared<Frame>();result->ticket=ticket;
+    result->info={{"ok",false},{"method","owned-gdi-dib-presentation"},{"privateDesktop",true},{"screenCapture",false},{"inputDesktopSwitched",false},
+        {"width",width},{"height",height},{"ticket",ticket},{"pid",GetCurrentProcessId()},{"sourceBitCount",h.biBitCount}};
+    HDC memory=CreateCompatibleDC(nullptr);BITMAPINFO target={};target.bmiHeader.biSize=sizeof(BITMAPINFOHEADER);target.bmiHeader.biWidth=width;
+    target.bmiHeader.biHeight=-height;target.bmiHeader.biPlanes=1;target.bmiHeader.biBitCount=32;void* converted=nullptr;
+    HBITMAP bitmap=memory?CreateDIBSection(memory,&target,DIB_RGB_COLORS,&converted,nullptr,0):nullptr;
+    HGDIOBJ previous=bitmap?SelectObject(memory,bitmap):nullptr;
+    try{
+        if(previous&&previous!=HGDI_ERROR&&originalStretch(memory,0,0,width,height,0,0,width,height,pixels,info,usage,SRCCOPY)!=GDI_ERROR){
+            GdiFlush();result->pixels.assign((unsigned char*)converted,(unsigned char*)converted+(size_t)width*height*4);
+            for(size_t i=3;i<result->pixels.size();i+=4)result->pixels[i]=255;
+            result->info["ok"]=true;result->info["stage"]="readback-complete";
+        }else result->info["stage"]="dib-conversion-failed";
+    }catch(...){result->info["stage"]="dib-copy-failed";}
+    if(previous&&previous!=HGDI_ERROR)SelectObject(memory,previous);if(bitmap)DeleteObject(bitmap);if(memory)DeleteDC(memory);
+    {std::lock_guard<std::mutex> lock(captureGate);latest=std::move(result);inFlight=0;}captured.notify_all();
+}
+static int WINAPI StretchHook(HDC dc,int x,int y,int w,int h,int sx,int sy,int sw,int sh,const void* pixels,const BITMAPINFO* info,UINT usage,DWORD rop){
+    try{CaptureDib(dc,pixels,info,usage);}catch(...){}
+    return originalStretch(dc,x,y,w,h,sx,sy,sw,sh,pixels,info,usage,rop);
+}
+static int WINAPI DibHook(HDC dc,int x,int y,DWORD w,DWORD h,int sx,int sy,UINT first,UINT lines,const void* pixels,const BITMAPINFO* info,UINT usage){
+    try{if(!first&&info&&lines==(UINT)abs(info->bmiHeader.biHeight))CaptureDib(dc,pixels,info,usage);}catch(...){}
+    return originalDib(dc,x,y,w,h,sx,sy,first,lines,pixels,info,usage);
+}
+static bool InstallGdi(){
+    if(originalStretch&&originalDib)return true;
+    if(MH_CreateHook((void*)StretchDIBits,(void*)StretchHook,(void**)&originalStretch)!=MH_OK||
+        MH_CreateHook((void*)SetDIBitsToDevice,(void*)DibHook,(void**)&originalDib)!=MH_OK)return false;
+    return MH_EnableHook((void*)StretchDIBits)==MH_OK&&MH_EnableHook((void*)SetDIBitsToDevice)==MH_OK;
 }
 static bool OwnedDevice(IDirect3DDevice9* device,HWND overrideWindow,D3DDEVICE_CREATION_PARAMETERS& creation,HWND& window){
     if(!device||FAILED(device->GetCreationParameters(&creation))||!OwnedWindow(creation.hFocusWindow))return false;
@@ -181,6 +225,7 @@ static bool Install(const std::wstring& sessionDirectory){
     expectedDesktop=Environment(L"FUSION_WOLF_TEST_DESKTOP");session=sessionDirectory;
     std::wstring nativeSession;
     if(!Allowed()||session.empty()||Environment(L"FUSION_WOLF_SESSION")!=session||!NoReparseChain(Path::path(session))||!WolfSessionFiles::NativePath(Path::path(session),nativeSession)||!Path::is_directory(Path::path(nativeSession))){installError="isolated-copy-or-private-desktop-check-failed";return false;}
+    bool gdi=InstallGdi();
     // Dynamic loading avoids adding graphics dependencies to the normal bridge.
     HMODULE library=LoadLibraryExW(L"d3d9.dll",nullptr,LOAD_LIBRARY_SEARCH_SYSTEM32);
     if(!library){installError="system-d3d9-unavailable";installHr=HRESULT_FROM_WIN32(GetLastError());return false;}
@@ -198,7 +243,7 @@ static bool Install(const std::wstring& sessionDirectory){
         D3DCREATE_SOFTWARE_VERTEXPROCESSING|D3DCREATE_MULTITHREADED|D3DCREATE_FPU_PRESERVE,&params,&probe);
     void* target=SUCCEEDED(installHr)&&probe?(*(void***)probe)[17]:nullptr;
     if(probe)probe->Release();DestroyWindow(dummy);UnregisterClassW(className.c_str(),executable);
-    if(!target){installError="private-desktop-dummy-device-failed";return false;}
+    if(!target){if(gdi){installed=true;installError.clear();return true;}installError="private-desktop-dummy-device-failed";return false;}
     // IDirect3DDevice9's public COM layout defines Present as slot 17. No byte
     // pattern, game-code address, foreign process or global OS hook is used.
     auto mh=MH_Initialize();if(mh!=MH_OK&&mh!=MH_ERROR_ALREADY_INITIALIZED){installError="minhook-initialize-failed";installHr=E_FAIL;return false;}

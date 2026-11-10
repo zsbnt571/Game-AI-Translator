@@ -8,19 +8,21 @@ namespace ScreenshotTranslationUiTester;
 // Only explicit, unique, linear AST neighbours qualify. Poll/render order is
 // never dialogue order. Contextual results have their own profile-scoped file
 // and are never published as context-free startup/shared translations.
-internal sealed record GameDialogueContext(string[] Previous,GameDialogueRoles? Roles=null)
+internal sealed record GameDialogueContext(string[] Previous,GameDialogueRoles? Roles=null,GameCharacterAgreement? Character=null)
 {
     internal const string Contract="renpy-static-unique-1";
     // The legacy identity stays byte-for-byte stable when roles are absent.
     internal string Identity {get;}=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Contract+JsonSerializer.Serialize(Previous)+
-        (Roles is null?"":GameDialogueRoles.Contract+GameDialogueRoles.PromptContract+JsonSerializer.Serialize(Roles)))));
+        (Roles is null?"":GameDialogueRoles.Contract+GameDialogueRoles.PromptContract+JsonSerializer.Serialize(Roles))+
+        (Character is null?"":GameCharacterAgreement.Contract+JsonSerializer.Serialize(Character)))));
+    internal bool HasAgreement=>Roles is not null||Character is not null;
     internal string TermsStamp(IReadOnlyDictionary<string,string> terms,string source)
         =>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(TranslationGlossary.Applicable(terms,Previous.Append(source))))));
-    internal static GameDialogueContext? Create(IEnumerable<string> previous,GameDialogueRoles? roles=null)
+    internal static GameDialogueContext? Create(IEnumerable<string> previous,GameDialogueRoles? roles=null,GameCharacterAgreement? character=null)
     {
         var items=previous.Take(4).ToArray();
-        return items.Length is >=1 and <=3&&items.All(s=>!string.IsNullOrWhiteSpace(s)&&s.Length<=600&&!s.Contains('\0'))&&items.Sum(s=>s.Length)<=1200
-            &&(roles is null||roles.HasExplicitEvidence(items))?new(items,roles):null;
+        return (items.Length is >=1 and <=3||items.Length==0&&character is not null)&&items.All(s=>!string.IsNullOrWhiteSpace(s)&&s.Length<=600&&!s.Contains('\0'))&&items.Sum(s=>s.Length)<=1200
+            &&(roles is null||roles.HasExplicitEvidence(items))&&(character is null||character.Valid)?new(items,roles,character):null;
     }
 }
 
@@ -63,13 +65,31 @@ internal sealed class GameDialogueContexts
         return changed.ToArray();
     }
     internal void Clear()=>values.Clear();
+    internal string[] ReadCatalog(RpgTextCatalogResult catalog,ApiSettings settings,IReadOnlySet<string>? blocked=null)
+    {
+        // Unlike legacy Ren'Py context, new adapters only add confirmed role
+        // agreement. Chinese/Japanese/Korean and unknown evidence are exact no-ops.
+        if(!GameDialogueRoles.Applies(settings)||catalog.DialogueContexts.Count==0)return [];
+        var allowed=new HashSet<string>(catalog.Texts,StringComparer.Ordinal);var changed=new List<string>();
+        foreach(var pair in catalog.DialogueContexts.Take(50000))
+        {
+            if(!allowed.Contains(pair.Key)||blocked?.Contains(pair.Key)==true||pair.Value.Roles is null
+                ||AutomaticGenderAgreement.BlocksInheritedEvidence(pair.Key)
+                ||GameDialogueContext.Create(pair.Value.Previous,pair.Value.Roles) is not {} context
+                ||context.Previous.Contains(pair.Key,StringComparer.Ordinal))continue;
+            if(values.TryGetValue(pair.Key,out var before)&&before.Identity==context.Identity)continue;
+            if(values.Count>=50000&&!values.ContainsKey(pair.Key))continue;
+            values[pair.Key]=context;changed.Add(pair.Key);
+        }
+        return changed.ToArray();
+    }
     internal string[] ChangedTerms(IReadOnlyDictionary<string,string> before,IReadOnlyDictionary<string,string> after)
         =>values.Where(p=>p.Value.TermsStamp(before,p.Key)!=p.Value.TermsStamp(after,p.Key)).Select(p=>p.Key).ToArray();
     internal static ApiSettings Attach(ApiSettings settings,IReadOnlyDictionary<string,GameDialogueContext>? contexts,IReadOnlyDictionary<string,string> sources)
     {
         if(contexts is null||contexts.Count==0)return settings;
-        var evidence=sources.Where(p=>contexts.ContainsKey(p.Value)).ToDictionary(p=>sources.Count==1?"source":p.Key,p=>new{previousOriginals=contexts[p.Value].Previous},StringComparer.Ordinal);
-        if(evidence.Count==0)return settings;
+        var evidence=sources.Where(p=>contexts.TryGetValue(p.Value,out var c)&&c.Previous.Length>0).ToDictionary(p=>sources.Count==1?"source":p.Key,p=>new{previousOriginals=contexts[p.Value].Previous},StringComparer.Ordinal);
+        if(evidence.Count==0)return GameCharacterAgreement.Attach(settings,contexts,sources);
         var copy=ApiSettingsSnapshot.Copy(settings);
         bool hasRoles=GameDialogueRoles.Applies(settings)&&sources.Any(p=>contexts.TryGetValue(p.Value,out var context)&&context.Roles is not null);
         string uses=hasRoles?"references, omitted subjects, word senses, tone and grammatical gender/pronoun agreement":"references, omitted subjects, word senses and tone";
@@ -85,7 +105,7 @@ internal sealed class GameDialogueContexts
                 },StringComparer.Ordinal);
             if(roles.Count>0)copy.CustomTranslationPrompt+=GameDialogueRoles.Guidance+JsonSerializer.Serialize(roles,TranslationLanguageSpans.MessageJson);
         }
-        return copy;
+        return GameCharacterAgreement.Attach(copy,contexts,sources);
     }
 }
 

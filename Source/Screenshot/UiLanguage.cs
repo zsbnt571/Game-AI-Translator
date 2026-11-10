@@ -115,7 +115,8 @@ internal static class UiLanguage
     }
     private static Catalog CurrentCatalog=>Catalogs.GetValueOrDefault(Current)??Catalogs[ApplicationLanguage.English];
     private static Dictionary<string,string> Translations=>CurrentCatalog.Entries.Value;
-    private static bool TryText(string source,out string translated)=>Translations.TryGetValue(source,out translated!)||Catalogs[ApplicationLanguage.English].Entries.Value.TryGetValue(source,out translated!);
+    private static bool TryText(string source,out string translated)=>Translations.TryGetValue(source,out translated!);
+    internal static bool HasText(string source)=>Catalogs[ApplicationLanguage.English].Entries.Value.ContainsKey(source);
     private static Dictionary<string,string> Reverse(Dictionary<string,string> source)=>source
         .GroupBy(x=>x.Value,StringComparer.Ordinal).ToDictionary(x=>x.Key,x=>x.First().Key,StringComparer.Ordinal);
     internal static string Original(string source)
@@ -129,8 +130,8 @@ internal static class UiLanguage
             foreach(var pattern in catalog.ReversePatterns)
             {
                 if(!source.StartsWith(pattern.Prefix,StringComparison.Ordinal))continue;
-                var match=pattern.Regex.Match(source);if(!match.Success)continue;
-                return Regex.Replace(pattern.Replacement,@"\{(\d+)\}",m=>match.Groups["v"+m.Groups[1].Value].Value);
+                var match=pattern.Match(source);if(match is null)continue;
+                return Regex.Replace(pattern.Replacement,@"\{(\d+)\}",m=>match.GetValueOrDefault(m.Groups[1].Value,""));
             }
         }
         return source;
@@ -159,19 +160,34 @@ internal static class UiLanguage
         if(watching)return;watching=true;
         Application.Idle+=(_,_)=>{foreach(Form form in Application.OpenForms)BindTree(form);};
     }
-    private sealed record Pattern(Regex Regex,string Replacement,string Prefix);
-    private static IEnumerable<Pattern> Patterns=>CurrentCatalog.Patterns.Concat(Current==ApplicationLanguage.English?[]:Catalogs[ApplicationLanguage.English].Patterns);
+    private sealed record Pattern(string[] Literals,string[] Slots,string Replacement,int Length,bool Multiline)
+    {
+        internal string Prefix=>Literals[0];
+        // Templates contain only literals and opaque value slots. Match those
+        // directly: no regex backtracking, timeout, or automaton-size limit.
+        internal Dictionary<string,string>? Match(string source)
+        {
+            if(!Multiline&&source.Contains('\n')||!source.StartsWith(Prefix,StringComparison.Ordinal)||!source.EndsWith(Literals[^1],StringComparison.Ordinal))return null;
+            int at=Prefix.Length,limit=source.Length-Literals[^1].Length;
+            var values=new Dictionary<string,string>(StringComparer.Ordinal);
+            for(int i=0;i<Slots.Length;i++)
+            {
+                string next=Literals[i+1];
+                int end=i==Slots.Length-1?limit:next.Length==0?at:source.IndexOf(next,at,StringComparison.Ordinal);
+                if(end<at||end>limit)return null;
+                values[Slots[i]]=source[at..end];at=end+next.Length;
+            }
+            return at==source.Length?values:null;
+        }
+    }
+    private static IEnumerable<Pattern> Patterns=>CurrentCatalog.Patterns;
     private static Pattern[] BuildPatterns(Dictionary<string,string> translations)=>translations.Where(x=>Regex.IsMatch(x.Key,@"\{\d+\}")).Select(pair=>
     {
-        var matches=Regex.Matches(pair.Key,@"\{(\d+)\}");int at=0;var expression=new System.Text.StringBuilder("^");
-        foreach(Match match in matches){expression.Append(Regex.Escape(pair.Key[at..match.Index]));expression.Append("(?<v"+match.Groups[1].Value+">.*?)");at=match.Index+match.Length;}
-        expression.Append(Regex.Escape(pair.Key[at..])).Append('$');
-        // A one-line template must not swallow preceding status lines into a
-        // placeholder (for example architecture plus a Godot details line).
-        var options=RegexOptions.CultureInvariant|(pair.Key.Contains('\n')?RegexOptions.Singleline:RegexOptions.None);
-        return new Pattern(new Regex(expression.ToString(),options,TimeSpan.FromMilliseconds(20)),pair.Value,pair.Key[..matches[0].Index]);
-    }).OrderByDescending(x=>x.Prefix.Length).ThenByDescending(x=>x.Regex.ToString().Length).ToArray();
-    private static IEnumerable<KeyValuePair<string,string>> Fragments=>CurrentCatalog.Fragments.Concat(Current==ApplicationLanguage.English?[]:Catalogs[ApplicationLanguage.English].Fragments);
+        var matches=Regex.Matches(pair.Key,@"\{(\d+)\}");int at=0;var literals=new List<string>();var slots=new List<string>();
+        foreach(Match match in matches){literals.Add(pair.Key[at..match.Index]);slots.Add(match.Groups[1].Value);at=match.Index+match.Length;}
+        literals.Add(pair.Key[at..]);return new Pattern(literals.ToArray(),slots.ToArray(),pair.Value,pair.Key.Length,pair.Key.Contains('\n'));
+    }).OrderByDescending(x=>x.Prefix.Length).ThenByDescending(x=>x.Length).ToArray();
+    private static IEnumerable<KeyValuePair<string,string>> Fragments=>CurrentCatalog.Fragments;
     private static KeyValuePair<string,string>[] BuildFragments(Dictionary<string,string> translations)=>translations.Where(x=>(x.Key.Length>=4||x.Key.EndsWith('：'))&&!x.Key.Contains('{')&&x.Key.Any(c=>c>='\u3400'&&c<='\u9fff')).OrderByDescending(x=>x.Key.Length).ToArray();
 
     internal static ApplicationLanguage Current {get;private set;}=Resolve(ApplicationLanguage.FollowSystem);
@@ -220,12 +236,13 @@ internal static class UiLanguage
     internal static string Exact(string? source)=>IsTranslated&&source is not null&&TryText(source,out var text)?text:source??"";
     internal static string Text(string? source)
     {
-        if(string.IsNullOrEmpty(source)||!IsTranslated)return source??"";
+        if(string.IsNullOrEmpty(source))return source??"";
+        if(!IsTranslated)return UiDiagnosticText.Translate(source)??source;
         if(TryText(source,out var translated))return translated;
         if(source.Trim()!=source&&TryText(source.Trim(),out translated))
             return source[..(source.Length-source.TrimStart().Length)]+translated+source[source.TrimEnd().Length..];
-        if(!source.Any(c=>c>='\u3400'&&c<='\u9fff'))return source;
         if(UiDiagnosticText.Translate(source) is {} diagnostic)return diagnostic;
+        if(!source.Any(c=>c>='\u3400'&&c<='\u9fff'))return source;
         // These payloads contain nested UI status, not opaque game/user text.
         // Translate each component before formatting the surrounding message.
         if(source.StartsWith("实际插件：",StringComparison.Ordinal))
@@ -259,8 +276,8 @@ internal static class UiLanguage
         foreach(var pattern in Patterns)
         {
             if(!source.StartsWith(pattern.Prefix,StringComparison.Ordinal))continue;
-            var match=pattern.Regex.Match(source);if(!match.Success)continue;
-            return Regex.Replace(pattern.Replacement,@"\{(\d+)\}",m=>match.Groups["v"+m.Groups[1].Value].Value);
+            var match=pattern.Match(source);if(match is null)continue;
+            return Regex.Replace(pattern.Replacement,@"\{(\d+)\}",m=>match.GetValueOrDefault(m.Groups[1].Value,""));
         }
         foreach(var suffix in new[]{" ▾"," ▴","…"})
             if(source.EndsWith(suffix,StringComparison.Ordinal)&&TryText(source[..^suffix.Length],out translated))return translated+suffix;

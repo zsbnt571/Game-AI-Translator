@@ -11,10 +11,10 @@ internal sealed record CoverFraming(double X = .5, double Y = .5, double Zoom = 
     internal W.Rect Crop(double imageWidth, double imageHeight, double aspect)
     {
         var frame = Normalize();
-        if (imageWidth <= 0 || imageHeight <= 0 || aspect <= 0) return new(0, 0, 1, 1);
-        double w = Math.Min(imageWidth, imageHeight * aspect) / frame.Zoom, h = w / aspect;
-        return new(Math.Clamp(imageWidth * frame.X - w / 2, 0, imageWidth - w),
-            Math.Clamp(imageHeight * frame.Y - h / 2, 0, imageHeight - h), w, h);
+        if (!double.IsFinite(imageWidth) || !double.IsFinite(imageHeight) || !double.IsFinite(aspect) || imageWidth <= 0 || imageHeight <= 0 || aspect <= 0) return new(0, 0, 1, 1);
+        double w = Math.Min(imageWidth, imageHeight * aspect) / frame.Zoom, h = Math.Min(imageHeight, w / aspect);
+        return new(Math.Clamp(imageWidth * frame.X - w / 2, 0, Math.Max(0, imageWidth - w)),
+            Math.Clamp(imageHeight * frame.Y - h / 2, 0, Math.Max(0, imageHeight - h)), w, h);
     }
     internal CoverFraming Pan(double dx, double dy, double width, double height, double imageWidth, double imageHeight)
     {

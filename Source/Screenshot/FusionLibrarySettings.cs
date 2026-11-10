@@ -59,7 +59,7 @@ public sealed partial class MainForm
         var names=new CheckBox{Text="自动补齐本地化名称",AutoSize=true,Checked=_libraryPreferences.AutomaticChineseNames};
         names.CheckedChanged+=(_,_)=>SaveLibraryPreferences(_libraryPreferences with{AutomaticChineseNames=names.Checked});
         AddSettingRow(table,"游戏名称",names);
-        AddSettingRow(table,"",Info("使用各游戏选择的翻译方案，按当前界面语言在后台补齐译名，只发送游戏名称。不同语言的译名分别保存，手动名称会保留。\n未配置方案时保留原名。右键“标签与便签”可编辑名字或重新生成译名。"));
+        AddSettingRow(table,"",Info("使用各游戏选择的翻译方案，按当前界面语言在后台补齐译名，只发送游戏名称。不同语言的译名分别保存，手动名称会保留。\n未配置方案时保留原名。右键“编辑游戏资料”可编辑名字或重新生成译名。"));
         AddSettingRow(table,"",WorkspaceButton("重试补齐译名",async(_,_)=>{_libraryNameAttempts.Clear();var store=await RecentStore();await FillLibraryChineseNamesAsync(store.SnapshotAll(),true);}));return table;
     }
     private TableLayoutPanel BuildStorageSettings()

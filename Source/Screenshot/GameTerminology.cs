@@ -304,6 +304,7 @@ internal sealed class GameTerminology
                 single.CustomTranslationPrompt+=context;batch.CustomTranslationPrompt+=context;
                 var prompts=TranslationWorkspaceStore.WithTerms(doc,group.Select(n=>n.Source).ToArray(),single,batch);
                 var values=await RpgTranslationBatch.Translate(group.Select(n=>n.Source).ToArray(),prompts.Single,prompts.Batch,translate,token,syntax:EmbeddedTextSyntax.Generic,terms:doc.Terms);
+                CharacterGenderEnhancementPolicy.ThrowIfRevoked(settings);
                 var accepted=values.Where(p=>(values is not RpgTranslationBatchResult batchResult||!batchResult.SoftFailures.ContainsKey(p.Key))&&ValidNameResult(p.Key,p.Value)).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal);
                 Name[] evidence;lock(gate)evidence=names.Values.ToArray();
                 AlignAliases(accepted,evidence,store.Snapshot().Terms);

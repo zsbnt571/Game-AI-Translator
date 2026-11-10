@@ -20,7 +20,8 @@ public sealed partial class MainForm
             var settings=_fusion.GameSettings(UiSettings,game.ExePath);
             var data=new GameDataSession(pipe);_scriptTranslationSessions[game.ExePath]=data;
             data.Translation=new(pipe,game.ExePath,settings,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text);
-            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback="已重新连接并继续翻译。";
+            string fontWarning=await GameFontLive.ReconcileIndependentAsync(game,pipe);
+            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback="已重新连接并继续翻译。"+(fontWarning.Length==0?"":" · "+fontWarning);
         }
         catch(Exception error){pipe?.Dispose();session.Feedback=SafeDiagnosticOutput.ExceptionSummary(error);}
         finally{session.TranslationRuntimePending=false;session.Busy=false;if(!IsDisposed){InvalidateGameState();RenderGameSessionState();}}
@@ -61,15 +62,16 @@ public sealed partial class MainForm
             // the launcher exiting as proof that the runtime has failed.
             await EmbeddedLaunchWait.AcceptAsync(pipe,process,_desktopLifetime.Token,progress=>
             {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}},observeLaunchedProcessExit:false);
+            string fontWarning=await GameFontLive.ReconcileIndependentAsync(game,connection);
             if(action=="modify")
             {
                 await connection.RequestAsync(new(){["op"]="translationDisable"});
                 await connection.RequestAsync(new(){["op"]="dataEnable"});data.Enabled=true;
-                session.Feedback="修改已开启，翻译保持独立。";
+                session.Feedback="修改已开启，翻译保持独立。"+(fontWarning.Length==0?"":" · "+fontWarning);
                 return;
             }
             data.Translation=new(connection,game.ExePath,settings!,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text);
-            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback="";
+            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback=fontWarning;
         }
         catch(Exception ex)
         {

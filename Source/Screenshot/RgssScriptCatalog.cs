@@ -7,17 +7,18 @@ namespace ScreenshotTranslationUiTester;
 
 // Inert Marshal nodes + bounded zlib + a restricted Ruby lexer. No Ruby VM,
 // Marshal.load, eval, require, script initialization or game code is invoked.
-internal static class RgssScriptCatalog
+internal static partial class RgssScriptCatalog
 {
     internal sealed record Field(string Location,string Text,string Encoding,string Context);
-    internal sealed record Result(Field[] Fields,string[] Issues);
+    internal sealed record Result(Field[] Fields,string[] Issues)
+    { internal RgssLanguageSwitch[] LanguageSwitches {get;init;}=[]; }
     internal static Result Read(RubyMarshalData.Node document,Action check)
     {
         if(document.Kind!='['||document.Items.Count>10000)throw new InvalidDataException("RGSS 脚本列表结构无效。");
         foreach(var row in document.Items)
             if(row.Kind!='['||row.Items.Count!=3||row.Items[0].Kind!='i'||row.Items[1].Kind!='"'||row.Items[2].Kind!='"')
                 throw new InvalidDataException("RGSS 脚本条目应为编号、名称和压缩正文。");
-        List<Field> fields=[];List<string> issues=[];long expanded=0;
+        List<Field> fields=[];List<string> issues=[];List<RgssLanguageSwitch> languageSwitches=[];long expanded=0;int settingsWriters=0;
         for(int i=0;i<document.Items.Count;i++)
         {
             check();var row=document.Items[i];
@@ -26,6 +27,8 @@ internal static class RgssScriptCatalog
                 byte[] image=Inflate(row.Items[2].Bytes,check);
                 if((expanded+=image.Length)>64L*1024*1024)throw new ExperimentalRpgCatalog.LimitException("RGSS 脚本累计展开超过 64 MB。");
                 var decoded=Decode(image);string hash=CatalogOrigins.Hash(image);
+                if(HasLanguageSettingsWrite(decoded.Code))settingsWriters++;
+                languageSwitches.AddRange(LanguageSwitches(decoded.Code,decoded.Encoding,check));
                 string label;
                 try{label=Decode(row.Items[1].Bytes).Code;}catch(DecoderFallbackException){label="";}
                 label=label.Length>160?label[..160]:label;
@@ -41,7 +44,8 @@ internal static class RgssScriptCatalog
             catch(Exception e)when(e is InvalidDataException or NotSupportedException or DecoderFallbackException or EncoderFallbackException)
             {if(issues.Count<128)issues.Add($"script:{i}: {SafeDiagnosticOutput.ExceptionSummary(e)}");}
         }
-        return new(fields.ToArray(),issues.ToArray());
+        return new(fields.ToArray(),issues.ToArray()){LanguageSwitches=settingsWriters!=1?[]:languageSwitches.GroupBy(s=>s.Id)
+            .Where(g=>g.Select(s=>(s.OffLanguage,s.OnLanguage)).Distinct().Count()==1).Select(g=>g.First()).ToArray()};
     }
 
     // One-byte input prevents read-ahead from disguising extra members/tails.

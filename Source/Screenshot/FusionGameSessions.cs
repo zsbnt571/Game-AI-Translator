@@ -9,7 +9,17 @@ internal sealed class GameWorkspaceSession
     internal int Section { get; set; } = 1;
     internal bool TranslationRequested { get; set; }
     internal bool Busy { get; set; }
-    internal string Feedback { get; set; } = "";
+    private string feedback = "";
+    private RpgTranslationSession? retryTranslation;
+    internal string Feedback
+    {
+        get => retryTranslation is { } translation
+            ? TranslationRetryFeedback.Describe(translation.Snapshot,translation.Enabled,translation.RestorePending,translation.FailedCount)
+            : feedback;
+        set { feedback=value;retryTranslation=null; }
+    }
+    internal void TrackTranslationRetry(RpgTranslationSession translation)
+    { feedback="";retryTranslation=translation; }
     internal string TranslationBlockedReason { get; set; } = "";
     internal bool LaunchedWithoutBridge { get; set; }
     internal bool TranslationRuntimePending { get; set; }

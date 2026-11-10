@@ -34,8 +34,8 @@ internal static class WpfThemeResources
             <Setter Property="Background" Value="{DynamicResource Fusion.Main}"/>
             <Setter Property="Foreground" Value="{DynamicResource Fusion.Text}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Fusion.Border}"/>
-            <Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="12,6"/>
-            <Setter Property="MinHeight" Value="34"/><Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="12,5"/>
+            <Setter Property="MinHeight" Value="36"/><Setter Property="Cursor" Value="Hand"/>
             <Setter Property="HorizontalContentAlignment" Value="Center"/>
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
               <Border x:Name="Outline" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="7" Padding="{TemplateBinding Padding}">
@@ -217,7 +217,7 @@ internal static class WpfThemeResources
     }
     internal static WC.Button Button(string text,string? icon,Action action,bool primary=false,bool trailingIcon=false)
     {
-        var result=new WC.Button();
+        var result=WpfActionLayout.NormalButton(new WC.Button());
         result.Click+=(_,_)=>action();
         SetButton(result,text,icon,primary,trailingIcon);
         return result;

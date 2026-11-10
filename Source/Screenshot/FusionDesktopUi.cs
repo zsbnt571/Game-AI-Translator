@@ -33,10 +33,11 @@ public sealed partial class MainForm
     private void ApplyDesktopAppearance(ApiSettings settings)
     {
         // No credentials or translation parameters participate in this UI identity.
-        var identity=JsonSerializer.Serialize(new{settings.InterfaceLanguage,settings.ThemeMode,settings.CustomThemeMainBackground,
+        var identity=JsonSerializer.Serialize(new{settings.InterfaceLanguage,settings.ThemeMode,settings.IconColorMode,settings.IconSize,settings.CustomThemeMainBackground,
             settings.CustomThemeSecondaryBackground,settings.CustomThemeText,settings.CustomThemeSecondaryText,
             settings.CustomThemeAccent,settings.CustomThemeBorder,settings.UiFontMode,settings.UiFontFamily,settings.UiFontSize});
         if(identity==_desktopAppearance)return;
+        UiIconAppearance.Apply(settings.IconColorMode,settings.IconSize);
         var previous=_appliedDesktopSettings;
         bool metricsChanged=_desktopAppearance is null||previous.InterfaceLanguage!=settings.InterfaceLanguage||
             previous.UiFontMode!=settings.UiFontMode||previous.UiFontFamily!=settings.UiFontFamily||previous.UiFontSize!=settings.UiFontSize;

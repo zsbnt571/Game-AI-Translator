@@ -77,10 +77,12 @@ public sealed partial class MainForm
         var games=!single&&selected.Any(x=>x.Id==game.Id)?selected:[game];
         if(games.Length==1)
         {
-            Add(running?"返回游戏":"普通启动",running?"return":"plain","play",!busy);
+            bool available=File.Exists(game.ExePath);
+            Add(running?"返回游戏":"普通启动",running?"return":"plain","play",!busy&&(running||available));
             var translation=Add("翻译并启动（核对适配中）","launch","translate",false);
             var known=SameGame(_selectedGame?.ExePath,game.ExePath)?_selectedGame:_gameSessions.Find(game.ExePath)?.Game;
-            if(known is not null)
+            if(!available){translation.Text="翻译并启动（需重新定位）";translation.Enabled=false;}
+            else if(known is not null)
             {
                 var session=_gameSessions.Find(game.ExePath);
                 bool isSelected=SameGame(_desktopGameState?.Game.ExePath,game.ExePath);
@@ -90,18 +92,26 @@ public sealed partial class MainForm
                     _=ResolveLibraryTranslationMenuAsync(game.ExePath,translation,capabilityEpoch);
             }
             else _=ResolveLibraryTranslationMenuAsync(game.ExePath,translation,capabilityEpoch);
-            Add("进入详细主页","detail","game");
+            Add("查看游戏详情","detail","game");
             _libraryContextMenu.Items.Add(new ToolStripSeparator());
         }
         AddLibraryOrganizingMenu(_libraryContextMenu,games,source);
         if(games.Length==1)
         {
             _libraryContextMenu.Items.Add(new ToolStripSeparator());
-            Add("标签与便签","note","tag");Add("编辑名称","name","edit");
-            Add("打开游戏文件夹","folder","folder");Add("更换图片","cover","image",!busy);
+            Add("编辑游戏资料","note","edit");
+            Add("打开游戏文件夹","folder","folder");
+            var manage=_libraryContextMenu.AddGroup("管理游戏","settings");
+            manage.AddAction("更换图片","image",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"cover"),!busy);
+            manage.AddAction("重新定位","folder",async(_,_)=>await RunLibraryActionAsync(game.ExePath,"relink"),!busy);
+            manage.Items.Add(new ToolStripSeparator());
+            manage.AddAction("从游戏库移除","trash",async(_,_)=>await RemoveLibraryGamesAsync(games));
         }
-        _libraryContextMenu.Items.Add(new ToolStripSeparator());
-        _libraryContextMenu.AddAction(games.Length>1?$"从游戏库移除 {games.Length} 个游戏":"从游戏库移除","trash",async(_,_)=>await RemoveLibraryGamesAsync(games));
+        else
+        {
+            _libraryContextMenu.Items.Add(new ToolStripSeparator());
+            _libraryContextMenu.AddAction($"从游戏库移除 {games.Length} 个游戏","trash",async(_,_)=>await RemoveLibraryGamesAsync(games));
+        }
         if(nativeAnchor is not null)WpfNativeMenus.Show(_libraryContextMenu,point:point,nativeAnchor:nativeAnchor);else if(anchor is not null)_libraryContextMenu.Show(anchor,point);
     }
 
@@ -114,6 +124,7 @@ public sealed partial class MainForm
             switch(action)
             {
                 case "detail":OpenGameSession(_selectedGame!);break;
+                case "relink":await RelocateSelectedLibraryGameAsync();break;
                 case "plain":case "plain-bare":await RunGameActionAsync(action);break;
                 case "launch":
                     if(!GameCapabilities.EmbeddedTranslation(_selectedGame))
@@ -129,6 +140,33 @@ public sealed partial class MainForm
             }
         }
         catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
+    }
+
+    private async Task RelocateSelectedLibraryGameAsync()
+    {
+        if(_selectedGame is not { } game||_gameActionRunning||_gameDetecting)return;
+        await _rememberSelectedTask;
+        var store=await RecentStore();
+        if(store.Find(game.ExePath) is not { } record)return;
+        using var dialog=new OpenFileDialog{Title="重新定位："+record.Name,Filter="游戏程序 (*.exe)|*.exe",CheckFileExists=true,Multiselect=false};
+        if(dialog.ShowDialog(this)!=DialogResult.OK)return;
+        await RelocateLibraryRecordAsync(record.Id,dialog.FileName);
+    }
+    private async Task RelocateLibraryRecordAsync(string id,string path)
+    {
+        // Detect before altering the stored identity. This does not launch or
+        // install anything into the selected game.
+        await Task.Run(()=>GameDetector.Detect(path));
+        var store=await RecentStore();
+        var moved=await Task.Run(()=>store.RelocateExisting(id,path));
+        await SelectFusionGameAsync(moved.ExePath,recordSelection:false);
+        await _rememberSelectedTask;
+        if(!IsDisposed&&SameGame(moved.ExePath,_selectedGame?.ExePath))
+        {
+            OpenGameSession(_selectedGame!);
+            _gameSessions.Get(_selectedGame!).Feedback="已重新定位，笔记和游戏库资料已保留。";
+            RenderGameState();
+        }
     }
 
     private async Task RemoveSelectedLibraryGameAsync()

@@ -9,7 +9,7 @@ internal sealed class DesktopSettingsDraft
 {
     internal static readonly string[] Names =
     [
-        nameof(ApiSettings.InterfaceLanguage), nameof(ApiSettings.ThemeMode), nameof(ApiSettings.CloseMainWindowBehavior),
+        nameof(ApiSettings.InterfaceLanguage), nameof(ApiSettings.ThemeMode), nameof(ApiSettings.IconColorMode), nameof(ApiSettings.IconSize), nameof(ApiSettings.CloseMainWindowBehavior),
         nameof(ApiSettings.UiFontMode), nameof(ApiSettings.UiFontFamily), nameof(ApiSettings.UiFontSize),
         nameof(ApiSettings.OcrLanguage), nameof(ApiSettings.CleanupStrength), nameof(ApiSettings.OcrLoad),
         nameof(ApiSettings.OcrCacheEnabled), nameof(ApiSettings.TranslationCacheEnabled), nameof(ApiSettings.ImageTranslationEnabled),

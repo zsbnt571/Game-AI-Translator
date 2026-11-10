@@ -35,7 +35,43 @@ internal static class WpfNativeMenus
             var fields = new WpfSettingsFields(); item.Header = fields.Create(host.Control); item.StaysOpenOnClick = true;
             item.Unloaded += (_, _) => fields.Dispose();
         }
-        else item.Click += (_, e) => { if (ReferenceEquals(e.OriginalSource, item)) { source.PerformClick(); e.Handled = true; } };
+        else
+        {
+            // Capability detection can finish after the popup opens. Keep the
+            // visible command in sync, and release subscriptions when it closes.
+            bool listening = false;
+            void Sync()
+            {
+                if (!listening) return;
+                item.Header = UiLanguage.Text(source.Text);
+                item.IsEnabled = !source.IsDisposed && source.Enabled;
+                item.Visibility = source.Available ? W.Visibility.Visible : W.Visibility.Collapsed;
+                item.ToolTip = string.IsNullOrWhiteSpace(source.ToolTipText) ? null : UiLanguage.Text(source.ToolTipText);
+                if (source is ToolStripMenuItem toggle) item.IsChecked = toggle.Checked;
+            }
+            void Changed(object? sender, EventArgs args)
+            {
+                if (listening && !item.Dispatcher.HasShutdownStarted)
+                    item.Dispatcher.BeginInvoke(new Action(Sync));
+            }
+            item.Loaded += (_, _) =>
+            {
+                if (listening) return;
+                listening = true;
+                source.TextChanged += Changed; source.EnabledChanged += Changed;
+                source.AvailableChanged += Changed; source.Disposed += Changed;
+                if (source is ToolStripMenuItem toggle) toggle.CheckedChanged += Changed;
+                Sync();
+            };
+            item.Unloaded += (_, _) =>
+            {
+                listening = false;
+                source.TextChanged -= Changed; source.EnabledChanged -= Changed;
+                source.AvailableChanged -= Changed; source.Disposed -= Changed;
+                if (source is ToolStripMenuItem toggle) toggle.CheckedChanged -= Changed;
+            };
+            item.Click += (_, e) => { if (ReferenceEquals(e.OriginalSource, item)) { source.PerformClick(); e.Handled = true; } };
+        }
         target.Add(item);
     }
     internal static bool Show(ToolStripDropDown model, Control? anchor = null, Point? point = null, W.FrameworkElement? nativeAnchor = null)

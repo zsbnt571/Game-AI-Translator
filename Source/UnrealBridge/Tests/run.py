@@ -24,15 +24,17 @@ def check(name, fn):
     except Exception as error:
         checks.append({'name': name, 'passed': False, 'detail': str(error)})
 
-def case(cache=None, entries=None, initial=None, tables=True, reference=False, identity=False, query_shape=False, display_sources=None, dormant=False):
+def case(cache=None, entries=None, initial=None, tables=True, reference=False, identity=False, query_shape=False, display_sources=None, dormant=False,native_font=False):
     folder = Path(tempfile.mkdtemp(prefix='case-', dir=OUTPUT))
+    if native_font:
+        (folder/'slate-status.json').write_text(json.dumps(dict(state='ready',secret='a'*64,id=0,enabled=False,texts=[],font=dict(customFontSupported=True,customFontActive=False,id=0,pendingId=0,accepted=False))),encoding='utf-8')
     (folder / 'startup.json').write_text(json.dumps({'secret': 'a' * 64, 'entries': cache or {}}, ensure_ascii=False), encoding='utf-8')
     if entries is not None:
         (folder / 'catalog.json').write_text(json.dumps({'protocol': 76, 'entries': entries, 'displaySources': display_sources or [], 'skipped': 0}, ensure_ascii=False), encoding='utf-8')
     lua = LuaRuntime(unpack_returned_tuples=True, register_eval=False, register_builtins=False)
     for name, value in {'FIXTURE_FOLDER': str(folder), 'FIXTURE_MAIN': str(SOURCE / 'main.lua'),
                         'FIXTURE_TABLES': tables, 'FIXTURE_REFERENCE': reference, 'FIXTURE_IDENTITY': identity,
-                        'FIXTURE_QUERY_SHAPE': query_shape, 'FIXTURE_DORMANT': dormant,
+                        'FIXTURE_QUERY_SHAPE': query_shape, 'FIXTURE_DORMANT': dormant,'FIXTURE_NATIVE_FONT':native_font,
                         'FIXTURE_INITIAL_DISPLAYS': lua.table_from(initial or {})}.items():
         setattr(lua.globals(), name, value)
     lua.execute((HERE / 'fixture.lua').read_text(encoding='utf-8'))
@@ -81,6 +83,47 @@ def startup_identity():
     result = request(fx, folder, 1, 'translationDisable')
     require(result['ok'] and fx.display['Neutral.Menu\0Continue'] == 'Continue', 'startup original not restored')
 check('startup_cache_exact_catalog_identity_and_restore', startup_identity)
+
+def independent_font_rejection():
+    _, fx, folder = case({'Continue': '继续'}, [static_entry()], {'Neutral.Menu\0Continue': 'Continue'}, tables=False)
+    before = len(list(fx.writes.values()))
+    state = request(fx, folder, 1, 'fontState')
+    require(state['ok'] and not state['result']['customFontSupported'], 'unavailable native font constructor was reported as supported')
+    rejected = request(fx, folder, 2, 'fontPreferences', mode='custom', path='missing.ttf', family='Missing')
+    require(not rejected['ok'] and rejected['errorCode'] == 'font-native-construction-unavailable', 'custom font failure was not explicit')
+    require(fx.display['Neutral.Menu\0Continue'] == '继续' and len(list(fx.writes.values())) == before, 'font failure restored or rewrote accepted translations')
+    restored = request(fx, folder, 3, 'fontPreferences', mode='default')
+    require(restored['ok'] and restored['result']['accepted'] and restored['result']['independent'], 'default adaptation receipt unavailable')
+    require(request(fx, folder, 4, 'translationPoll')['ok'], 'font failure stopped the translation transport')
+    require(request(fx, folder, 5, 'translationDisable')['ok'] and fx.display['Neutral.Menu\0Continue'] == 'Continue', 'normal translation restoration failed after a font request')
+check('unavailable_font_operation_preserves_live_translation_and_transport', independent_font_rejection)
+
+def dormant_font_rejection():
+    _, fx, folder = case(dormant=True)
+    state = request(fx, folder, 1, 'fontState')
+    rejected = request(fx, folder, 2, 'fontPreferences', mode='custom', path='missing.ttf')
+    require(state['ok'] and not rejected['ok'] and not fx.catalogReads and not fx.tableLists, 'font operation activated dormant localization')
+    require(request(fx, folder, 3, 'fontState')['ok'], 'font failure stopped dormant transport')
+check('dormant_font_operation_does_not_load_catalog_or_enable_translation', dormant_font_rejection)
+
+def native_font_acknowledgement(accept=True,expire=False):
+    _,fx,folder=case({'Continue':'继续'},[static_entry()],{'Neutral.Menu\0Continue':'Continue'},tables=False,native_font=True)
+    before=len(list(fx.writes.values()))
+    (folder/'request.json').write_text(json.dumps(dict(secret='a'*64,id=1,op='fontPreferences',mode='custom',path='C:/neutral.ttf',family='Neutral',sha256='A'*64)),encoding='utf-8')
+    fx.advance(.2);fx.loop();fx.pump()
+    require(not (folder/'response-1.json').exists(),'font response claimed success before native acknowledgement')
+    command=json.loads((folder/'slate-font-command.json').read_text(encoding='utf-8'))
+    if not expire:
+        state=json.loads((folder/'slate-status.json').read_text(encoding='utf-8'))
+        state['font']=dict(id=command['id'],pendingId=0,accepted=accept,customFontSupported=True,customFontActive=accept,independent=True,reason='accepted' if accept else 'font-file-validation-failed')
+        (folder/'slate-status.json').write_text(json.dumps(state),encoding='utf-8')
+    fx.advance(9 if expire else .2);fx.loop();fx.pump()
+    reply=json.loads((folder/'response-1.json').read_text(encoding='utf-8'))
+    require(reply['ok']==(accept and not expire),'native font result was not faithfully reported')
+    require(fx.display['Neutral.Menu\0Continue']=='继续'and len(list(fx.writes.values()))==before,'font receipt entered translation rollback')
+check('native_font_success_waits_for_acknowledgement_without_translation_changes',native_font_acknowledgement)
+check('native_font_rejection_preserves_translation',lambda:native_font_acknowledgement(False))
+check('native_font_timeout_preserves_translation',lambda:native_font_acknowledgement(False,True))
 
 def startup_prepare_enable():
     entry = static_entry()

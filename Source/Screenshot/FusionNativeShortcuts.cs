@@ -25,6 +25,9 @@ public sealed partial class MainForm
     internal void NativeSetBinding(InputActionId action, InputBinding binding)
     {
         CancelBindingCapture("NativeShortcutEdit");
+        if(!binding.IsEmpty && action is InputActionId.StartCapture or InputActionId.CancelCapture or InputActionId.ToggleResults
+            && (MediaController.Preferences.Screenshot==binding||MediaController.Preferences.Recording==binding))
+        { DesktopStatus="与游戏截图／录像快捷键重复，请换一个组合。";NativeShortcutsChanged?.Invoke();return; }
         switch (action)
         {
             case InputActionId.StartCapture: _translationOptions.StartCaptureBinding = binding; break;

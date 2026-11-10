@@ -110,6 +110,44 @@ internal static class TranslationGlossary
         =>before.Keys.Concat(after.Keys).Distinct(StringComparer.Ordinal).Where(k=>before.GetValueOrDefault(k)!=after.GetValueOrDefault(k)||Rule(before,k)!=Rule(after,k)).ToArray();
     internal static bool Affected(string source,string[] changed)=>matchers.GetValue(changed,_=>new(changed)).Pattern?.IsMatch(source)==true;
 
+    private static bool TranslationPresent(IReadOnlyDictionary<string,string> terms,string key,string translated)
+    {
+        string expected=terms[key];
+        if(translated.Contains(expected,StringComparison.OrdinalIgnoreCase))return true;
+        // Historical automatic name preparation sometimes stored full-width
+        // digits. Source-number protection restores the original ASCII digits,
+        // making both requirements impossible to satisfy literally. Accept
+        // only this width difference for automatic names; manual/imported and
+        // keep-original spellings remain exact, and numeric fidelity is still
+        // checked independently before glossary quality admission.
+        if(Rule(terms,key).Origin!="automatic"||Rule(terms,key).Scope=="literal"||!expected.Any(c=>c is >= '\uff10' and <= '\uff19'))return false;
+        string compatible=AsciiDigits(expected);
+        return translated.Contains(compatible,StringComparison.OrdinalIgnoreCase);
+    }
+    private static string AsciiDigits(string text)=>string.Concat(text.Select(c=>c is >= '\uff10' and <= '\uff19'?(char)('0'+c-'\uff10'):c));
+    internal static string? ProtectedAutomaticDigitTerm(string source,IReadOnlyDictionary<string,string>? terms,string[] codes,ApiSettings settings,EmbeddedTextSyntax syntax)
+    {
+        if(terms is null||!terms.TryGetValue(source,out var expected)||codes.Length==0||!settings.PreserveNumbers||
+           Rule(terms,source).Origin!="automatic"||Rule(terms,source).Scope=="literal"||!expected.Any(c=>c is >= '\uff10' and <= '\uff19'))return null;
+        string projected=AsciiDigits(expected);
+        if(projected.Contains("⟦RPG",StringComparison.Ordinal)||!AutomaticTranslationQuality.Valid(source,projected,settings,terms,syntax))return null;
+        // This is guidance for one exact automatic label, never a replacement
+        // in arbitrary prose. Ambiguous/repeated literals keep the old path.
+        var spans=new List<(int Start,int Length,int Index)>();
+        for(int i=0;i<codes.Length;i++)
+        {
+            string literal=codes[i];if(literal.Length==0)return null;
+            int at=projected.IndexOf(literal,StringComparison.Ordinal);
+            if(at<0||projected.IndexOf(literal,at+literal.Length,StringComparison.Ordinal)>=0)return null;
+            if(spans.Any(s=>at<s.Start+s.Length&&at+literal.Length>s.Start))return null;
+            spans.Add((at,literal.Length,i));
+        }
+        var result=new StringBuilder();int position=0;
+        foreach(var span in spans.OrderBy(s=>s.Start))
+        {result.Append(projected[position..span.Start]).Append("⟦RPG").Append(span.Index).Append('⟧');position=span.Start+span.Length;}
+        return result.Append(projected[position..]).ToString();
+    }
+
     internal static bool MissingTranslation(string source,string translated,IReadOnlyDictionary<string,string>? terms,ApiSettings settings,EmbeddedTextSyntax syntax)
     {
         if(terms is null||terms.Count==0||!TranslationLanguagePolicy.ShouldTranslate(source,settings))return false;
@@ -125,7 +163,7 @@ internal static class TranslationGlossary
                 (visible.Trim().Equals(term.Key,StringComparison.OrdinalIgnoreCase)||
                  term.Key.Any(char.IsWhiteSpace)&&Contains(visible,term.Key)||
                  Regex.IsMatch(visible,PatternFor(term.Key)+@"(?:さん|ちゃん|さま|様|君|くん|殿)",RegexOptions.CultureInvariant))&&
-                !translated.Contains(term.Value,StringComparison.OrdinalIgnoreCase))return true;
+                !TranslationPresent(terms,term.Key,translated))return true;
         return false;
     }
 }

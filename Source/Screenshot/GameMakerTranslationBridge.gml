@@ -21,11 +21,13 @@ function fusion130_init() {
     var _root=environment_get_variable("FUSION_GAMEMAKER_SESSION");
     var _secret=environment_get_variable("FUSION_GAMEMAKER_SECRET");
     var _session=environment_get_variable("FUSION_GAMEMAKER_SESSION_ID");
-    global.fusion130_state={ready:false, enabled:false, epoch:0, cache:{}, seen:{}, fonts:{}, seenCount:0, cacheCount:0, fontCount:0, nextTick:0, lastId:0, reply:undefined, hello:false, translated:{}, uniqueTranslated:0, fontFailures:0, root:_root, secret:_secret, io:"fusion-translation/"+_session+"/"};
+    global.fusion130_state={ready:false, enabled:false, epoch:0, cache:{}, seen:{}, fonts:{}, seenCount:0, cacheCount:0, fontCount:0, nextTick:0, lastId:0, reply:undefined, hello:false, translated:{}, uniqueTranslated:0, fontFailures:0, customPath:"", customCoverage:"", fontFallbacks:{}, fontFallbackCount:0, fontWarning:"", root:_root, secret:_secret, io:"fusion-translation/"+_session+"/"};
     var _s=global.fusion130_state;
+    _s.roleEnabled=false;_s.roleSerial=0;_s.roleCursor=0;_s.roleRows=[];_s.rolePending={};_s.roleActive=undefined;_s.roleFacts={};_s.roleFactCount=0;
     if(string_length(_root)==0||string_length(_secret)!=64||string_length(_session)!=32||string_lettersdigits(_session)!=_session)return;
     directory_create(_s.io);
     _s.enabled=environment_get_variable("FUSION_GAMEMAKER_TRANSLATION")=="1";
+    _s.independentFont=environment_get_variable("FUSION_GAME_FONT_INDEPENDENT")=="1";
     var _startup=fusion130_read(_root+"/startup.json",33554432);
     if(_s.enabled&&is_struct(_startup)&&variable_struct_exists(_startup,"secret")&&_startup.secret==_secret&&variable_struct_exists(_startup,"entries")&&is_struct(_startup.entries)) {
         var _keys=variable_struct_get_names(_startup.entries);
@@ -34,13 +36,143 @@ function fusion130_init() {
             if(is_string(_t)&&string_length(_k)>0&&string_length(_k)<=6000&&string_length(_t)>0&&string_length(_t)<=12000) {variable_struct_set(_s.cache,_k,_t);_s.cacheCount++;}
         }
     }
+    if(_s.enabled||_s.independentFont){
+        var _fontStart=fusion130_read(_s.io+"font-startup.json",32768);
+        if(is_struct(_fontStart)&&variable_struct_exists(_fontStart,"secret")&&_fontStart.secret==_secret){
+            var _fontResult=fusion129_font_preferences(_fontStart);
+            if(!_fontResult.accepted)_s.fontWarning="Custom font unavailable for this component; default translation font retained.";
+        }
+    }
     _s.ready=true;
     _s.hello=fusion130_write(_s.io+"hello.json",{secret:_secret,protocol:130,saveDirectory:game_save_id});
+}
+// The patcher emits a distinct getter/sink pair only after proving a linear
+// value flow into the actual draw argument. Equal or nearby strings alone
+// never enter this lane. Neither getter return values nor game variables change.
+function fusion135_role_observe(_site,_box,_index,_source,_speaker) {
+    fusion130_init();var _s=global.fusion130_state;
+    if(!_s.ready||!_s.enabled||!_s.roleEnabled)return;
+    variable_struct_remove(_s.rolePending,_site);
+    if(!is_string(_source)||!is_string(_speaker)||string_length(_source)<1||string_length(_source)>6000||string_length(_speaker)<1||string_length(_speaker)>200)return;
+    variable_struct_set(_s.rolePending,_site,{site:_site,box:_box,index:_index,source:_source,speaker:_speaker,owner:id,kind:event_type,event:event_number});
+}
+function fusion135_role_enter(_site,_text) {
+    var _s=global.fusion130_state;
+    if(!_s.ready||!_s.enabled||!_s.roleEnabled||!variable_struct_exists(_s.rolePending,_site))return undefined;
+    var _p=variable_struct_get(_s.rolePending,_site);variable_struct_remove(_s.rolePending,_site);
+    if(_p.source!=_text||_p.owner!=id||_p.kind!=event_type||_p.event!=event_number)return undefined;
+    var _identity="chatterbox:"+string_lower(sha1_string_utf8(_p.speaker))+string_lower(string_copy(md5_string_utf8(_p.speaker),1,24));
+    var _row=undefined,_slot=-1;
+    for(var _i=0;_i<array_length(_s.roleRows);_i++){
+        var _candidate=_s.roleRows[_i];
+        if(_candidate.site==_site&&_candidate.box==_p.box&&_candidate.index==_p.index&&_candidate.owner==_p.owner){_row=_candidate;_slot=_i;break;}
+    }
+    if(!is_struct(_row)||_row.source!=_text||_row.characterId!=_identity){
+        if(_slot<0&&array_length(_s.roleRows)>=32)return undefined;
+        _s.roleSerial++;
+        var _facts=(variable_struct_exists(_s.roleFacts,_identity)?variable_struct_get(_s.roleFacts,_identity):[]);
+        _row={site:_site,box:_p.box,index:_p.index,owner:_p.owner,requestId:"gm"+string(_s.roleSerial),source:_text,characterId:_identity,displayName:_p.speaker,evidence:_facts,text:undefined,fallback:false,deadline:current_time+3000,lastSeen:current_time};
+        if(_slot<0)array_push(_s.roleRows,_row);else _s.roleRows[_slot]=_row;
+        if(string_length(_text)<=600&&(_s.roleFactCount<256||variable_struct_exists(_s.roleFacts,_identity))){
+            var _next=[];for(var _j=max(0,array_length(_facts)-2);_j<array_length(_facts);_j++)array_push(_next,_facts[_j]);
+            if(array_length(_next)==0||_next[array_length(_next)-1]!=_text)array_push(_next,_text);
+            if(!variable_struct_exists(_s.roleFacts,_identity))_s.roleFactCount++;
+            variable_struct_set(_s.roleFacts,_identity,_next);
+        }
+    }
+    _row.lastSeen=current_time;return _row;
+}
+function fusion135_role_text_valid(_text) {
+    if(!is_string(_text)||string_length(_text)<1||string_length(_text)>12000)return false;
+    // In native runners chr(0) can be the empty string. Searching for it would
+    // reject every valid reply; inspect actual characters instead.
+    for(var _i=1;_i<=string_length(_text);_i++)if(ord(string_char_at(_text,_i))==0)return false;
+    return true;
+}
+function fusion135_role_poll(_q) {
+    var _s=global.fusion130_state,_live=[],_requests=[],_accepted=[];
+    for(var _i=0;_i<array_length(_s.roleRows);_i++)if(current_time-_s.roleRows[_i].lastSeen<=2000)array_push(_live,_s.roleRows[_i]);
+    _s.roleRows=_live;
+    if(_s.enabled&&_s.roleEnabled&&variable_struct_exists(_q,"characterRuntimeContract")&&_q.characterRuntimeContract=="fusion-character-runtime-1"&&variable_struct_exists(_q,"characterResults")&&is_array(_q.characterResults)){
+        for(var _i=0;_i<min(16,array_length(_q.characterResults));_i++){
+            var _r=_q.characterResults[_i];
+            if(!is_struct(_r)||!variable_struct_exists(_r,"requestId")||!variable_struct_exists(_r,"source")||!variable_struct_exists(_r,"characterId"))continue;
+            for(var _j=0;_j<array_length(_live);_j++){
+                var _row=_live[_j];
+                if(_r.requestId!=_row.requestId||_r.source!=_row.source||_r.characterId!=_row.characterId)continue;
+                if(variable_struct_exists(_r,"pending")&&_r.pending){_row.deadline=current_time+3000;}
+                else if(variable_struct_exists(_r,"fallback")&&_r.fallback){_row.text=undefined;_row.fallback=true;}
+                else if(variable_struct_exists(_r,"text")&&fusion135_role_text_valid(_r.text)){_row.text=_r.text;_row.fallback=false;}
+                else continue;
+                array_push(_accepted,_row.requestId);break;
+            }
+        }
+    }
+    if(_s.enabled&&_s.roleEnabled)for(var _i=0;_i<min(16,array_length(_live));_i++){
+        var _row=_live[(_s.roleCursor+_i) mod array_length(_live)];array_push(_requests,{requestId:_row.requestId,source:_row.source,characterId:_row.characterId,displayName:_row.displayName,evidence:_row.evidence});
+    }
+    _s.roleCursor=(array_length(_live)>0?(_s.roleCursor+array_length(_requests)) mod array_length(_live):0);
+    return {characterRuntimeContract:(_s.roleEnabled?"fusion-character-runtime-1":undefined),characterAccepted:_accepted,characterRequests:_requests};
 }
 function fusion130_release_fonts() {
     var _s=global.fusion130_state,_names=variable_struct_get_names(_s.fonts);
     for(var _j=0;_j<array_length(_names);_j++){var _owned=variable_struct_get(_s.fonts,_names[_j]);if(_owned.id>=0)font_delete(_owned.id);}
     _s.fonts={};_s.fontCount=0;_s.layouts={};_s.layoutCount=0;
+}
+function fusion129_font_room() {
+    var _s=global.fusion130_state;
+    if(_s.fontCount<32)return;
+    var _keys=variable_struct_get_names(_s.fonts),_oldest="",_age=infinity;
+    for(var _i=0;_i<array_length(_keys);_i++){
+        var _entry=variable_struct_get(_s.fonts,_keys[_i]);
+        if(_entry.id!=draw_get_font()&&_entry.used<_age){_age=_entry.used;_oldest=_keys[_i];}
+    }
+    if(_oldest!=""){
+        var _entry=variable_struct_get(_s.fonts,_oldest);if(_entry.id>=0)font_delete(_entry.id);
+        variable_struct_remove(_s.fonts,_oldest);_s.fontCount--;_s.layouts={};_s.layoutCount=0;
+    }
+}
+// File names and cmap evidence are prepared by the host from verified bytes.
+// An unsupported glyph uses the previous default translation route per string;
+// it never turns a translated string back into its original language.
+function fusion129_font_covers(_coverage,_text) {
+    if(string_length(_coverage)!=16384)return false;
+    for(var _i=1;_i<=string_length(_text);_i++){
+        var _code=ord(string_char_at(_text,_i));
+        if(_code<0||_code>65535)return false;
+        var _hex=string_pos(string_char_at(_coverage,1+floor(_code/4)),"0123456789ABCDEF")-1;
+        if(_hex<0||(_hex&(1<<(_code mod 4)))==0)return false;
+    }
+    return true;
+}
+function fusion129_font_fallback(_source) {
+    var _s=global.fusion130_state;
+    if(_s.fontFallbackCount<4096&&!variable_struct_exists(_s.fontFallbacks,_source)){
+        variable_struct_set(_s.fontFallbacks,_source,true);_s.fontFallbackCount++;
+    }
+}
+function fusion129_font_preferences(_q) {
+    var _s=global.fusion130_state,_mode=(variable_struct_exists(_q,"mode")?_q.mode:"");
+    var _bad={accepted:false,error:"Invalid custom font preference."};
+    if(_mode!="default"&&_mode!="custom")return _bad;
+    var _path="",_coverage="";
+    if(_mode=="custom"){
+        if(!variable_struct_exists(_q,"file")||!is_string(_q.file)||string_length(_q.file)!=68||
+           !variable_struct_exists(_q,"coverage")||!is_string(_q.coverage)||string_length(_q.coverage)!=16384)return _bad;
+        var _extension=string_copy(_q.file,65,4);
+        if(_extension!=".ttf"&&_extension!=".otf")return _bad;
+        for(var _i=1;_i<=64;_i++)if(string_pos(string_char_at(_q.file,_i),"0123456789ABCDEF")==0)return _bad;
+        for(var _i=1;_i<=16384;_i++)if(string_pos(string_char_at(_q.coverage,_i),"0123456789ABCDEF")==0)return _bad;
+        _path=_s.io+"fonts/"+_q.file;_coverage=_q.coverage;
+        var _probe=-1;
+        try { if(file_exists(_path))_probe=font_add(_path,16,false,false,32,128); } catch(_e) { _probe=-1; }
+        if(_probe<0)return {accepted:false,error:"The running GameMaker engine could not load the selected font. The previous preference was retained."};
+        font_delete(_probe);
+    }
+    if(_s.customPath!=_path||_s.customCoverage!=_coverage||_s.fontFallbackCount>0||_s.fontFailures>0)fusion130_release_fonts();
+    _s.customPath=_path;_s.customCoverage=_coverage;_s.fontFallbacks={};_s.fontFallbackCount=0;_s.fontFailures=0;_s.fontWarning="";
+    _s.independentFont=variable_struct_exists(_q,"independent")&&_q.independent==true;
+    return {accepted:true,mode:_mode,enabled:_s.enabled,independent:_s.independentFont,writebackPending:_s.enabled||_s.independentFont,restorePending:(_s.enabled||_s.independentFont)&&_mode=="default",restartRequired:false};
 }
 // Keep the engine's automatic composition, cameras, viewports and custom
 // surfaces. Only the automatic application target gets more raster pixels.
@@ -105,20 +237,27 @@ function fusion130_tick() {
     }
     var _q=fusion130_read(_s.io+"request.json",262144);
     if(!is_struct(_q)||!variable_struct_exists(_q,"secret")||_q.secret!=_s.secret||!variable_struct_exists(_q,"id")||_q.id<=_s.lastId||!variable_struct_exists(_q,"op"))return;
-    var _r={epoch:_s.epoch},_ok=true;
+    var _r={epoch:_s.epoch},_ok=true,_error="";
     switch(_q.op) {
+        case "fontPreferences":
+            _r=fusion129_font_preferences(_q);_ok=_r.accepted;
+            if(!_ok)_error=_r.error;
+            break;
         case "translationPrepare":
             _s.epoch++;
             if(!variable_struct_exists(_q,"preserveStartup")||!_q.preserveStartup){_s.cache={};_s.cacheCount=0;_s.enabled=false;}
-            _s.seen={};_s.seenCount=0;_r={epoch:_s.epoch}; break;
+            _s.roleEnabled=variable_struct_exists(_q,"characterRuntimeContract")&&_q.characterRuntimeContract=="fusion-character-runtime-1";_s.roleCursor=0;_s.roleRows=[];_s.rolePending={};_s.roleActive=undefined;_s.roleFacts={};_s.roleFactCount=0;
+            _s.seen={};_s.seenCount=0;_r={epoch:_s.epoch,characterRuntimeContract:(_s.roleEnabled?"fusion-character-runtime-1":undefined)}; break;
         case "translationEnable": _s.enabled=true; break;
         case "translationDisable":
             _s.enabled=false;_s.epoch++;_s.cache={};_s.cacheCount=0;
+            _s.roleEnabled=false;_s.roleRows=[];_s.rolePending={};_s.roleActive=undefined;
             fusion130_release_fonts();_r={epoch:_s.epoch};break;
         case "translationPoll":
+            var _roles=fusion135_role_poll(_q);
             var _texts=variable_struct_get_names(_s.seen),_out=[];
             for(var _i=0;_i<min(128,array_length(_texts));_i++){array_push(_out,_texts[_i]);variable_struct_remove(_s.seen,_texts[_i]);_s.seenCount--;}
-            _r={epoch:_s.epoch,texts:_out,ahead:[],runtimeWarning:(_s.fontFailures>0?"部分字体准备失败，已保留原文。":""),displaySources:_s.uniqueTranslated,fontCount:_s.fontCount}; break;
+            _r={epoch:_s.epoch,texts:_out,ahead:[],runtimeWarning:(_s.fontWarning!=""?_s.fontWarning:(_s.fontFallbackCount>0?"Custom font unavailable for this component; default translation font retained.":(_s.fontFailures>0?"部分字体准备失败，已保留原文。":""))),displaySources:_s.uniqueTranslated,fontCount:_s.fontCount,fontFallbackSources:_s.fontFallbackCount,characterRuntimeContract:_roles.characterRuntimeContract,characterAccepted:_roles.characterAccepted,characterRequests:_roles.characterRequests}; break;
         case "translationApply":
             var _n=0;
             if(!variable_struct_exists(_q,"epoch")||_q.epoch!=_s.epoch){_r={epoch:_s.epoch,stale:true,stored:0};break;}
@@ -131,10 +270,10 @@ function fusion130_tick() {
                 }
             }
             _r={epoch:_s.epoch,stored:_n};break;
-        case "translationState":_r={epoch:_s.epoch,enabled:_s.enabled,entries:_s.cacheCount,displaySources:_s.uniqueTranslated,fontCount:_s.fontCount,fontFailures:_s.fontFailures};break;
+        case "translationState":_r={epoch:_s.epoch,enabled:_s.enabled,entries:_s.cacheCount,displaySources:_s.uniqueTranslated,fontCount:_s.fontCount,fontFailures:_s.fontFailures,fontFallbackSources:_s.fontFallbackCount,customFont:_s.customPath!=""};break;
         default: _ok=false; break;
     }
-    _s.reply={id:_q.id,secret:_s.secret,ok:_ok,result:_r};
+    _s.reply={id:_q.id,secret:_s.secret,ok:_ok,result:_r,error:_error};
     if(fusion130_write(_s.io+"response-"+string(_q.id)+".json",_s.reply)){_s.lastId=_q.id;_s.reply=undefined;}
 }
 function fusion136_wrap(_text,_width) {
@@ -190,16 +329,21 @@ function fusion136_layout(_text,_width,_sep,_bounded) {
     fusion130_init(); fusion130_tick(); fusion149_surface_tick();
     var _old=draw_get_font(),_s=global.fusion130_state;
     var _unchanged=[_text,_old,1,_sep,_width,false];
-    if(!_s.ready||!_s.enabled||!is_string(_text)||string_length(_text)==0||string_length(_text)>6000)return _unchanged;
+    var _independent=_s.independentFont&&_s.customPath!="";
+    if(!_s.ready||(!_s.enabled&&!_independent)||!is_string(_text)||string_length(_text)==0||string_length(_text)>6000)return _unchanged;
     var _full=_text;
-    if(variable_struct_exists(_s,"slices")&&current_time<=_s.sliceExpiry&&variable_struct_exists(_s.slices,_text)){
+    var _role=(_s.enabled&&_s.roleEnabled&&is_struct(_s.roleActive)&&_s.roleActive.source==_text?_s.roleActive:undefined);
+    if(!is_struct(_role)&&_s.enabled&&variable_struct_exists(_s,"slices")&&current_time<=_s.sliceExpiry&&variable_struct_exists(_s.slices,_text)){
         var _candidate=variable_struct_get(_s.slices,_text);if(string_length(_candidate)>string_length(_text))_full=_candidate;
     }
-    if(string_length(_full)==1&&string_letters(_full)==_full)return _unchanged;
-    if(_s.seenCount<4096&&!variable_struct_exists(_s.seen,_full)){variable_struct_set(_s.seen,_full,true);_s.seenCount++;}
-    if(!variable_struct_exists(_s.cache,_full))return _unchanged;
-    var _out=variable_struct_get(_s.cache,_full);
-    if(_out==_full)return _unchanged;
+    if(!_independent&&string_length(_full)==1&&string_letters(_full)==_full)return _unchanged;
+    if(_s.enabled&&(!is_struct(_role)||_role.fallback||current_time>_role.deadline)&&_s.seenCount<4096&&!variable_struct_exists(_s.seen,_full)){variable_struct_set(_s.seen,_full,true);_s.seenCount++;}
+    var _out=(_s.enabled&&variable_struct_exists(_s.cache,_full)?variable_struct_get(_s.cache,_full):_full);
+    if(is_struct(_role)&&is_string(_role.text))_out=_role.text;
+    if(_out==_full&&!_independent)return _unchanged;
+    // Missing glyphs in an original-language custom draw retain the game's
+    // authored font; do not silently replace it with the translation fallback.
+    if(_out==_full&&!fusion129_font_covers(_s.customCoverage,_out))return _unchanged;
     var _sourceWidth=string_width(_full),_lineHeight=string_height("M");
     var _ink=fusion136_font_ink(font_get_name(_old));
     // GUI events draw directly to the back buffer. A low-resolution Latin
@@ -222,16 +366,33 @@ function fusion136_layout(_text,_width,_sep,_bounded) {
         if(_gw>0&&_gh>0)_sample=clamp(ceil(max(window_get_width()/_gw,window_get_height()/_gh)),2,8);
     }
     var _smooth=!_pixel||_dense;
-    var _key=string(_old)+"|"+string(_targetInk)+"|"+string(_sample)+"|"+string(_slot)+"|"+string(_smooth),_entry=undefined;
+    var _defaultPath=program_directory+".fusion-gamemaker/bridge-font.otf",_fontPath=_defaultPath;
+    if(_s.customPath!=""){
+        if(fusion129_font_covers(_s.customCoverage,_out))_fontPath=_s.customPath;
+        else fusion129_font_fallback(_full);
+    }
+    var _key=string(_old)+"|"+string(_targetInk)+"|"+string(_sample)+"|"+string(_slot)+"|"+string(_smooth)+"|"+_fontPath,_entry=undefined;
     if(variable_struct_exists(_s.fonts,_key))_entry=variable_struct_get(_s.fonts,_key);
-    else if(_s.fontCount<32){
-        var _info=font_get_info(_old),_size=16,_bold=false,_italic=false;
+    else{
+        // More than 32 size/style combinations must not permanently suppress
+        // subsequent translations. Evict an unused owned font, never a game font.
+        fusion129_font_room();
+        if(_s.fontCount>=32)return _unchanged;
+        var _info=undefined,_size=16,_bold=false,_italic=false;
+        // The built-in default draw font is -1 and has no font resource info.
+        // It is still a valid original draw; retain the existing size fallback.
+        try{_info=font_get_info(_old);}catch(_e){_info=undefined;}
         if(is_struct(_info)){_size=clamp(_info.size,6,96);_bold=_info.bold;_italic=_info.italic;}
         if(_targetInk>0)_size=clamp(_targetInk/0.92,6,96);
         var _aa=font_add_get_enable_aa();font_add_enable_aa(_smooth);
         var _points=round(_size*_sample);
-        var _font=font_add(program_directory+".fusion-gamemaker/bridge-font.otf",_points,_bold,_italic,32,128);
-        if((_sample==1||_dense)&&_font>=0&&_targetInk>0){
+        var _font=-1;
+        try{_font=font_add(_fontPath,_points,_bold,_italic,32,128);}catch(_e){_font=-1;}
+        if(_font<0&&_fontPath!=_defaultPath&&_out!=_full){
+            fusion129_font_fallback(_full);_fontPath=_defaultPath;
+            try{_font=font_add(_fontPath,_points,_bold,_italic,32,128);}catch(_e){_font=-1;}
+        }
+        if((_sample==1||_dense)&&_font>=0&&_targetInk>0&&_fontPath==_defaultPath){
             // Measure the em at raster resolution, then keep the original
             // logical line spacing. GUI glyphs never pass through the small
             // application surface and preserve strokes at the window scale.
@@ -239,16 +400,17 @@ function fusion136_layout(_text,_width,_sep,_bounded) {
                 draw_set_font(_font);var _em=string_width("国");draw_set_font(_old);
                 if(_em<=_targetInk*_sample||_points<=6)break;
                 font_delete(_font);_points=max(6,floor(_points*_targetInk*_sample/max(1,_em)));
-                _font=font_add(program_directory+".fusion-gamemaker/bridge-font.otf",_points,_bold,_italic,32,128);
+                _font=font_add(_defaultPath,_points,_bold,_italic,32,128);
                 if(_font<0)break;
             }
         }
         font_add_enable_aa(_aa);
-        _entry={id:_font,scale:1/_sample};
+        _entry={id:_font,scale:1/_sample,used:current_time};
         variable_struct_set(_s.fonts,_key,_entry);_s.fontCount++;
         if(_font<0)_s.fontFailures++;
     }
     if(!is_struct(_entry)||_entry.id<0)return _unchanged;
+    _entry.used=current_time;
     draw_set_font(_entry.id);
     if(!variable_struct_exists(_s,"layouts")){_s.layouts={};_s.layoutCount=0;}
     var _layoutKey=_key+"|"+string(_width)+"|"+string(_sep)+"|"+string(_bounded)+"|"+_full+"|"+_out;

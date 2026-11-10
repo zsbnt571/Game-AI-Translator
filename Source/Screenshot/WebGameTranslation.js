@@ -60,7 +60,7 @@
     }
     function fitText(inst,record,view){
         const rt=inst._rendererText;
-        const selected=enabled&&view.translated&&customFont&&customFont.family();
+        const selected=customFont&&(customFont.independent()||enabled&&view.translated)&&customFont.family();
         if(rt.SetFontName){
             if(selected){rt.SetFontName(selected);record.ownedFont=true;}
             else if(record.ownedFont){rt.SetFontName(inst._faceName);record.ownedFont=false;}
@@ -113,7 +113,7 @@
         const C=g.C3,wi=inst.GetWorldInfo();let item=sprites.get(inst);
         if(!item){if(sprites.size>=256)return false;item={rt:null,shown:null,active:false,key:null};sprites.set(inst,item);}
         const view=display(item,source),wanted=view.body;
-        item.active=false;if(!view.translated||!compatible(item.full||source,wanted))return false;
+        item.active=false;if((!view.translated&&!(customFont&&customFont.independent()&&customFont.family()))||!compatible(item.full||source,wanted))return false;
         if(!item.rt){const rt=C.New(C.Gfx.RendererText,inst._runtime.GetRenderer(),{timeout:5});rt.ontextureupdate=()=>inst._runtime.UpdateRender();item.rt=rt;}
         const rt=item.rt,layer=wi.GetLayer(),height=inst._sdkType.GetSpriteFont().GetCharacterHeight(),width=wi.GetWidth(),boxHeight=wi.GetHeight(),sceneScale=wi.GetSceneGraphScale();
         const zoom=layer.GetRenderScale()*layer.Get2DScaleFactorToZ(wi.GetTotalZElevation()),bb=!!inst._enableBBcode;
@@ -158,7 +158,7 @@
         if(q.op==='fontPreferences'){
             if(rpg||novel)return bridge.command(q);
             if(!customFont||!customFont.configure)throw Error('Font switching unavailable');
-            return customFont.configure(q).then(receipt=>Object.assign(receipt,{enabled,writebackPending:enabled,restorePending:enabled&&q.mode==='default'}));
+            return customFont.configure(q).then(receipt=>Object.assign(receipt,{enabled,writebackPending:enabled||customFont.independent(),restorePending:(enabled||customFont.independent())&&q.mode==='default'}));
         }
         if(q.op==='gameSpeed'||q.op&&/^speed(?:Enable|Disable|Status)$/.test(q.op)){if(!speed)throw Error('此游戏没有可用的引擎倍率连接。');return speed.command(q);}
         if(q.op&&q.op.startsWith('state')){if(!state)throw Error('Game state adapter unavailable');return state.command(q);}

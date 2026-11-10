@@ -4,6 +4,7 @@ namespace ScreenshotTranslationUiTester;
 // reach the application's legacy controls or another feature through this API.
 internal interface ILibraryWorkspaceHost
 {
+    ILibraryTagWorkspaceHost? LibraryTags => null;
     System.Int32 DeviceDpi { get; }
     System.Drawing.Font Font { get; }
     void NativeLibraryPresentation();
@@ -39,6 +40,8 @@ internal interface ILibraryWorkspaceHost
 
 internal interface IGameDetailsHost
 {
+    GameNoteSelection? NativeGameNotes => null;
+    void NativeGameNotesSaved() { }
     ModificationSpeedState NativeGameSpeedState => ModificationSpeedState.Unavailable;
     Task NativeSetGameSpeed(double rate) => Task.CompletedTask;
     bool NativeStorySkipVisible => false;
@@ -101,6 +104,7 @@ internal interface IRenpyWorkspaceHost
 
 internal interface ISettingsWorkspaceHost
 {
+    AiToolsController CreateAiToolsController();
     void NativePrepareProfilePage();
     void NativeSaveDesktopSettings();
     System.String NativeSettingsDescription(System.Int32 page);
@@ -118,6 +122,12 @@ internal interface ISettingsWorkspaceHost
 
 internal interface IDesktopSettingsHost
 {
+    GameMediaPreferences NativeMediaPreferences => GameMediaPreferences.Default;
+    string NativeMediaShortcutStatus => "";
+    void NativeConfigureMediaKeys() {}
+    AiStorageInfo147 NativeAiStorageInfo => AiStoragePaths147.GetCurrent();
+    string? NativeChooseAiStorageLocation() => null;
+    string NativeRequestAiStorageLocation(string target) => AiStoragePaths147.RequestLocation(target);
     ScreenshotTranslationUiTester.DesktopSettingsDraft DesktopDraft { get; }
     void NativeBeginBinding(ScreenshotTranslationUiTester.InputActionId action, System.Func<System.Drawing.Rectangle> bounds);
     void NativeBeginGameShortcut();
@@ -144,6 +154,8 @@ internal interface IDesktopSettingsHost
     void NativeSetBinding(ScreenshotTranslationUiTester.InputActionId action, ScreenshotTranslationUiTester.InputBinding binding);
     void NativeSetGameShortcut(System.String value);
     void NativeSetTheme(ScreenshotTranslationUiTester.ApplicationThemeMode theme);
+    void NativeSetIconColorMode(ScreenshotTranslationUiTester.UiIconColorMode mode);
+    void NativePreviewIcons();
     System.String NativeSettingsDescription(System.Int32 page);
     void NativeSettingsError(System.Exception ex);
     System.String NativeSettingsPath { get; }
@@ -170,6 +182,7 @@ internal interface IProfileEditorHost
 
 internal interface ITranslationContentHost
 {
+    void NativeOpenTranslationLibrary() { }
     ScreenshotTranslationUiTester.TranslationContentEditorState ContentDraft { get; }
     System.Drawing.Font Font { get; }
     System.Boolean NativeSaveTranslationContent();

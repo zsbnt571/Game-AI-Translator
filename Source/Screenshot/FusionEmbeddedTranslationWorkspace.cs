@@ -56,10 +56,11 @@ public sealed partial class MainForm
             session.Feedback="正在等待游戏翻译连接…";RenderGameSessionState();await RecordGameStartedAsync(game,process.Id);
             await EmbeddedLaunchWait.AcceptAsync(connection,process,_desktopLifetime.Token,progress=>
             {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}});
-            if(action=="speed"){session.Feedback="游戏组件已连接，翻译保持关闭。";return;}
-            if(action=="modify"){await connection.RequestAsync(new(){["op"]="dataEnable"});data.Enabled=true;session.Feedback="修改已开启，翻译保持独立。";return;}
+            string fontWarning=await GameFontLive.ReconcileIndependentAsync(game,connection);
+            if(action=="speed"){session.Feedback="游戏组件已连接，翻译保持关闭。"+(fontWarning.Length>0?" "+fontWarning:"");return;}
+            if(action=="modify"){await connection.RequestAsync(new(){["op"]="dataEnable"});data.Enabled=true;session.Feedback="修改已开启，翻译保持独立。"+(fontWarning.Length>0?" "+fontWarning:"");return;}
             data.Translation=new(connection,game.ExePath,settings!,async(text,profile,token)=>(await _translationService.TranslatePlainAsync(text,profile,token)).Text,data.TranslationOptions);
-            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback="";
+            await data.Translation.StartAsync();session.TranslationBlockedReason="";session.Feedback=fontWarning;
         }
         catch(Exception ex)
         {

@@ -1,33 +1,31 @@
-# Game AI Translator · Fusion 1.1.128
+# Game AI Translator · Fusion 1.1.165
 
 [简体中文](README.md) | **English** | [Русский](README.ru.md)
 
-Fusion is a Windows x64 tool for in-game translation on supported engines, screenshot OCR translation, a game library and optional game tools.
+Fusion is a Windows x64 application for supported-engine game translation, screenshot OCR, game-library management and experimental AI tools.
 
 ## Download and start
 
-Download **Fusion-1.1.128.zip** from [Releases](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.128), extract the entire folder and run **GameTranslator.exe**. Keep all accompanying files. The application includes its .NET, Python and OCR components; you do not need to install these separately.
+Download **Fusion-1.1.165.zip** from the [1.1.165 release](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.165), extract the complete folder and run **GameTranslator.exe**. This is a prerelease.
 
-1. Open **Settings → Translation profiles** and configure your compatible translation API or an already running local model service.
-2. Select the translation target language, save and test the connection. Use **No API key required** only when your service needs no key.
-3. Import a game and enable the translation options available for its engine. Screenshot translation is available as an alternative.
+1. Configure your compatible API or already-running local model service in **Settings → Translation profiles**, then test the connection.
+2. Select the target language, prompt preset and optional glossary packs, then save.
+3. Import a game and use the available engine adapter or screenshot translation.
 
-A large language model/server is not included. Provider access and any usage charges are separate. Optional Google cover-image search uses the Windows WebView2 Runtime; this is separate from the main translation components.
+The package includes .NET, Python and OCR components, but no large language model. Provider access and charges are separate. Some web features need the Windows WebView2 Runtime.
 
-## Features in this version
+## Current features
 
-- Nine interface languages, with system-language selection by default for new settings. Existing language choices survive the menu reorder. Interface language and translation target are independent.
-- Improved resource reading, pretranslation and cache reuse across supported engine adapters.
-- Improved translation controls after ordinary game launch; translation and game modification have separate controls.
-- Custom-font selection, preview and restoration on supported adapters, while preserving the default font adaptation.
-- **Automatic gender agreement, without extra setup.** Explicit English evidence within the same original text item can assist English, Spanish, French, German and Russian translation through the shared path. Limited Ren'Py role context can also assist across dialogue lines. Unknown or conflicting evidence keeps normal behavior; full character recognition across engines is not supported.
+Nine-language UI and recent notifications/errors; six prompt presets and six glossary packs; rich notes and tag browsing; engine icon appearance; screenshots and silent video recording; centralized shortcut settings; a translation test workspace and experimental AI assistants.
 
-Chinese, Japanese, Korean and ordinary translation caches retain their existing behavior. See [release notes](docs/RELEASE-NOTES-1.1.128.en.md) and [known limitations](docs/KNOWN-ISSUES.en.md).
+See the [cumulative release notes](docs/RELEASE-NOTES-1.1.165.md) and [validation scope](docs/VALIDATION-1.1.165.md). The final application passed 3,967 controlled checks with zero failures. This does not certify every game or model.
 
-## Update and developer downloads
+## Data, updates and source
 
-Close Fusion normally, back up its actual data directory and extract the new package separately. Keep the old installation and avoid running two versions against the same data directory.
+Default application data lives in `data`, chats in `AI chat`, screenshots in `data/screenshot` and recordings in `data/video` beside the application. Custom data locations continue to follow their configuration.
 
-**Fusion-1.1.128-Source.zip** is the complete developer source asset. GitHub's automatic Source code archives omit binary build inputs and are not runnable application packages. [Build instructions](docs/BUILD.en.md) apply to developers, not ordinary installation.
+Before updating, exit through the tray menu and back up the whole old installation. Extract the new package separately and preserve your own data. Do not run two versions against the same data. Public archives contain no personal keys, library data or chat records.
 
-Project-owned code is GPL-3.0-only; [third-party notices](THIRD_PARTY_NOTICES.md) cover other components. [Validation](docs/VALIDATION-1.1.128.md) describes the checks performed. Report reproducible problems through [Issues](https://github.com/zsbnt571/Game-AI-Translator/issues), excluding keys and personal data.
+Developers should download **Fusion-1.1.165-Source.zip**; GitHub's generated Source code archives omit binary build inputs. [Build instructions](docs/BUILD.en.md) explain the toolchains and the unverified full auxiliary-component rebuild.
+
+Project-owned code is GPL-3.0-only. Dependencies retain their own licenses; see [third-party notices](THIRD_PARTY_NOTICES.md). Report reproducible problems through [Issues](https://github.com/zsbnt571/Game-AI-Translator/issues), without secrets or personal data.

@@ -28,10 +28,11 @@ public sealed partial class MainForm
         if(name.Length==0||name.Length>40||name.IndexOfAny([',','，',';','；'])>=0)throw new ArgumentException("分类名需为 1–40 个字，不能包含逗号或分号。");
         if(category==name)return;
         var current=LibraryPreferencesStore.Load();var metadata=_libraryMetadata??=new LibraryMetadata();metadata.Reload();
-        if((current.Categories??[]).Contains(name,StringComparer.Ordinal))
+        if((current.Categories??[]).Contains(name,StringComparer.Ordinal)||LibraryCategories.LegacyCollections(current).Any(f=>f.Name==name))
             throw new ArgumentException("已有同名分类，请换一个名称。");
         var next=current with{
             Categories=(current.Categories??[]).Select(t=>t==category?name:t).Append(name).Distinct().ToArray(),
+            Folders=current.Folders?.Select(f=>string.IsNullOrWhiteSpace(f.Root)&&f.Name==category?f with{Name=name}:f).ToArray(),
             RecentSection=current.RecentSection=="tag:"+category?"tag:"+name:current.RecentSection,
             MainSection=current.MainSection=="tag:"+category?"tag:"+name:current.MainSection};
         metadata.RenameCategory(category,name);LibraryPreferencesStore.Save(next);_libraryPreferences=next;
@@ -44,13 +45,16 @@ public sealed partial class MainForm
         // Preserve preferences saved after this window last refreshed. Categories can
         // also come from game tags, so both sources must stop referring to this name.
         var current=LibraryPreferencesStore.Load();
+        var legacyIds=LibraryCategories.LegacyCollections(current).Where(f=>f.Name==category).Select(f=>f.Id).ToHashSet(StringComparer.Ordinal);
         var next=current with{
             Categories=(current.Categories??[]).Where(name=>name!=category).ToArray(),
-            RecentSection=current.RecentSection=="tag:"+category?"recent":current.RecentSection,
-            MainSection=current.MainSection=="tag:"+category?"all":current.MainSection};
+            Folders=current.Folders?.Where(f=>!legacyIds.Contains(f.Id)).ToArray(),
+            RecentSection=current.RecentSection=="tag:"+category||legacyIds.Contains(current.RecentSection.Replace("collection:",""))?"recent":current.RecentSection,
+            MainSection=current.MainSection=="tag:"+category||legacyIds.Contains(current.MainSection.Replace("collection:",""))?"all":current.MainSection};
         (_libraryMetadata??=new LibraryMetadata()).RemoveCategory(category);
         LibraryPreferencesStore.Save(next);_libraryPreferences=next;
         if(_libraryTag==category){_libraryTag="";_libraryScope="home";}
+        if(legacyIds.Contains(_libraryCollection)){_libraryCollection="";_libraryScope="home";}
         ScheduleLibraryRefresh();
         if(_statusLabel is not null)DesktopStatus="已删除分类“"+category+"”，游戏和磁盘文件保留。";
     }

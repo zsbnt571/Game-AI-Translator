@@ -17,7 +17,7 @@ internal sealed class DesktopActionState(string text) : DesktopLabelState
 internal sealed class GameDetailPresentation
 {
     internal bool SelectionPending;
-    internal bool Modifying, RpgModification, RenpyModification, NovelModification, UnsupportedModification, FileDetails;
+    internal bool Notes, Modifying, RpgModification, RenpyModification, NovelModification, UnsupportedModification, FileDetails;
     internal DesktopActionState Launch { get; } = new("启动游戏") { Text = "启动游戏" };
     internal DesktopActionState LaunchArrow { get; } = new("") { Text = "" };
     internal DesktopActionState Return { get; } = new("返回游戏") { Text = "返回游戏" };
@@ -25,7 +25,10 @@ internal sealed class GameDetailPresentation
     internal DesktopActionState Exit { get; } = new("退出游戏") { Text = "退出游戏", Visible = false, Enabled = false };
     internal DesktopActionState Rename { get; } = new("编辑名称") { Text = "编辑名称" };
     internal DesktopActionState CoverEdit { get; } = new("更换封面") { Text = "更换封面" };
+    internal DesktopActionState Relink { get; } = new("重新定位") { Text="重新定位", Visible=false };
+    internal DesktopLabelState MissingPath { get; } = new() { Visible=false };
     internal DesktopActionState FolderOpen { get; } = new("打开游戏文件夹") { Text = "打开游戏文件夹" };
+    internal DesktopActionState NotesTab { get; } = new("游戏笔记") { Text = "游戏笔记" };
     internal DesktopActionState TranslationTab { get; } = new("游戏翻译") { Text = "游戏翻译" };
     internal DesktopActionState ModificationTab { get; } = new("游戏修改") { Text = "游戏修改" };
     internal DesktopActionState CompactReturn { get; } = new("返回游戏") { Text = "返回游戏" };
@@ -72,6 +75,9 @@ public sealed partial class MainForm
         var game=_selectedGame; var state=_desktopGameState;
         GameDetail.Install.Text=state?.Action??"应用翻译";
         var session=game is null?null:_gameSessions.Get(game);
+        bool missing=LibraryGameAvailability.Missing(game);
+        GameDetail.MissingPath.Visible=missing;GameDetail.MissingPath.Text=LibraryGameAvailability.Hint;
+        GameDetail.Relink.Visible=missing;GameDetail.Relink.Enabled=missing&&!_gameActionRunning;
         bool current=SameGame(game?.ExePath,state?.Game.ExePath);
         if(current)session!.Observe(state!.Process);
         RenderCommonModificationAuthorization();
@@ -103,11 +109,13 @@ public sealed partial class MainForm
         foreach(var button in new[]{GameDetail.Rename,GameDetail.CoverEdit,GameDetail.FolderOpen})if(button is not null)button.Enabled=game is not null&&!busy;
         GameDetail.SelectionLabel.Text=game is null?"双击游戏进入详细主页":game.Name+(GameChineseNameText.Length>0?" · "+GameChineseNameText:"");
         GameDetail.Status.Text=_gameDetecting?"正在识别游戏…":busy?"正在处理此游戏…":session?.LaunchPending==true?"正在等待游戏启动…":running?"游戏运行中":stopped?"游戏未运行":"正在核对游戏状态…";
+        if(missing){GameDetail.Status.Text="游戏路径失效";GameDetail.Badge.Text="资料已保留";}
         if(!busy&&!current&&_gameQueryError.Length>0) GameDetail.Status.Text=_gameQueryError;
         GameDetail.Status.ForeColor=running?Color.SeaGreen:UiTheme.Current.SecondaryText;
-        GameDetail.TranslationTab!.Enabled=GameDetail.ModificationTab!.Enabled=game is not null&&!_gameDetecting;
+        GameDetail.NotesTab.Enabled=GameDetail.TranslationTab!.Enabled=GameDetail.ModificationTab!.Enabled=game is not null&&!_gameDetecting;
         int section=session?.Section??1;
         var modifying=section==2;
+        GameDetail.Notes=section==0;GameDetail.NotesTab.Primary=section==0;
         GameDetail.Modifying=modifying;
         GameDetail.CompactTitle.Visible=modifying;GameDetail.CompactTitle.Text=game?.Name??"";
         GameDetail.CompactLaunch.Visible=modifying&&GameDetail.Launch.Visible;GameDetail.CompactLaunch.Enabled=GameDetail.Launch.Enabled;GameDetail.CompactLaunch.Text=GameDetail.Launch.Text;
@@ -174,6 +182,7 @@ public sealed partial class MainForm
             GameDetail.Retry.Enabled=!busy&&data?.Translation?.RestorePending!=true;
             GameDetail.Restore!.Enabled=stopped&&!busy&&(embedded?state?.HasRecord==true:!renpy||RenpyGameAdapter.HasRecord(game!.ExePath));
         }
+        if(missing)GameDetail.TranslationStatus.Text="重新定位游戏程序后可核对翻译适配；当前可以查看和编辑笔记。";
         GameDetail.ActionFeedback.Text=session?.Feedback??""; GameDetail.ActionFeedback.Visible=GameDetail.ActionFeedback.Text.Length>0;
         if(GameDetail.ScanKey is not null)GameDetail.ScanKey.Text=rpg||renpy||embedded?
             translationPresentation.CanToggle?"使用本页翻译开关":translationPresentation.Blocked?"当前无法开关翻译":translationPresentation.OrdinaryLaunch?"翻译开启后可用":"接入后可用":

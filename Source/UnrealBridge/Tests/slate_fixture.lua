@@ -12,6 +12,14 @@ state={state='ready',secret='secret',id=1,enabled=true,texts={'Observed'}};m.tic
 check('restore waits while enable is unacknowledged',not m.restoreStep())
 state={state='ready',secret='secret',id=2,enabled=true,texts={}};check('restore sends disable but does not claim completion',not m.restoreStep() and files['slate-command-3.json'].enabled==false)
 state={state='ready',secret='secret',id=3,enabled=false,texts={}};check('restore completes only after disabled acknowledgement',m.restoreStep())
+check('no native font metadata grants no custom support',m.fontState().customFontSupported==false)
+state.font={customFontSupported=true,customFontActive=false,id=0,pendingId=0,accepted=false}
+local fontId=m.requestFont({mode='custom',path='C:/neutral.ttf',family='Neutral',sha256=string.rep('A',64)})
+local fontCommand=files['slate-font-command.json']
+check('font request has a separate authenticated sequence and bounded expiration',fontId==1 and fontCommand.id==1 and fontCommand.secret=='secret' and fontCommand.expiresUnix==os.time()+5)
+check('font request leaves translation command and enable state intact',files['slate-command-3.json'].enabled==false and fontCommand.path=='C:/neutral.ttf')
+state.font={customFontSupported=true,customFontActive=true,id=1,pendingId=0,accepted=true}
+check('font state reports native acknowledgement independently',m.fontState().id==1 and m.fontState().customFontActive)
 package.loadlib=function()return nil end
 local unavailable=SLATE.new({engine='4.27',script='',secret='secret',write=function()error('unexpected write')end})
 check('missing optional module does not block restoration',unavailable.restoreStep())

@@ -1,0 +1,57 @@
+[
+  {
+    "file": "construct3.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/construct3.svg",
+    "sha256": "c0bd7d8bf8dff0eb525bd2784d2b57c689bc7978079e90e10b34ce228abffb26"
+  },
+  {
+    "file": "defold.svg",
+    "source": "https://defold.com/images/logo/defold/logo/logo-ver-outline-dark.svg",
+    "sha256": "85985890903f96a9b33233de540730771519b8cfb1b3e1a99ea5e55b731592e8"
+  },
+  {
+    "file": "electron.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/electron.svg",
+    "sha256": "fdf1b8ce32ada155bd490c9da008974af47fa808177e219d449d1d091f0f1d4e"
+  },
+  {
+    "file": "gamemaker.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/gamemaker.svg",
+    "sha256": "5ae7c79a9383c5863b5751ea1159dd62d074cf6495d278ffa7bfbfc01206b601"
+  },
+  {
+    "file": "godotengine.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/godotengine.svg",
+    "sha256": "95757647fedf1440fd24cc32a00f592ead4b050f8a63fdfcc46fbcd3a2952ffb"
+  },
+  {
+    "file": "renpy.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/renpy.svg",
+    "sha256": "20e8acac5afea0a1a280cbee350d01cd3a91ceea190af7408b81f18ea85604f2"
+  },
+  {
+    "file": "rpgmaker.svg",
+    "source": "Fusion original pictogram",
+    "sha256": "e5e3a8072f3c71eb4e4ab0bc535c6d86b5af2c96c32808a021644899104107f9"
+  },
+  {
+    "file": "unity.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/unity.svg",
+    "sha256": "b5b66fda997db7445483ff2917b1c17abb8da607d43905835551991aeb940753"
+  },
+  {
+    "file": "unknown.svg",
+    "source": "Fusion original pictogram",
+    "sha256": "2027f23d66b87db5a9fca1f7b7bb708dd3f460d0451aaebf17877fae00dca1e3"
+  },
+  {
+    "file": "unrealengine.svg",
+    "source": "https://github.com/simple-icons/simple-icons/blob/develop/icons/unrealengine.svg",
+    "sha256": "06bbd4833c91e4ad085dd8203b26739538a881e38755a3efc9ed8d57cfadbb73"
+  },
+  {
+    "file": "wolf.svg",
+    "source": "Fusion original pictogram",
+    "sha256": "3707a951ae8417a6ab7d90e1d5e193a050ef5f15566396a06cb9f3c546d97c06"
+  }
+]

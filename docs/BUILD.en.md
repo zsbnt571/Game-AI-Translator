@@ -1,11 +1,11 @@
-# Build and source materials — 1.1.128
+# Build and source materials — 1.1.165
 
 [简体中文](BUILD.md) · [Русский](BUILD.ru.md)
 
 ## Choose the right materials
 
-- **Fusion-1.1.128.zip** is the complete runnable application.
-- **Fusion-1.1.128-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
+- **Fusion-1.1.165.zip** is the complete runnable application.
+- **Fusion-1.1.165-Source.zip** is the complete source asset with corresponding redistributable dependencies, original notices and build materials.
 - **Git source and GitHub's automatic Source code archives** omit binary dependencies. They are useful for review and contributions, but are not the complete set of ready-to-build inputs.
 
 Start with the complete source asset from the same version. Do not mix historical payloads or arbitrary DLLs from game directories. Initial NuGet restore may need network access. A complete source asset does not establish that all toolchains can rebuild everything offline from scratch.
@@ -66,3 +66,8 @@ Original third-party notices and corresponding-source records remain. The BepInE
 
 
 Ordinary users should run the complete application package. External Unity/framework references described above are developer build inputs, not prerequisites for launching Fusion.
+
+
+## 1.1.165 build boundary
+
+The desktop assembly was rebuilt and validated with .NET 8.0.33. Unchanged capture/recording helpers, other helpers, Unity payloads, native bridges, bundled assistants and runtimes were reused from the verified 1.1.164 distribution. A full clean-machine rebuild of every auxiliary component has not been validated for 1.1.165. `global.json` selects SDK 10.0.103. The complete source asset includes the exact retained embedded payloads used by the desktop build.

@@ -213,7 +213,8 @@ public sealed partial class MainForm
         if(_libraryNavigation is NativeLibraryNavigation navigation)navigation.SelectGame(game.ExePath);
         _libraryGrid.SelectPath(game.ExePath);_recentShelf.SelectPath(game.ExePath);
         _wpfDetails=true;_wpfWindow?.RefreshWorkspace();
-        if(withTranslation)session.Section=1;
+        if(LibraryGameAvailability.Missing(game)&&WpfWorkspace.Enabled)session.Section=0;
+        else if(withTranslation)session.Section=1;
         SelectGameSessionSection(session.Section);RecordPageLocation();
     }
 
@@ -231,7 +232,7 @@ public sealed partial class MainForm
     private void SelectGameSessionSection(int section)
     {
         if(_selectedGame is not { } game)return;
-        _gameSessions.Get(game).Section=section==2?2:1;RecordPageLocation();
+        _gameSessions.Get(game).Section=section==2?2:section==0&&WpfWorkspace.Enabled?0:1;RecordPageLocation();
         RenderGameSessionState();
         if(WpfWorkspace.Enabled){if(section==2)_=EnterGameModificationPageAsync(game);return;}
         if(section==2&&SelectedDataSession() is {Enabled:true,Connection.Connected:true})_=RefreshGameDataAsync();

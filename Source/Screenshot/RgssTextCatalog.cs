@@ -16,7 +16,8 @@ internal static class RgssTextCatalog
         if(engine is null&&Directory.EnumerateFiles(Path.GetDirectoryName(Path.GetFullPath(exe))!).Any(p=>Path.GetExtension(p).ToLowerInvariant() is ".rgssad" or ".rgss2a" or ".rgss3a"))
             throw new IOException("RGSS 封包接入信息未确认，未改读可能过期的散装 Data 文件。");
         var texts=new HashSet<string>(StringComparer.Ordinal);var origins=new CatalogOrigins();var unlocalized=new HashSet<string>(StringComparer.Ordinal);var issues=new List<CatalogReadIssue>();var seen=new HashSet<string>(StringComparer.OrdinalIgnoreCase);int files=0;var clock=Stopwatch.StartNew();
-        int attempted=0;
+        int attempted=0;IReadOnlyDictionary<string,string> characterRoster=new Dictionary<string,string>();
+        RgssLanguageSwitch[] languageSwitches=[];var languageBranches=new List<CatalogLanguageBranch>();var ordinarySources=new HashSet<string>(StringComparer.Ordinal);
         void Check(){token.ThrowIfCancellationRequested();if(clock.Elapsed.TotalSeconds>25||texts.Count>=100000)throw new IOException("RGSS 文本读取达到本轮限制。");}
         void Add(string value){if(value.Length<=6000&&RpgTranslationText.HasTranslatableText(value,EmbeddedTextSyntax.Rpg))texts.Add(value);}
         void ReadOne(string name,Func<byte[]> bytes)
@@ -33,17 +34,24 @@ internal static class RgssTextCatalog
                 if(script)
                 {
                     var scripts=RgssScriptCatalog.Read(document,Check);
+                    languageSwitches=scripts.LanguageSwitches;
                     foreach(var field in scripts.Fields)
                     {
-                        Add(field.Text);if(!texts.Contains(field.Text))continue;unlocalized.Add(field.Text);
+                        Add(field.Text);if(!texts.Contains(field.Text))continue;unlocalized.Add(field.Text);ordinarySources.Add(field.Text);
                         origins.Add(new(field.Text,name,field.Location,hash,"rgss-script-display",field.Encoding,archive??"",Context:field.Context));
                     }
                     foreach(string issue in scripts.Issues)issues.Add(new(CatalogIssueKind.Incomplete,name,issue));
                     files++;return;
                 }
-                foreach(var field in LocatedFields(document,Check))
+                if(Path.GetFileNameWithoutExtension(name).Equals("Actors",StringComparison.OrdinalIgnoreCase))
+                    characterRoster=RpgCharacterRoster.ReadRgss(document,Path.GetExtension(name),Check);
+                foreach(var field in LocatedFields(document,Check,languageSwitches))
                 {Add(field.Text);if(baseData&&texts.Contains(field.Text))unlocalized.Add(field.Text);
-                    if(texts.Contains(field.Text))origins.Add(new(field.Text,name,field.Location,hash,"rgss-display-field",field.Encoding,archive??""));}
+                    if(texts.Contains(field.Text))
+                    {
+                        if(field.LanguageGroup.Length>0)languageBranches.Add(new(field.Text,name+"|"+field.LanguageGroup,field.Language));else ordinarySources.Add(field.Text);
+                        origins.Add(new(field.Text,name,field.Location,hash,"rgss-display-field",field.Encoding,archive??"",Language:field.Language));
+                    }}
                 files++;
             }
             catch(Exception e)when(e is IOException or InvalidDataException or NotSupportedException or DecoderFallbackException or OverflowException){issues.Add(new(CatalogIssueKind.Failed,name,SafeDiagnosticOutput.ExceptionSummary(e)));}
@@ -71,7 +79,8 @@ internal static class RgssTextCatalog
             if(engine is null)issues.Add(new(CatalogIssueKind.Incomplete,"RGSS","仅按静态 Data 资源读取；未确认本地运行时或游戏接入兼容性。"));
         }
         issues.Add(new(CatalogIssueKind.Incomplete,"RGSS","已读取事件、数据库及受限脚本显示字面量；动态拼接、未支持的脚本语法及逐字显示仍在运行时补充。"));
-        return new(texts.ToArray(),files,[]){Origins=origins.Items,OriginsTruncated=origins.Truncated,UnlocalizedSourceTexts=unlocalized,ReadCompleted=false,Report=new(false,issues.Take(128).ToArray())};
+        return new(texts.ToArray(),files,[]){Origins=origins.Items,OriginsTruncated=origins.Truncated,UnlocalizedSourceTexts=unlocalized,CharacterRoster=characterRoster,
+            LanguageBranches=languageBranches.Where(b=>!ordinarySources.Contains(b.Source)).Distinct().ToArray(),ReadCompleted=false,Report=new(false,issues.Take(128).ToArray())};
     }
     // Standard save-slot files are not script/event resources, even if a game
     // stores them alongside Data files with the same Marshal extension.
@@ -119,23 +128,27 @@ internal static class RgssTextCatalog
     }
     internal static IEnumerable<string> DisplayFields(RubyMarshalData.Node root,Action check)
         =>LocatedFields(root,check).Select(e=>e.Text);
-    internal sealed record LocatedField(string Location,string Text,string Encoding);
-    internal static IEnumerable<LocatedField> LocatedFields(RubyMarshalData.Node root,Action check)
+    internal sealed record LocatedField(string Location,string Text,string Encoding)
+    {internal string Language {get;init;}="";internal string LanguageGroup {get;init;}="";}
+    internal static IEnumerable<LocatedField> LocatedFields(RubyMarshalData.Node root,Action check,IReadOnlyList<RgssLanguageSwitch>? languageSwitches=null)
     {
+        var branches=RgssLanguageBranches.Read(root,languageSwitches??[],check);
         var stack=new Stack<(RubyMarshalData.Node Node,string Path)>();var visited=new HashSet<RubyMarshalData.Node>(ReferenceEqualityComparer.Instance);stack.Push((root,"$"));
         while(stack.Count>0)
         {
             check();var (n,path)=stack.Pop();if(!visited.Add(n))continue;
             if(n.Kind=='o'&&n.Name=="RPG::EventCommand"&&n.Fields.TryGetValue("@code",out var code)&&n.Fields.TryGetValue("@parameters",out var parameters))
             {
+                LocatedField Field(string location,RubyMarshalData.Node text)=>new(location,Decode(text),text.Encoding)
+                    {Language=branches.TryGetValue(n,out var b)?b.Language:"",LanguageGroup=branches.TryGetValue(n,out b)?b.Group:""};
                 if((code.Number is 401 or 405||code.Number==101&&parameters.Items.Count==1)&&parameters.Items.FirstOrDefault() is {} first&&first.Kind=='"')
-                    yield return new(path+"/@parameters/0",Decode(first),first.Encoding);
+                    yield return Field(path+"/@parameters/0",first);
                 else if(code.Number==102&&parameters.Items.FirstOrDefault() is {} choices)
                 {
-                    for(int i=0;i<choices.Items.Count;i++)if(choices.Items[i].Kind=='"')yield return new(path+"/@parameters/0/"+i,Decode(choices.Items[i]),choices.Items[i].Encoding);
+                    for(int i=0;i<choices.Items.Count;i++)if(choices.Items[i].Kind=='"')yield return Field(path+"/@parameters/0/"+i,choices.Items[i]);
                 }
                 else if(code.Number is 320 or 324 or 325&&parameters.Items.Count>1&&parameters.Items[1].Kind=='"')
-                    yield return new(path+"/@parameters/1",Decode(parameters.Items[1]),parameters.Items[1].Encoding);
+                    yield return Field(path+"/@parameters/1",parameters.Items[1]);
                 continue;
             }
             bool display=n.Kind=='o'&&n.Name is "RPG::Actor" or "RPG::Class" or "RPG::Skill" or "RPG::Item" or "RPG::Weapon" or "RPG::Armor" or "RPG::Enemy" or "RPG::State" or "RPG::Map" or "RPG::System" or "RPG::System::Terms" or "RPG::System::Words";
@@ -149,7 +162,7 @@ internal static class RgssTextCatalog
             for(int i=n.Items.Count-1;i>=0;i--)stack.Push((n.Items[i],path+"/"+i));
         }
     }
-    private static string Decode(RubyMarshalData.Node node)
+    internal static string Decode(RubyMarshalData.Node node)
     {
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         if(node.Encoding.Length>0)return Encoding.GetEncoding(node.Encoding,EncoderFallback.ExceptionFallback,DecoderFallback.ExceptionFallback).GetString(node.Bytes);

@@ -71,10 +71,10 @@ public sealed partial class MainForm
         try
         {
             var store=await RecentStore();token.ThrowIfCancellationRequested();
-            var record=await Task.Run(()=>store.Writable?store.Select(game.Name,game.ExePath,relinkId,recordSelection):store.Find(game.ExePath),token);
+            var record=await Task.Run(()=>store.Writable&&!LibraryGameAvailability.Missing(game)?store.Select(game.Name,game.ExePath,relinkId,recordSelection):store.Find(game.ExePath),token);
             if(IsDisposed||epoch!=_gameSelectionEpoch||token.IsCancellationRequested)return;
             _currentRecent=record;UpdateSavedButton();SetGameMediaText(store.Notice);
-            if(record is null)return;
+            if(record is null||LibraryGameAvailability.Missing(game))return;
             var usable=WpfWorkspace.Enabled&&_libraryCoverCache.TryGet(store.CoverImageKey(record),out _)
                 ||await Task.Run(()=>{using var cover=store.ReadImage(record,true,640);return cover is not null;},token);
             if(IsDisposed||epoch!=_gameSelectionEpoch||token.IsCancellationRequested)return;

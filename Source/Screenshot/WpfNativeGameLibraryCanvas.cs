@@ -280,7 +280,14 @@ internal sealed partial class NativeGameLibraryGrid
                     dc.PushTransform(new WM.TranslateTransform(r.X, r.Y)); dc.DrawDrawing(holder.CardDrawing); dc.Pop();
                     DrawPlacedCover(dc, holder, r);
                 }
-                dc.PushTransform(new WM.TranslateTransform(r.X, r.Y)); dc.DrawDrawing(holder.Drawing); dc.Pop();
+                dc.PushTransform(new WM.TranslateTransform(r.X, r.Y)); dc.DrawDrawing(holder.Drawing);
+                if (grid.BatchSelection)
+                {
+                    var box = new W.Rect(10, 10, 24, 24);
+                    dc.DrawRoundedRectangle(Brush(selected ? p.Accent : p.Main), Pen(selected ? p.Accent : p.Border, 1.5), box, 5, 5);
+                    if (selected) { dc.DrawLine(Pen(Color.White, 2), new(15, 22), new(20, 27)); dc.DrawLine(Pen(Color.White, 2), new(20, 27), new(29, 17)); }
+                }
+                dc.Pop();
             }
             var selectionBox = grid.selectionBox;
             if (grid.selecting && selectionBox.Width > 0 && selectionBox.Height > 0)

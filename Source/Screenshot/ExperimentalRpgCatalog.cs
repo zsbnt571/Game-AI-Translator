@@ -15,13 +15,15 @@ internal static class ExperimentalRpgCatalog
         internal string SchemaFile {get;init;}="";
         internal string SchemaHash {get;init;}="";
         internal string Context {get;init;}="";
+        internal string Language {get;init;}="";
+        internal string LanguageGroup {get;init;}="";
     }
     internal sealed record FileResult(string File,string Status,int Texts,string Detail);
     internal sealed record Result(string Engine,Entry[] Entries,FileResult[] Files,bool Complete,string Boundary)
     { internal RpgTextCatalogResult? SourceCatalog {get;init;} }
     internal static CatalogTextOrigin Origin(Entry e,string fallback)
         =>new(e.Text,e.File,e.Location,e.ContentHash,e.Kind.Length>0?e.Kind:fallback,e.Encoding,
-            SchemaFile:e.SchemaFile,SchemaHash:e.SchemaHash,Context:e.Context);
+            Language:e.Language,SchemaFile:e.SchemaFile,SchemaHash:e.SchemaHash,Context:e.Context);
     internal static string? Detect(string exe)
     {
         string root=Path.GetDirectoryName(exe)!;string data=Path.Combine(root,"Data");
@@ -82,7 +84,7 @@ internal static class ExperimentalRpgCatalog
                         string dataHash=CatalogOrigins.Hash(dataImage),schemaHash=CatalogOrigins.Hash(projectImage);
                         var parsed=WolfDatabaseCatalog.Read(projectImage,dataImage,Check,skipMalformedStrings:true);
                         foreach(var field in parsed.Fields)
-                        {Check();entries.Add(new(dataFile,field.Location,field.Text){ContentHash=dataHash,Kind="wolf-database-string",Encoding=parsed.Encoding,SchemaFile=schemaFile,SchemaHash=schemaHash,Context=field.Context});}
+                        {Check();entries.Add(new(dataFile,field.Location,field.Text){ContentHash=dataHash,Kind="wolf-database-string",Encoding=parsed.Encoding,SchemaFile=schemaFile,SchemaHash=schemaHash,Context=field.Context,Language=field.Language,LanguageGroup=field.LanguageGroup});}
                         reports.Add(new(dataFile,parsed.UnreadableStrings>0?"部分读取":"读取完成",parsed.Fields.Length,$"已配对结构读取数据库；{parsed.Excluded} 个键/非普通文本字段未送翻译；{parsed.UnreadableStrings} 处字符串编码异常已隔离；未改写数据库。"));
                         if(parsed.UnreadableStrings>0)complete=false;
                         reports.Add(new(schemaFile,"读取完成",0,"仅用作数据库字段、行名和类型上下文；未将编辑器名称当成对白。"));

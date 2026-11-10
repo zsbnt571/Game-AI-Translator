@@ -8,7 +8,8 @@ namespace ScreenshotTranslationUiTester;
 // WolfTL Database.hpp and Anylang reader. No game code, decryption or writeback.
 internal static class WolfDatabaseCatalog
 {
-    internal sealed record Field(string Location,string Text,string Context);
+    internal sealed record Field(string Location,string Text,string Context)
+    {internal string Language {get;init;}="";internal string LanguageGroup {get;init;}="";}
     internal sealed record Result(Field[] Fields,string Encoding,byte Version,int Excluded)
     {internal int UnreadableStrings {get;init;}internal bool NumericNamesTruncated {get;init;}internal Dictionary<int,string> MapFiles {get;init;}=[];internal Dictionary<string,string> NumericNames {get;init;}=[];}
     private sealed record TypePlan(string Name,string[] Names,string[] Rows,byte[] Kinds);
@@ -78,6 +79,13 @@ internal static class WolfDatabaseCatalog
             // Editor row names may be used to find records. Matching columns are
             // context/keys, never automatically treated as display-name fields.
             var naming=new HashSet<int>();
+            var rowLocales=type.Rows.Select(CatalogLanguageBranches.RowLocale).ToArray();
+            bool languageTable=Regex.IsMatch(type.Name,@"text|lang|locali[sz]|translat|string|言語|文章|文字",RegexOptions.IgnoreCase|RegexOptions.CultureInvariant)
+                ||rowLocales.Length>1&&rowLocales.All(l=>l.Length>0);
+            var parallelFields=new HashSet<int>();
+            if(languageTable)for(int s=0;s<strings;s++)
+                if(Enumerable.Range(0,rows).Where(row=>rowLocales[row].Length>0&&!string.IsNullOrWhiteSpace(values[row][s]))
+                    .Select(row=>rowLocales[row]).Distinct(StringComparer.Ordinal).Take(2).Count()==2)parallelFields.Add(s);
             for(int s=0;s<strings;s++)
             {
                 bool matched=false,mismatch=false;
@@ -101,7 +109,8 @@ internal static class WolfDatabaseCatalog
                 if(type.Kinds[f]!=0||naming.Contains(s)||!DisplayCandidate(text)){excluded++;continue;}
                 if(text.Length>6000)throw new ExperimentalRpgCatalog.LimitException("WOLF 数据库文本超过 6000 字符。");
                 result.Add(new($"database/type:{t}/row:{row}/field:{f}",text,
-                    $"type={type.Name}; row={type.Rows[row]}; field={type.Names[f]}; version=0x{version:x2}"));
+                    $"type={type.Name}; row={type.Rows[row]}; field={type.Names[f]}; version=0x{version:x2}")
+                    {Language=parallelFields.Contains(s)?rowLocales[row]:"",LanguageGroup=parallelFields.Contains(s)&&rowLocales[row].Length>0?$"database/type:{t}/field:{f}":""});
             }
         }
         if(r.Byte()!=version)throw new InvalidDataException("WOLF 数据库首尾版本标记不符。");r.End();

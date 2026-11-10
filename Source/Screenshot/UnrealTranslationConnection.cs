@@ -157,7 +157,7 @@ internal sealed class UnrealTranslationConnection : IEmbeddedTranslationConnecti
             {
                 // Ordinary startup supplies only the dormant transport. Catalog
                 // extraction and publication belong to the first explicit enable.
-                await Task.Run(()=>UnrealGameAdapter.PrepareCatalog(executable,engine),waiting.Token);
+                await Task.Run(()=>UnrealGameAdapter.PrepareCatalog(executable,engine,waiting.Token),waiting.Token);
                 waiting.Token.ThrowIfCancellationRequested();
                 string staged=Path.Combine(folder,"catalog.json.tmp");
                 File.Copy(Path.Combine(UnrealGameAdapter.Storage(executable),"catalog.json"),staged,true);

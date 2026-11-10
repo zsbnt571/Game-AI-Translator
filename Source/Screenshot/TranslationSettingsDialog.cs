@@ -8,6 +8,7 @@ public sealed class TranslationSettingsDialog : Form
     private readonly TextBox _displayName = new();
     private readonly TextBox _baseUrl = new();
     private readonly TextBox _apiKey = new() { UseSystemPasswordChar = true };
+    private readonly CheckBox _noCredential = new() { Text = "无需密钥（本地／免鉴权）", AutoSize = true, Name = "TranslationNoCredential" };
     private readonly TextBox _model = new();
     private readonly ComboBox _target = new GamePlanBox() { DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly LanguageCombinationPicker _sourceChoices = new();
@@ -21,6 +22,8 @@ public sealed class TranslationSettingsDialog : Form
     private readonly Label _testStatus = new() { AutoSize = true, MaximumSize = new Size(650, 0) };
     private readonly Func<ApiSettings, CancellationToken, Task<ProviderConnectionTestResult>> _tester;
     private readonly ApiSettings _working;
+    private readonly CancellationTokenSource _lifetime = new();
+    private bool _testBusy;
 
     public ApiSettings ResultSettings => CaptureSettings();
 
@@ -42,6 +45,8 @@ public sealed class TranslationSettingsDialog : Form
         UiTheme.Apply(this,_working);
         Shown+=(_,_)=>SettingsNativeTheme.Caption(this);
         DialogLayout.Attach(this);ResumeLayout(true);
+        FormClosed += (_, _) => _lifetime.Cancel();
+        Disposed += (_, _) => { _lifetime.Cancel(); _lifetime.Dispose(); };
     }
 
     private void BuildUi()
@@ -80,6 +85,8 @@ public sealed class TranslationSettingsDialog : Form
         AddRow(table, "显示名称", _displayName);
         AddRow(table, "Base URL / API 地址", _baseUrl);
         AddRow(table, "API Key", _apiKey);
+        AddRow(table, "", _noCredential);
+        AddRow(table, "", new Label { Text = ApiConnectionPolicy.NoCredentialHelp, AutoSize = true, MaximumSize = new Size(490, 0) });
         AddRow(table, "模型", _model);
         var test = new Button { Text = "测试 Provider", AutoSize = true };
         test.Click += async (_, _) => await RunProviderTestAsync(test);
@@ -126,6 +133,7 @@ public sealed class TranslationSettingsDialog : Form
         _displayName.Text = _working.ProviderDisplayName;
         _baseUrl.Text = _working.ApiUrl;
         _apiKey.Text = _working.ApiKey;
+        _noCredential.Checked = _working.AllowEmptyApiKey;
         _model.Text = _working.Model;
         _target.Items.AddRange(UiTargetLanguageDisplay.DisplayNames.ToArray());
         _target.SelectedItem = UiTargetLanguageDisplay.DisplayFromCode(_working.TargetLanguage);
@@ -146,6 +154,7 @@ public sealed class TranslationSettingsDialog : Form
         result.TranslationProvider = "openai-compatible";
         result.ProviderDisplayName = _displayName.Text.Trim();
         result.ApiUrl = _baseUrl.Text.Trim(); result.ApiKey = _apiKey.Text; result.Model = _model.Text.Trim();
+        result.AllowEmptyApiKey = _noCredential.Checked;
         result.TargetLanguage = UiTargetLanguageDisplay.CodeFromDisplay(_target.SelectedItem?.ToString());
         if (_source.SelectedIndex>=0) result.SourceLanguage = (SourceLanguageMode)_source.SelectedIndex;
         result.SourceLanguages = _sourceChoices.SelectedLanguages;
@@ -158,15 +167,19 @@ public sealed class TranslationSettingsDialog : Form
 
     private async Task RunProviderTestAsync(Button button)
     {
-        button.Enabled = false; _testStatus.Text = "正在测试…";
+        if (_testBusy || IsDisposed || Disposing || _lifetime.IsCancellationRequested) return;
+        _testBusy = true; button.Enabled = false; _testStatus.Text = "正在测试…";
         try
         {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+            timeout.CancelAfter(TimeSpan.FromSeconds(30));
             var result = await _tester(CaptureSettings(), timeout.Token);
+            if (IsDisposed || Disposing || _lifetime.IsCancellationRequested) return;
             _testStatus.Text = result.Success ? UiLanguage.FormatTemplate("成功：{0}", UiLanguage.Text(result.Message)) : $"{UiLanguage.Text(result.Category)}：{UiLanguage.Text(result.Message)}";
         }
-        catch (Exception ex) { _testStatus.Text = ClassifyException(ex); }
-        finally { button.Enabled = true; }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+        catch (Exception ex) { if (!IsDisposed && !Disposing) _testStatus.Text = ClassifyException(ex); }
+        finally { _testBusy = false; if (!IsDisposed && !Disposing && !button.IsDisposed) button.Enabled = true; }
     }
 
     private static async Task<ProviderConnectionTestResult> TestWithServiceAsync(ApiSettings settings, CancellationToken token)

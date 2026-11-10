@@ -25,6 +25,7 @@ internal static class Runtime
     static object gameMain;static readonly GameData Data=new GameData();
     static readonly List<string> Hooks=new List<string>();
     static bool testMuted;
+    internal static bool Enabled=>enabled;
     internal static object Field(object value,string name)=>value?.GetType().GetField(name,All)?.GetValue(value);
     internal static void Start(string player)
     {
@@ -42,8 +43,15 @@ internal static class Runtime
         if(update==null||type.GetField("data",All)==null)throw new InvalidOperationException("Player update/data contract is unsupported.");
         var harmony=new Harmony("local.fusion.yukar.143");Patch(harmony,update,nameof(Update));
         foreach(var t in engine.GetTypes().Where(t=>t.FullName=="Yukar.Engine.Graphics"||t.FullName=="Yukar.Engine.GraphicsCore"))
-            foreach(var m in t.GetMethods(All).Where(m=>(m.Name.StartsWith("DrawString",StringComparison.Ordinal)||m.Name=="MeasureString")&&m.GetParameters().Count(p=>p.ParameterType==typeof(string))==1))
+            foreach(var m in t.GetMethods(All).Where(m=>(m.Name.StartsWith("DrawString",StringComparison.Ordinal)||m.Name=="MeasureString")&&m.GetParameters().Length>1&&m.GetParameters()[1].ParameterType==typeof(string)&&m.GetParameters().Count(p=>p.ParameterType==typeof(string))==1))
                 Patch(harmony,m,nameof(TextArguments));
+        // The message renderer measures through TextDrawer directly, which
+        // bypasses Graphics.MeasureString on current native Bakin versions.
+        // Scope this optional hook to active character entries only.
+        try{foreach(var m in engine.GetType("Yukar.Engine.TextDrawer",false)?.GetMethods(All).Where(m=>(m.Name.StartsWith("DrawString",StringComparison.Ordinal)||m.Name=="MeasureString")&&m.GetParameters().Length>1&&m.GetParameters()[1].ParameterType==typeof(string)&&m.GetParameters().Count(p=>p.ParameterType==typeof(string))==1)??Enumerable.Empty<MethodInfo>())Patch(harmony,m,nameof(CharacterTextArguments));}catch{}
+        // Optional font support must never prevent normal game translation.
+        Fonts.Initialize(engine,harmony);
+        Characters.Initialize(engine,harmony);
         // Translate a complete message before the engine splits it into glyphs.
         foreach(var m in type.GetMethods(All).Where(m=>m.Name=="replaceForFormat"&&m.ReturnType==typeof(string)))
             Patch(harmony,m,null,nameof(Formatted));
@@ -62,13 +70,17 @@ internal static class Runtime
         Hooks.Add(method.DeclaringType.FullName+"."+method.Name);
     }
     static bool SilentPlay()=>false;
-    static void TextArguments(MethodBase __originalMethod,object[] __args)
-    {lock(Gate){var ps=__originalMethod.GetParameters();for(int i=0;i<ps.Length;i++)if(ps[i].ParameterType==typeof(string)&&__args[i] is string text)__args[i]=Translate(text,__originalMethod.Name=="MeasureString"?"measure":"draw");}}
-    static void Formatted(ref string __result){lock(Gate)__result=Translate(__result,"format");}
-    static string Translate(string source,string route)
+    static void TextArguments(MethodBase __originalMethod,ref string __1)
+    {lock(Gate){string route=__originalMethod.Name=="MeasureString"?"measure":"draw";__1=Characters.Render(__1,route,out var role)?role:Translate(__1,route);}}
+    static void CharacterTextArguments(MethodBase __originalMethod,ref string __1)
+    {lock(Gate){if(Characters.Render(__1,__originalMethod.Name=="MeasureString"?"measure":"draw",out var role))__1=role;}}
+    static void Formatted(object __instance,string __0,ref string __result){lock(Gate){string original=__result;__result=Translate(__result,"format");Characters.Formatted(__instance,__0,original,__result);}}
+    static string Translate(string source,string route)=>Ordinary(source,route,false);
+    internal static string Ordinary(string source,string route,bool delay)
     {
         if(!enabled||!Valid(source)||Outputs.Contains(source))return source;
         if(Cache.TryGetValue(source,out string value)){AppliedSources.Add(source);if(route=="draw")drawReplacements++;else if(route=="measure")measureReplacements++;else formattedReplacements++;return value;}
+        if(delay)return source;
         if(Queue.Count<4096&&Queued.Count<100000&&(!Retry.TryGetValue(source,out long until)||Stopwatch.GetTimestamp()>=until)&&Queued.Add(source))Queue.Enqueue(source);
         return source;
     }
@@ -86,7 +98,7 @@ internal static class Runtime
             long now=Stopwatch.GetTimestamp();if((now-lastTick)*1000/Stopwatch.Frequency<50)return;lastTick=now;
             try
             {
-                if(File.Exists(Path.Combine(folder,"stop"))&&File.ReadAllText(Path.Combine(folder,"stop"))==secret){enabled=false;Data.Stop();gameMain=null;stopped=true;return;}
+                if(File.Exists(Path.Combine(folder,"stop"))&&File.ReadAllText(Path.Combine(folder,"stop"))==secret){enabled=false;Characters.Stop();Fonts.Stop();Data.Stop();gameMain=null;stopped=true;return;}
                 var q=Read("request.json",262144);
                 if(q!=null&&Get(q,"secret")==secret)
                 {
@@ -105,19 +117,21 @@ internal static class Runtime
             }catch(Exception e){try{File.WriteAllText(Path.Combine(folder,"runtime-error.txt"),e.ToString());}catch{}}
         }
     }
-    static object Status()=>new{enabled,epoch,applied=AppliedSources.Count,drawReplacements,measureReplacements,formattedReplacements,live=enabled&&gameMain!=null?1:0,hooked=true};
+    static object Status()=>new{enabled,epoch,applied=AppliedSources.Count,drawReplacements,measureReplacements,formattedReplacements,live=enabled&&gameMain!=null?1:0,hooked=true,characterRuntimeContract=Characters.Negotiated?Characters.Contract:null};
     static object Command(Dictionary<string,object> q)
     {
         string op=Get(q,"op");if(op.StartsWith("data",StringComparison.Ordinal))return Data.Command(q,()=>Field(gameMain,"data"));
+        if(op=="fontPreferences"||op=="fontState")return Fonts.Command(q);
         if(op=="translationStatus")return Status();
         if(op=="translationPrepare")
         {
+            Characters.Prepare(q);
             if(q.TryGetValue("preserveStartup",out var preserve)&&Equals(preserve,true)&&adoptable&&enabled){adoptable=false;return Status();}
             enabled=false;adoptable=false;epoch++;Cache.Clear();Outputs.Clear();Queue.Clear();Queued.Clear();Retry.Clear();AppliedSources.Clear();drawReplacements=measureReplacements=formattedReplacements=0;return Status();
         }
         if(op=="translationEnable"){enabled=true;return Status();}
-        if(op=="translationDisable"){enabled=false;epoch++;Queue.Clear();Queued.Clear();return Status();}
-        if(op=="translationPoll"){var texts=new List<string>();while(enabled&&Queue.Count>0&&texts.Count<8)texts.Add(Queue.Dequeue());return new{enabled,epoch,applied=AppliedSources.Count,drawReplacements,measureReplacements,formattedReplacements,texts};}
+        if(op=="translationDisable"){enabled=false;Characters.Stop();epoch++;Queue.Clear();Queued.Clear();return Status();}
+        if(op=="translationPoll"){var texts=new List<string>();while(enabled&&Queue.Count>0&&texts.Count<8)texts.Add(Queue.Dequeue());var result=new Dictionary<string,object>{{"enabled",enabled},{"epoch",epoch},{"applied",AppliedSources.Count},{"drawReplacements",drawReplacements},{"measureReplacements",measureReplacements},{"formattedReplacements",formattedReplacements},{"texts",texts}};Characters.Poll(q,result);return result;}
         if(op=="translationRetry"){
             if(Convert.ToInt32(q["epoch"])==epoch){string s=Get(q,"source");Queued.Remove(s);if(Retry.Count<4096)Retry[s]=Stopwatch.GetTimestamp()+30*Stopwatch.Frequency;}return new{accepted=0};}
         if(op=="translationApply")

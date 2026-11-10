@@ -10,7 +10,7 @@ namespace ScreenshotTranslationUiTester;
 internal static class UnityNaninovelText
 {
     internal const string ReaderIdentity="naninovel-script-v1";
-    internal sealed record Source(string Text,string ScriptPath,string TextIds,string Location,string Role,int LineIndex=-1)
+    internal sealed record Source(string Text,string ScriptPath,string TextIds,string Location,string Role,int LineIndex=-1,string SpeakerId="",int CommandIndex=-1)
     {
         internal string Context=>ReaderIdentity+"|script="+Uri.EscapeDataString(ScriptPath)+"|ids="+TextIds+"|role="+Role+(LineIndex>=0?"|line="+LineIndex:"");
     }
@@ -118,9 +118,36 @@ internal static class UnityNaninovelText
             if(!valid||tokens>8||tokens>0&&(literalLength<12||Regex.IsMatch(builder.ToString(),@"\}\{")))
             {uncertain=true;continue;}
             string role=tokens>0?"display-template":"display-line";
-            add(new(builder.ToString(),path,Ids(used),"/playlist/commands/"+commandIndex+"/rid:"+command.rid+"/"+parameter,role,line.AsInt));
+            string speaker="";
+            if(command.type.ClassName=="PrintText"&&tokens==0&&inline.AsInt==0
+                &&Unassigned(Child(data,"ConditionalExpression"),"StringParameter")
+                &&UnassignedOrFalse(Child(data,"Append")))
+                speaker=LiteralAuthor(Child(data,"AuthorId"),path,line.AsInt);
+            add(new(builder.ToString(),path,Ids(used),"/playlist/commands/"+commandIndex+"/rid:"+command.rid+"/"+parameter,role,line.AsInt,speaker,commandIndex));
         }
         if(uncertain)incomplete("Naninovel 部分动态台词或命令尚不能安全预读，运行时继续补译；未执行表达式");
         return true;
+    }
+    private static bool? Assigned(AssetTypeValueField? parameter)
+    {
+        var value=Child(parameter,"hasValue");
+        return value?.TemplateField.ValueType switch
+        {AssetValueType.Bool=>value.AsBool,AssetValueType.UInt8 when value.AsByte<=1=>value.AsByte!=0,_=>null};
+    }
+    private static bool Unassigned(AssetTypeValueField? parameter,string type)=>parameter?.TypeName==type&&Assigned(parameter)==false;
+    private static string? Literal(AssetTypeValueField? parameter)
+    {
+        if(Assigned(parameter)!=true)return null;
+        var parts=Array(Child(Child(parameter,"raw"),"parts"));
+        return parts is {Length:1}&&Text(Child(parts[0],"id"))==""&&Text(Child(parts[0],"expression"))==""?Text(Child(parts[0],"text")):null;
+    }
+    private static bool UnassignedOrFalse(AssetTypeValueField? parameter)=>Unassigned(parameter,"BooleanParameter")
+        ||parameter?.TypeName=="BooleanParameter"&&Literal(parameter)=="false";
+    private static string LiteralAuthor(AssetTypeValueField? parameter,string path,int line)
+    {
+        if(parameter?.TypeName!="StringParameter"||Literal(parameter) is not {} value||!Identifier.IsMatch(value))return "";
+        var spot=Child(parameter,"spot");var authorLine=Child(spot,"lineIndex");var inline=Child(spot,"inlineIndex");
+        return Text(Child(spot,"scriptPath"))?.Replace('\\','/')==path&&authorLine?.TemplateField.ValueType==AssetValueType.Int32&&authorLine.AsInt==line
+            &&inline?.TemplateField.ValueType==AssetValueType.Int32&&inline.AsInt==0?value:"";
     }
 }

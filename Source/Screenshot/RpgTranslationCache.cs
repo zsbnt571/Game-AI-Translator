@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 namespace ScreenshotTranslationUiTester;
@@ -7,7 +7,7 @@ internal static class RpgTranslationCache
 {
     internal static Dictionary<string,string> Effective(string exe,ApiSettings settings,EmbeddedTextSyntax syntax=EmbeddedTextSyntax.Generic,bool display=false,bool unreal=false,bool boundaryWhitespace=false)
     {
-        var store=TranslationWorkspaceStore.For(exe,settings);var document=store.Snapshot();
+        var store=TranslationWorkspaceStore.For(exe,settings);var document=TranslationLibrary.WithPacks(store.Snapshot(),settings);
         var loaded=Normalize(display?LoadDisplay(exe,settings):Load(exe,settings),syntax);
         var receipts=TranslationGlossaryCache.Load(loaded.Path,loaded.Receipts);
         var entries=store.Overlay(loaded.Entries.Where(p=>receipts.Matches(p.Key,p.Value,document.Terms)).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal),syntax,unreal);
@@ -44,7 +44,7 @@ internal static class RpgTranslationCache
     internal static string Id(ApiSettings settings,string url)
     {
         string value="rpg-text-v3|"+url+"|"+settings.Model+"|"+settings.TargetLanguage+"|"+settings.TranslationStyle+"|"+settings.CustomTranslationPrompt+"|"+TranslationLanguagePolicy.Identity(settings)
-            +"|protection-1:"+(settings.PreserveNumbers?"1":"0")+(settings.PreserveVariables?"1":"0")+(settings.PreserveIdentifiers?"1":"0")+ChatRequestParameters.IdentitySuffix(settings);
+            +"|protection-1:"+(settings.PreserveNumbers?"1":"0")+(settings.PreserveVariables?"1":"0")+(settings.PreserveIdentifiers?"1":"0")+TranslationLibrary.PresetIdentity(settings)+ChatRequestParameters.IdentitySuffix(settings);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     }
     internal static Dictionary<string,string>? Read(string path)
@@ -88,13 +88,13 @@ internal static class RpgTranslationCache
             if(Read(legacy) is {} entries)return Relocate(File.Exists(path)?recovered:path,legacy,entries);
             if(Read(legacy+".previous") is {} backup)return Relocate(File.Exists(path)?recovered:path,legacy,backup);
         }
-        if(ReuseLegacyProfile(exe,settings,path,false) is {} legacyProfile)return legacyProfile;
+        if(string.IsNullOrEmpty(settings.PromptPresetId)&&ReuseLegacyProfile(exe,settings,path,false) is {} legacyProfile)return legacyProfile;
         // Old automatic files did not distinguish custom source combinations.
         // Reuse only unambiguous single-language rows; mixed rows must be checked
         // under the new selection. Preserve the original file for rollback.
         string oldValue="rpg-text-v3|"+endpoint+"|"+settings.Model+"|"+settings.TargetLanguage+"|"+settings.TranslationStyle+"|"+settings.CustomTranslationPrompt;
         string oldPath=Path.Combine(directory,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(oldValue))).ToLowerInvariant()+".json");
-        if(ChatRequestParameters.IdentitySuffix(settings).Length==0&&Read(oldPath) is {} old)
+        if(string.IsNullOrEmpty(settings.PromptPresetId)&&ChatRequestParameters.IdentitySuffix(settings).Length==0&&Read(oldPath) is {} old)
         {
             var compatible=old.Where(pair=>
             {
@@ -137,6 +137,7 @@ internal static class RpgTranslationCache
     // copies glossary receipts to a result they were not issued for.
     private static Loaded? ReuseLegacyProfile(string exe,ApiSettings settings,string path,bool display)
     {
+        if(!string.IsNullOrEmpty(settings.PromptPresetId))return null;
         if(TranslationCacheReset.Read(exe) is not null||File.Exists(path)||
             File.Exists(path+".recovered.json")||File.Exists(path+".previous"))return null;
         string selection=settings.SourceLanguage==SourceLanguageMode.Mixed?string.Join(',',TranslationLanguagePolicy.Normalize(settings.SourceLanguages)):"";
@@ -148,7 +149,7 @@ internal static class RpgTranslationCache
             string oldPath=Path.Combine(Path.GetDirectoryName(path)!,hash+(display?".display.json":".json"));
             AppDataPaths.RejectReparsePoints(oldPath);
             if(Read(oldPath) is not {} old)continue;
-            var terms=TranslationWorkspaceStore.For(exe,settings).Snapshot().Terms;
+            var terms=TranslationLibrary.WithPacks(TranslationWorkspaceStore.For(exe,settings).Snapshot(),settings).Terms;
             var receipts=TranslationGlossaryCache.Load(oldPath);
             var compatible=old.Where(pair=>
             {

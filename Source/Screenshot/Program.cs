@@ -42,6 +42,8 @@ internal static class Program
 
     private static void Run(string[] args)
     {
+        var credentialRecoveryTests=ArgumentValue(args,"--cross-account-credential-tests=");
+        if(credentialRecoveryTests is not null){Environment.ExitCode=CrossAccountCredentialSelfTests.Run(credentialRecoveryTests);return;}
         var textContinuity=ArgumentValue(args,"--text-continuity-tests=");
         if(textContinuity is not null){Environment.ExitCode=TextContinuitySelfTests.Run(textContinuity,ArgumentValue(args,"--text-continuity-cache="),ArgumentValue(args,"--text-continuity-legacy-list="));return;}
         var screenshotRebuildSmoke=ArgumentValue(args,"--screenshot-rebuild-smoke=");

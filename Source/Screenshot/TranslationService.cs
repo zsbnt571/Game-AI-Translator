@@ -44,6 +44,8 @@ public sealed class TranslationService
         IReadOnlyList<TranslationItem> items, ApiSettings settings,
         IProgress<TranslationProgress>? progress = null, CancellationToken cancellationToken = default)
     {
+        using var enhancementLifetime=CharacterGenderEnhancementPolicy.Link(settings,cancellationToken);
+        cancellationToken=enhancementLifetime.Token;
         cancellationToken.ThrowIfCancellationRequested();
         if(settings.SourceLanguage==SourceLanguageMode.Mixed && TranslationLanguagePolicy.Selected(settings).Length==0)
             throw new InvalidOperationException("请至少选择一种需要翻译的原文语言。");
@@ -75,7 +77,7 @@ public sealed class TranslationService
         ValidateSettings(settings);
         var stats = new RequestStats();
         string CacheKey(TranslationItem item)
-        {var raw=$"{CoreTranslationContentValidator.ContractVersion}|{item.IdentityContract}|{item.Id}|{item.RoleType}|{item.SemanticPurpose}|{string.Join(',',item.StableSourceIds)}|{item.Text}|{JsonSerializer.Serialize(item.SourceNeighbors)}{OcrTranslationContextContract.CacheSuffix(item)}|{TranslationPromptBuilder.PromptHash(settings)}|{settings.TargetLanguage}|{settings.TranslationProviderKind}|{TranslationCacheKeyBuilder.NormalizeBaseUrl(settings.ApiUrl)}|{settings.Model}{ChatRequestParameters.IdentitySuffix(settings)}";return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));}
+        {var raw=$"{CoreTranslationContentValidator.ContractVersion}|{item.IdentityContract}|{item.Id}|{item.RoleType}|{item.SemanticPurpose}|{string.Join(',',item.StableSourceIds)}|{item.Text}|{JsonSerializer.Serialize(item.SourceNeighbors)}{OcrTranslationContextContract.CacheSuffix(item)}|{TranslationPromptBuilder.PromptHash(settings)}|{TranslationLibrary.RequestGuidance(settings,[item.Text])}|{settings.TargetLanguage}|{settings.TranslationProviderKind}|{TranslationCacheKeyBuilder.NormalizeBaseUrl(settings.ApiUrl)}|{settings.Model}{ChatRequestParameters.IdentitySuffix(settings)}";return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(raw)));}
         var existing=new Dictionary<string,string>(StringComparer.Ordinal);
         var existingAllocations=new Dictionary<string,TranslationAllocationSegment[]>(StringComparer.Ordinal);
         foreach(var item in pending.Where(x=>CorePipelineV2.NumericFidelityV2.IsPureQuantity(x.Text)))
@@ -98,6 +100,8 @@ public sealed class TranslationService
                     var raw=await SendAsync(request,recovery.Items.Count,recovery.Items.Sum(x=>x.Text.Length),settings,progress,stats,token,mode);
                     return raw.Body;
                 },progress,timeout.Token,existingAllocations,settings.TargetLanguage);
+                CharacterGenderEnhancementPolicy.ThrowIfRevoked(settings);
+                cancellationToken.ThrowIfCancellationRequested();
                 foreach(var item in pending)_validatedRecoveryCache[CacheKey(item)]=new(execution.Translations[item.Id],execution.Allocations.GetValueOrDefault(item.Id));
                 var full=string.Join("\n\n",items.Where(x=>execution.Translations.ContainsKey(x.Id)).Select(x=>execution.Translations[x.Id]));
                 return new(execution.Translations,stats.Count,stats.WaitMs,[],false,full,true,execution.Stats,
@@ -111,7 +115,7 @@ public sealed class TranslationService
                 return partial;
             }
         }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested&&!CharacterGenderEnhancementPolicy.Revoked(settings))
         {
             throw new TranslationTimeoutException($"完整翻译流程超过{settings.RequestTimeoutSeconds}秒。", ex);
         }
@@ -142,6 +146,8 @@ public sealed class TranslationService
     public async Task<PlainTranslationResult> TranslatePlainAsync(
         string text, ApiSettings settings, CancellationToken cancellationToken = default)
     {
+        using var enhancementLifetime=CharacterGenderEnhancementPolicy.Link(settings,cancellationToken);
+        cancellationToken=enhancementLifetime.Token;
         cancellationToken.ThrowIfCancellationRequested();
         bool plain=settings.RequestKind==TranslationRequestKind.PlainOrScreenshot;
         if(plain&&settings.SourceLanguage==SourceLanguageMode.Mixed&&TranslationLanguagePolicy.Selected(settings).Length==0)
@@ -155,6 +161,8 @@ public sealed class TranslationService
         {
             using var request = BuildPlainRequest(text, settings);
             var raw = await SendAsync(request, 1, text.Length, settings, null, stats, timeout.Token, "plain-test");
+            CharacterGenderEnhancementPolicy.ThrowIfRevoked(settings);
+            cancellationToken.ThrowIfCancellationRequested();
             string? translated;
             try
             {
@@ -173,7 +181,7 @@ public sealed class TranslationService
                 throw new InvalidDataException("译文改动了应保留的语言内容，或遗漏了需要翻译的内容，未采用此结果。");
             return new(translated, stats.Count, stats.WaitMs, raw.StatusCode);
         }
-        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested&&!CharacterGenderEnhancementPolicy.Revoked(settings))
         {
             throw new TranslationTimeoutException($"完整翻译流程超过{settings.RequestTimeoutSeconds}秒。", ex);
         }
@@ -472,7 +480,7 @@ public sealed class TranslationService
         if(settings.RequestKind==TranslationRequestKind.PlainOrScreenshot&&AutomaticGenderAgreement.Applies(settings))
             settings=AutomaticGenderAgreement.Attach(settings,new Dictionary<string,string>(StringComparer.Ordinal){["source"]=text});
         return BuildRequest(settings, [
-            new { role = "system", content = TranslationPromptBuilder.BuildPlainSystemPrompt(settings)+TranslationLanguageSpans.RequestGuidance(text,settings) },
+            new { role = "system", content = TranslationPromptBuilder.BuildPlainSystemPrompt(settings)+TranslationLibrary.RequestGuidance(settings,[text])+TranslationLanguageSpans.RequestGuidance(text,settings) },
             new { role = "user", content = text }
         ]);
     }

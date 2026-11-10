@@ -104,7 +104,7 @@ internal static class WolfResourceCatalog
                     if(matching.Length!=1)throw new InvalidDataException("WOLF 数据库缺少同一来源的唯一结构配对，未混用封包与散文件。");
                     byte[] project=matching[0].Read();bytesRead+=project.Length;string schemaHash=CatalogOrigins.Hash(project);
                     var parsed=WolfDatabaseCatalog.Read(project,image,Check,skipMalformedStrings:true);
-                    foreach(var field in parsed.Fields){Check();entries.Add(new(source.Origin,field.Location,field.Text){ContentHash=hash,Kind="wolf-database-string",Encoding=parsed.Encoding,SchemaFile=matching[0].Origin,SchemaHash=schemaHash,Context=field.Context});}
+                    foreach(var field in parsed.Fields){Check();entries.Add(new(source.Origin,field.Location,field.Text){ContentHash=hash,Kind="wolf-database-string",Encoding=parsed.Encoding,SchemaFile=matching[0].Origin,SchemaHash=schemaHash,Context=field.Context,Language=field.Language,LanguageGroup=field.LanguageGroup});}
                     reports.Add(new(matching[0].Origin,"读取完成",0,"仅提供数据库结构上下文，未翻译键、条件和资源路径。"));
                     reports.Add(new(source.Origin,parsed.UnreadableStrings>0?"部分读取":"读取完成",parsed.Fields.Length,$"配对数据库；排除 {parsed.Excluded} 个非正文项，隔离 {parsed.UnreadableStrings} 处编码异常。"));if(parsed.UnreadableStrings>0)complete=false;continue;
                 }

@@ -17,6 +17,11 @@ internal sealed class RpgLabelTranslations:IDisposable
     private readonly bool followGameTarget;
     private readonly TranslationWorkspaceStore? workspace;
     private readonly ApiSettings targetSettings;
+    private TranslationWorkspaceStore.Document? nameRaw,nameEffective;
+    private readonly object nameLibraryGate=new();
+    private TranslationWorkspaceStore.Document? EffectiveNameDocument()=>NameDocument(workspace?.Snapshot());
+    private TranslationWorkspaceStore.Document? NameDocument(TranslationWorkspaceStore.Document? raw)
+    { if(raw is null)return null;lock(nameLibraryGate){if(!ReferenceEquals(raw,nameRaw)){nameEffective=TranslationLibrary.WithPacks(raw,targetSettings);nameRaw=raw;}return nameEffective;} }
     private readonly TranslationGlossaryCache receipts=new();
     private readonly object receiptsGate=new();
     private sealed record CheckedName(TranslationWorkspaceStore.Document Rules,string Text,int ReceiptVersion,string Display);
@@ -42,7 +47,8 @@ internal sealed class RpgLabelTranslations:IDisposable
         if(!followGameTarget&&language==ApplicationLanguage.SimplifiedChinese)settings.TargetLanguage="zh-CN";
         // Preserve the selected target for game data names. Content-specific
         // gameplay instructions must not override this name translation request.
-        settings.TranslationStyle=TranslationStyle.Natural;settings.CustomTranslationPrompt="";
+        settings.TranslationStyle=TranslationStyle.Natural;settings.CustomTranslationPrompt="";settings.PromptPresetId="";settings.PromptPresetText="";
+        if(!followGameTarget){settings.GlossaryPackIds=[];settings.LibraryPacks=[];}
         return settings;
     }
     internal static string CachePath(string exe,ApiSettings source,ApplicationLanguage language,bool followGameTarget=false)
@@ -65,7 +71,7 @@ internal sealed class RpgLabelTranslations:IDisposable
         string value=names.GetValueOrDefault(source,"");
         if(workspace is null)return value;
         RefreshDisplayRules();
-        var document=workspace.PublishedSnapshot;
+        var document=NameDocument(workspace.PublishedSnapshot);
         if(document is not null)
         {
             if(TranslationWorkspaceStore.Manual(document,source,EmbeddedTextSyntax.Generic) is {} manual)return manual;
@@ -90,8 +96,8 @@ internal sealed class RpgLabelTranslations:IDisposable
             try
             {
                 if(lifetime.IsCancellationRequested)return;
-                var previous=workspace!.PublishedSnapshot;
-                var current=workspace.Snapshot();
+                var previous=NameDocument(workspace!.PublishedSnapshot);
+                var current=EffectiveNameDocument();
                 if(!ReferenceEquals(previous,current)&&!lifetime.IsCancellationRequested)NotifyChanged();
             }
             catch(Exception ex)when(ex is IOException or System.Text.Json.JsonException){Status="译名规则未能读取："+SafeDiagnosticOutput.ExceptionSummary(ex);}
@@ -139,7 +145,7 @@ internal sealed class RpgLabelTranslations:IDisposable
         if(workspace is null)return value;
         try
         {
-            var document=workspace.Snapshot();
+            var document=EffectiveNameDocument()!;
             if(TranslationWorkspaceStore.Manual(document,source,EmbeddedTextSyntax.Generic) is {} manual)return manual;
             if(document.Terms.TryGetValue(source,out var term))return term;
             if(value.Length==0)return "";
@@ -207,7 +213,7 @@ internal sealed class RpgLabelTranslations:IDisposable
     }
     private bool NeedsTranslation(string source)
     {
-        if(workspace?.Snapshot() is {} document&&
+        if(EffectiveNameDocument() is {} document&&
             (TranslationWorkspaceStore.Manual(document,source,EmbeddedTextSyntax.Generic) is not null||document.Terms.ContainsKey(source)))return false;
         return Lookup(source).Length==0||provisional.ContainsKey(source);
     }
@@ -264,7 +270,7 @@ internal sealed class RpgLabelTranslations:IDisposable
                 {
                     var loaded=RpgTranslationCache.Load(exe,source);
                     if(followGameTarget)loaded=RpgTranslationCache.Normalize(loaded,EmbeddedTextSyntax.Generic);
-                    var document=workspace?.Snapshot();
+                    var document=EffectiveNameDocument();
                     var originalReceipts=TranslationGlossaryCache.Load(loaded.Path,loaded.Receipts);
                     foreach(var p in loaded.Entries)
                     {
@@ -292,7 +298,7 @@ internal sealed class RpgLabelTranslations:IDisposable
                 }
                 var saved=RpgTranslationCache.Read(path)??RpgTranslationCache.Read(path+".previous");
                 var savedReceipts=TranslationGlossaryCache.Load(path);
-                var savedDocument=workspace?.Snapshot();
+                var savedDocument=EffectiveNameDocument();
                 if(saved is not null)foreach(var p in saved)
                 {
                     if(savedDocument is not null)
@@ -320,10 +326,10 @@ internal sealed class RpgLabelTranslations:IDisposable
                     Status="正在补齐修改页译名…";
                     try
                     {
-                        var document=workspace?.Snapshot();
+                        var document=EffectiveNameDocument();
                         var prompts=document is null?(Single:single,Batch:batch):TranslationWorkspaceStore.WithTerms(document,items.ToArray(),single,batch);
                         var result=await RpgTranslationBatch.Translate(items.ToArray(),prompts.Single,prompts.Batch,translate,lifetime.Token,syntax:EmbeddedTextSyntax.Generic,terms:document?.Terms);
-                        var current=workspace?.Snapshot();
+                        var current=EffectiveNameDocument();
                         var quality=result as RpgTranslationBatchResult;
                         var issues=new List<TranslationWorkspaceStore.Issue>();var resolved=new List<string>();
                         foreach(string text in items)

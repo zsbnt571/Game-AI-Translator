@@ -5,6 +5,7 @@ function M.new(options)
  local o=options;local status={state='not-started'}
  local sent,ack,nextTick,nextHeartbeat=0,0,0,0
  local pending,reset={},false;local started,unavailable=false,false
+ local fontSerial=0
  local function start()
   if started then return end;started=true
   if o.engine~='4.27' then unavailable=true;status.state='unsupported-engine';return end
@@ -37,6 +38,23 @@ function M.new(options)
   sent=sent+1;nextHeartbeat=now+1;reset=false
  end
  local function sources()return status.state=='ready' and status.texts or {} end
+ local function fontState()
+  start()
+  if not unavailable then
+   local ok,s=pcall(o.parse,'slate-status.json',512*1024)
+   if ok and type(s)=='table' and s.secret==o.secret then status=s end
+  end
+  if status.state=='ready' and type(status.font)=='table' then return status.font end
+  return {accepted=false,customFontActive=false,customFontSupported=false,independent=true,
+   independentOfTranslation=true,restartRequired=false,reason='native-font-construction-unavailable'}
+ end
+ local function requestFont(request)
+  local current=fontState();if current.customFontSupported~=true then return nil,current end
+  fontSerial=math.max(fontSerial,tonumber(current.id)or 0,tonumber(current.pendingId)or 0)+1
+  o.write('slate-font-command.json',{secret=o.secret,id=fontSerial,mode=request.mode,
+   path=request.path or '',family=request.family or '',sha256=request.sha256 or '',expiresUnix=os.time()+5})
+  return fontSerial,current
+ end
  local function restoreStep()
   tick(false,true)
   return unavailable or status.state=='not-started' or status.state=='ready' and status.enabled==false and ack>=sent-1
@@ -46,6 +64,7 @@ function M.new(options)
    displayHits=status.displayHits,measureHits=status.measureHits,layoutRefreshes=status.layoutRefreshes,errors=status.errors,
    pendingCommand=sent>ack,source='native-slate-local-symbols'}
  end
- return {tick=tick,update=update,clear=clear,sources=sources,status=diagnostics,restoreStep=restoreStep}
+ return {tick=tick,update=update,clear=clear,sources=sources,status=diagnostics,restoreStep=restoreStep,
+  fontState=fontState,requestFont=requestFont}
 end
 return M

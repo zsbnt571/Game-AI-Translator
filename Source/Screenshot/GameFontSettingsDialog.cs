@@ -45,8 +45,12 @@ internal sealed class GameFontSettingsDialog : NativeDialogWindow
         sample.FontSize = 24; sample.Text = previewText.Text;
         sample.FlowDirection = GameFontPreview.RightToLeft(sample.Text) ? W.FlowDirection.RightToLeft : W.FlowDirection.LeftToRight;
         body.Children.Add(sample); body.Children.Add(notice);
-        body.Children.Add(NativeDialogControls.Text(GameFontSettings.RestartHint));
+        body.Children.Add(NativeDialogControls.Text(GameFontCapabilities.ForAdapter(game.AdapterId).RestartRequired
+            ?GameFontCapabilities.ForAdapter(game.AdapterId).Limitation:GameFontCapabilities.ForGame(game).Independent?GameFontSettings.IndependentHint:GameFontSettings.RestartHint));
         if (GameFontSettings.SystemFamilyOnly(game)) body.Children.Add(NativeDialogControls.Text("此引擎支持已安装字体，暂不直接加载外部字体文件。"));
+        var capability = GameFontCapabilities.ForGame(game);
+        if(!capability.RestartRequired&&!capability.SystemFamilyOnly&&capability.Limitation.Length>0)
+            body.Children.Add(NativeDialogControls.Text(capability.Limitation));
         var save = NativeDialogControls.Button("保存并应用", Save, true);
         var cancel = NativeDialogControls.Button("关闭", () => Close());
         body.Children.Add(NativeDialogControls.Row(save, cancel));
@@ -113,7 +117,8 @@ internal sealed class GameFontSettingsDialog : NativeDialogWindow
     }
     private void ChooseFile()
     {
-        var picker = new Microsoft.Win32.OpenFileDialog { Title = UiLanguage.Text("选择字体文件"), Filter = UiLanguage.Text("字体文件") + " (*.ttf;*.otf;*.ttc)|*.ttf;*.otf;*.ttc", CheckFileExists = true, Multiselect = false };
+        string formats=game.AdapterId is "gamemaker" or "wolf" or "yukar-bakin" or "defold" ? "*.ttf;*.otf" : "*.ttf;*.otf;*.ttc";
+        var picker = new Microsoft.Win32.OpenFileDialog { Title = UiLanguage.Text("选择字体文件"), Filter = UiLanguage.Text("字体文件") + " ("+formats+")|"+formats, CheckFileExists = true, Multiselect = false };
         if (picker.ShowDialog(this) != true) return;
         try { var info = GameFontSettings.Inspect(picker.FileName); path.Text = picker.FileName; Preview(info.Family); }
         catch (Exception ex) { notice.Text = UiLanguage.Text(SafeDiagnosticOutput.ExceptionSummary(ex)); }
@@ -164,20 +169,30 @@ public sealed partial class MainForm
         if (_selectedGame is not { } game || !GameFontSettings.Supports(game)) return;
         using var dialog = new GameFontSettingsDialog(game, async cancellation =>
         {
+            if(GameFontCapabilities.ForAdapter(game.AdapterId).RestartRequired)return GameFontCapabilities.NextStart;
             var data = new[] { _dataSessions, _scriptTranslationSessions, _embeddedTranslationSessions }
                 .Select(sessions => sessions.TryGetValue(game.ExePath, out var found) ? found : null)
                 .FirstOrDefault(found => found?.Connection.Connected == true);
-            if (data is null) return "字体选择已保存；游戏连接尚未就绪，尚未实时应用。";
-            if (data.Translation is not { Enabled: true, RestorePending: false })
+            bool independent = GameFontCapabilities.ForGame(game).Independent;
+            if (data is null) return independent ? "字体选择已保存；游戏尚未连接，连接后自动应用。" : "字体选择已保存，下次开启翻译时应用。";
+            if (!independent && data.Translation is not { Enabled: true, RestorePending: false })
                 return "字体选择已保存，下次开启翻译时应用。";
             var applied = await GameFontLive.ApplyWhenAsync(game, data.Connection,
-                () => data.Translation is { Enabled: true, RestorePending: false }, cancellation);
+                () => data.Connection.Connected && (independent || data.Translation is { Enabled: true, RestorePending: false }), cancellation);
             if (applied is not { } result) return "字体选择已保存，下次开启翻译时应用。";
             if (result.TryGetProperty("deferredComponents", out var deferred) && deferred.ValueKind == System.Text.Json.JsonValueKind.Number && deferred.TryGetInt32(out int count) && count > 0)
                 return "游戏已接收字体选择；部分文字暂不支持所选字体，将保留当前翻译字体。";
             if (result.TryGetProperty("messageRedrawPending", out var pending) && pending.ValueKind == System.Text.Json.JsonValueKind.True)
                 return "字体选择已保存并被游戏接收；当前文字需等游戏刷新或翻页后更新。";
             bool active = result.TryGetProperty("enabled", out var enabled) && enabled.ValueKind == System.Text.Json.JsonValueKind.True;
+            if (independent && !active)
+            {
+                // Older components may accept the preference but only retain it
+                // for translation. Require the new runtime acknowledgement.
+                if (!result.TryGetProperty("independent", out var separate) || separate.ValueKind != System.Text.Json.JsonValueKind.True)
+                    return "字体选择已保存，但当前游戏组件未确认实时应用。";
+                active = true;
+            }
             return active ? "游戏已接收字体选择，正在重绘；可直接查看游戏，也可恢复默认。" : "游戏已接收字体选择，开启翻译后应用。";
         }, EmbeddedSettings.TargetLanguage);
         dialog.ShowDialog(this);

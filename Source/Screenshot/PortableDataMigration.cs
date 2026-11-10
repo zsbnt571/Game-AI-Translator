@@ -394,7 +394,7 @@ internal static partial class PortableDataMigration
         if (!File.Exists(path)) return null;
         var record = ReadMigrationRecord(path);
         string origin = RecordOrigin(record);
-        string destination = RebaseInternal(record.Migration.DestinationRoot, origin, app);
+        string destination = ValidateRoot(RebaseInternal(record.Migration.DestinationRoot, origin, app));
         // Both receipts were committed before selecting the imported collection. Do
         // not trust a stale or mismatched pending marker after moving the package.
         var copyReceipt = ReadMigrationRecord(Path.Combine(Path.GetDirectoryName(destination)!, "migration-receipt.json"));
@@ -441,9 +441,9 @@ internal static partial class PortableDataMigration
             property.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(property.GetString())) throw Error("InvalidConfiguration");
         try
         {
-            string target = ValidateRoot(Path.GetFullPath(property.GetString()!, app));
-            if (document.TryGetProperty("CopyFrom", out var copy) && copy.ValueKind != JsonValueKind.Null) return target;
-            return ResolveRecordedLocationTarget(target, app, descriptorBytes ?? ReadDescriptor(app));
+            string target = NormalizeRecordedRoot(Path.GetFullPath(property.GetString()!, app));
+            if (document.TryGetProperty("CopyFrom", out var copy) && copy.ValueKind != JsonValueKind.Null) return ValidateRoot(target);
+            return ValidateRoot(ResolveRecordedLocationTarget(target, app, descriptorBytes ?? ReadDescriptor(app)));
         }
         catch (ArgumentException ex) { throw Error("InvalidConfiguration", ex); }
     }

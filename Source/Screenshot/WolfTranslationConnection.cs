@@ -29,6 +29,7 @@ internal sealed class WolfTranslationConnection : IEmbeddedTranslationConnection
         var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe),CreateNoWindow=true,WindowStyle=ProcessWindowStyle.Hidden};
         GameLaunchEnvironment.ClearSession(info);
         GameTestCopyEnvironment.Apply(info);NativeGameSessionFiles.ApplySteamIdentity(info);
+        GameFontSettings.ApplyWolfLaunch(info,exe);
         info.FileName=Path.Combine(component,"FusionWolfLaunch.exe");info.ArgumentList.Add(exe);info.ArgumentList.Add(Path.Combine(component,"FusionWolf.dll"));
         // Optional, resource-verified whole-display source contract. Unknown
         // games continue through the existing renderer/cache path unchanged.
@@ -80,7 +81,7 @@ internal sealed class WolfTranslationConnection : IEmbeddedTranslationConnection
         try
         {
             await gate.WaitAsync(ct.Token);entered=true;
-            if(!Connected)throw new IOException("游戏连接已关闭。");int current=++id;var q=(JsonObject)request.DeepClone();q["id"]=current;q["secret"]=secret;
+            if(!Connected)throw new IOException("游戏连接已关闭。");int current=++id;var q=PrepareFontRequest(exe,request);q["id"]=current;q["secret"]=secret;
             string text=q.ToJsonString();if(Encoding.UTF8.GetByteCount(text)>262144)throw new IOException("翻译请求超过限制。");
             await GodotFileTransport.PublishAsync(Path.Combine(folder,"request.json"),text,ct.Token);string response=Path.Combine(folder,"response-"+current+".json");
             while(true)
@@ -105,6 +106,33 @@ internal sealed class WolfTranslationConnection : IEmbeddedTranslationConnection
         catch(OperationCanceledException ex)when(!cancellation.IsCancellationRequested&&!lifetime.IsCancellationRequested&&Connected&&request["op"]?.GetValue<string>().StartsWith("translation",StringComparison.Ordinal)==true)
         {throw new EmbeddedTransportBusyException(ex);}
         finally{if(entered)gate.Release();}
+    }
+    internal static JsonObject PrepareFontRequest(string exe,JsonObject request)
+    {
+        var result=(JsonObject)request.DeepClone();
+        if(result["op"]?.GetValue<string>()!="fontPreferences")return result;
+        string mode=result["mode"]?.GetValue<string>()??"";
+        if(mode=="default")
+        {
+            result["path"]="";result["family"]="";result["sha256"]="";return result;
+        }
+        if(mode!="custom")throw new IOException("字体选择无效，当前字体保持不变。");
+        // Validate the current owned file again at the transport boundary. A
+        // failed startup validation must never become an implicit live reset.
+        var start=new ProcessStartInfo();GameFontSettings.ApplyWolfLaunch(start,exe);
+        if(start.Environment.ContainsKey("FUSION_WOLF_FONT_FAILED")||
+            !start.Environment.TryGetValue(GameFontSettings.PathVariable,out var path)||string.IsNullOrEmpty(path)||
+            !start.Environment.TryGetValue(GameFontSettings.FamilyVariable,out var family)||string.IsNullOrEmpty(family)||
+            !start.Environment.TryGetValue("FUSION_WOLF_FONT_HASH",out var hash)||hash?.Length!=64)
+            throw new IOException("自定义字体文件缺失或已改变，当前字体保持不变。请重新选择或恢复默认。");
+        foreach(var item in new[]{("path",path),("family",family),("sha256",hash)})
+        {
+            string supplied=result[item.Item1]?.GetValue<string>()??"";
+            if(supplied.Length>0&&!string.Equals(supplied,item.Item2,StringComparison.Ordinal))
+                throw new IOException("字体选择已发生变化，本次未更换当前字体。请重试。");
+            result[item.Item1]=item.Item2;
+        }
+        return result;
     }
     private static bool Transient(Exception e)=>(e is IOException or UnauthorizedAccessException or JsonException)&&
         (e is JsonException||(e.HResult&0xffff) is 5 or 32 or 33||e.InnerException is not null&&Transient(e.InnerException));

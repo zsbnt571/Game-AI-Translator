@@ -14,7 +14,7 @@ internal static class CatalogTranslationPreparation
     internal sealed record Entry(string Translation,string? ReplacesHash=null,string? GlossaryStamp=null);
     internal sealed record Document(int Version,EmbeddedTextSyntax Syntax,Dictionary<string,Entry> Entries);
     private static bool Unity(string engine)=>engine is "Unity Mono" or "Unity IL2CPP";
-    internal static bool Supports(string engine)=>Unity(engine)||engine is "Defold" or "WOLF RPG Editor" or "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace" or "RPG Maker MV" or "RPG Maker MZ" or "TyranoBuilder" or "TyranoScript" or "Visual Novel Maker" or "ChoiceScript";
+    internal static bool Supports(string engine)=>engine=="Unreal Engine"||Unity(engine)||engine is "Defold" or "WOLF RPG Editor" or "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace" or "RPG Maker MV" or "RPG Maker MZ" or "TyranoBuilder" or "TyranoScript" or "Visual Novel Maker" or "ChoiceScript";
     // Legacy game-specific plugins own different caches. Opening this shared
     // preparation view must not imply that those plugins can consume its output.
     internal static bool Supports(GameInfo game)=>game.AdapterId is "web-rpg" or "web-construct" or "web-tyrano" or "web-vnmaker" or "web-choicescript"
@@ -26,7 +26,8 @@ internal static class CatalogTranslationPreparation
         if(game.Engine=="Defold")return DefoldTextCatalog.Read(game.ExePath,token);
         if(game.Engine=="WOLF RPG Editor")return WolfGameAdapter.DisplayBranches(WolfEngineCollection.Read(game.ExePath,token,collect));
         if(Unity(game.Engine)&&!Supports(game))throw new IOException("此 Unity 游戏使用专用接入，未更改其译文缓存。请使用当前接入的翻译功能。");
-        RpgTextCatalogResult read=game.Engine is "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace"?RgssTextCatalog.Read(game.ExePath,token):
+        RpgTextCatalogResult read=game.Engine=="Unreal Engine"?UnrealPreparationCatalog.Read(game.ExePath,token):
+            game.Engine is "RPG Maker XP" or "RPG Maker VX" or "RPG Maker VX Ace"?RgssTextCatalog.Read(game.ExePath,token):
             Unity(game.Engine)?UnityEmbeddedCatalog.Read(game.ExePath,token,settings):
             game.AdapterId=="web-rpg"?WebTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,settings.CatalogLanguageHint):
             game.Engine is "RPG Maker MV" or "RPG Maker MZ"?RpgTextCatalog.Read(game.ExePath,token,settings.SourceLanguage,preferredLanguage:settings.CatalogLanguageHint):
@@ -44,6 +45,58 @@ internal static class CatalogTranslationPreparation
         return new(game.Engine,entries,files,completed,"提取结果可整批预译；已保存译文在下次翻译启动时复用。") { SourceCatalog=read };
     }
     internal static string PathFor(string exe,ApiSettings settings)=>Path.Combine(TranslationCacheReset.DirectoryFor(exe),RpgTranslationCache.Id(settings,RpgTranslationCache.Endpoint(settings.ApiUrl))+".prepared.json");
+    internal static string RolePathFor(string exe,ApiSettings settings)=>PathFor(exe,settings)+".dialogue-roles-v2.json";
+    internal static bool SupportsSelection(GameInfo game)=>game.AdapterId!="renpy"&&
+        (Supports(game)||EmbeddedGameAdapters.Handles(game))&&EmbeddedGameAdapters.TextSyntax(game)==Syntax(game.Engine);
+    internal static async Task<Progress> PrepareSelectionAsync(GameInfo game,ApiSettings settings,IEnumerable<string> selected,
+        Func<string,ApiSettings,CancellationToken,Task<string>> translate,Action<Progress>? progress=null,CancellationToken token=default)
+    {
+        if(!SupportsSelection(game))throw new IOException("此接入尚不支持离线补译，请在游戏翻译运行时重试。");
+        var sources=selected.Distinct(StringComparer.Ordinal).Take(200).Where(s=>s.Length is >0 and <=6000&&!s.Contains('\0')).ToArray();
+        token.ThrowIfCancellationRequested();
+        var store=TranslationWorkspaceStore.For(game.ExePath,settings);
+        // The explicit selection is retry authority, not a claim that an entire
+        // extracted language pack is active. Human corrections remain excluded.
+        store.RequestRetry(sources);
+        var read=new RpgTextCatalogResult(sources,0,[]){UnlocalizedSourceTexts=sources.ToHashSet(StringComparer.Ordinal),ReadCompleted=true};
+        var catalog=new ExperimentalRpgCatalog.Result(game.Engine,sources.Select(s=>new ExperimentalRpgCatalog.Entry("selected-history","retry",s)).ToArray(),[],true,"Explicitly selected originals; no game launch or game-file writes."){SourceCatalog=read};
+        return await PrepareAsync(game.ExePath,catalog,settings,translate,progress,token);
+    }
+    internal static string CharacterPathFor(string exe,ApiSettings settings)=>PathFor(exe,settings)+".characters-v1.json";
+    private static IReadOnlyDictionary<string,GameDialogueContext> RoleContexts(string exe,ExperimentalRpgCatalog.Result catalog,ApiSettings settings,TranslationWorkspaceStore store)
+    {
+        var contexts=new GameDialogueContexts();
+        var profiles=GameCharacterProfiles.For(exe);var blocked=store.Issues().Select(i=>i.Source).ToHashSet(StringComparer.Ordinal);
+        if(catalog.SourceCatalog is {} source){profiles.ObserveCatalog(source);contexts.ReadCatalog(source,settings,blocked);}
+        var texts=catalog.Entries.Select(e=>e.Text).ToArray();
+        return GameCharacterAgreement.Combine(profiles,settings,texts,contexts.ForSources(texts),blocked,allowCatalog:true);
+    }
+    private static Dictionary<string,string> WithPreparedRoles(string exe,ApiSettings settings,EmbeddedTextSyntax syntax,
+        Dictionary<string,string> existing,IReadOnlyDictionary<string,GameDialogueContext> contexts,IReadOnlyDictionary<string,string> terms,RpgTextCatalogResult? catalog=null)
+    {
+        if(!GameDialogueRoles.Applies(settings))return existing;
+        var native=GameDialogueRoleCache.Load(RpgTranslationCache.LoadLocal(exe,settings,TranslationCacheScope.Native).Path+".dialogue-roles-v2.json");
+        var prepared=GameDialogueRoleCache.Load(RolePathFor(exe,settings));
+        var characters=GameCharacterProfiles.For(exe);
+        var characterNative=GameCharacterTranslationCache.Load(RpgTranslationCache.LoadLocal(exe,settings,TranslationCacheScope.Native).Path+".characters-v1.json");
+        var characterPrepared=GameCharacterTranslationCache.Load(CharacterPathFor(exe,settings));
+        var result=new Dictionary<string,string>(existing,StringComparer.Ordinal);
+        foreach(var pair in contexts)
+            if(!result.ContainsKey(pair.Key))
+            {
+                string text;
+                bool found=pair.Value.Character is not null
+                    ?characterNative.TryGet(pair.Key,pair.Value,settings,terms,out text,syntax)||characterPrepared.TryGet(pair.Key,pair.Value,settings,terms,out text,syntax)
+                    :native.TryGet(pair.Key,pair.Value,settings,terms,out text,syntax)||prepared.TryGet(pair.Key,pair.Value,settings,terms,out text,syntax);
+                if(!found&&pair.Value.Character is not null&&catalog?.DialogueContexts.TryGetValue(pair.Key,out var legacy)==true)
+                    found=native.TryGet(pair.Key,legacy,settings,terms,out text,syntax)||prepared.TryGet(pair.Key,legacy,settings,terms,out text,syntax);
+                if(found)result[pair.Key]=text;
+            }
+        foreach(string source in catalog?.Texts??[])
+            if(!result.ContainsKey(source)&&(characterNative.TryRetained(source,characters,settings,terms,out var prior,syntax,allowCatalog:true)
+                ||characterPrepared.TryRetained(source,characters,settings,terms,out prior,syntax,allowCatalog:true)))result[source]=prior;
+        return result;
+    }
     private static string Hash(string text)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)));
     private static Document? ReadDocument(string path)
     {
@@ -66,7 +119,7 @@ internal static class CatalogTranslationPreparation
     internal static RpgTranslationCache.Loaded Merge(string exe,ApiSettings settings,RpgTranslationCache.Loaded local)
     {
         var prepared=Read(exe,settings);if(prepared is null||prepared.Entries.Count==0)return local;
-        var terms=TranslationWorkspaceStore.For(exe,settings).Snapshot().Terms;
+        var terms=TranslationLibrary.WithPacks(TranslationWorkspaceStore.For(exe,settings).Snapshot(),settings).Terms;
         var receipts=TranslationGlossaryCache.Load(local.Path,local.Receipts);
         bool Valid(string source,string value)=>TranslationWorkspaceStore.Valid(source,value,prepared.Syntax)&&AutomaticTranslationQuality.Displayable(source,value,settings,terms,prepared.Syntax);
         Dictionary<string,string>? changed=null;
@@ -92,12 +145,13 @@ internal static class CatalogTranslationPreparation
     {
         var policy=new EmbeddedSourceLanguagePolicy(settings);var syntax=Syntax(catalog.Engine);
         var read=catalog.SourceCatalog;if(read is not null)policy.SelectCatalog(read.Texts,read.SelectedLanguage);
+        var branches=new CatalogLanguageBranches(read?.LanguageBranches??CatalogLanguageBranches.FromEntries(catalog.Entries));
         // A user-selected single source can prepare its explicitly selected
         // locale table without running the game. Auto/default catalogue guesses
         // and multi-source selections are not authority for inactive locale packs.
-        bool Allowed(string text)=>read is null?policy.AllowsCatalog(text):policy.AllowsSelectedText(text)&&
+        bool Allowed(string text)=>branches.Allows(text)&&(read is null?policy.AllowsCatalog(text):policy.AllowsSelectedText(text)&&
             (read.UnlocalizedSourceTexts?.Contains(text)==true||Unity(catalog.Engine)&&policy.AllowsSelectedResource(text,read.SelectedLanguage,read.TrustedSourceTexts?.Contains(text)==true)||
-                policy.AllowsActiveCatalog(text,read.TrustedSourceTexts?.Contains(text)==true)||policy.AllowsScriptCatalog(text,read.ScriptSourceLanguage));
+                policy.AllowsActiveCatalog(text,read.TrustedSourceTexts?.Contains(text)==true)||policy.AllowsScriptCatalog(text,read.ScriptSourceLanguage)));
         // Classify each unique original once while retaining all source occurrences.
         return catalog.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).Where(t=>
         {token.ThrowIfCancellationRequested();return t.Length is >0 and <=6000&&!t.Contains('\0')&&read?.SkippedSourceTexts?.Contains(t)!=true&&Allowed(t)&&RpgTranslationText.HasTranslatableText(t,syntax);}).Take(100000).ToArray();
@@ -105,7 +159,8 @@ internal static class CatalogTranslationPreparation
     internal static bool NeedsPreparation(string exe,ExperimentalRpgCatalog.Result catalog,ApiSettings settings)
     {
         var syntax=Syntax(catalog.Engine);var existing=RpgTranslationCache.Effective(exe,settings,syntax);
-        var document=TranslationWorkspaceStore.For(exe,settings).Snapshot();
+        var store=TranslationWorkspaceStore.For(exe,settings);var document=TranslationLibrary.WithPacks(store.Snapshot(),settings);
+        existing=WithPreparedRoles(exe,settings,syntax,existing,RoleContexts(exe,catalog,settings,store),document.Terms,catalog.SourceCatalog);
         return Sources(catalog,settings).Any(t=>!existing.TryGetValue(t,out var value)||TranslationWorkspaceStore.Manual(document,t,syntax) is null&&
             (!AutomaticTranslationQuality.Valid(t,value,settings,document.Terms,syntax)||document.Requests.ContainsKey(t)));
     }
@@ -113,6 +168,8 @@ internal static class CatalogTranslationPreparation
         Func<string,ApiSettings,CancellationToken,Task<string>> translate,Action<Progress>? progress=null,CancellationToken token=default)
     {
         var settings=ApiSettingsSnapshot.Copy(source);string path=PathFor(exe,settings);var gate=jobs.GetOrAdd(path,_=>new(1,1));
+        using var enhancementLifetime=CharacterGenderEnhancementPolicy.Link(settings,token);
+        token=enhancementLifetime.Token;
         await gate.WaitAsync(token);
         try
         {
@@ -121,7 +178,7 @@ internal static class CatalogTranslationPreparation
             TranslationOriginIndex.TrySave(exe,settings,catalog.SourceCatalog??new(catalog.Entries.Select(e=>e.Text).Distinct(StringComparer.Ordinal).ToArray(),catalog.Files.Length,[]){
                 Origins=catalog.Entries.Select(e=>ExperimentalRpgCatalog.Origin(e,"experimental-display-field")).ToArray(),
                 ReadCompleted=catalog.Complete,Report=new(catalog.Complete,[])});
-            var store=TranslationWorkspaceStore.For(exe,settings);var document=store.Snapshot();
+            var store=TranslationWorkspaceStore.For(exe,settings);var document=TranslationLibrary.WithPacks(store.Snapshot(),settings);
             var terminology=GameTerminology.For(store);
             var acceptedSources=sources.ToHashSet(StringComparer.Ordinal);
             terminology.Observe(sources,catalog.Entries.Where(e=>acceptedSources.Contains(e.Text)).Select(e=>ExperimentalRpgCatalog.Origin(e,"experimental-display-field")));
@@ -134,10 +191,12 @@ internal static class CatalogTranslationPreparation
             // Reuse exact verified names before starting their separate provider
             // work. Cached dialogue is never parsed into a name translation.
             using var terminologyOwnership=terminology.OwnSources(settings);
+            terminologyOwnership.Add((catalog.SourceCatalog?.LanguageBranches??CatalogLanguageBranches.FromEntries(catalog.Entries)).Select(b=>b.Source));
             terminologyOwnership.Add(verified.Keys);
             terminology.ReuseVerifiedTranslations(settings,verified,document,syntax,token);
             progress?.Invoke(new(sources.Length,0,0,0,"正在统一人物、地点和物品等名称…"));
             await terminology.PrepareAsync(settings,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),token);
+            CharacterGenderEnhancementPolicy.ThrowIfRevoked(settings);
             token.ThrowIfCancellationRequested();
             document=store.Snapshot();
             existing=RpgTranslationCache.Effective(exe,settings,syntax);
@@ -157,6 +216,14 @@ internal static class CatalogTranslationPreparation
                 Save(exe,settings,syntax,adopted,adopted.Keys.ToDictionary(s=>s,s=>(string?)null,StringComparer.Ordinal),path,document.Terms);
                 existing=RpgTranslationCache.Effective(exe,settings,syntax);
             }
+            var roleContexts=RoleContexts(exe,catalog,settings,store);
+            // Build the immutable source index once. Only the current batch's
+            // choices need refreshing while a large catalogue is translated.
+            var legacyCatalogContexts=new GameDialogueContexts();
+            var contextBlocked=store.Issues().Select(i=>i.Source).ToHashSet(StringComparer.Ordinal);
+            if(catalog.SourceCatalog is {} originalCatalog)legacyCatalogContexts.ReadCatalog(originalCatalog,settings,contextBlocked);
+            var characterProfiles=GameCharacterProfiles.For(exe);
+            existing=WithPreparedRoles(exe,settings,syntax,existing,roleContexts,document.Terms,catalog.SourceCatalog);
             var readySources=sources.Where(t=>existing.TryGetValue(t,out var value)&&
                 (TranslationWorkspaceStore.Manual(document,t,syntax) is not null||AutomaticTranslationQuality.Valid(t,value,settings,document.Terms,syntax))).ToHashSet(StringComparer.Ordinal);
             string[] pending=sources.Where(t=>!readySources.Contains(t)||document.Requests.ContainsKey(t)&&TranslationWorkspaceStore.Manual(document,t,syntax) is null).ToArray();
@@ -187,13 +254,18 @@ internal static class CatalogTranslationPreparation
                 var replaced=group.ToDictionary(t=>t,t=>native.Entries.TryGetValue(t,out var value)?Hash(value):null,StringComparer.Ordinal);
                 var prompts=TranslationWorkspaceStore.WithTerms(document,group.ToArray(),single,batch);
                 var requestTerms=document.Terms;
-                var translated=await RpgTranslationBatch.Translate(group.ToArray(),prompts.Single,prompts.Batch,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),token,syntax:syntax,terms:document.Terms);
+                roleContexts=GameCharacterAgreement.Combine(characterProfiles,settings,group,legacyCatalogContexts.ForSources(group),contextBlocked,allowCatalog:true);
+                var translated=await RpgTranslationBatch.Translate(group.ToArray(),prompts.Single,prompts.Batch,(prompt,profile,ct)=>TranslationFlightPool.Shared.Request(translate,prompt,profile,ct),token,syntax:syntax,terms:document.Terms,dialogueContexts:roleContexts);
+                CharacterGenderEnhancementPolicy.ThrowIfRevoked(settings);
                 token.ThrowIfCancellationRequested();
                 if(!PortableDataStorage.Same(path,PathFor(exe,settings)))throw new OperationCanceledException("机器译文已重置，停止保存此前的准备结果。");
                 document=store.Snapshot(true);
+                var latestContexts=GameCharacterAgreement.Combine(characterProfiles,settings,group,legacyCatalogContexts.ForSources(group),contextBlocked,allowCatalog:true);
                 var accepted=translated.Where(p=>group.Contains(p.Key,StringComparer.Ordinal)&&TranslationWorkspaceStore.Manual(document,p.Key,syntax) is null
                     &&document.Requests.GetValueOrDefault(p.Key,"")==requestTokens[p.Key]
                     &&TranslationGlossary.Stamp(requestTerms,p.Key)==TranslationGlossary.Stamp(document.Terms,p.Key)
+                    &&(!roleContexts.TryGetValue(p.Key,out var context)||context.TermsStamp(requestTerms,p.Key)==context.TermsStamp(document.Terms,p.Key))
+                    &&(!roleContexts.TryGetValue(p.Key,out var attributed)||!attributed.HasAgreement||latestContexts.GetValueOrDefault(p.Key)?.Identity==attributed.Identity)
                     &&TranslationWorkspaceStore.Valid(p.Key,p.Value,syntax)&&AutomaticTranslationQuality.Displayable(p.Key,p.Value,settings,document.Terms,syntax)).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal);
                 var quality=translated as RpgTranslationBatchResult;
                 var complete=accepted.Keys.Where(t=>quality?.SoftFailures.ContainsKey(t)!=true).ToArray();
@@ -203,7 +275,16 @@ internal static class CatalogTranslationPreparation
                     {retained[text]=old;accepted.Remove(text);}
                 if(accepted.Count>0)
                 {
-                    Save(exe,settings,syntax,accepted,replaced,path,requestTerms);foreach(string text in complete)if(readySources.Add(text))ready++;
+                    var characterAccepted=accepted.Where(p=>roleContexts.GetValueOrDefault(p.Key)?.Character is not null).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal);
+                    var roleAccepted=accepted.Where(p=>roleContexts.TryGetValue(p.Key,out var context)&&context.Character is null).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal);
+                    var ordinaryAccepted=accepted.Where(p=>!roleContexts.ContainsKey(p.Key)).ToDictionary(p=>p.Key,p=>p.Value,StringComparer.Ordinal);
+                    // Context-dependent results never enter source-only prepared
+                    // or shared memory. Keep the native role file owned by the
+                    // running session; this separate sidecar is read next start.
+                    if(ordinaryAccepted.Count>0)Save(exe,settings,syntax,ordinaryAccepted,replaced,path,requestTerms);
+                    if(roleAccepted.Count>0)SaveRoles(roleAccepted,roleContexts,path+".dialogue-roles-v2.json",requestTerms);
+                    if(characterAccepted.Count>0)GameCharacterTranslationCache.Save(path+".characters-v1.json",characterAccepted,roleContexts,requestTerms);
+                    foreach(string text in complete)if(readySources.Add(text))ready++;
                     added+=accepted.Count;consecutiveFailures=0;
                     store.CompleteRequests(complete.Where(t=>requestTokens[t].Length>0).ToDictionary(t=>t,t=>requestTokens[t],StringComparer.Ordinal));
                 }
@@ -213,12 +294,21 @@ internal static class CatalogTranslationPreparation
                 if(manualNow.Length>0)consecutiveFailures=0;
                 failed+=group.Count-complete.Length-manualNow.Length;
                 if(quality is not null)
+                {
+                    // Preparing again is a new attempt at the same unresolved
+                    // failure, not a reset of its displayed history. Attempts
+                    // remains retry ROUNDS for runtime restoration: a batch's
+                    // bounded content recovery is still the same round. Actual
+                    // delegate calls stay separate in RequestAttempts metadata.
+                    var previousAttempts=store.Issues().GroupBy(i=>i.Source,StringComparer.Ordinal)
+                        .ToDictionary(g=>g.Key,g=>Math.Max(0,g.Last().Attempts),StringComparer.Ordinal);
                     store.RecordIssues(group.Where(t=>!manualNow.Contains(t)&&
                         TranslationGlossary.Stamp(requestTerms,t)==TranslationGlossary.Stamp(document.Terms,t)&&
                         document.Requests.GetValueOrDefault(t,"")==requestTokens[t]&&
                         (quality.Failures.ContainsKey(t)||quality.SoftFailures.ContainsKey(t)))
-                        .Select(t=>TranslationAttemptStatus.Evidence(t,quality.SoftFailures.GetValueOrDefault(t)??quality.Failures.GetValueOrDefault(t,"unknown"),1,
+                        .Select(t=>TranslationAttemptStatus.Evidence(t,quality.SoftFailures.GetValueOrDefault(t)??quality.Failures.GetValueOrDefault(t,"unknown"),(int)Math.Min(int.MaxValue,(long)previousAttempts.GetValueOrDefault(t)+(quality.RequestAttempts.GetValueOrDefault(t)>0?1:0)),
                             quality.Replies.GetValueOrDefault(t,""),requestTerms,quality.SoftFailures.ContainsKey(t),retained.GetValueOrDefault(t)??accepted.GetValueOrDefault(t))),complete.Concat(manualNow));
+                }
                 if(translated is RpgTranslationBatchResult detail&&detail.Failures.Values.Any(v=>v is "provider-authentication" or "provider-rate-limited"))return Report("翻译服务拒绝或限制了请求；已保留完成部分，请检查翻译方案后继续。");
                 if(consecutiveFailures>=3)return Report("连续三批未能完成，已暂停；已有译文已保存，可稍后继续。");
             }
@@ -244,6 +334,35 @@ internal static class CatalogTranslationPreparation
         }
     }
     internal static string FontReportPathFor(string exe,ApiSettings settings)=>PathFor(exe,settings)+".font-coverage.json";
+    private static void SaveRoles(Dictionary<string,string> batch,IReadOnlyDictionary<string,GameDialogueContext> contexts,string path,IReadOnlyDictionary<string,string> terms)
+    {
+        string id=Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(Path.GetFullPath(path).ToUpperInvariant())));
+        using var mutex=new Mutex(false,"Local\\FusionR1.CatalogPreparation."+id);bool held=false;
+        try
+        {
+            try{held=mutex.WaitOne(1000);}catch(AbandonedMutexException){held=true;}
+            if(!held)throw new IOException("另一窗口正在保存译文，请稍后继续。");
+            var cache=GameDialogueRoleCache.Load(path);
+            if(File.Exists(path))
+            {
+                bool valid=false;
+                try
+                {
+                    if(new FileInfo(path).Length<=32L*1024*1024)
+                    {var stored=JsonSerializer.Deserialize<Dictionary<string,GameDialogueRoleCache.Entry>>(File.ReadAllText(path));valid=stored is not null&&stored.Count==cache.Snapshot().Count;}
+                }
+                catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or JsonException){}
+                if(!valid)throw new IOException("准备译文缓存读取失败，未覆盖；请先检查该游戏的译文数据。");
+            }
+            foreach(var pair in batch)cache.Accept(pair.Key,pair.Value,contexts[pair.Key],terms);
+            var snapshot=cache.Snapshot();
+            if(batch.Any(p=>!snapshot.TryGetValue(contexts[p.Key].Identity+":"+p.Key,out var value)||value.Text!=p.Value)
+                ||JsonSerializer.SerializeToUtf8Bytes(snapshot,new JsonSerializerOptions{WriteIndented=true}).Length>30L*1024*1024)
+                throw new IOException("准备译文缓存已达到容量限制；此前保存的译文保持可用。");
+            TranslationStorage.WriteJson(path,snapshot,32*1024*1024);
+        }
+        finally{if(held)mutex.ReleaseMutex();}
+    }
     private static void Save(string exe,ApiSettings settings,EmbeddedTextSyntax syntax,Dictionary<string,string> batch,Dictionary<string,string?> replaced,string path,IReadOnlyDictionary<string,string> terms)
     {
         // Keep the path captured before the request: a late pre-reset result

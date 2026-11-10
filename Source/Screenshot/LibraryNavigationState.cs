@@ -2,6 +2,29 @@ using System.Collections.ObjectModel;
 
 namespace ScreenshotTranslationUiTester;
 
+internal static class LibraryNavigationIcon
+{
+    internal static string EngineName(string? value)=>string.IsNullOrWhiteSpace(value)?"待识别":value;
+    internal static string Count(LibraryNavigationTarget target,string text)
+    {
+        int at=text.LastIndexOf("  ",StringComparison.Ordinal);
+        return target.Kind is "engine" or "collection"&&at>=0&&int.TryParse(text[(at+2)..],out _)?text[(at+2)..]:"";
+    }
+    internal static string Label(LibraryNavigationTarget target,string text)=>Count(target,text).Length>0?text[..text.LastIndexOf("  ",StringComparison.Ordinal)]:text;
+    internal static string Key(LibraryNavigationTarget target, bool expanded) => target.Kind switch
+    {
+        "engine" or "heading" => expanded ? "down" : "next",
+        "collection" or "folder" => "folder",
+        "tag" => "layers",
+        "tag-browser" => "tags",
+        "group-tag" => "tag",
+        "tag-settings" => "settings",
+        "new-category" or "new-folder" or "add-root" => "plus",
+        "game" => "game",
+        _ => target.Value switch { "recent" => "history", "running" => "play", "favorite" => "star", _ => "grid" }
+    };
+}
+
 internal sealed class LibraryNavigationNode(string text)
 {
     internal string Name { get; set; } = "";
@@ -32,6 +55,6 @@ internal interface ILibraryNavigationSession : IDisposable
     System.Windows.FrameworkElement NativeView { get; }
     event Action<LibraryNavigationTarget>? Navigate;
     event Action<LibraryNavigationTarget,Point>? ContextRequested;
-    void UpdateEntries(RecentGame[] games,LibraryMetadata metadata,Dictionary<string,string> engines,IEnumerable<string> activePaths,string? selectedPath,string scope,LibraryPreferences preferences,Dictionary<string,Bitmap>? newIcons=null);
+    void UpdateEntries(RecentGame[] games,LibraryMetadata metadata,Dictionary<string,string> engines,IEnumerable<string> activePaths,string? selectedPath,string scope,LibraryPreferences preferences,Dictionary<string,Bitmap>? newIcons=null,LibraryTagDocument? tagDocument=null);
     void UpdateRunning(IEnumerable<string> paths);
 }

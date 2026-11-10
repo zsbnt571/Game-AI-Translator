@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using W = System.Windows;
 using WM = System.Windows.Media;
@@ -22,7 +22,8 @@ internal sealed partial class NativeLibraryNavigation
     private bool disposed;
     internal Font Font {get;private set;}=SystemFonts.MessageBoxFont!;
     internal int DeviceDpi {get;private set;}=96;
-    internal void UpdatePresentation(Font font,int dpi){if(Font.Equals(font)&&DeviceDpi==dpi)return;Font=font;DeviceDpi=dpi;Flatten();Invalidate();}
+    private int presentationIconSize=17;
+    internal void UpdatePresentation(Font font,int dpi){if(Font.Equals(font)&&DeviceDpi==dpi&&presentationIconSize==UiIconAppearance.Size)return;Font=font;DeviceDpi=dpi;presentationIconSize=UiIconAppearance.Size;Flatten();Invalidate();}
     private bool Capture {get=>native?.IsMouseCaptured==true;set{if(value)native?.CaptureMouse();else native?.ReleaseMouseCapture();}}
     private bool Focus()=>native?.Focus()==true;
     private void Invalidate()=>native?.InvalidateVisual();
@@ -96,7 +97,7 @@ internal sealed partial class NativeLibraryNavigation
             }
             var key=new TextKey(node.Text,UiLanguage.Current,width,fontSize,dpi,color.ToArgb(),x,rowHeight);
             if(cached.Drawing is not null&&cached.Key==key&&ReferenceEquals(cached.Typeface,face)&&ReferenceEquals(cached.Culture,culture))return cached;
-            var text=new WM.FormattedText(DisplayText(node),culture,W.FlowDirection.LeftToRight,face,fontSize,WpfDrawing.Brush(color),dpi)
+            var text=new WM.FormattedText(LibraryNavigationIcon.Label((LibraryNavigationTarget)node.Tag!,DisplayText(node)),culture,W.FlowDirection.LeftToRight,face,fontSize,WpfDrawing.Brush(color),dpi)
             {MaxTextWidth=width,MaxLineCount=1,Trimming=W.TextTrimming.CharacterEllipsis};
             var drawing=new WM.DrawingGroup();
             // Keep the text's fractional baseline inside the drawing instead
@@ -122,13 +123,25 @@ internal sealed partial class NativeLibraryNavigation
                 bool selected=node==model.SelectedNode;double y=i*height-offset;
                 if(selected||node.Name==model.hoverKey)dc.DrawRoundedRectangle(WpfDrawing.Brush(selected?WorkspaceSkin.SoftAccent:p.Control),null,new W.Rect(6,y,Math.Max(1,ActualWidth-12-(model.ScrollMaximum>0?10:0)),height),5,5);
                 if(selected&&keyboardFocus&&IsKeyboardFocused)dc.DrawRoundedRectangle(null,new WM.Pen(WpfDrawing.Brush(p.Accent),1),new W.Rect(7,y+1,Math.Max(1,ActualWidth-14-(model.ScrollMaximum>0?10:0)),Math.Max(1,height-2)),5,5);
-                string key=target.Kind switch{"engine" or "heading"=>model.expanded.Contains(node.Name)?"down":"next","collection" or "folder"=>"folder","tag"=>"tag","new-category" or "new-folder" or "add-root"=>"plus","game"=>"game",_=>target.Value switch{"recent"=>"calendar","running"=>"play","favorite"=>"tag",_=>"grid"}};
+                string key=LibraryNavigationIcon.Key(target, model.expanded.Contains(node.Name));
                 var ink=selected?p.Accent:p.SecondaryText;double x=14+node.Level*12;
-                var icon=target.Kind=="game"&&model.icons.TryGetValue(target.Value,out var image)?WpfDrawing.Image(image):WpfDrawing.Icon(key,ink);
-                dc.DrawImage(icon,new W.Rect(x,y+(height-17)/2,17,17));
-                var text=Text(node,Math.Max(1,ActualWidth-x-42),selected?p.Accent:p.Text,typeface,fontSize,scale,culture,x+27,height);
+                if(target.Kind is "engine" or "collection")
+                {
+                    if(node.Nodes.Count>0)dc.DrawImage(WpfDrawing.Icon(model.expanded.Contains(node.Name)?"down":"next",ink),new W.Rect(x,y+(height-13)/2,13,13));
+                    x+=18;
+                }
+                WM.ImageSource icon=target.Kind=="engine"?LibraryEngineIcons.Image(target.Value,ink):target.Kind=="game"&&model.icons.TryGetValue(target.Value,out var image)?WpfDrawing.Image(image):WpfDrawing.Icon(key,ink);
+                double iconSize=target.Kind=="engine"?UiIconAppearance.Size:17;
+                dc.DrawImage(icon,new W.Rect(x,y+(height-iconSize)/2,iconSize,iconSize));
+                var count=LibraryNavigationIcon.Count(target,node.Text);
+                var text=Text(node,Math.Max(1,ActualWidth-x-(count.Length>0?70:42)-(iconSize-17)),selected?p.Accent:p.Text,typeface,fontSize,scale,culture,x+iconSize+10,height);
                 dc.PushTransform(new WM.TranslateTransform(0,y));
                 dc.DrawDrawing(text.Drawing);dc.Pop();
+                if(count.Length>0)
+                {
+                    var number=new WM.FormattedText(count,culture,W.FlowDirection.LeftToRight,typeface,fontSize-1,WpfDrawing.Brush(ink),scale);
+                    dc.DrawText(number,new W.Point(ActualWidth-(model.ScrollMaximum>0?27:17)-number.Width,y+(height-number.Height)/2));
+                }
                 if(target.Kind=="game"&&model.running.Contains(target.Value))dc.DrawEllipse(WpfDrawing.Brush(Color.SeaGreen),null,new W.Point(ActualWidth-18,y+height/2),3,3);
             }
             var thumb=model.Thumb;if(!thumb.IsEmpty)dc.DrawRoundedRectangle(WpfDrawing.Brush(Color.FromArgb(115,p.SecondaryText)),null,new W.Rect((thumb.X+3)/Scale,thumb.Y/Scale,4,thumb.Height/Scale),2,2);

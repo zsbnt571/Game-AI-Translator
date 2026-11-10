@@ -120,7 +120,7 @@ internal static class DefoldTextCatalog
     {
         string root=Path.GetDirectoryName(exe)!;var texts=new List<ExperimentalRpgCatalog.Entry>();var reports=new List<ExperimentalRpgCatalog.FileResult>();var timer=Stopwatch.StartNew();
         void Check(){token.ThrowIfCancellationRequested();if(timer.Elapsed.TotalSeconds>20||texts.Count>=100000)throw new InvalidDataException("达到读取时间或数量上限。");}
-        byte[] index=ReadBounded(Path.Combine(root,"game.arci"),16*1024*1024);if(index.Length<32||U32(index,0)!=4)throw new InvalidDataException("当前只读提取支持 Defold v4 资源索引。");
+        byte[] index=ReadBounded(Path.Combine(root,"game.arci"),16*1024*1024);if(index.Length<32||U32(index,0) is not (4 or 5))throw new InvalidDataException("当前只读提取支持 Defold v4/v5 资源索引。");
         int count=checked((int)U32(index,16)),entryOffset=checked((int)U32(index,20)),hashOffset=checked((int)U32(index,24)),hashSize=checked((int)U32(index,28));
         if(count>100000||hashSize is <16 or >64||entryOffset<32||hashOffset<32||entryOffset+count*16L>index.Length||hashOffset+count*64L>index.Length)throw new InvalidDataException("资源索引范围无效。");
         var entries=new Dictionary<string,(uint Offset,uint Size,uint Compressed,uint Flags)>();
@@ -131,7 +131,7 @@ internal static class DefoldTextCatalog
         using var archive=File.OpenRead(Path.Combine(root,"game.arcd"));long readBytes=0;
         foreach(var resource in manifest.Where(f=>f.Number==3&&f.Kind==2))
         {
-            Check();var fields=Fields(resource.Bytes);string name=new UTF8Encoding(false,true).GetString(Single(fields,1));
+            Check();var fields=Fields(resource.Bytes);bool modern=U32(index,0)==5;string name=new UTF8Encoding(false,true).GetString(Single(fields,modern?2:1));
             if(name.Length>512||!name.StartsWith('/')||name.Contains('\\')||name.Split('/').Any(s=>s is "." or ".."))throw new InvalidDataException("资源名称无效。");
             bool compiled=name.EndsWith(".scriptc",StringComparison.Ordinal)||name.EndsWith(".gui_scriptc",StringComparison.Ordinal)||name.EndsWith(".luac",StringComparison.Ordinal);
             bool gui=name.EndsWith(".guic",StringComparison.Ordinal),font=name.EndsWith(".fontc",StringComparison.Ordinal);
@@ -140,13 +140,15 @@ internal static class DefoldTextCatalog
             int before=texts.Count;
             try
             {
-                string hash=Convert.ToHexString(Single(Fields(Single(fields,3)),1));if(!entries.TryGetValue(hash,out var e))throw new InvalidDataException("资源引用未找到。");
-                if((e.Flags&~1u)!=0)throw new InvalidDataException("此资源包含尚未支持的标志。");
+                string hash=Convert.ToHexString(Single(Fields(Single(fields,modern?1:3)),1));if(!entries.TryGetValue(hash,out var e))throw new InvalidDataException("资源引用未找到。");
+                if((e.Flags&~3u)!=0)throw new InvalidDataException("此资源包含尚未支持的标志。");
                 long stored=e.Compressed==uint.MaxValue?e.Size:e.Compressed;
                 if(e.Size>16*1024*1024||stored>16*1024*1024||e.Offset>archive.Length-stored||(readBytes+=e.Size)>128*1024*1024)throw new InvalidDataException("资源范围或大小超过限制。");
                 archive.Position=e.Offset;byte[] bytes=new byte[(int)stored];archive.ReadExactly(bytes);if((e.Flags&1)!=0)bytes=DecodeScript(bytes,Check);if(e.Compressed!=uint.MaxValue)bytes=Decompress(bytes,(int)e.Size);
                 if(font)
                 {
+                    if(DefoldGlyphBank.Resource(bytes) is {} bank)
+                    {using var fonts=new DefoldArchive(exe);bytes=fonts.Read(bank);readBytes+=bytes.Length;if(readBytes>128*1024*1024)throw new InvalidDataException("资源范围或大小超过限制。");}
                     int chinese=Fields(bytes).Where(f=>f.Number==1&&f.Kind==2).Select(f=>Fields(f.Bytes).SingleOrDefault(v=>v.Number==1&&v.Kind==0)?.NumberValue??0).Count(v=>v is >=0x3400 and <=0x9fff);
                     reports.Add(new(name,"字库检查",0,chinese==0?"未包含中文字形；译文不能直接显示为中文。":$"包含 {chinese} 个中文字形；尚未确认译文字符是否齐全。"));continue;
                 }

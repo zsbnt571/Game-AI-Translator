@@ -15,9 +15,8 @@ public sealed partial class MainForm
         if(_selectedGame is not { } game||SelectedTranslationSession() is not { } data||!data.Connection.Connected||
             data.Translation is not {Enabled:true,RestorePending:false} translation||translation.FailedCount<=0)return;
         var session=_gameSessions.Get(game);if(session.Busy)return;
-        int count=translation.FailedCount;
         translation.RetryFailures();
-        session.Feedback=$"已安排重试 {count:N0} 条失败项。当前对话会优先处理；仍未通过检查的条目可在“翻译状态”查看原因。";
+        session.TrackTranslationRetry(translation);
         RenderGameSessionState();
     }
 

@@ -24,6 +24,7 @@
 #include "WolfLegacyText.h"
 #include "WolfCache.h"
 #include "WolfFont.h"
+#include "WolfFontCache.h"
 #include "WolfSpeed.h"
 #include "WolfSpeedProtocol.h"
 #include "WolfData.h"
@@ -52,18 +53,37 @@ static std::unordered_map<uintptr_t,Binding> bindings;
 static int epoch=0,lastId=0;
 static std::atomic<unsigned> unsupported{0},failures{0};
 static WolfFont::Renderer glyphRenderer;
+static std::atomic<unsigned long long> layoutRevision{0},fontRevision{0};
+static json FontState(){return {{"customFontActive",glyphRenderer.CustomActive()},{"customFontFailed",glyphRenderer.CustomFailed()},
+    {"restartRequired",!WolfFontCache::Available()},{"independentOfTranslation",true},{"independent",true},{"fontCache",WolfFontCache::State()}};}
+static json FontRequest(const json& request,bool& ok){
+    auto result=FontState();result["accepted"]=false;
+    if(!WolfFontCache::Available()){ok=false;result["message"]="Native font cache refresh is unavailable; the saved font applies at next startup.";return result;}
+    auto mode=request.value("mode","");
+    if(mode!="default"&&mode!="custom"){ok=false;result["message"]="Invalid font mode; current font remains unchanged.";return result;}
+    auto wide=[](const std::string& text){int n=MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text.data(),(int)text.size(),nullptr,0);std::wstring value(n,0);if(n)MultiByteToWideChar(CP_UTF8,MB_ERR_INVALID_CHARS,text.data(),(int)text.size(),value.data(),n);return value;};
+    auto path=mode=="custom"?wide(request.value("path","")):L"";
+    auto family=mode=="custom"?wide(request.value("family","")):L"";
+    auto hash=mode=="custom"?wide(request.value("sha256","")):L"";
+    if(mode=="custom"&&(path.empty()||family.empty()||hash.size()!=64)){ok=false;result["message"]="Font file identity is incomplete; current font remains unchanged.";return result;}
+    if(!glyphRenderer.ReplaceAfterCacheClear(path,family,hash,[]{return WolfFontCache::Clear();})){ok=false;result=FontState();result["accepted"]=false;result["message"]="Font or native cache validation failed; current font remains unchanged.";return result;}
+    ++fontRevision;++layoutRevision;result=FontState();result["accepted"]=true;result["mode"]=mode;return result;
+}
 static WolfData::Data gameData;
 struct DataJob {json request,result;bool ok=true,done=false,cancelled=false;ULONGLONG expires=0;};
 static std::mutex dataGate;static std::condition_variable dataChanged;static std::shared_ptr<DataJob> dataJob;
 static std::atomic<bool> dataStop{false};
 static void WakeDataThread();
-static void DataFrame(){
+static void DataFrame(bool fontSafePoint=false){
     // The renderer is called by the game's main thread. Variable vectors must
     // not be dereferenced by the IPC worker while the game can resize them.
     std::unique_lock<std::mutex> l(dataGate,std::try_to_lock);if(!l)return;
     if(dataStop.exchange(false)){gameData.Stop();if(dataJob)dataJob->cancelled=true;}
     if(dataJob&&!dataJob->done&&!dataJob->cancelled&&GetTickCount64()<dataJob->expires){
-        try{dataJob->result=gameData.Request(dataJob->request,dataJob->ok);}catch(...){dataJob->ok=false;dataJob->result={{"message",u8"读取游戏变量失败，未继续修改。"}};}
+        // The window message pump can belong to a separate engine thread.
+        // Font caches are only reset immediately before a native text layout.
+        if(dataJob->request.value("op","")=="fontPreferences"&&!fontSafePoint)return;
+        try{dataJob->result=dataJob->request.value("op","")=="fontPreferences"?FontRequest(dataJob->request,dataJob->ok):gameData.Request(dataJob->request,dataJob->ok);}catch(...){dataJob->ok=false;dataJob->result={{"message",u8"读取游戏变量失败，未继续修改。"}};}
         dataJob->done=true;dataChanged.notify_one();
     }
     static ULONGLONG next=0;if(GetTickCount64()>=next){next=GetTickCount64()+500;gameData.Tick();}
@@ -81,7 +101,7 @@ static std::string fixtureMatch,fixtureRaw;static uintptr_t fixtureObject=0;stat
 #endif
 static std::atomic<unsigned> completedLayouts{0};
 static std::atomic<unsigned> remeasuredLayouts{0};
-static std::atomic<unsigned long long> layoutRevision{0},refreshedPictureBounds{0};
+static std::atomic<unsigned long long> refreshedPictureBounds{0};
 // These counters last for this game process. They count calls/spans, while
 // seen/displayed remain unique source counts within the current prepare epoch.
 static std::atomic<unsigned long long> layoutEntries{0},layoutReturns{0},layoutDepthSkipped{0};
@@ -154,8 +174,11 @@ static void MeasureModern(void* object,const void* saved,double angle){
 }
 static bool MeasureDisplay(uintptr_t* frame,void* object,const std::string& current,const void* saved){
     if(!(frame[10]&0xff))return false;
+    static thread_local std::unordered_map<uintptr_t,unsigned long long> measuredFonts;
+    auto revision=fontRevision.load(std::memory_order_relaxed);auto key=(uintptr_t)object;
+    bool fontChanged=revision&&(!measuredFonts.count(key)||measuredFonts[key]!=revision);
     char prepared[24001];size_t n=0;
-    if(ReadRaw((char*)object+(legacy?28:24),prepared,&n)&&n==current.size()&&!memcmp(prepared,current.data(),n))return false;
+    if(!fontChanged&&ReadRaw((char*)object+(legacy?28:24),prepared,&n)&&n==current.size()&&!memcmp(prepared,current.data(),n))return false;
     double x,y,angle;
     if(legacy){memcpy(&x,frame+11,8);memcpy(&y,frame+13,8);memcpy(&angle,frame+15,8);}
     else{memcpy(&x,(const char*)saved+192,8);memcpy(&y,(const char*)saved+208,8);memcpy(&angle,frame+11,8);}
@@ -166,13 +189,14 @@ static bool MeasureDisplay(uintptr_t* frame,void* object,const std::string& curr
     using Measure=void(__thiscall*)(void*,bool,double,double,double);
     if(legacy)((Measure)layout)((char*)object-32,false,x,y,angle);
     else MeasureModern((char*)object-24,saved,angle);
+    if(revision){if(measuredFonts.size()>=4096&&!measuredFonts.count(key))measuredFonts.clear();measuredFonts[key]=revision;}
     remeasuredLayouts.fetch_add(1,std::memory_order_relaxed);return true;
 }
 
 static void __cdecl LayoutBefore(uintptr_t* frame,const void* saved) noexcept {
     layoutEntries.fetch_add(1,std::memory_order_relaxed);
     try {
-        if(depth==0){if(!WolfMainThread::thread.load())WolfMainThread::thread=GetCurrentThreadId();DataFrame();}
+        if(depth==0){WolfFontCache::RenderThread();if(!WolfMainThread::thread.load())WolfMainThread::thread=GetCurrentThreadId();DataFrame(true);}
         if(depth>=states.size()){layoutDepthSkipped.fetch_add(1,std::memory_order_relaxed);return;}
         auto& state=states[depth++];state.object=nullptr;state.returnAddress=frame[9];frame[9]=(uintptr_t)LayoutAfter;
 #ifdef FUSION_TEST_CAPTURE
@@ -384,7 +408,7 @@ static void InstallLegacyPictureBounds(void* layoutTarget){
     if(MH_CreateHook(draw,(void*)DrawPicture,&pictureDraw)!=MH_OK){pictureMeasure=nullptr;pictureDraw=nullptr;}
 }
 
-// Preserve original glyphs and match missing CJK glyphs to the actual em size.
+// Preserve original glyphs and match supported missing glyphs to the actual em size.
 static decltype(&GetGlyphOutlineW) originalGlyph;
 static DWORD WINAPI Glyph(HDC dc,UINT ch,UINT format,LPGLYPHMETRICS metrics,DWORD count,LPVOID buffer,const MAT2* matrix) {
     return glyphRenderer.Draw(originalGlyph,depth!=0&&states[depth-1].object,dc,ch,format,metrics,count,buffer,matrix);
@@ -417,6 +441,9 @@ static json State(bool poll) {
     json result={{"epoch",epoch},{"enabled",enabled.load()},{"entries",cache.Size()},{"rawCaptureCount",seen.size()},
         {"rawCaptureCountSemantics","unique-source"},{"nativePreprocessorHits",displayed.size()},
         {"completedLayoutCalls",completedLayouts.load()},{"glyphFallbacks",glyphRenderer.Count()},
+        {"customFontActive",glyphRenderer.CustomActive()},{"customFontFailed",glyphRenderer.CustomFailed()},
+        {"customFontGlyphCalls",glyphRenderer.CustomCount()},{"customFontGlyphFallbacks",glyphRenderer.CustomFailures()},
+        {"fontChangesRequireRestart",!WolfFontCache::Available()},{"fontCache",WolfFontCache::State()},
         {"completedLayoutCallsSemantics","translated-layout-calls-completed"},
         {"layoutHookCalls",layoutEntries.load()},{"layoutHookReturns",layoutReturns.load()},
         {"layoutDepthSkipped",layoutDepthSkipped.load()},
@@ -448,6 +475,8 @@ static json Request(const json& q,bool& ok) {
     // dataDisable, but must not keep a previously authorized speed writable.
     if(op=="dataDisable")WolfSpeed::Revoke();
     if(op.rfind("data",0)==0)return DataRequest(q,ok);
+    if(op=="fontState")return FontState();
+    if(op=="fontPreferences")return DataRequest(q,ok);
     std::lock_guard<std::mutex> lock(gate);
     if(op=="translationPrepare"){
         ++epoch;seen.clear();pending.clear();if(!q.value("preserveStartup",false)){enabled=false;cache.Clear();layoutRevision++;}return {{"epoch",epoch}};
@@ -506,11 +535,17 @@ extern "C" DWORD WINAPI FusionWolfStart(void*) {
         if(Env(L"FUSION_WOLF_COLLECT")==L"1")return WolfCollect::Start()?1:0;
         auto target=FindPattern(101);void* convertTarget=nullptr;
         if(!target)target=FindPattern(104);
+        if(!target)target=FindPattern(105);
+        if(!target)target=FindPattern(106);
+        if(!target)target=FindPattern(107);
         if(!target){target=FindPattern(102);convertTarget=FindPattern(103);if(!target||!convertTarget)return 0;legacy=true;}
         gameData.Initialize(legacy);
         wchar_t path[32768];DWORD n=GetModuleFileNameW(module,path,32768);if(n==0||n>=32768)return 0;
         fontPath=(fs::path(path).parent_path()/L"bridge-font.otf").wstring();
         if(!AddFontResourceExW(fontPath.c_str(),FR_PRIVATE,nullptr))return 0;
+        // A rejected custom face never prevents translation/game startup.
+        // Install before enabling hooks and before the launcher resumes play.
+        try{glyphRenderer.Configure(Env(L"FUSION_GAME_FONT_PATH"),Env(L"FUSION_GAME_FONT_FAMILY"),Env(L"FUSION_WOLF_FONT_HASH"),Env(L"FUSION_WOLF_FONT_FAILED")==L"1");}catch(...){ }
         auto initial=Read(L"startup.json",32*1024*1024);
         if(initial.is_object()&&initial.value("secret","")==secret&&initial.contains("entries")&&initial["entries"].is_object())
             for(auto i=initial["entries"].begin();i!=initial["entries"].end()&&cache.Size()<100000;++i)
@@ -519,6 +554,7 @@ extern "C" DWORD WINAPI FusionWolfStart(void*) {
         enabled=Env(L"FUSION_WOLF_TRANSLATION")==L"1";
         if(MH_Initialize()!=MH_OK||MH_CreateHook(target,(void*)LayoutBeforeThunk,&layout)!=MH_OK||
             MH_CreateHook((void*)GetGlyphOutlineW,(void*)Glyph,(void**)&originalGlyph)!=MH_OK)return 0;
+        WolfFontCache::Install(); // Optional exact native contract; unknown builds retain startup-only behavior.
         if(legacy&&MH_CreateHook(convertTarget,(void*)LegacyConvert,(void**)&originalConvert)!=MH_OK)return 0;
         if(legacy)InstallLegacyPictureBounds(target);
         if(!WolfMainThread::Install())return 0;

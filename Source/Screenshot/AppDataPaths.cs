@@ -29,6 +29,7 @@ internal static class AppDataPaths
     internal static void Initialize(string[] args)
     {
         if (_initialized) throw new InvalidOperationException("Application data paths are already initialized.");
+        AiStoragePaths147.CaptureLaunchArguments(args);
         var roots = args.Where(x => x.StartsWith("--data-root=", StringComparison.OrdinalIgnoreCase)).ToArray();
         if (roots.Length > 1) throw new ArgumentException("Specify --data-root only once.");
         if (args.Any(x => x.Equals("--data-root", StringComparison.OrdinalIgnoreCase)))

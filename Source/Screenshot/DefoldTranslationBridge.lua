@@ -102,7 +102,7 @@ if not F then
    F.layoutApi=api
    local full=r.full and F.cache[r.full];local body=full or s
    local function reveal(value) if not full then return value end;local c=chars(value);return table.concat(c,'',1,math.min(#c,math.floor(#c*#chars(r.source)/math.max(1,#chars(r.full))))) end
-   local stamp=body..'|'..tostring(font)..'|'..box.x..'|'..box.y..'|'..leading..'|'..tracking..'|'..api
+   local stamp=body..'|'..tostring(font)..'|'..box.x..'|'..box.y..'|'..leading..'|'..tracking..'|'..api..'|'..(F.fontRevision or 0)
    if r.layoutKey==stamp then return reveal(r.layout) end
    local out,line={},'';local count=0
    for _,ch in ipairs(chars(body)) do
@@ -133,6 +133,7 @@ if not F then
  end
  if get_text and set_text then
   gui.set_text=function(n,s)
+   if F.rolePainting or F.roleNative then return set_text(n,s) end
    if type(s)~='string' then return set_text(n,s) end
    local r=remember(n,s);local t=r and fit(n,display(r,false),r) or s;if r then r.last=t end;return set_text(n,t)
   end
@@ -144,8 +145,9 @@ if not F then
   if create then gui.new_text_node=function(p,s) local n=create(p,s);if type(s)=='string' then gui.set_text(n,s) end;return n end end
   local delete=gui.delete_node
   if delete then gui.delete_node=function(n) local o=owner();if o and o.nodes[n] then o.nodes[n]=nil;o.count=o.count-1 end;return delete(n) end end
-  local clone=gui.clone_node
-  if clone then gui.clone_node=function(n,...) local copy=clone(n,...);local o=owner();local r=o and o.nodes[n];if r then gui.set_text(copy,r.source) end;return copy end end
+  for _,name in ipairs({'clone_node','clone'}) do local clone=gui[name]
+   if clone then gui[name]=function(n,...) local copy=clone(n,...);if F.rolePainting then return copy end;local o=owner();local r=o and o.nodes[n];if r then gui.set_text(copy,r.source) end;return copy end end
+  end
   local tree=gui.clone_tree
   if tree then gui.clone_tree=function(n,...)
    local copies=tree(n,...);local o=owner();local source={}
@@ -175,6 +177,77 @@ if not F then
   local actual=label_get(url);local o=owner();local ok,resolved=pcall(msg.url,url);local r=o and ok and o.labels[url_key(resolved)]
   return r and actual==r.last and r.source or actual
  end end
+ -- Modern font maps are prepared in a session-owned archive before launch.
+ -- Defold 1.9.8 resource.set(fontc) supplies a null native filename and crashes.
+ -- Never mutate its shared glyph bank before rejecting an unsafe live request.
+ local function font_state()
+  local restart=os.getenv('FUSION_DEFOLD_FONT_RESTART')=='1'
+  local active=os.getenv('FUSION_DEFOLD_FONT_APPLIED')=='1'
+  return {independent=true,restartRequired=restart,customFontSupported=not restart,
+   startupFontSupported=true,startupFontApplied=active,customFontActive=active or F.fontFiles~=nil,
+   customFontFailed=os.getenv('FUSION_DEFOLD_FONT_FAILED')=='1',
+   fontHash=os.getenv('FUSION_DEFOLD_FONT_HASH') or '',mode=(active or F.fontFiles) and 'custom' or 'default'}
+ end
+ local function font_preferences(q)
+  local retained='The running engine could not load the selected font. The previous preference was retained.'
+  local function reject(reason) return {accepted=false,independent=true,fontError=reason or retained} end
+  if q.mode~='custom' and q.mode~='default' then return reject('Invalid font preference mode.') end
+  if type(q.expires)~='number' or os.time()>q.expires then return reject(retained) end
+  local modern=os.getenv('FUSION_DEFOLD_FONT_RESTART')=='1'
+  if type(q.entries)=='table' then for _,e in ipairs(q.entries) do if type(e)=='table' and (e.kind=='bank' or e.bank~=nil) then modern=true end end end
+  if modern then local state=font_state();state.accepted=false;state.restartRequired=true;state.customFontSupported=false;return state end
+  if q.mode=='default' and not F.fontFiles and not F.fontUncertain then return {accepted=true,independent=true,mode='default',updated=0} end
+  if q.mode=='custom' and F.fontUncertain then return reject('Game font restoration could not be confirmed. Normal translation remains available.') end
+  if type(q.entries)~='table' or #q.entries>32 then return reject(retained) end
+  if #q.entries==0 then
+   return reject(retained)
+  end
+  if not resource or not resource.set or not buffer or not buffer.create or not buffer.get_stream then
+   return reject('This engine font interface is unavailable. The previous font and translations were retained.')
+  end
+  local total=0;local prepared={};local paths={}
+  local function load(name)
+   if type(name)~='string' or #name~=75 or not name:match('^font%-%x+%.fontc$') then error('font path') end
+   local f=io.open(F.root..'/'..name,'rb');if not f then error('font missing') end
+   local bytes=f:read(33554433);f:close()
+   if not bytes or #bytes<1 then error('font empty') end
+   total=total+#bytes;if #bytes>33554432 or total>67108864 then error('font transfer limit') end
+   local data=buffer.create(#bytes,{{name=hash('data'),type=buffer.VALUE_TYPE_UINT8,count=1}})
+   local stream=buffer.get_stream(data,hash('data'));for i=1,#bytes do stream[i]=bytes:byte(i) end
+   return data,#bytes
+  end
+  local valid=pcall(function()
+   for _,e in ipairs(q.entries) do
+    local kind=e.kind or 'font'
+    if type(e)~='table' or kind~='font' or type(e.resource)~='string' or #e.resource>512 or not e.resource:match('^/.+%.fontc$') or e.resource:find('..',1,true) or e.resource:find('\\',1,true) or paths[e.resource] then error('font resource') end
+    paths[e.resource]=true
+    local previous=F.fontFiles and F.fontFiles[e.resource] or e.baseline
+    local old=load(previous);local next_data,size=load(e.file)
+    if size~=e.bytes then error('font size') end
+    prepared[#prepared+1]={path=e.resource,previous=old,next=next_data,file=e.file,kind=kind,bank=e.bank}
+   end
+  end)
+  if not valid or os.time()>q.expires then return reject(retained) end
+  local changed={}
+  for _,p in ipairs(prepared) do
+   local ok,reason=pcall(resource.set,p.path,p.next)
+   if not ok then
+    local absent=type(reason)=='string' and reason:find('The resource was not found (',1,true)
+    -- An unsuccessful recreation can still have touched its resource. Restore
+    -- that entry too, except when the engine proves it was never loaded.
+    if not absent then changed[#changed+1]=p end
+    local restored=true
+    for i=#changed,1,-1 do if not pcall(resource.set,changed[i].path,changed[i].previous) then restored=false end end
+    F.fontRevision=(F.fontRevision or 0)+1;F.revision=F.revision+1
+    if not restored then F.fontUncertain=true;return reject('Game font restoration could not be confirmed. Normal translation remains available.') end
+    return reject(absent and 'The current scene has not loaded every required font. The previous fonts were retained.' or retained)
+   end
+   changed[#changed+1]=p
+  end
+  local files={};for _,p in ipairs(prepared) do files[p.path]=p.file end;F.fontFiles=q.mode=='custom' and files or nil;F.fontUncertain=false
+  F.fontRevision=(F.fontRevision or 0)+1;F.revision=F.revision+1
+  return {accepted=true,independent=true,mode=q.mode,updated=#prepared,fontRevision=F.fontRevision}
+ end
  function F.poll()
   if not F.ready then return end;local now=socket.gettime();if now<F.nextPoll then return end;F.nextPoll=now+0.05
   local stopped=read('stop.json',1024);if stopped and stopped.secret==F.secret then F.enabled=false;F.ready=false;F.revision=F.revision+1;return end
@@ -182,16 +255,21 @@ if not F then
   if F.reply then if write('response-'..F.reply.id..'.json',F.reply) then F.lastId=F.reply.id;F.reply=nil end;return end
   local q=read('request.json',262144);if not q or q.secret~=F.secret or type(q.id)~='number' or q.id<=F.lastId then return end
   local result={epoch=F.epoch};local ok=true
-  if q.op=='translationPrepare' then
+  if q.op=='fontState' then result=font_state()
+  elseif q.op=='fontPreferences' then result=font_preferences(q)
+  elseif q.op=='translationPrepare' then
+   F.roleReset();F.characterRuntime=q.characterRuntimeContract=='fusion-character-runtime-1'
    F.epoch=F.epoch+1;if not q.preserveStartup then F.cache={};F.count=0;F.cacheBytes=0;F.enabled=false end;F.seen={};F.seenCount=0;F.seenBytes=0;F.pending={};F.revision=F.revision+1;result={epoch=F.epoch}
+   if F.characterRuntime then result.characterRuntimeContract='fusion-character-runtime-1' end
   elseif q.op=='translationEnable' then F.enabled=true;F.revision=F.revision+1
-  elseif q.op=='translationDisable' then F.enabled=false;F.epoch=F.epoch+1;F.revision=F.revision+1;result={epoch=F.epoch}
+  elseif q.op=='translationDisable' then F.roleReset();F.characterRuntime=false;F.enabled=false;F.epoch=F.epoch+1;F.revision=F.revision+1;result={epoch=F.epoch}
   elseif q.op=='translationApply' then
    local n=0;if q.epoch~=F.epoch then result={epoch=F.epoch,stale=true,stored=0}
    else if type(q.entries)=='table' then for i=1,math.min(128,#q.entries) do local e=q.entries[i];if type(e)=='table' and type(e.source)=='string' and type(e.text)=='string' and #e.source>0 and #e.source<=24000 and #e.text>0 and #e.text<=48000 and (F.cache[e.source] or F.count<100000) then local old=F.cache[e.source];local cost=#e.text+(old and -#old or #e.source);if F.cacheBytes+cost<=67108864 then if not old then F.count=F.count+1 end;F.cacheBytes=F.cacheBytes+cost;F.cache[e.source]=e.text;n=n+1 end end end end;F.revision=F.revision+1;result={epoch=F.epoch,stored=n} end
   elseif q.op=='translationPoll' then
    local texts={};for i=1,math.min(128,#F.pending) do texts[#texts+1]=table.remove(F.pending,1) end
    result={epoch=F.epoch,texts=array(texts),ahead=array({}),displaySources=F.displayCount,nativePreprocessorHits=F.displayCount}
+   result=F.rolePoll(q,result)
   elseif q.op=='translationState' then result={epoch=F.epoch,enabled=F.enabled,entries=F.count,displaySources=F.displayCount,ownerCount=F.ownerCount or 0,refreshError=F.refreshError,layoutApi=F.layoutApi,layoutFailures=F.layoutFailures or 0,layoutError=F.layoutError,revision=F.revision,pending=#F.pending}
   else ok=false end
   F.reply={id=q.id,secret=F.secret,ok=ok,result=result};if write('response-'..q.id..'.json',F.reply) then F.lastId=q.id;F.reply=nil end
@@ -213,11 +291,151 @@ if not F then
    else if actual~=r.last then observe(r,actual) end;local t=display(r,initial);if actual~=t then local set=pcall(label_set,r.url,t);if set then r.last=t end else r.last=t end;r.revision=F.revision end
   end end
  end
- function F.wrap(env,ids,isgui)
+-- MatchaNovel's say message carries the native speaker token. Its official
+ -- typewriter keeps full original text and owned GUI nodes in one current
+ -- record. Project only a completed native record; never change story state.
+ local role_contract='fusion-character-runtime-1'
+ local role_serial=0
+ local role_facts={}
+ local role_fact_count=0
+ local role_retired={}
+ local matcha
+ local function role_current()
+  if not matcha or not debug or type(debug.getupvalue)~='function' then return end
+  local ok,name,value=pcall(debug.getupvalue,matcha.module.get_state,1)
+  if not ok or type(value)~='table' or value.node==nil or value.parent==nil or type(value.letter_nodes)~='table' or type(value.scale)~='number' or type(value.state)~='string' then return end
+  return value
+ end
+ local function role_release(r)
+  r=r or F.matchaRole;if not r or not r.owned then return true end
+  local _,key=owner();if key~=r.owner then return false end
+  F.rolePainting=true
+  local ok=pcall(function()
+   if gui.get_alpha(r.parent)==0 then gui.set_alpha(r.parent,r.alpha) end
+   gui.delete_node(r.owned)
+  end)
+  F.rolePainting=false
+  if ok then r.owned=nil;r.shown=nil end
+  return ok
+ end
+ local function role_clear()
+  local r=F.matchaRole
+  if r and not role_release(r) then r.retired=true;role_retired[#role_retired+1]=r end
+  F.matchaRole=nil
+ end
+ local function role_hook()
+  if matcha then return true end
+  local tw=package.loaded['matchanovel.defold_gui.typewriter']
+  if type(tw)~='table' or not debug or not debug.getupvalue then return false end
+  for _,n in ipairs({'start','set_instant_text','hide_instant_text','get_state','clear','init','new','change_typewriter'}) do if type(tw[n])~='function' then return false end end
+  matcha={module=tw}
+  local start=tw.start
+  tw.start=function(text,...)
+   role_clear()
+   F.roleNative=F.characterRuntime and F.matchaPending~=nil
+   local ok,result=pcall(start,text,...)
+   F.roleNative=false
+   if not ok then error(result) end
+   local _,key=owner();local pending=F.matchaPending;local current=role_current()
+   if F.characterRuntime and #role_retired<32 and current and current.text==text and pending and pending.owner==key and pending.source==text then
+    local good,node=pcall(gui.get_node,'text')
+    if good and current.node==node then
+     role_serial=role_serial+1
+     F.matchaRole={owner=key,current=current,source=text,characterId=pending.characterId,displayName=pending.name,requestId='dm'..role_serial,
+      evidence=role_facts[pending.characterId] or {},deadline=now()+3}
+     if #text<=600 and (role_facts[pending.characterId] or role_fact_count<256) then
+      local facts={};for _,s in ipairs(F.matchaRole.evidence) do facts[#facts+1]=s end
+      if facts[#facts]~=text then facts[#facts+1]=text;if #facts>3 then table.remove(facts,1) end end
+      if not role_facts[pending.characterId] then role_fact_count=role_fact_count+1 end
+      role_facts[pending.characterId]=facts
+     end
+    end
+   end
+   return result
+  end
+  -- Native history/skip/clear operations take ownership immediately.
+  for _,n in ipairs({'set_instant_text','hide_instant_text','clear','init','new','change_typewriter'}) do local original=tw[n];tw[n]=function(...) role_clear();return original(...) end end
+  return true
+ end
+ local function role_valid(r)
+  return r and not r.retired and r.current.text==r.source and r.current.state=='waiting'
+ end
+ local function role_refresh()
+  for i=#role_retired,1,-1 do if role_release(role_retired[i]) then table.remove(role_retired,i) end end
+  local r=F.matchaRole;if not r then return end
+  local _,key=owner();if key~=r.owner then return end
+  if not role_valid(r) or not F.characterRuntime or not F.enabled then role_release(r);return end
+  local text=r.text or F.cache[r.source]
+  if not text and (r.fallback or now()>r.deadline) then F.capture(r.source) end
+  if not text or text==r.source then role_release(r);return end
+  F.rolePainting=true
+  local ok,reason=pcall(function()
+   local c=r.current
+   if not r.owned then
+    r.parent=c.parent;r.alpha=gui.get_alpha(c.parent)
+    local n=(gui.clone_node or gui.clone)(c.node);r.owned=n
+    gui.set_parent(n,c.node);gui.set_position(n,vmath.vector3(0,0,0))
+    gui.set_alpha(n,1);gui.set_line_break(n,true)
+   end
+   gui.set_scale(r.owned,vmath.vector3(c.scale,c.scale,1))
+   gui.set_size(r.owned,gui.get_size(c.node)/c.scale)
+   -- The typewriter may set color/font/spacing after a scene resize.
+   gui.set_font(r.owned,gui.get_font(c.node))
+   gui.set_color(r.owned,gui.get_color(c.node))
+   if gui.get_tracking and gui.set_tracking then gui.set_tracking(r.owned,gui.get_tracking(c.node)) end
+   if gui.get_leading and gui.set_leading then gui.set_leading(r.owned,gui.get_leading(c.node)) end
+   set_text(r.owned,text);r.shown=text
+   gui.set_alpha(r.parent,0)
+  end)
+  F.rolePainting=false
+  if not ok then role_release(r);r.fallback=true;F.roleError=tostring(reason):sub(1,240) end
+ end
+ local function role_poll(q,result)
+  if not F.characterRuntime then return result end
+  local r=F.matchaRole;local accepted={}
+  if role_valid(r) then
+   if q.characterRuntimeContract==role_contract and type(q.characterResults)=='table' then
+    for i=1,math.min(16,#q.characterResults) do local a=q.characterResults[i]
+     if type(a)=='table' and a.requestId==r.requestId and a.source==r.source and a.characterId==r.characterId then
+      local good=true
+      if a.pending==true then r.deadline=now()+3
+      elseif a.fallback==true then r.text=nil;r.fallback=true
+      elseif type(a.text)=='string' and #a.text>0 and #a.text<=48000 and not a.text:find('%z') then r.text=a.text;r.fallback=false
+      else good=false end
+      if good then accepted[#accepted+1]=r.requestId end
+     end
+    end
+   end
+   result.characterRequests=array({{requestId=r.requestId,source=r.source,characterId=r.characterId,displayName=r.displayName,evidence=array(r.evidence)}})
+  end
+  result.characterRuntimeContract=role_contract
+  result.characterRequests=result.characterRequests or array({})
+  result.characterAccepted=array(accepted)
+  return result
+ end
+ F.roleClear=role_clear
+ F.roleReset=function() role_clear();role_facts={};role_fact_count=0 end
+ F.rolePoll=role_poll
+
+
+ function F.wrap(env,ids,isgui,path)
   local init=env.init;env.init=function(self) if init then init(self) end;F.poll();F.refresh(isgui and ids or {},isgui) end
-  local update=env.update;env.update=function(self,dt) if update then update(self,dt) end;F.poll();F.refresh({},false) end
+  local update=env.update;env.update=function(self,dt) if update then update(self,dt) end;F.poll();F.refresh({},false);role_refresh() end
   local final=env.final;env.final=function(self) local ok,u=pcall(msg.url);if ok then local key=url_key(u);if F.owners[key] then F.owners[key]=nil;F.ownerCount=F.ownerCount-1 end end;if final then final(self) end end
-  local on_message=env.on_message;env.on_message=function(self,id,message,sender) if on_message then on_message(self,id,message,sender) end;if isgui and id==hash('layout_changed') then F.refresh(ids,true) end end
+  local ismatcha=isgui and (path=='/matchanovel/defold_gui/textbox.gui_scriptc' or path=='matchanovel/defold_gui/textbox.gui_scriptc')
+  if ismatcha then role_hook() end
+  local on_message=env.on_message;env.on_message=function(self,id,message,sender)
+   F.matchaPending=nil
+   if ismatcha and F.characterRuntime and id==hash('say') and type(message)=='table' and role_hook() then
+    local _,key=owner();local name=message.name;local source=message.text
+    if type(name)=='string' and #name>0 and #name<=64 and not name:find('[%z\1-\31]') and type(source)=='string' and #source>0 and #source<=6000 and not source:find('%z') then
+     F.matchaPending={owner=key,name=name,source=source,characterId='matcha:'..name:gsub('.',function(c)return string.format('%02x',string.byte(c))end)}
+    end
+   end
+   if on_message then on_message(self,id,message,sender) end
+   F.matchaPending=nil
+   if isgui and id==hash('layout_changed') then F.refresh(ids,true) end
+  end
  end
 end
 return F

@@ -76,9 +76,7 @@ internal static class WpfModificationLayout
     }
     internal static WC.WrapPanel Toolbar(params W.FrameworkElement[] children)
     {
-        var row = new WC.WrapPanel();
-        foreach (var child in children) { child.Margin = new(0, 3, 10, 3); row.Children.Add(child); }
-        return row;
+        return WpfActionLayout.Row(children);
     }
     internal static W.FrameworkElement Search(WC.TextBox input, string description)
     {

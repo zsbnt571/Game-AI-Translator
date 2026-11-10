@@ -7,6 +7,13 @@ internal static class GameFontRuntimeMessages
     // Only replies which explicitly guarantee that the previous live preference
     // survived may trigger the host's separate, acknowledged default fallback.
     internal static bool PreferenceWasRetained(string? message) => message is
+        "The current scene has not loaded every required font. The previous fonts were retained." or
+        "The running engine could not load the selected font. The previous preference was retained." or
+        "This engine font interface is unavailable. The previous font and translations were retained." or
+        "This engine requires a standalone TTF or OTF font. The previous preference was retained." or
+        "The font preview limit for this game session was reached. Restart the game to select more fonts." or
+        "GameMaker requires a standalone TTF or OTF font. The previous preference was retained." or
+        "The running GameMaker engine could not load the selected font. The previous preference was retained." or
         "This game's TextMesh Pro version cannot load a custom font. The previous font and translations were retained." or
         "A current text component cannot use the selected font. The previous font and translations were retained." or
         "The selected font cannot draw all current text. The previous font and translations were retained." or
@@ -17,6 +24,16 @@ internal static class GameFontRuntimeMessages
 
     internal static string? Canonical(string? message) => message switch
     {
+        "Unreal custom font request was not accepted; current fonts and translation remain unchanged." => "当前游戏无法加载所选字体，已保留之前的选择。",
+        "The current scene has not loaded every required font. The previous fonts were retained." => "当前场景尚未加载全部所需字库，已保留之前的字体；可在进入游戏场景后重试。",
+        "Game font restoration could not be confirmed. Normal translation remains available." => "尚未确认原有字体全部恢复；翻译仍可继续，请正常重启游戏后再试。",
+        "The running engine could not load the selected font. The previous preference was retained." => "当前游戏无法加载所选字体，已保留之前的选择。",
+        "This engine font interface is unavailable. The previous font and translations were retained." => "当前引擎版本不支持此字体接口，已保留原有字体和译文。",
+        "This engine requires a standalone TTF or OTF font. The previous preference was retained." => "此游戏需要独立的 TTF 或 OTF 字体文件，已保留之前的字体选择。",
+        "The font preview limit for this game session was reached. Restart the game to select more fonts." => "本次游戏中切换字体已达到上限，请重启游戏后继续选择。当前字体保持不变。",
+        "The previous font is still being restored. Try again after the game resumes." => "游戏仍在恢复原有字体，请等待游戏继续运行后重试。",
+        "GameMaker requires a standalone TTF or OTF font. The previous preference was retained." => "此游戏需要独立的 TTF 或 OTF 字体文件，已保留之前的字体选择。",
+        "The running GameMaker engine could not load the selected font. The previous preference was retained." => "当前游戏无法加载所选字体，已保留之前的选择。",
         "This game's TextMesh Pro version cannot load a custom font. The previous font and translations were retained." => "此游戏的文字组件版本不支持自定义字体，已保留原有字体和译文。",
         "A current text component cannot use the selected font. The previous font and translations were retained." => "当前部分文字无法使用所选字体，已保留原有字体和译文。",
         "The selected font cannot draw all current text. The previous font and translations were retained." => "所选字体无法显示当前全部文字，已保留原有字体和译文。",

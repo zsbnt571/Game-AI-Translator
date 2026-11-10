@@ -27,7 +27,7 @@ internal sealed partial class TranslationWorkspaceForm
         filter.Items.AddRange(["全部译文","手动更正","待处理问题","等待重译"]);filter.SelectedIndex=0;
         filter.DrawMode=DrawMode.OwnerDrawFixed;
         filter.DrawItem+=(_,e)=>{if(e.Index<0)return;var p=UiTheme.Current;bool selected=(e.State&DrawItemState.Selected)!=0;using var brush=new SolidBrush(selected?TranslationWorkspaceUi.SelectionColor:p.Secondary);e.Graphics.FillRectangle(brush,e.Bounds);TextRenderer.DrawText(e.Graphics,UiLanguage.Text(filter.GetItemText(filter.Items[e.Index])),filter.Font,Rectangle.Inflate(e.Bounds,-6,0),p.Text,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.NoPrefix);e.DrawFocusRectangle();};
-        var actions=TranslationWorkspaceUi.Bar(InlineLabel("搜索"),TranslationWorkspaceUi.Field(search,240,"search"),filter,Button("刷新",RefreshAsync,"refresh"),Button("导入",ImportAsync,"folder"),Button("导出",ExportAsync,"export"));content.Controls.Add(actions,0,0);
+        var actions=TranslationWorkspaceUi.Bar(InlineLabel("搜索"),TranslationWorkspaceUi.Field(search,240,"search"),filter,Button("刷新",RefreshAsync,"refresh"),Button("导入",ImportAsync,"folder"),Button("导出",ExportAsync,"export"),Button("角色与性别",()=>{using var dialog=new NativeCharacterWindow(game);dialog.ShowDialog(this);return Task.CompletedTask;}));content.Controls.Add(actions,0,0);
         grid.Columns.Add("source","原文");grid.Columns.Add("text","当前译文");grid.Columns.Add("state","状态");grid.Columns[0].FillWeight=43;grid.Columns[1].FillWeight=43;grid.Columns[2].FillWeight=14;
         grid.Columns[2].MinimumWidth=84;content.Controls.Add(grid,0,1);
         previous=Button("上一页",()=>{if(page>0&&DiscardEdit()){page--;RenderPage();}return Task.CompletedTask;},"back");

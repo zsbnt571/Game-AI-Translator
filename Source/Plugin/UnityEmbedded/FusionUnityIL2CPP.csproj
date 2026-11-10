@@ -6,7 +6,7 @@
     <LoaderDirectory Condition="'$(LoaderDirectory)' == ''">$(MSBuildThisFileDirectory)..\..\..\Tools\UnityEmbedded\BepInEx6-IL2CPP\BepInEx\core</LoaderDirectory>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="BridgeJson.cs;TextLookup.cs;UnityPipeStream.cs;UnityBridgeRuntime.cs;LegacyTextProjection.cs;BufferedTmpProjection.cs;CjkTextLayout.cs;LegacyTextRegion.cs;StaticTmpFonts.cs;FontGlyphs.cs;NativeTmpPreprocessor.cs;NativeLegacyFont.cs;IncrementalTextState.cs;DisplaySourceHooks.cs;Il2CppPlugin.cs" />
+    <Compile Include="BridgeJson.cs;TextLookup.cs;UnityPipeStream.cs;UnityBridgeRuntime.cs;UnityCharacterRuntime.cs;LegacyTextProjection.cs;BufferedTmpProjection.cs;CjkTextLayout.cs;LegacyTextRegion.cs;StaticTmpFonts.cs;FontGlyphs.cs;NativeTmpPreprocessor.cs;NativeLegacyFont.cs;IncrementalTextState.cs;DisplaySourceHooks.cs;Il2CppPlugin.cs" />
     <Reference Include="BepInEx.Core"><HintPath>$(LoaderDirectory)\BepInEx.Core.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="BepInEx.Unity.IL2CPP"><HintPath>$(LoaderDirectory)\BepInEx.Unity.IL2CPP.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="0Harmony"><HintPath>$(LoaderDirectory)\0Harmony.dll</HintPath><Private>false</Private></Reference>

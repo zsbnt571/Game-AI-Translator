@@ -139,6 +139,7 @@ public sealed partial class MainForm
             await EmbeddedLaunchWait.AcceptAsync(connection,process,_desktopLifetime.Token,progress=>
             {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}});
             AppLog.Write("rpg-session","game connection authenticated");
+            string fontWarning=await GameFontLive.ReconcileIndependentAsync(game,connection);
             if(action=="modify"){await connection.RequestAsync(new(){["op"]="enable"});data.Enabled=true;}
             if(translationSettings is not null)
             {
@@ -151,7 +152,7 @@ public sealed partial class MainForm
                 session.Feedback="";
             }
             data.Feedback=data.Enabled?"已连接。进入游戏或读取存档后，点击“刷新”读取数据。":"已连接 · 修改关闭";
-            session.Feedback="";
+            session.Feedback=fontWarning;
             if(data.Enabled&&SameGame(game.ExePath,_selectedGame?.ExePath))await RefreshGameDataAsync();
         }
         catch(Exception ex)

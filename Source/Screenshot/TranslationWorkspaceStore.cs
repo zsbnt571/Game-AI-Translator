@@ -22,7 +22,10 @@ internal sealed class TranslationWorkspaceStore
         public string TextHash {get;init;}="";
         public string TermStamp {get;init;}="";
     }
-    internal sealed record IssueRevalidation(DateTime AtUtc,string Action,long WorkspaceRevision,string ProductVersion,Issue PreviousIssue);
+    internal sealed record IssueRevalidation(DateTime AtUtc,string Action,long WorkspaceRevision,string ProductVersion,Issue PreviousIssue)
+    {
+        public Issue? ReplacementIssue {get;init;}
+    }
     internal sealed record Document
     {
         public int Version {get;init;}=1;
@@ -197,6 +200,7 @@ internal sealed class TranslationWorkspaceStore
     }
     internal static (ApiSettings Single,ApiSettings Batch) WithTerms(Document doc,string[] sources,ApiSettings single,ApiSettings batch)
     {
+        doc=TranslationLibrary.WithPacks(doc,single);
         TranslationGlossary.Register(doc.Terms,doc.TermRules);
         // Keep each source's applicable mappings even in a mixed batch. A
         // global 60-entry cutoff could silently omit the last label's names.
@@ -290,27 +294,33 @@ internal sealed class TranslationWorkspaceStore
             // Preserve the exact previous failure before retiring its active
             // row; an unavailable audit location must leave that row intact.
             var resolved=sameRevision?inspected.Where(i=>current.GetValueOrDefault(i.Source)==i&&ArchiveRevalidation(i,expectedRevision)).Select(i=>i.Source).ToArray():[];
-            RecordIssues(additions,resolved);
+            RecordIssuesCore(additions,resolved,archiveResolved:false);
         }
     }
     private bool ArchiveRevalidation(Issue previous,long revision)
+        =>ArchiveIssue(previous,revision,"cached-result-revalidated-no-provider-request");
+    private bool ArchiveIssue(Issue previous,long revision,string action,Issue? replacement=null)
     {
-        const string action="cached-result-revalidated-no-provider-request";
         try
         {
             // The identity is stable across a retried active-list write. A
             // receipt is never replaced, truncated or aged out with that list.
-            string id=Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new{action,revision,previous}))).ToLowerInvariant();
+            // Keep the established revalidation receipt identity. A changed
+            // failure also records the replacement, so repeated writes are
+            // idempotent without merging distinct provider outcomes.
+            byte[] identity=replacement is null?JsonSerializer.SerializeToUtf8Bytes(new{action,revision,previous})
+                :JsonSerializer.SerializeToUtf8Bytes(new{action,revision,previous,replacement});
+            string id=Convert.ToHexString(SHA256.HashData(identity)).ToLowerInvariant();
             string file=Path.Combine(path+".issue-history",id+".json");
             if(File.Exists(file))
             {
                 if(new FileInfo(file).Length>256*1024)return false;
                 var saved=JsonSerializer.Deserialize<IssueRevalidation>(File.ReadAllText(file));
-                return saved is not null&&saved.Action==action&&saved.WorkspaceRevision==revision&&saved.PreviousIssue==previous;
+                return saved is not null&&saved.Action==action&&saved.WorkspaceRevision==revision&&saved.PreviousIssue==previous&&saved.ReplacementIssue==replacement;
             }
             Directory.CreateDirectory(Path.GetDirectoryName(file)!);
             string version=typeof(TranslationWorkspaceStore).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion??"";
-            var receipt=new IssueRevalidation(DateTime.UtcNow,action,revision,version,previous);
+            var receipt=new IssueRevalidation(DateTime.UtcNow,action,revision,version,previous){ReplacementIssue=replacement};
             // CreateNew prevents a simultaneous session from overwriting the
             // original evidence. Flush the receipt before removing the row.
             using var stream=new FileStream(file,FileMode.CreateNew,FileAccess.Write,FileShare.Read);
@@ -321,19 +331,31 @@ internal sealed class TranslationWorkspaceStore
         {AppLog.Write("translation-workspace",UiLanguage.Text("问题记录复核暂未完成；原有问题记录保留"),ex);return false;}
     }
     internal void RecordIssues(IEnumerable<Issue> additions,IEnumerable<string>? resolved=null)
+        =>RecordIssuesCore(additions,resolved,archiveResolved:true);
+    private void RecordIssuesCore(IEnumerable<Issue> additions,IEnumerable<string>? resolved,bool archiveResolved)
     {
         lock(gate)
         {
             try{var items=Issues().GroupBy(i=>i.Source,StringComparer.Ordinal).ToDictionary(g=>g.Key,g=>g.Last(),StringComparer.Ordinal);
-                if(resolved is not null)foreach(var source in resolved)items.Remove(source);
-                foreach(var item in additions)items[item.Source]=item with {
-                    Reply=SafeDiagnosticOutput.Summary(item.Reply,2048),Detail=SafeDiagnosticOutput.Summary(item.Detail,1200),
-                    Reason=SafeDiagnosticOutput.Summary(item.Reason,800)};
-                var ordered=items.Values.OrderByDescending(i=>i.At).Take(2000).ToList();
+                long revision=Snapshot().Revision;
+                if(resolved is not null)foreach(var source in resolved)
+                    if(items.TryGetValue(source,out var previous)&&(!archiveResolved||ArchiveIssue(previous,revision,"active-issue-resolved")))items.Remove(source);
+                foreach(var item in additions)
+                {
+                    var next=item with {Reply=SafeDiagnosticOutput.Summary(item.Reply,2048),Detail=SafeDiagnosticOutput.Summary(item.Detail,1200),Reason=SafeDiagnosticOutput.Summary(item.Reason,800)};
+                    if(items.TryGetValue(item.Source,out var previous)&&previous!=next&&!ArchiveIssue(previous,revision,"failure-replaced",next))continue;
+                    items[item.Source]=next;
+                }
+                var ordered=items.Values.OrderByDescending(i=>i.At).ToList();
                 // This local evidence contains only game text and sanitized
                 // result excerpts, never provider settings, headers or keys.
-                while(ordered.Count>1&&JsonSerializer.SerializeToUtf8Bytes(ordered).Length>8*1024*1024)
-                    ordered.RemoveRange(Math.Max(1,ordered.Count/2),ordered.Count-Math.Max(1,ordered.Count/2));
+                // The visible list is bounded, but its capacity must never
+                // silently erase unresolved failures. Archive each exact row
+                // before pruning; if storage is unavailable keep the old file.
+                int keep=Math.Min(ordered.Count,2000);
+                while(keep>1&&JsonSerializer.SerializeToUtf8Bytes(ordered.Take(keep)).Length>8*1024*1024)keep=Math.Max(1,keep/2);
+                foreach(var previous in ordered.Skip(keep))if(!ArchiveIssue(previous,revision,"active-list-capacity"))return;
+                if(keep<ordered.Count)ordered.RemoveRange(keep,ordered.Count-keep);
                 TranslationStorage.WriteJson(path+".issues.json",ordered);}
             catch(Exception ex)when(ex is IOException or UnauthorizedAccessException or System.Security.SecurityException){AppLog.Write("translation-workspace","问题记录未能保存；翻译继续",ex);}
         }

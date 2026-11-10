@@ -13,7 +13,7 @@ using HarmonyLib;
 
 namespace Fusion.UnityEmbedded
 {
-    public sealed class UnityBridgeRuntime : IDisposable
+    public sealed partial class UnityBridgeRuntime : IDisposable
     {
         // Only authenticated explicit speed actions may inspect or change Time.
         sealed class EngineClock
@@ -144,7 +144,7 @@ namespace Fusion.UnityEmbedded
             internal int Id; internal long EvidenceScope;internal object Target; internal PropertyInfo Text; internal string Source,Applied;
             internal object OriginalFont,OwnedFont; internal PropertyInfo Font;
             internal object OriginalMaterial,OwnedMaterial; internal PropertyInfo Material;
-            internal bool LastActive,FontBlocked,Revealing;internal long LastObserved,FontRetryAt;
+            internal bool LastActive,FontBlocked,Revealing,FontOnly;internal long LastObserved,FontRetryAt;
             internal string ConfirmedSource,ConfirmedText,RestoreSource,DisplaySuffix;
             internal string ProvenLiteralSource;
             internal NativeTmpPreprocessor Processor;
@@ -331,7 +331,7 @@ namespace Fusion.UnityEmbedded
             // Speed authorization is independent of translation. Keep it alive
             // on the game thread even when translation is switched off.
             engineClock.Tick();
-            if(!enabled){PumpRestoreSlice();return;}
+            if(!enabled){PumpRestoreSlice();if(restoreQueue.Count==0)PumpIndependentFonts();return;}
             if(timer.ElapsedMilliseconds>=scanAt)
             {
                 scanAt=timer.ElapsedMilliseconds+(il2Cpp?200:400);InstallHooks();long scanStarted=timer.ElapsedTicks;Discover();discoverySnapshots++;maxDiscoveryMilliseconds=Math.Max(maxDiscoveryMilliseconds,(timer.ElapsedTicks-scanStarted)*1000.0/Stopwatch.Frequency);
@@ -391,7 +391,7 @@ namespace Fusion.UnityEmbedded
         {
             foreach(var binding in bindings.Values.Where(b=>changed==null||b.Source!=null&&changed.Contains(b.Source)).OrderByDescending(b=>b.LastActive).ThenByDescending(b=>b.LastObserved))
             {
-                string cached;if(TryTranslation(binding.Source??"",out cached))CacheReady(binding);
+                string cached;if(TryBindingTranslation(binding,binding.Source??"",out cached))CacheReady(binding);
                 if(refreshQueued.Count<12000&&refreshQueued.Add(binding))pendingRefresh.Enqueue(binding);
             }
         }
@@ -514,11 +514,13 @@ namespace Fusion.UnityEmbedded
         static void EnablePrefix(object __instance)
         {
             var runtime=current;if(runtime==null||runtime.stopped||runtime.writing||__instance==null)return;
+            if(!runtime.enabled){runtime.ApplyIndependentFont(__instance);return;}
             try{var property=__instance.GetType().GetProperty("text");if(property==null)return;if(runtime.CaptureExisting(__instance,property))runtime.enableCacheHits++;}catch{}
         }
         static void RenderPrefix(object __instance)
         {
             var runtime=current;if(runtime==null||runtime.stopped||runtime.writing||__instance==null)return;
+            if(!runtime.enabled){runtime.ApplyIndependentFont(__instance);return;}
             try{var property=__instance.GetType().GetProperty("text");if(property==null)return;if(runtime.CaptureExisting(__instance,property))runtime.renderCacheHits++;}catch{}
         }
         string Capture(object target,string source)
@@ -566,7 +568,7 @@ namespace Fusion.UnityEmbedded
                     // Cache revisions and a newly enabled profile must resolve from
                     // the owned original, not repeatedly echo the old displayed value.
                     string revised;
-                    if(TryTranslation(binding.Source??"",out revised)&&PrepareFont(binding,target,revised))
+                    if(TryBindingTranslation(binding,binding.Source??"",out revised)&&PrepareFont(binding,target,revised))
                     {revised+=binding.DisplaySuffix??"";binding.Applied=revised;return revised;}
                 }
                 RestoreFont(binding,target);binding.Applied=null;
@@ -592,6 +594,13 @@ namespace Fusion.UnityEmbedded
             binding.Source=source;binding.Applied=null;binding.DisplaySuffix=null;
             binding.KnownCompleteBuffer=binding.Revealing&&CanReplacePlainTmpReveal(target,source,source,null);
             bool settled=ObserveSource(binding,source);
+            if(enabled&&independentFont&&CustomFontSelected)
+            {
+                // A cache miss still displays original text with the user's
+                // font, without giving that text translation/layout ownership.
+                binding.FontOnly=true;
+                try{PrepareFontCoreMode(binding,target,rawSource,true);}finally{binding.FontOnly=false;}
+            }
             if(!Eligible(source))return rawSource;
             if(enabled)
             {
@@ -599,7 +608,7 @@ namespace Fusion.UnityEmbedded
                 if(!settled&&!provedLiteral&&!CanReuseObservedSource(binding,source))return rawSource;
                 if(!binding.LastActive){QueueText(target,source,provedLiteral);return rawSource;}
                 
-                string translated;if(TryTranslation(source,out translated))
+                string translated;if(TryBindingTranslation(binding,source,out translated))
                 {
                     // Equal plain-text shape can retain the game's reveal counters.
                     // Unknown/different-length writers keep the conservative wait.
@@ -612,7 +621,7 @@ namespace Fusion.UnityEmbedded
                     }
                     return rawSource;
                 }
-                RestoreFont(binding,target);QueueText(target,source,provedLiteral);
+                if(!independentFont||!CustomFontSelected)RestoreFont(binding,target);QueueText(target,source,provedLiteral);
             }
             return rawSource;
         }
@@ -635,7 +644,7 @@ namespace Fusion.UnityEmbedded
             if(insideTextSetter)binding.BufferedSetText=!insideTextPropertySetter;
             string old=binding.PreparedDisplay,prior=binding.Source;
             ObserveNativeInput(binding,source);bool settled=ObserveSource(binding,source);
-            string text=null;if(enabled&&Eligible(source)){TryTranslation(source,out text);}
+            string text=null;if(enabled&&Eligible(source)){TryBindingTranslation(binding,source,out text);}
             if(text!=null&&!PrepareFont(binding,binding.Target,text))text=null;
             if(text==null)RestoreFont(binding,binding.Target);binding.PreparedDisplay=text;
             if(old!=text||prior!=source)DirtyNativeDisplay(binding);
@@ -697,7 +706,7 @@ namespace Fusion.UnityEmbedded
             if(reveal&&oldSource!=source)completeRevealCaptures++;
             bool settled=ObserveSource(binding,source);
             string text=null;
-            if(enabled&&Eligible(source)){TryTranslation(source,out text);}
+            if(enabled&&Eligible(source)){TryBindingTranslation(binding,source,out text);}
             if(text!=null&&!PrepareFont(binding,binding.Target,text))text=null;
             if(text==null)RestoreFont(binding,binding.Target);
             else if(!binding.OriginalDisplay)text=PrepareIndent(binding,binding.Target,binding.Layout.DisplayText??text);
@@ -801,7 +810,7 @@ namespace Fusion.UnityEmbedded
             ObserveNativeInput(binding,source);
             bool settled=ObserveSource(binding,source);
             string text=null;
-            if(enabled&&Eligible(source)&&(!il2Cpp||!NativeRevealing(binding,source))){TryTranslation(source,out text);}
+            if(enabled&&Eligible(source)&&(!il2Cpp||!NativeRevealing(binding,source))){TryBindingTranslation(binding,source,out text);}
             if(text!=null&&!PrepareFont(binding,binding.Target,text))text=null;
             if(text==null)RestoreFont(binding,binding.Target);
             if(text!=binding.PreparedDisplay){binding.PreparedDisplay=text;DirtyNativeDisplay(binding);}
@@ -817,7 +826,7 @@ namespace Fusion.UnityEmbedded
             if(stopped||!Alive(binding.Target))return source;
             ObserveNativeInput(binding,source);
             string text;
-            if(!enabled||!Eligible(source)||(il2Cpp&&NativeRevealing(binding,source))||!TryTranslation(source,out text)||!PrepareFont(binding,binding.Target,text))
+            if(!enabled||!Eligible(source)||(il2Cpp&&NativeRevealing(binding,source))||!TryBindingTranslation(binding,source,out text)||!PrepareFont(binding,binding.Target,text))
             {RestoreFont(binding,binding.Target);binding.RenderedSource=null;binding.RenderedText=null;binding.PreparedDisplay=null;return source;}
             if(binding.RenderedSource!=source||binding.RenderedText!=text)nativeProcessorHits++;
             binding.RenderedSource=source;binding.RenderedText=text;binding.PreparedDisplay=text;ReadbackReady(binding);
@@ -1313,6 +1322,7 @@ namespace Fusion.UnityEmbedded
         void QueueText(object target,string source,bool provedLiteral)
         {
             Binding binding;if(bindings.TryGetValue(Id(target),out binding)&&!ObserveSource(binding,source)&&!provedLiteral)return;
+            if(CharacterWaiting(binding,source))return;
             // Font/reveal readiness is separate from translation availability.
             // A cached template may already resolve this rendered player name;
             // keep retrying the binding without creating duplicate API work.
@@ -1342,10 +1352,10 @@ namespace Fusion.UnityEmbedded
                 case "speedDisable":return engineClock.Disable();
                 case "gameSpeed":return engineClock.Apply(request);
                 case "fontPreferences":return ApplyFontPreferences(request);
-                case "translationPrepare": object preserve;bool keepStartup=request.TryGetValue("preserveStartup",out preserve)&&preserve is bool&&(bool)preserve;if(!keepStartup){startupTranslations.Clear();startupLookup.Clear();}epoch++;preparing=true;staged.Clear();stagedLookup.Clear();visible.Clear();queued.Clear();ahead.Clear();aheadQueued.Clear();return Map("epoch",epoch);
-                case "translationEnable":if(preparing){var oldCache=translations;translations=staged;staged=oldCache;staged.Clear();var oldIndex=lookup;lookup=stagedLookup;stagedLookup=oldIndex;stagedLookup.Clear();preparing=false;}enabled=true;restoreSession=false;restoreQueue.Clear();ScheduleRefresh(null);scanAt=0;return Map("epoch",epoch,"enabled",true,"writebackPending",pendingRefresh.Count);
+                case "translationPrepare": object preserve;bool keepStartup=request.TryGetValue("preserveStartup",out preserve)&&preserve is bool&&(bool)preserve;if(!keepStartup){startupTranslations.Clear();startupLookup.Clear();}epoch++;preparing=true;staged.Clear();stagedLookup.Clear();visible.Clear();queued.Clear();ahead.Clear();aheadQueued.Clear();return PrepareCharacters(request);
+                case "translationEnable":RestoreIndependentFonts();if(independentFonts.Values.Any(HasFontOwnership))throw new InvalidOperationException("The previous font is still being restored. Try again after the game resumes.");if(preparing){var oldCache=translations;translations=staged;staged=oldCache;staged.Clear();var oldIndex=lookup;lookup=stagedLookup;stagedLookup=oldIndex;stagedLookup.Clear();preparing=false;}enabled=true;restoreSession=false;restoreQueue.Clear();ScheduleRefresh(null);scanAt=0;return Map("epoch",epoch,"enabled",true,"writebackPending",pendingRefresh.Count);
                 case "translationDisable":Disable();int restorePending=restoreQueue.Count;return Map("epoch",epoch,"enabled",false,"restorePending",restorePending,"restored",restorePending==0);
-                case "translationPoll":var result=new List<string>();while(visible.Count>0&&result.Count<128){string value=visible.Dequeue();queued.Remove(value);result.Add(value);}var later=new List<string>();while(ahead.Count>0&&later.Count<128){string value=ahead.Dequeue();aheadQueued.Remove(value);if(!result.Contains(value)&&!queued.Contains(value))later.Add(value);}var poll=Map("epoch",epoch,"texts",result,"ahead",later);AddProgress(poll);return poll;
+                case "translationPoll":var result=new List<string>();while(visible.Count>0&&result.Count<128){string value=visible.Dequeue();queued.Remove(value);result.Add(value);}var later=new List<string>();while(ahead.Count>0&&later.Count<128){string value=ahead.Dequeue();aheadQueued.Remove(value);if(!result.Contains(value)&&!queued.Contains(value))later.Add(value);}var poll=Map("epoch",epoch,"texts",result,"ahead",later);PollCharacters(request,poll);AddProgress(poll);return poll;
                 case "translationCatalog":return Map("total",0,"next",0,"skipped",0,"texts",new string[0]);
                 case "translationApply":
                         if(Number(request,"epoch",-1)!=epoch)throw new InvalidOperationException("Translation session changed; stale result rejected.");
@@ -1401,7 +1411,7 @@ namespace Fusion.UnityEmbedded
                 if(enabled&&Alive(binding.Target)&&Active(binding.Target)&&Eligible(binding.Source))
                 {
                     if((binding.RenderedSource==binding.Source&&binding.RenderedText!=null)||(binding.Applied!=null&&binding.ConfirmedSource==binding.Source&&binding.ConfirmedText==binding.Applied))activeRendered++;
-                    else {string known;if(TryTranslation(binding.Source,out known))activeWaiting++;}
+                    else {string known;if(TryBindingTranslation(binding,binding.Source,out known))activeWaiting++;}
                 }
                 if(binding.OwnedFont!=null)fonts++;if(binding.FontBlocked)blocked++;if(binding.Revealing)revealing++;
                 if(binding.Applied!=null&&binding.ConfirmedSource==binding.Source&&binding.ConfirmedText==binding.Applied)verified++;
@@ -1506,7 +1516,7 @@ namespace Fusion.UnityEmbedded
         {
             if(!restoreSession||enabled||preparing)
             {
-                enabled=false;restoreSession=true;ClearAheadDiscovery();aheadDiscovered.Clear();epoch++;preparing=false;
+                enabled=false;ResetCharacters(false);restoreSession=true;ClearAheadDiscovery();aheadDiscovered.Clear();epoch++;preparing=false;
                 staged.Clear();stagedLookup.Clear();startupTranslations.Clear();startupLookup.Clear();visible.Clear();queued.Clear();ahead.Clear();aheadQueued.Clear();
                 pendingRefresh.Clear();refreshQueued.Clear();restoreQueue.Clear();
                 // Snapshot references only, with no Unity getter/setter calls.
@@ -1714,7 +1724,7 @@ namespace Fusion.UnityEmbedded
                 if(!PrepareLegacyAtlas(binding,target,replacement,text)){FontFailure(binding,"glyph-atlas-capacity-or-unavailable");return false;}
                 if(SameUnityObject(existing,replacement))return true;
                 if(!AssignFont(binding,target,fontProperty,existing,replacement,false)){FontFailure(binding,"font-writeback-unconfirmed");return false;}
-                if(!emptyHanPlaceholder)PrepareMeasuredSize(binding,target,existing,replacement);if(!PrepareLegacyAtlas(binding,target,replacement,text)){RestoreFont(binding,target);FontFailure(binding,"measured-size-atlas-unavailable");return false;}fontStatus="fallback assigned; glyphs and property readback confirmed";lastFontError=null;return true;
+                if(!emptyHanPlaceholder&&!binding.FontOnly)PrepareMeasuredSize(binding,target,existing,replacement);if(!PrepareLegacyAtlas(binding,target,replacement,text)){RestoreFont(binding,target);FontFailure(binding,"measured-size-atlas-unavailable");return false;}fontStatus="fallback assigned; glyphs and property readback confirmed";lastFontError=null;return true;
             }catch(Exception ex){FontFailure(binding,RootError(ex).GetType().Name);return false;}finally{writing=wasWriting;}
         }
 
@@ -2299,6 +2309,63 @@ namespace Fusion.UnityEmbedded
         }
         string CustomFontPath=Environment.GetEnvironmentVariable("FUSION_GAME_FONT_PATH")??"";
         string CustomFontFamily=Environment.GetEnvironmentVariable("FUSION_GAME_FONT_FAMILY")??"";
+        bool independentFont=Environment.GetEnvironmentVariable("FUSION_GAME_FONT_INDEPENDENT")=="1";
+        // These bindings own only fonts. They never join translation discovery,
+        // queues, source rewriting or layout fitting.
+        readonly Dictionary<int,Binding> independentFonts=new Dictionary<int,Binding>();
+        readonly Queue<object> independentFontDiscovery=new Queue<object>();
+        long independentFontScanAt;int independentFontScanCursor;
+        void RestoreIndependentFonts()
+        {
+            foreach(var pair in independentFonts.ToArray())
+            {
+                try{RestoreFont(pair.Value,pair.Value.Target);}catch{}
+                if(!Alive(pair.Value.Target)||!HasFontOwnership(pair.Value))independentFonts.Remove(pair.Key);
+            }
+            independentFontDiscovery.Clear();
+        }
+        void ApplyIndependentFont(object target)
+        {
+            if(enabled||!independentFont||!CustomFontSelected||disconnected||restoreQueue.Count>0||!Alive(target)||IsInput(target)||RebuildingGraphics())return;
+            try
+            {
+                var property=target.GetType().GetProperty("text");var fontProperty=target.GetType().GetProperty("font");
+                if(property==null||property.PropertyType!=typeof(string)||fontProperty==null||!fontProperty.CanRead||!fontProperty.CanWrite)return;
+                string text=ReadText(target,property);if(string.IsNullOrEmpty(text)||text.Length>24000)return;
+                int id=Id(target);if(id==0)return;Binding binding;
+                if(!independentFonts.TryGetValue(id,out binding))
+                {
+                    if(independentFonts.Count>=512)return;
+                    binding=new Binding{Id=id,Target=target,Text=property,Source=text,FontOnly=true};independentFonts[id]=binding;
+                }
+                else binding.Target=target;
+                bool revisionChanged=binding.FontPreferenceRevision!=fontPreferenceRevision;
+                if(revisionChanged){binding.FontRetryAt=0;binding.AtlasText=null;}
+                binding.Source=text;
+                // Leave any previously accepted face in place until its
+                // replacement passes glyph preparation and property readback.
+                if(PrepareFontCoreMode(binding,target,text,!revisionChanged))binding.FontPreferenceRevision=fontPreferenceRevision;
+            }
+            catch{ /* The component keeps its current font and original text. */ }
+        }
+        void PumpIndependentFonts()
+        {
+            if(enabled)return;
+            if(!independentFont||!CustomFontSelected||disconnected){RestoreIndependentFonts();return;}
+            foreach(var pair in independentFonts.ToArray())if(!Alive(pair.Value.Target))independentFonts.Remove(pair.Key);
+            if(timer.ElapsedMilliseconds>=independentFontScanAt&&independentFontDiscovery.Count==0)
+            {
+                independentFontScanAt=timer.ElapsedMilliseconds+400;InstallHooks();
+                if(textTypes.Count>0)
+                {
+                    var type=textTypes[independentFontScanCursor++%textTypes.Count];
+                    try{var items=FindSceneObjects(type);if(items!=null)foreach(var item in items){if(independentFontDiscovery.Count>=512)break;if(item!=null)independentFontDiscovery.Enqueue(item);}}catch{}
+                }
+                foreach(var binding in independentFonts.Values)if(independentFontDiscovery.Count<1024)independentFontDiscovery.Enqueue(binding.Target);
+            }
+            long until=timer.ElapsedTicks+Stopwatch.Frequency/500;
+            for(int count=0;count<48&&independentFontDiscovery.Count>0&&(count==0||timer.ElapsedTicks<until);count++)ApplyIndependentFont(independentFontDiscovery.Dequeue());
+        }
         bool CustomFontSelected{get{return CustomFontPath.Length>0||CustomFontFamily.Length>0;}}
         readonly HashSet<string> installedFontProofs=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         static void DestroyOwnedFont(object font)
@@ -2318,7 +2385,7 @@ namespace Fusion.UnityEmbedded
             if(customTmpSources.Any(pair=>Alive(pair.Key)&&SameUnityObject(pair.Value,font)))return true;
             if(uiFonts.Values.Concat(tmpFonts.Values).Concat(deferredUiFonts.Values).Concat(deferredTmpFonts.Values).Any(f=>SameUnityObject(f,font))||
                 legacyAutoFonts.Concat(deferredAutoFonts).Any(s=>SameUnityObject(s.Font,font))||SameUnityObject(dynamicFont,font)||SameUnityObject(deferredDynamicFont,font)||SameUnityObject(fontPreferenceProbe,font))return true;
-            foreach(var binding in bindings.Values)
+            foreach(var binding in bindings.Values.Concat(independentFonts.Values))
             {
                 if(!Alive(binding.Target))continue;
                 if(SameUnityObject(binding.OwnedFont,font)||SameUnityObject(binding.OriginalFont,font))return true;
@@ -2419,11 +2486,11 @@ namespace Fusion.UnityEmbedded
             {
                 CustomFontPath=path;CustomFontFamily=family;writing=true;
                 var fontType=FindType("UnityEngine.Font");
-                foreach(var binding in bindings.Values.ToArray())
+                foreach(var binding in bindings.Values.Concat(independentFonts.Values).ToArray())
                 {
                     if(!Alive(binding.Target))continue;
                     var property=binding.Target.GetType().GetProperty("font");if(property==null)continue;
-                    string text;if(!TryTranslation(binding.Source??"",out text))text=binding.Source??"";
+                    string text;if(binding.FontOnly||!TryBindingTranslation(binding,binding.Source??"",out text))text=binding.Source??"";
                     object font=loaded;
                     if(property.PropertyType.FullName=="TMPro.TMP_FontAsset")
                     {
@@ -2469,6 +2536,7 @@ namespace Fusion.UnityEmbedded
                         throw new InvalidOperationException("The selected font file is unavailable or exceeds 32 MiB.");
                 }
             }
+            object independentValue;bool nextIndependent=request.TryGetValue("independent",out independentValue)&&independentValue is bool&&(bool)independentValue;
             bool changed=path!=CustomFontPath||family!=CustomFontFamily;
             object loaded=null;
             try
@@ -2478,7 +2546,7 @@ namespace Fusion.UnityEmbedded
                 // Reject unsupported TMP versions before loading a candidate
                 // or touching the current display ownership.
                 var fontType=FindType("UnityEngine.Font");
-                if(bindings.Values.Any(b=>Alive(b.Target)&&b.Target.GetType().GetProperty("font")!=null&&b.Target.GetType().GetProperty("font").PropertyType.FullName=="TMPro.TMP_FontAsset"&&!HasTmpFactory(b.Target.GetType().GetProperty("font").PropertyType,fontType)))
+                if(bindings.Values.Concat(independentFonts.Values).Any(b=>Alive(b.Target)&&b.Target.GetType().GetProperty("font")!=null&&b.Target.GetType().GetProperty("font").PropertyType.FullName=="TMPro.TMP_FontAsset"&&!HasTmpFactory(b.Target.GetType().GetProperty("font").PropertyType,fontType)))
                     throw new InvalidOperationException("This game's TextMesh Pro version cannot load a custom font. The previous font and translations were retained.");
                 if(!changed&&Alive(fontPreferenceProbe))loaded=fontPreferenceProbe;
                 else
@@ -2511,12 +2579,14 @@ namespace Fusion.UnityEmbedded
                 if(enabled){ScheduleRefresh(null);scanAt=0;}
             }
             fontPreferenceProbe=loaded;
+            independentFont=nextIndependent;
+            if(!enabled){independentFontScanAt=0;PumpIndependentFonts();}
             ReleaseRetiredFonts();
-            return Map("accepted",true,"mode",CustomFontSelected?"custom":"default","enabled",enabled,
-                "writebackPending",enabled&&pendingRefresh.Count>0,
-                "restorePending",bindings.Values.Any(b=>b.FontPreferenceRevision!=fontPreferenceRevision&&HasFontOwnership(b)),
+            return Map("accepted",true,"mode",CustomFontSelected?"custom":"default","enabled",enabled,"independent",independentFont,
+                "writebackPending",enabled&&pendingRefresh.Count>0||independentFont&&CustomFontSelected&&independentFontDiscovery.Count>0,
+                "restorePending",bindings.Values.Any(b=>b.FontPreferenceRevision!=fontPreferenceRevision&&HasFontOwnership(b))||(!CustomFontSelected&&independentFonts.Values.Any(HasFontOwnership)),
                 "restartRequired",false,"fontLoaded",mode=="custom","revision",fontPreferenceRevision,
-                "deferredComponents",bindings.Values.Count(b=>b.DeferredCustomFontRevision==fontPreferenceRevision));
+                "deferredComponents",bindings.Values.Count(b=>b.DeferredCustomFontRevision==fontPreferenceRevision)+independentFonts.Values.Count(b=>b.FontPreferenceRevision!=fontPreferenceRevision||!HasFontOwnership(b)));
         }
         static bool ProbeFontLoaded(object font)
         {
@@ -2680,7 +2750,7 @@ namespace Fusion.UnityEmbedded
         // Quitting the process has no surviving controls to restore. Rebuilding
         // every translated mesh here delays exit and touches tearing-down scenes.
         public void Shutdown(){if(stopped)return;closeReason="application-quit";Dispose(true);}
-        void Dispose(bool applicationQuit){if(stopped)return;engineClock.Disable();enabled=false;if(!applicationQuit){if(!restoreSession||restoreQueue.Count>0)RefreshBindings();foreach(var binding in bindings.Values)ReleaseProcessor(binding);}stopped=true;if(il2Cpp)AppDomain.CurrentDomain.AssemblyLoad-=NativeAssemblyLoaded;LogMetrics(true);log("Unity bridge event=closed reason="+closeReason+" ticks="+Interlocked.CompareExchange(ref tickCount,0,0));if(current==this)current=null;if(displaySources!=null)displaySources.Dispose();if(legacyProjection!=null)legacyProjection.Dispose();if(bufferedProjection!=null)bufferedProjection.Dispose();try{if(canvasRemove!=null&&canvasCallback!=null)canvasRemove.Invoke(null,new[]{canvasCallback});}catch{}canvasRemove=null;canvasCallback=null;canvasManagedCallback=null;try{if(fontAtlasRemove!=null&&fontAtlasCallback!=null)fontAtlasRemove.Invoke(null,new[]{fontAtlasCallback});}catch{}fontAtlasRemove=null;fontAtlasCallback=null;fontAtlasManagedCallback=null;atlasRefresh.Clear();atlasQueued.Clear();if(!applicationQuit){RetireFontPools(true);uiFonts.Clear();tmpFonts.Clear();legacyAutoFonts.Clear();deferredUiFonts.Clear();deferredTmpFonts.Clear();deferredAutoFonts.Clear();dynamicFont=null;deferredDynamicFont=null;fontPreferenceProbe=null;ReleaseRetiredFonts();ReleaseRetiredFonts();if(!bindings.Values.Any(b=>Alive(b.Target)&&b.OwnedFont!=null))staticTmpFonts.Dispose();}uiFonts.Clear();try{if(pipe!=null)pipe.Dispose();}catch{}try{if(!applicationQuit&&!il2Cpp)harmony.UnpatchSelf();}catch{}bindings.Clear();discovered.Clear();ClearAheadDiscovery();aheadDiscovered.Clear();lateTargets.Clear();restoreQueue.Clear();pendingRefresh.Clear();refreshQueued.Clear();frameVisited.Clear();tmpFonts.Clear();nativeTypes.Clear();unsupportedNativeTypes.Clear();unsupportedNativeLogged.Clear();queryRetryAt.Clear();dynamicFont=null;startupTranslations.Clear();stableSources.Clear();lock(requests){while(requests.Count>0)requests.Dequeue().Done.Set();}}
+        void Dispose(bool applicationQuit){if(stopped)return;engineClock.Disable();enabled=false;if(!applicationQuit)RestoreIndependentFonts();if(!applicationQuit){if(!restoreSession||restoreQueue.Count>0)RefreshBindings();foreach(var binding in bindings.Values)ReleaseProcessor(binding);}stopped=true;if(il2Cpp)AppDomain.CurrentDomain.AssemblyLoad-=NativeAssemblyLoaded;LogMetrics(true);log("Unity bridge event=closed reason="+closeReason+" ticks="+Interlocked.CompareExchange(ref tickCount,0,0));if(current==this)current=null;if(displaySources!=null)displaySources.Dispose();if(legacyProjection!=null)legacyProjection.Dispose();if(bufferedProjection!=null)bufferedProjection.Dispose();try{if(canvasRemove!=null&&canvasCallback!=null)canvasRemove.Invoke(null,new[]{canvasCallback});}catch{}canvasRemove=null;canvasCallback=null;canvasManagedCallback=null;try{if(fontAtlasRemove!=null&&fontAtlasCallback!=null)fontAtlasRemove.Invoke(null,new[]{fontAtlasCallback});}catch{}fontAtlasRemove=null;fontAtlasCallback=null;fontAtlasManagedCallback=null;atlasRefresh.Clear();atlasQueued.Clear();if(!applicationQuit){RetireFontPools(true);uiFonts.Clear();tmpFonts.Clear();legacyAutoFonts.Clear();deferredUiFonts.Clear();deferredTmpFonts.Clear();deferredAutoFonts.Clear();dynamicFont=null;deferredDynamicFont=null;fontPreferenceProbe=null;ReleaseRetiredFonts();ReleaseRetiredFonts();if(!bindings.Values.Any(b=>Alive(b.Target)&&b.OwnedFont!=null))staticTmpFonts.Dispose();}uiFonts.Clear();try{if(pipe!=null)pipe.Dispose();}catch{}try{if(!applicationQuit&&!il2Cpp)harmony.UnpatchSelf();}catch{}bindings.Clear();discovered.Clear();ClearAheadDiscovery();aheadDiscovered.Clear();lateTargets.Clear();restoreQueue.Clear();pendingRefresh.Clear();refreshQueued.Clear();frameVisited.Clear();tmpFonts.Clear();nativeTypes.Clear();unsupportedNativeTypes.Clear();unsupportedNativeLogged.Clear();queryRetryAt.Clear();dynamicFont=null;startupTranslations.Clear();stableSources.Clear();lock(requests){while(requests.Count>0)requests.Dequeue().Done.Set();}}
         public void RestoreAndDispose(){if(stopped)return;closeReason="plugin-destroyed";Dispose();}
     }
 }

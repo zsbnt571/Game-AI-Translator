@@ -19,20 +19,27 @@ internal sealed class TranslationFlightPool
     private readonly object gate=new();private readonly Dictionary<Key,Flight> flights=new();
     internal async Task<string> Request(Func<string,ApiSettings,CancellationToken,Task<string>> provider,string prompt,ApiSettings settings,CancellationToken token)
     {
+        using var enhancementLifetime=CharacterGenderEnhancementPolicy.Link(settings,token);
+        token=enhancementLifetime.Token;
         token.ThrowIfCancellationRequested();
         var snapshot=ApiSettingsSnapshot.Copy(settings);
         // Include credentials and all request settings in a non-exported hash;
         // another account, glossary prompt or language never joins this request.
-        var key=new Key(provider,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(snapshot)+"\n"+snapshot.RequestKind+"\n"+prompt))));
+        var key=new Key(provider,Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(snapshot)+TranslationLibrary.RequestGuidance(snapshot,[prompt])+"\n"+snapshot.RequestKind+"\n"+prompt+(CharacterGenderEnhancementPolicy.Selected(snapshot)?"\nenhancement-epoch:"+snapshot.CharacterGenderEnhancementEpoch.Number:"")))));
         Flight? flight;bool start=false;
         lock(gate)
         {
             if(!flights.TryGetValue(key,out flight)&&flights.Count<64){flight=new();flights.Add(key,flight);start=true;}
             if(flight is not null)flight.Waiters++;
         }
-        if(flight is null)return await provider(prompt,snapshot,token).ConfigureAwait(false);
+        if(flight is null)
+        {
+            var answer=await provider(prompt,snapshot,token).WaitAsync(token).ConfigureAwait(false);
+            CharacterGenderEnhancementPolicy.ThrowIfRevoked(snapshot);
+            token.ThrowIfCancellationRequested();return answer;
+        }
         if(start)_=Run();
-        try{return await flight.Result.Task.WaitAsync(token).ConfigureAwait(false);}
+        try{var answer=await flight.Result.Task.WaitAsync(token).ConfigureAwait(false);CharacterGenderEnhancementPolicy.ThrowIfRevoked(snapshot);token.ThrowIfCancellationRequested();return answer;}
         finally
         {
             bool cancel=false;

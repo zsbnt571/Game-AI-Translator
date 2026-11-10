@@ -119,7 +119,8 @@ internal sealed partial class WpfSettingsFields : IDisposable
             case Label label: view = Label(label); break;
             case FlowLayoutPanel flow:
                 view = Children(flow, flow.FlowDirection is FlowDirection.TopDown or FlowDirection.BottomUp); break;
-            case WorkspaceAlignedRow or SettingsValueRow: view = Children(model, false); break;
+            case WorkspaceAlignedRow aligned: view = AlignedRow(aligned); break;
+            case SettingsValueRow: view = Children(model, false); break;
             case LanguageCombinationPicker: view = Children(model, false); break;
             case WorkspaceSurface surface:
                 view = new WC.Border { Child = Children(surface, true), Padding = new(16), CornerRadius = new(6), BorderThickness = new(1) };
@@ -143,7 +144,7 @@ internal sealed partial class WpfSettingsFields : IDisposable
     private W.FrameworkElement Button(Button model)
     {
         NativeFields++;
-        var view = new WC.Button { HorizontalAlignment = W.HorizontalAlignment.Left, MinHeight = 36, Padding = new(12, 5, 12, 5) };
+        var view = WpfActionLayout.NormalButton(new WC.Button { HorizontalAlignment = W.HorizontalAlignment.Left });
         view.Click += (_, _) => { if (view.IsEnabled) WpfSettingsModel.Raise(model, "OnClick"); Refresh(); };
         Watch(model, () =>
         {
@@ -289,6 +290,7 @@ internal sealed partial class WpfSettingsFields : IDisposable
     }
     private W.FrameworkElement Children(Control model, bool vertical)
     {
+        if (!vertical) return WpfActionLayout.Row(model.Controls.Cast<Control>().Select(Create).ToArray());
         WC.Panel view = vertical ? new WC.StackPanel() : new WC.WrapPanel();
         foreach (Control child in model.Controls.Cast<Control>().ToArray())
         {
@@ -296,6 +298,26 @@ internal sealed partial class WpfSettingsFields : IDisposable
             view.Children.Add(item);
         }
         return view;
+    }
+    private W.FrameworkElement AlignedRow(WorkspaceAlignedRow model)
+    {
+        var controls = model.Controls.Cast<Control>().OrderBy(model.GetColumn).ToArray();
+        var row = WpfActionLayout.AlignedRow(controls.Select(Create).ToArray());
+        for (int i = 0; i < controls.Length; i++)
+        {
+            int column = model.GetColumn(controls[i]);
+            if (column < 0 || column >= model.ColumnStyles.Count || model.ColumnStyles[column].SizeType != SizeType.Percent) continue;
+            row.ColumnDefinitions[i].Width = new(1, W.GridUnitType.Star);
+            var view = (W.FrameworkElement)row.Children[i];
+            view.HorizontalAlignment = W.HorizontalAlignment.Stretch;
+            if (controls[i].MaximumSize.Width > 0)
+            {
+                double maximum = controls[i].MaximumSize.Width * 96d / controls[i].DeviceDpi;
+                row.ColumnDefinitions[i].MaxWidth = maximum + view.Margin.Right;
+                view.MaxWidth = maximum;
+            }
+        }
+        return row;
     }
     private W.FrameworkElement Table(TableLayoutPanel model)
     {

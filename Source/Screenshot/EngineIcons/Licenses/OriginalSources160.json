@@ -1,0 +1,199 @@
+{
+  "scope": "Engine identification icons; source marks belong to their respective owners",
+  "resources": [
+    {
+      "file": "construct3.png",
+      "sha256": "7a15f411eb488b3f1957fac7155f7b1698097b3a24d1de43c0d4c385f4067e77"
+    },
+    {
+      "file": "defold.png",
+      "sha256": "db3b757abb444e7f807cd78387351136608638d08505782425d2d998ed9f272e"
+    },
+    {
+      "file": "electron.png",
+      "sha256": "c43613e1049b4caad7f19cf05359fd2a24117db34ae4fa3463056fd51e639335"
+    },
+    {
+      "file": "gamemaker.png",
+      "sha256": "811de6831cc439744cba74b3b439eb37d7de6e1f057fdfe3aa007ca508574b0d"
+    },
+    {
+      "file": "godotengine.png",
+      "sha256": "bc184bfe936fb30d079f6c173b71daf69ee64879b49acc6b4b8bea4ce2473ed1"
+    },
+    {
+      "file": "renpy.png",
+      "sha256": "4c5883e08acbc3cea12cd3074c00b9198687cee4ea28eddc32ed9b2be770b562"
+    },
+    {
+      "file": "rpgmv.png",
+      "sha256": "f1ab7fe4f61add9d64d09bd2d45b00be158c658a911d857dda211b814c373523"
+    },
+    {
+      "file": "rpgmz.png",
+      "sha256": "dc9d60645af67e3522d010bfdfc037842a2b9605c3987b8ba4d0816524047183"
+    },
+    {
+      "file": "rpgvxace.png",
+      "sha256": "3a1e5b355b961af3751af54d32238d26fc288602e46ba99d6d6c40659dc31982"
+    },
+    {
+      "file": "rpgxp.png",
+      "sha256": "e026fa316aec1292444d9415b890db027cd9b8aa2a493967474d1b9b090500d4"
+    },
+    {
+      "file": "unity.png",
+      "sha256": "d84407ae8a796720e59c499eca9bd1090bf3e17801d9e478c9600bc54b0f9224"
+    },
+    {
+      "file": "unrealengine.png",
+      "sha256": "71ba894a50b62c8162f335f96ca52f16a608acf496eefd17eb4bd6079bc806a9"
+    },
+    {
+      "file": "wolf.png",
+      "sha256": "85e2a059592ca61d48a32e3346425d5df21c35fb905419b288af8000916d563a"
+    }
+  ],
+  "sources": [
+    {
+      "receipt": "remaining-engine-downloads.json",
+      "entries": [
+        {
+          "file": "defold-original.svg",
+          "url": "https://raw.githubusercontent.com/defold/assets-defold/master/assets-defold/logo/logo-ver-classic.svg",
+          "bytes": 2274
+        },
+        {
+          "file": "electron-original.svg",
+          "url": "https://www.electronjs.org/assets/img/logo.svg",
+          "bytes": 5831
+        },
+        {
+          "file": "godot-original.svg",
+          "url": "https://godotengine.org/assets/press/icon_color.svg",
+          "bytes": 3581
+        },
+        {
+          "file": "gamemaker-original.png",
+          "url": "https://gamemaker.io/next/images/icons/favicon-32x32.png",
+          "bytes": 468
+        },
+        {
+          "file": "unity-original.ico",
+          "url": "https://unity.com/favicon.ico?favicon.3nuapaha9dmud.ico?dpl=294c4509c3f9695b3c1ff2f497d82b7801503238",
+          "bytes": 15086
+        },
+        {
+          "file": "construct-editor.html",
+          "url": "https://editor.construct.net/",
+          "bytes": 23659,
+          "images": [
+            "https://editor.construct.net/appmanifest.json",
+            "https://editor.construct.net/r506-3/media/icon.svg",
+            "https://editor.construct.net/r506-3/media/icon-512.png",
+            "https://editor.construct.net/r506-3/media/icon-128.png",
+            "https://editor.construct.net/r506-3/media/icon-256.png",
+            "https://editor.construct.net/#loadingLogoBase"
+          ]
+        },
+        {
+          "file": "unreal-brand.html",
+          "url": "https://brand.epicgames.com/unreal-engine?lang=en-US",
+          "bytes": 2235,
+          "images": []
+        }
+      ]
+    },
+    {
+      "receipt": "original-icon-downloads.json",
+      "entries": [
+        {
+          "name": "rpg-mv.jpg",
+          "url": "https://shared.fastly.steamstatic.com/community_assets/images/apps/363890/07d6cc4d477505a282f484618b5301ea33ea9eac.jpg",
+          "bytes": 1539,
+          "sha256": "670e5a2113068f0a7a34cf2e300e9d75b1451506e5144a9b628f1a1d9c1437b3"
+        },
+        {
+          "name": "rpg-mz.jpg",
+          "url": "https://shared.fastly.steamstatic.com/community_assets/images/apps/1096900/d2e087191618bddbe1823ef2541d61e338e163ac.jpg",
+          "bytes": 1345,
+          "sha256": "8731055643528eb5c73d90aa17d830366b9a6591d1128c1d4486e83236752d5f"
+        },
+        {
+          "name": "rpg-vx-ace.jpg",
+          "url": "https://shared.fastly.steamstatic.com/community_assets/images/apps/220700/a3dff4fdcaf4c339b980d6f4820f2bbc71b5e978.jpg",
+          "bytes": 1451,
+          "sha256": "d03ee721f258b41d9d81782aeba3d394880d8bc134852be62928f9de6ce5c642"
+        },
+        {
+          "name": "rpg-xp.jpg",
+          "url": "https://shared.fastly.steamstatic.com/community_assets/images/apps/235900/d4fae8dbf49b2d8fda0aa9d74323529e41d200a2.jpg",
+          "bytes": 1347,
+          "sha256": "5407e9e7a4fac08a11b56ca0bbbe5b4013e0fb03b8b640331a2bfeecabca2c9a"
+        },
+        {
+          "name": "wolf-3.735mini.zip",
+          "url": "https://www.silversecond.com/WolfRPGEditor/Data/WolfRPGEditor_3.735mini.zip",
+          "bytes": 12908744,
+          "sha256": "776a369f300d449651afe4fee4f58c8b94c48549fa7622e9e26451393e8dc795"
+        }
+      ]
+    },
+    {
+      "receipt": "downloads.json",
+      "entries": [
+        {
+          "name": "mz.webp",
+          "url": "https://cdn.prod.website-files.com/6a2a0a2dc1af77454b9e453b/6a2a0a2dc1af77454b9e4b97_header-menu-product-dropdown-rpg-maker-mz.webp",
+          "bytes": 12446
+        },
+        {
+          "name": "mv.webp",
+          "url": "https://cdn.prod.website-files.com/6a2a0a2dc1af77454b9e453b/6a2a0a2dc1af77454b9e4b96_header-menu-product-dropdown-rpg-maker-mv.webp",
+          "bytes": 15840
+        },
+        {
+          "name": "vx-ace.webp",
+          "url": "https://cdn.prod.website-files.com/6a2a0a2dc1af77454b9e453b/6a2a0a2dc1af77454b9e4b98_header-menu-product-dropdown-rpg-maker-vx-ace.webp",
+          "bytes": 17662
+        },
+        {
+          "name": "vx.webp",
+          "url": "https://cdn.prod.website-files.com/6a2a0a2dc1af77454b9e453b/6a2a0a2dc1af77454b9e4b99_header-menu-product-dropdown-rpg-maker-vx.webp",
+          "bytes": 16900
+        },
+        {
+          "name": "mz-mark.webp",
+          "url": "https://cdn.prod.website-files.com/6a2a0a2dc1af77454b9e453b/6a2a0a2dc1af77454b9e4873_icon-rpg-maker-mz.webp",
+          "bytes": 5176
+        },
+        {
+          "name": "renpy-logo.png",
+          "url": "https://raw.githubusercontent.com/renpy/renpy/master/launcher/game/images/logo.png",
+          "bytes": 58577
+        },
+        {
+          "name": "renpy-logo32.png",
+          "url": "https://raw.githubusercontent.com/renpy/renpy/master/launcher/game/images/logo32.png",
+          "bytes": 2174
+        },
+        {
+          "name": "renpy-window-icon.png",
+          "url": "https://raw.githubusercontent.com/renpy/renpy/master/launcher/game/images/window-icon.png",
+          "bytes": 72323
+        },
+        {
+          "name": "renpy-favicon.ico",
+          "url": "https://www.renpy.org/static/favicon.ico",
+          "bytes": 15086
+        }
+      ]
+    }
+  ],
+  "construct": "https://editor.construct.net/r506-3/media/icon-128.png",
+  "renpy": "https://github.com/renpy/renpy/blob/master/launcher/game/images/logo32.png",
+  "wolf": "https://silversecond.com/WolfRPGEditor/Download.shtml",
+  "unreal": "Existing Simple Icons monochrome mark retained, including original-color mode",
+  "godotAttribution": "Godot Engine logo by the Godot Engine contributors; CC BY 4.0. https://godotengine.org/press/",
+  "processing": "Original SVG/ICO/WEBP/JPEG sources converted to PNG without changing their colors; monochrome presentation is applied at runtime"
+}

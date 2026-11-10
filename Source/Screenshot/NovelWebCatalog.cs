@@ -30,7 +30,7 @@ internal static class NovelWebCatalog
     internal static RpgTextCatalogResult Read(WebGame game,CancellationToken token,string preferredLanguage="")
     {
         using var archive=new WebGameArchive(game.Archive);var texts=new HashSet<string>(StringComparer.Ordinal);var trusted=new HashSet<string>(StringComparer.Ordinal);var unlocalized=new HashSet<string>(StringComparer.Ordinal);var issues=new List<CatalogReadIssue>();var origins=new CatalogOrigins();int files=0,nodes=0;bool trustedSource=false;
-        var watch=System.Diagnostics.Stopwatch.StartNew();
+        var watch=System.Diagnostics.Stopwatch.StartNew();var dialogue=new StaticDialogueContexts();
         void Check(){token.ThrowIfCancellationRequested();if(++nodes>1000000||watch.ElapsedMilliseconds>30000||texts.Count>100000)throw new InvalidDataException("目录读取达到数量或时间上限。");}
         void Add(string? text){Check();if(!string.IsNullOrWhiteSpace(text)&&text.Length<=6000&&RpgTextCatalog.IsText(text)){texts.Add(text);if(trustedSource)trusted.Add(text);}}
         bool preserveTyranoWhitespace=false;string configName=game.Prefix+"data/system/Config.tjs";
@@ -72,10 +72,10 @@ internal static class NovelWebCatalog
                         else if(value.ValueKind==JsonValueKind.Object)foreach(var prop in value.EnumerateObject())
                         {string pointer=at+"/"+Escape(prop.Name);if(prop.Value.ValueKind==JsonValueKind.String&&prop.Name is "text" or "defaultText" or "message" or "title")Stage(prop.Value.GetString(),pointer,"vnmaker-display-field");else if(prop.Value.ValueKind is JsonValueKind.Array or JsonValueKind.Object)Walk(prop.Value,pointer,depth+1);}
                     }
-                    Walk(doc.RootElement);Commit();continue;
+                    Walk(doc.RootElement);Commit();dialogue.VisualNovelMaker(doc.RootElement,Check);continue;
                 }
                 if(tyrano)
-                {foreach(var field in TyranoTextCatalog.Read(content,Check,preserveTyranoWhitespace))Stage(field.Text,field.Location,field.Kind);Commit();continue;}
+                {foreach(var field in TyranoTextCatalog.Read(content,Check,preserveTyranoWhitespace))Stage(field.Text,field.Location,field.Kind);Commit();dialogue.Tyrano(content,Check);continue;}
                 var paragraph=new List<string>();int lineNo=0,start=0;
                 void Flush(){if(paragraph.Count>0){Stage(string.Join("\n",paragraph),$"line:{start}/paragraph","choicescript-paragraph");foreach(var (line,index) in paragraph.Select((line,index)=>(line,index)))Stage(line,$"line:{start+index}","choicescript-text");paragraph.Clear();}}
                 foreach(string raw in content.Replace("\r\n","\n").Split('\n'))
@@ -90,8 +90,10 @@ internal static class NovelWebCatalog
             }
             catch(Exception e)when(e is IOException or InvalidDataException or JsonException or RegexMatchTimeoutException or System.Text.DecoderFallbackException){issues.Add(new(CatalogIssueKind.Unsupported,name,"此脚本或数据结构尚未完整解析，已保留原文件。"));}
         }
+        var dialogueContexts=dialogue.Finish(origins.Items,origins.Truncated||issues.Count>0,texts);
+        var characterBindings=dialogue.FinishCharacters(origins.Items,origins.Truncated||issues.Count>0,texts);
         issues.Add(new(CatalogIssueKind.Incomplete,game.Engine,"已读取可确认的文字字段；动态表达式、插件及图片文字仍需运行时覆盖。"));
         return new(texts.ToArray(),files,issues.Select(i=>i.Source+"："+i.Reason).ToArray()){
-            SelectedLanguage=preferredLanguage,TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized,Origins=origins.Items,OriginsTruncated=origins.Truncated,ReadCompleted=false,Report=new(false,issues.ToArray())};
+            SelectedLanguage=preferredLanguage,TrustedSourceTexts=trusted,UnlocalizedSourceTexts=unlocalized,Origins=origins.Items,OriginsTruncated=origins.Truncated,ReadCompleted=false,Report=new(false,issues.ToArray()),DialogueContexts=dialogueContexts,CharacterBindings=characterBindings};
     }
 }

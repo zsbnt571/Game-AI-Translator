@@ -190,6 +190,23 @@ internal sealed class GameMakerTranslationConnection : IEmbeddedTranslationConne
         info.ArgumentList.Add("-game");info.ArgumentList.Add(GameMakerGameAdapter.InGame(exe,GameMakerGameAdapter.Patched));
         GameTestCopyEnvironment.Apply(info);
         info.Environment["FUSION_GAMEMAKER_SESSION"]=folder.Replace('\\','/');info.Environment["FUSION_GAMEMAKER_SESSION_ID"]=sessionId;info.Environment["FUSION_GAMEMAKER_SECRET"]=secret;info.Environment["FUSION_GAMEMAKER_TRANSLATION"]=translationAtStartup?"1":"0";
+        GameFontSettings.ApplyGameMakerLaunch(info,exe,translationAtStartup,independent:true);
+        if(info.Environment.TryGetValue(GameFontSettings.PathVariable,out var customPath)&&!string.IsNullOrEmpty(customPath))
+        {
+            try
+            {
+                var font=GameMakerFontPolicy.Stage(exe,io,new JsonObject{["mode"]="custom",["path"]=customPath,["independent"]=true});
+                font["secret"]=secret;
+                File.WriteAllText(Path.Combine(io,"font-startup.json"),font.ToJsonString(),new UTF8Encoding(false));
+            }
+            catch(Exception ex) when(ex is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or ArgumentException)
+            {
+                // A stale font choice must not block ordinary game startup.
+                // The authenticated connection retries and reports the choice.
+                info.Environment.Remove(GameFontSettings.PathVariable);
+                info.Environment.Remove(GameFontSettings.FamilyVariable);
+            }
+        }
         return info;
     }
     public void Launched(int pid){peer=Process.GetProcessById(pid);}
@@ -202,11 +219,19 @@ internal sealed class GameMakerTranslationConnection : IEmbeddedTranslationConne
     }
     public async Task<JsonElement> RequestAsync(JsonObject request,CancellationToken cancellation=default){
         using var ct=CancellationTokenSource.CreateLinkedTokenSource(cancellation,lifetime.Token);ct.CancelAfter(15000);await gate.WaitAsync(ct.Token);
-        try{if(!Connected)throw new IOException("游戏连接已关闭。");int current=++id;request["id"]=current;request["secret"]=secret;string text=request.ToJsonString();if(Encoding.UTF8.GetByteCount(text)>262144)throw new IOException("翻译请求超过限制。");
+        bool fontRequest=request["op"]?.GetValue<string>()=="fontPreferences";
+        try{if(!Connected)throw new IOException("游戏连接已关闭。");
+            if(fontRequest)request=GameMakerFontPolicy.Stage(exe,io,request);
+            ct.Token.ThrowIfCancellationRequested();int current=++id;request["id"]=current;request["secret"]=secret;string text=request.ToJsonString();if(Encoding.UTF8.GetByteCount(text)>262144)throw new IOException("翻译请求超过限制。");
             await GodotFileTransport.PublishAsync(Path.Combine(io,"request.json"),text,ct.Token);
             string response=Path.Combine(io,"response-"+current+".json");
-            while(true){ct.Token.ThrowIfCancellationRequested();if(!Connected)throw new IOException("游戏连接已关闭。");if(await GodotFileTransport.ReadJsonAsync(response,ct.Token) is {} raw){var r=NormalizeNumbers(raw);if(r.GetProperty("id").GetInt32()==current){if(r.GetProperty("secret").GetString()!=secret||!r.GetProperty("ok").GetBoolean())throw new IOException("游戏未接受翻译请求。");try{File.Delete(response);}catch(IOException){}return r.GetProperty("result").Clone();}}await Task.Delay(20,ct.Token);}
-        }finally{gate.Release();}
+            while(true){ct.Token.ThrowIfCancellationRequested();if(!Connected)throw new IOException("游戏连接已关闭。");if(await GodotFileTransport.ReadJsonAsync(response,ct.Token) is {} raw){var r=NormalizeNumbers(raw);if(r.GetProperty("id").GetInt32()==current){if(r.GetProperty("secret").GetString()!=secret)throw new IOException("游戏未接受翻译请求。");try{File.Delete(response);}catch(IOException){}if(!r.GetProperty("ok").GetBoolean())throw new GameDataOperationException(r.TryGetProperty("error",out var error)&&error.ValueKind==JsonValueKind.String?error.GetString()!:"游戏未接受翻译请求。");return r.GetProperty("result").Clone();}}await Task.Delay(20,ct.Token);}
+        }finally{
+            // A paused runner must not apply a timed-out choice much later.
+            // The connection gate still owns the only outstanding request.
+            if(fontRequest)try{File.Delete(Path.Combine(io,"request.json"));}catch(IOException){}catch(UnauthorizedAccessException){}
+            gate.Release();
+        }
     }
     public void Dispose(){if(disposed)return;disposed=true;try{File.WriteAllText(Path.Combine(io,"stop"),secret);}catch(IOException){}catch(UnauthorizedAccessException){}RemoveStartup();lifetime.Cancel();peer?.Dispose();}
 }

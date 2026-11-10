@@ -1,7 +1,7 @@
 /* Explicit game font override; a failed or superseded load never replaces it. */
 function createFusionGameFontPolicy(g, options, refresh) {
     'use strict';
-    var selected='',status='default',env={},generation=0,ownedFace=null;
+    var selected='',status='default',env={},generation=0,ownedFace=null,independent=false;
     try { env=g.process&&g.process.env||(typeof process==='object'&&process.env)||{}; } catch (_) {}
     function changed(){if(typeof refresh==='function')refresh();}
     function configure(q) {
@@ -11,14 +11,14 @@ function createFusionGameFontPolicy(g, options, refresh) {
         var ticket=++generation,previousStatus=status;
         function commit(name,face){
             if(ticket!==generation)throw Error('Font selection was superseded');
-            var oldFace=ownedFace,oldName=selected,oldStatus=previousStatus;
+            var oldFace=ownedFace,oldName=selected,oldStatus=previousStatus,oldIndependent=independent;
             try {
                 if(face)g.document.fonts.add(face);
-                ownedFace=face||null;selected=name;status=mode==='default'?'default':'ready';
+                ownedFace=face||null;selected=name;status=mode==='default'?'default':'ready';independent=q.independent===true;
                 changed();
             }
             catch(error) {
-                ownedFace=oldFace;selected=oldName;status=oldStatus;
+                ownedFace=oldFace;selected=oldName;status=oldStatus;independent=oldIndependent;
                 try { if(face&&g.document.fonts.delete)g.document.fonts.delete(face); } catch (_) {}
                 // A renderer may have updated some controls before throwing.
                 // Best-effort redraw under the old preference restores those;
@@ -27,7 +27,7 @@ function createFusionGameFontPolicy(g, options, refresh) {
                 throw error;
             }
             try { if(oldFace&&g.document.fonts.delete)g.document.fonts.delete(oldFace); } catch (_) {}
-            return {accepted:true,mode:mode,restartRequired:false};
+            return {accepted:true,mode:mode,restartRequired:false,independent:independent};
         }
         if(mode==='default')return Promise.resolve(commit('',null));
         if(!path)return Promise.resolve(commit(family,null));
@@ -51,7 +51,7 @@ function createFusionGameFontPolicy(g, options, refresh) {
     options=options||{};
     var family=String(options.customFontFamily||env.FUSION_GAME_FONT_FAMILY||'').trim();
     var path=String(options.customFontPath||env.FUSION_GAME_FONT_PATH||'').trim();
-    if(family||path)configure({mode:'custom',family:family,path:path}).catch(function(){if(!selected)status='font-load-failed';});
-    return {family:function(){return selected;},status:function(){return status;},configure:configure};
+    if(family||path)configure({mode:'custom',family:family,path:path,independent:options.customFontIndependent===true||env.FUSION_GAME_FONT_INDEPENDENT==='1'}).catch(function(){if(!selected)status='font-load-failed';});
+    return {family:function(){return selected;},status:function(){return status;},independent:function(){return independent;},configure:configure};
 }
 if(typeof module==='object'&&module.exports)module.exports=createFusionGameFontPolicy;

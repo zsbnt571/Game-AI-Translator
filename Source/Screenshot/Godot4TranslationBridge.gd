@@ -50,6 +50,7 @@ var last_request = 0
 var elapsed = 0.0
 var chinese_font = null
 var custom_font = null
+var independent_font = false
 var current_locale = ""
 var refreshing = false
 var entry_cursor = 0
@@ -69,6 +70,159 @@ var slot_cursor = 0
 var slot_rows = 0
 var slot_limit_hits = 0
 var slot_max_ms = 0.0
+var character_runtime = false
+var character_service = null
+var character_context = {}
+var character_rows = {}
+var character_facts = {}
+var character_serial = 0
+
+func _character_script(value, path):
+    if not is_instance_valid(value):
+        return false
+    var script = value.get_script()
+    for ignored in range(12):
+        if script == null:
+            return false
+        if script.resource_path == path:
+            return true
+        script = script.get_base_script()
+    return false
+
+func _character_reset(active):
+    if is_instance_valid(character_service):
+        for pair in [["about_to_show_text", "_character_about"], ["text_started", "_character_started"]]:
+            var callback = Callable(self, pair[1])
+            if character_service.is_connected(pair[0], callback):
+                character_service.disconnect(pair[0], callback)
+    character_service = null
+    character_runtime = active
+    character_context.clear()
+    character_rows.clear()
+    character_facts.clear()
+    if active:
+        _character_connect()
+
+func _character_connect():
+    if not character_runtime or is_instance_valid(character_service):
+        return
+    for handler in get_tree().root.get_children():
+        if not _character_script(handler, "res://addons/dialogic/Core/DialogicGameHandler.gd") or not handler.has_method("get_subsystem") or not handler.has_node("Text"):
+            continue
+        var service = handler.get_subsystem("Text")
+        if not _character_script(service, "res://addons/dialogic/Modules/Text/subsystem_text.gd"):
+            continue
+        if not service.has_signal("about_to_show_text") or not service.has_signal("text_started") or not service.has_method("get_current_speaker"):
+            continue
+        character_service = service
+        service.connect("about_to_show_text", Callable(self, "_character_about"))
+        service.connect("text_started", Callable(self, "_character_started"))
+        return
+
+func _character_about(_info):
+    # A new native event invalidates old replies before it reuses a textbox.
+    character_context.clear()
+    character_rows.clear()
+
+func _character_started(info):
+    _character_about(info)
+    if not character_runtime or typeof(info) != TYPE_DICTIONARY or info.get("append", true) != false:
+        return
+    var character = info.get("character")
+    var text = info.get("text")
+    if typeof(text) != TYPE_STRING or not _valid(text) or not _character_script(character, "res://addons/dialogic/Resources/character.gd"):
+        return
+    # Runtime-created display names have no persistent resource identity.
+    # A saved character's path is independent from its translated display name.
+    if not character is Resource or not character.resource_path.begins_with("res://") or character.resource_path.length() > 1000:
+        return
+    character_context = {"character": character, "raw": text, "id": "dialogic:" + character.resource_path.sha256_text()}
+
+func _character_row(node, entry, raw_source, source):
+    var key = node.get_instance_id()
+    if not character_runtime or not enabled or character_context.is_empty() or not is_instance_valid(character_service):
+        character_rows.erase(key)
+        return null
+    if not _character_script(node, "res://addons/dialogic/Modules/Text/node_dialog_text.gd") or not node.is_in_group("dialogic_dialog_text"):
+        character_rows.erase(key)
+        return null
+    if not node.is_visible_in_tree() or not node.enabled or node.revealing or character_context.raw != raw_source or not _valid(source):
+        character_rows.erase(key)
+        return null
+    if character_service.get_current_speaker() != character_context.character:
+        character_rows.erase(key)
+        return null
+    # Newer Dialogic releases can route one event to a particular textbox.
+    if character_service.has_method("get_textboxes") and not node in character_service.get_textboxes(character_service.active_textbox):
+        character_rows.erase(key)
+        return null
+    var row = character_rows.get(key)
+    if row != null and row.source == source and row.characterId == character_context.id:
+        return row
+    if character_rows.size() >= 32 and not character_rows.has(key):
+        return null
+    character_serial += 1
+    var character = character_context.character
+    var label = str(character.display_name)
+    if label.length() == 0 or label.length() > 200:
+        label = character.resource_path.get_file()
+    row = {"requestId": "g" + str(character_serial), "source": source, "characterId": character_context.id, "displayName": label,
+        "evidence": character_facts.get(character_context.id, []).duplicate(), "text": null, "fallback": false, "deadline": _ticks() + 3000,
+        "ref": weakref(node), "entry": entry, "raw": raw_source}
+    character_rows[key] = row
+    if source.length() <= 600 and (character_facts.size() < 256 or character_facts.has(character_context.id)):
+        var facts = character_facts.get(character_context.id, [])
+        if facts.is_empty() or facts.back() != source:
+            facts.append(source)
+            if facts.size() > 3:
+                facts.pop_front()
+        character_facts[character_context.id] = facts
+    return row
+
+func _character_poll(q, receipt):
+    if not character_runtime:
+        return receipt
+    _character_connect()
+    # Recheck original text and native speaker even when no redraw occurred.
+    for key in character_rows.keys():
+        var row = character_rows[key]
+        var node = row.ref.get_ref()
+        if node == null or node.text != row.raw:
+            character_rows.erase(key)
+        else:
+            _character_row(node, row.entry, row.raw, row.source)
+    var accepted = []
+    var changed = false
+    var results = q.get("characterResults", [])
+    if q.get("characterRuntimeContract") == "fusion-character-runtime-1" and typeof(results) == TYPE_ARRAY:
+        for result in results.slice(0, 16):
+            if typeof(result) != TYPE_DICTIONARY:
+                continue
+            for row in character_rows.values():
+                if result.get("requestId") != row.requestId or result.get("source") != row.source or result.get("characterId") != row.characterId:
+                    continue
+                if result.get("pending", false) == true:
+                    row.deadline = _ticks() + 3000
+                elif result.get("fallback", false) == true:
+                    changed = changed or row.text != null
+                    row.text = null
+                    row.fallback = true
+                elif typeof(result.get("text")) == TYPE_STRING and result.text.length() > 0 and result.text.length() <= 12000 and not _utf8(result.text).has(0):
+                    changed = changed or row.text != result.text
+                    row.text = result.text
+                    row.fallback = false
+                else:
+                    continue
+                accepted.append(row.requestId)
+    if changed:
+        _refresh(true)
+    var requests = []
+    for row in character_rows.values().slice(0, 16):
+        requests.append({"requestId":row.requestId, "source":row.source, "characterId":row.characterId, "displayName":row.displayName, "evidence":row.evidence})
+    receipt.characterRuntimeContract = "fusion-character-runtime-1"
+    receipt.characterRequests = requests
+    receipt.characterAccepted = accepted
+    return receipt
 
 
 func _ready():
@@ -237,7 +391,7 @@ func _catalog_page(cursor):
     for i in range(start, stop):
         texts.append(selected_catalog[i])
         metadata.append(selected_metadata[i].duplicate())
-    var result = {"texts": texts, "metadata": metadata, "next": stop, "total": size, "skipped": catalog_skipped, "done": ready, "scanning": not ready, "warnings": catalog_warnings.duplicate(), "sourceLanguage": source_language, "selectedLanguage": selected_language if ready else "", "skippedByLanguage": language_excluded if ready else 0}
+    var result = {"texts": texts, "metadata": metadata, "next": stop, "total": size, "skipped": catalog_skipped, "done": ready, "scanning": not ready, "warnings": catalog_warnings.duplicate(), "sourceLanguage": source_language, "selectedLanguage": selected_language if ready else "", "skippedByLanguage": language_excluded if ready else 0, "catalogRevision": language_revision, "catalogRebuilding": not ready}
     catalog_mutex.unlock()
     # IPC pages run on the main thread. Resolve actual serialized localization
     # keys only after releasing the scanner lock, with at most 128 lookups.
@@ -271,6 +425,8 @@ func _catalog_page(cursor):
     var active_sources = []
     for row in metadata:
         var base_field = row.kind in ["scene", "scene_binary", "resource_text", "script_display", "json"] and row.locale == "" and _path_language(row.path) == ""
+        if row.kind == "config_text":
+            base_field = row.locale == "" or (source_language in ["Auto", "Mixed"] and _locale_language(row.locale) == config_active_locale and config_active_locale != "")
         if (base_field or row.get("resolvedBy", "") == "TranslationServer") and not active_sources.has(row.source):
             active_sources.append(row.source)
     result["activeSourceTexts"] = active_sources
@@ -278,7 +434,7 @@ func _catalog_page(cursor):
     # The desktop still requires the user's single matching source language.
     var selected_resources = []
     for row in metadata:
-        if row.kind in ["translation_text", "gettext", "optimized_value", "translation", "translation_plural"] and row.get("resourceLocale", "") != "":
+        if row.kind in ["translation_text", "gettext", "optimized_value", "translation", "translation_plural", "config_text"] and row.get("resourceLocale", "") != "":
             if not selected_resources.has(row.source):
                 selected_resources.append(row.source)
     result["selectedResourceTexts"] = selected_resources
@@ -382,12 +538,14 @@ func _catalog_identity(value, path, locale):
     return language if language != "" else _text_language(value)
 
 func _choose_catalog_language(mode):
+    if mode in ["Auto", "Mixed"] and config_active_locale != "":
+        return config_active_locale
     # An actual active translation resource outranks a fallback or allow-list.
     # The operating-system locale alone is not proof of a game resource.
     var active = _locale_language(current_locale)
     if active != "":
         for row in catalog_metadata:
-            if _locale_language(row.locale) == active or _path_language(row.path) == active:
+            if row.kind != "config_text" and (_locale_language(row.locale) == active or _path_language(row.path) == active):
                 return active
     if mode == "Mixed":
         mode = "Auto"
@@ -444,6 +602,8 @@ func _build_language_catalog(mode, revision):
         if mode in ["Auto", "Mixed"] and row.locale == "" and _path_language(row.path) == "":
             # A genuine foreign line inside shared source is not a backup pack.
             matches = true
+        if row.kind == "config_text" and row.locale != "":
+            matches = _locale_language(row.locale) == (config_active_locale if mode in ["Auto", "Mixed"] else _locale_language(mode))
         if not matches:
             excluded += 1
         elif not seen.has(row.source):
@@ -460,6 +620,7 @@ func _build_language_catalog(mode, revision):
     catalog_mutex.unlock()
 
 func _prepare_catalog_language(mode):
+    _config_clear_evidence()
     if not mode in ["Auto", "English", "Japanese", "SimplifiedChinese", "Korean", "Mixed"]:
         mode = "Auto"
     catalog_mutex.lock()
@@ -557,7 +718,7 @@ func _queue_resource(path, configured = false):
     path = _catalog_resource_path(path)
     if path == "":
         return
-    if not path.get_extension().to_lower() in ["translation", "po", "tscn", "scn", "tres", "res", "json", "gd", "gdc"]:
+    if not path.get_extension().to_lower() in ["translation", "po", "tscn", "scn", "tres", "res", "json", "gd", "gdc", "ini", "cfg"]:
         if configured:
             _warning("配置的文本资源暂不支持或未找到可读导入资源：" + path)
         return
@@ -586,7 +747,7 @@ func _scan_step():
             _json_step()
         elif resources.size() > 0:
             var path = resources.pop_front()
-            if path.get_extension().to_lower() in ["json", "gd", "tscn", "tres", "po"]:
+            if path.get_extension().to_lower() in ["json", "gd", "tscn", "tres", "po", "ini", "cfg"]:
                 _extract_text(path)
             elif path.get_extension().to_lower() == "gdc":
                 _extract_script_binary(path)
@@ -604,7 +765,7 @@ func _scan_step():
                         directories.append(path)
                 else:
                     var extension = path.get_extension().to_lower()
-                    if extension in ["translation", "po", "tscn", "scn", "tres", "res", "json", "gd"]:
+                    if extension in ["translation", "po", "tscn", "scn", "tres", "res", "json", "gd", "ini", "cfg"]:
                         if not path.ends_with("/fusion_translation.gd"):
                             _queue_resource(path)
                     elif extension == "gdc":
@@ -625,8 +786,175 @@ func _scan_step():
     if duration > 16:
         scan_overruns += 1
 
+# ConfigFile narrative data is read as bounded literal text. Never call a
+# Resource loader, evaluate a Variant expression, or execute a game script.
+var config_source_locales = {}
+var config_active_locale = ""
+var config_pending_proofs = {}
+
+func _config_locale(path):
+    var declared = _resource_locale(path, "")
+    if declared != "":
+        return declared
+    var stem = path.get_basename()
+    var suffix = stem.substr(max(0, stem.length() - 2))
+    var locale = _locale_language(suffix)
+    if locale == "" or suffix != suffix.to_upper():
+        return ""
+    # A trailing EN/RU/etc token is meaningful only with a matching peer. Do
+    # not classify arbitrary names ending in a two-letter language substring.
+    var prefix = stem.substr(0, stem.length() - 2)
+    for other in ["en", "ru", "ja", "zh", "ko", "fr", "de", "es", "pt", "it", "pl", "tr", "uk", "vi", "th", "id", "ar", "he", "el", "hi", "nl", "sv", "fi", "da", "no", "cs", "hu"]:
+        if other != locale and _file_size(prefix + other.to_upper() + "." + path.get_extension()) >= 0:
+            return locale
+    return ""
+
+func _config_display_field(key):
+    if key in ["text", "bbcode_text", "dialogue", "dialog_text", "narration", "caption", "message", "tooltip", "tooltip_text", "hint_tooltip", "placeholder_text"]:
+        return true
+    var choice = RegEx.new()
+    choice.compile("^(?:choice|option|button)_?[0-9]{0,3}_?(?:text|label)$")
+    return choice.search(key) != null
+
+func _config_catalog(source, path):
+    var locale = _config_locale(path)
+    var expression = RegEx.new()
+    expression.compile('(?m)^[ \\t]*(?:\\[([^\\]\\r\\n]{1,256})\\][ \\t]*|([A-Za-z_][A-Za-z_0-9]{0,127})[ \\t]*=[ \\t]*("(?:[^"\\\\]|\\\\.)*")[ \\t]*(?:[;#][^\\r\\n]*)?\\r?$)')
+    var sections = {}
+    var section = ""
+    var count = 0
+    for found in expression.search_all(source):
+        count += 1
+        if count > 100000 or (count % 128 == 0 and _scan_cancelled()):
+            return
+        if found.get_string(1) != "":
+            section = found.get_string(1)
+            if not sections.has(section):
+                sections[section] = {}
+            continue
+        var key = found.get_string(2)
+        var literal = found.get_string(3)
+        if section == "" or literal.length() > 24002:
+            continue
+        # ConfigFile uses C-string escaping. Quoted values are decoded only;
+        # constructors, script references, arrays and objects are not accepted.
+        sections[section][key] = literal.substr(1, literal.length() - 2).c_unescape()
+    for name in sections:
+        var fields = sections[name]
+        var narrative = false
+        for key in fields:
+            if _config_display_field(key.to_lower()) and _script_human_text(fields[key]):
+                narrative = true
+                break
+        if not narrative:
+            continue
+        for key in fields:
+            var display = _config_display_field(key.to_lower())
+            if not display and not key.to_lower() in ["name", "speaker", "speaker_name", "character_name"]:
+                continue
+            var value = fields[key]
+            if not _script_human_text(value):
+                continue
+            _catalog_add(value, path, name + "/" + key, locale, "config_text")
+            if display and locale != "":
+                _config_register_evidence(value, locale)
+
+func _config_register_evidence(value, locale):
+    var variants = [value]
+    var leading = _leading_rich_text(value)
+    if leading != null:
+        variants.append(leading.text)
+    catalog_mutex.lock()
+    for text in variants:
+        if config_source_locales.size() >= 100000 and not config_source_locales.has(text):
+            continue
+        if not config_source_locales.has(text):
+            config_source_locales[text] = {}
+        config_source_locales[text][_locale_language(locale)] = true
+    catalog_mutex.unlock()
+
+func _config_control_visible(node, entry = {}):
+    if not enabled or not node is Control or not node.is_inside_tree() or not node.is_visible_in_tree():
+        return false
+    var paint = node
+    if node.self_modulate.a <= 0.01:
+        for prefix in ["label", "rich"]:
+            var key = prefix + "_display"
+            if not entry.has(key) or not entry.has(prefix + "_hidden_modulate") or not entry.has(prefix + "_original_modulate"):
+                continue
+            var owned = entry[key].get_ref()
+            if owned != null and owned.is_visible_in_tree() and node.self_modulate == entry[prefix + "_hidden_modulate"] and entry[prefix + "_original_modulate"].a > 0.01:
+                paint = owned
+                break
+        if paint.self_modulate.a <= 0.01:
+            return false
+    var ancestor = node
+    while ancestor is CanvasItem:
+        if ancestor.modulate.a <= 0.01:
+            return false
+        ancestor = ancestor.get_parent()
+    if not node.get_global_rect().intersects(node.get_viewport_rect()):
+        return false
+    if node is RichTextLabel and node.visible_characters >= 0 and (node.get_total_character_count() <= 0 or node.visible_characters < node.get_total_character_count()):
+        return false
+    return true
+
+func _config_observe_control(node, value, entry = {}):
+    var id = node.get_instance_id()
+    if not _config_control_visible(node, entry):
+        config_pending_proofs.erase(id)
+        return
+    var leading = _leading_rich_text(value)
+    var text = leading.text if leading != null else value
+    if not _script_human_text(text, true):
+        config_pending_proofs.erase(id)
+        return
+    catalog_mutex.lock()
+    var choices = config_source_locales.get(text, {}) if scan_complete and source_language in ["Auto", "Mixed"] else {}
+    var locale = choices.keys()[0] if choices.size() == 1 else ""
+    catalog_mutex.unlock()
+    if locale == "":
+        config_pending_proofs.erase(id)
+        return
+    var now = _ticks()
+    var proof = config_pending_proofs.get(id)
+    if proof == null or proof.text != text or proof.locale != locale or proof.epoch != epoch:
+        if config_pending_proofs.size() >= 256 and not config_pending_proofs.has(id):
+            return
+        proof = {"ref":weakref(node), "entry":entry, "text":text, "locale":locale, "epoch":epoch, "since":now, "seen":now}
+        config_pending_proofs[id] = proof
+    proof.seen = now
+    var observed = {}
+    for key in config_pending_proofs.keys():
+        var other = config_pending_proofs[key]
+        var control = other.ref.get_ref()
+        if control == null or other.epoch != epoch or now - other.seen > 500 or not _config_control_visible(control, other.entry):
+            config_pending_proofs.erase(key)
+        else:
+            observed[other.locale] = true
+    # A timer never grants authority: this point is reached only after the
+    # same substantive line is re-observed on a still-visible control. Opposite
+    # visible branches defer preparation; normal live translation never waits.
+    catalog_mutex.lock()
+    if observed.size() > 1:
+        if config_active_locale != "":
+            config_active_locale = ""
+            language_revision += 1
+    elif now - proof.since >= 250 and config_active_locale != locale:
+        config_active_locale = locale
+        language_revision += 1
+    catalog_mutex.unlock()
+
+func _config_clear_evidence():
+    config_pending_proofs.clear()
+    catalog_mutex.lock()
+    if config_active_locale != "":
+        config_active_locale = ""
+        language_revision += 1
+    catalog_mutex.unlock()
+
 func _extract_text(path):
-    var limit = 8388608 if path.get_extension().to_lower() in ["tscn", "tres", "json"] else 262144
+    var limit = 8388608 if path.get_extension().to_lower() in ["tscn", "tres", "json", "ini", "cfg"] else 262144
     var size = _file_size(path)
     if size < 0 or size > limit:
         _warning("文本文件不可读或超过读取上限：" + path)
@@ -636,7 +964,9 @@ func _extract_text(path):
         if _read_bytes(path, limit).size() > 0:
             _warning("文本文件无法解析：" + path)
         return
-    if path.get_extension().to_lower() == "po":
+    if path.get_extension().to_lower() in ["ini", "cfg"]:
+        _config_catalog(source, path)
+    elif path.get_extension().to_lower() == "po":
         _extract_po(source, path)
     elif path.get_extension().to_lower() == "json":
         var data = _json(source)
@@ -1393,7 +1723,7 @@ func _collect(node):
         _collect(child)
 
 func _added(node):
-    if not collection_started and not enabled and not preparing:
+    if not collection_started and not enabled and not preparing and not independent_font:
         return
     _slot_added(node)
     if node == self or node.has_meta("fusion_rich_display") or (node.get_parent() != null and node.get_parent().has_meta("fusion_rich_display")) or known.has(node.get_instance_id()) or entries.size() >= 20000:
@@ -1834,6 +2164,7 @@ func _button_fit(node, entry, text):
 # the game's tag stack, inline objects, and subsequent append position. An owned
 # child supplies translated glyphs while the original document remains intact.
 func _rich_release(node, entry):
+    _rich_mask_release(node, entry)
     if not entry.has("rich_display"):
         return
     var display = entry.rich_display.get_ref()
@@ -1851,6 +2182,14 @@ func _rich_signal(value, original_ref, signal_name):
         original.emit_signal(signal_name, value)
 
 func _rich_present(node, entry, text):
+    # A text control can be the alpha mask for game-owned gradient/image
+    # children. Hiding that mask and drawing another child loses the original
+    # paint (or clips every translated glyph). Static documents keep their
+    # native mask and child hierarchy through a reversible in-place update.
+    if node.clip_children != CanvasItem.CLIP_CHILDREN_DISABLED and not entry.get("rich_appended", false):
+        _rich_mask_present(node, entry, text)
+        return
+    _rich_mask_release(node, entry)
     var bounds = _text_bounds(node)
     if bounds.size.x <= 1 or bounds.size.y <= 1:
         _rich_release(node, entry)
@@ -1936,6 +2275,96 @@ func _rich_present(node, entry, text):
     entry.rich_scroll_original = original_scroll.value
     entry.rich_scroll_display = translated_scroll.value
 
+func _rich_mask_release(node, entry, restore_text = true):
+    if not entry.has("rich_mask"):
+        return
+    var state = entry.rich_mask
+    if restore_text and node.text == state.owned_text:
+        node.text = state.source
+    if node.fit_content == false:
+        node.fit_content = state.fit_content
+    if node.custom_minimum_size == state.owned_minimum:
+        node.custom_minimum_size = state.minimum
+    if node.scroll_active == state.owned_scroll:
+        node.scroll_active = state.scroll_active
+    for name in state.sizes:
+        var saved = state.sizes[name]
+        if node.get_theme_font_size(name) == saved.owned:
+            if saved.original == null:
+                node.remove_theme_font_size_override(name)
+            else:
+                node.add_theme_font_size_override(name, saved.original)
+    var font_entry = state.fonts
+    for name in font_entry.fonts:
+        var saved = font_entry.fonts[name]
+        if node.get_theme_font(name) == saved.owned:
+            if saved.original == null:
+                node.remove_theme_font_override(name)
+            else:
+                node.add_theme_font_override(name, saved.original)
+    entry.erase("rich_mask")
+    _redraw_viewport(node.get_viewport())
+
+func _rich_mask_present(node, entry, text):
+    if entry.has("rich_display"):
+        _rich_release(node, entry)
+    var newly_owned = not entry.has("rich_mask")
+    if not entry.has("rich_mask"):
+        var sizes = {}
+        for name in ["normal_font_size", "bold_font_size", "italics_font_size", "bold_italics_font_size", "mono_font_size"]:
+            sizes[name] = {"original":node.get_theme_font_size(name) if node.has_theme_font_size_override(name) else null,"base":node.get_theme_font_size(name),"owned":node.get_theme_font_size(name)}
+        var scroll = node.get_v_scroll_bar()
+        entry.rich_mask = {"source":node.text,"owned_text":node.text,"fit_content":node.fit_content,"minimum":node.custom_minimum_size,"owned_minimum":node.get_combined_minimum_size(),"scroll_active":node.scroll_active,"owned_scroll":node.scroll_active and scroll.max_value > scroll.page + 1.0,"sizes":sizes,"fonts":{"property":"text","fonts":{}},"layout_key":[]}
+    var state = entry.rich_mask
+    # Reconcile game-authored layout changes before reapplying our temporary
+    # fitting policy. Values differing from our last assignment become the
+    # source restored by disable/default; they must never be rolled back to
+    # the first snapshot of a reused or animated control.
+    if not newly_owned and node.custom_minimum_size != state.owned_minimum:
+        state.minimum = node.custom_minimum_size
+        state.owned_minimum = node.custom_minimum_size
+        state.layout_key = []
+    if not newly_owned and node.fit_content:
+        state.fit_content = true
+        state.owned_minimum = node.get_combined_minimum_size()
+        state.layout_key = []
+    if not newly_owned and node.scroll_active != state.owned_scroll:
+        state.scroll_active = node.scroll_active
+        state.owned_scroll = node.scroll_active
+        state.layout_key = []
+    node.fit_content = false
+    node.custom_minimum_size = state.owned_minimum
+    node.scroll_active = state.owned_scroll
+    state.owned_text = text
+    if node.text != text:
+        node.text = text
+    state.fonts.font_style_dirty = entry.get("font_style_dirty", false)
+    _font(node, state.fonts, text)
+    var key = [text,node.size,node.autowrap_mode,custom_font,state.fonts.get("font_cjk", false)]
+    if key != state.layout_key or entry.get("font_style_dirty", false):
+        for name in state.sizes:
+            var size = state.sizes[name]
+            # A game's live theme update becomes the new source, not something
+            # that will be overwritten by a later reset.
+            if node.get_theme_font_size(name) != size.owned:
+                size.base = node.get_theme_font_size(name)
+                size.original = size.base if node.has_theme_font_size_override(name) else null
+            node.add_theme_font_size_override(name, size.base)
+            size.owned = size.base
+        for ignored in range(6):
+            var ratio = min(1.0, node.size.x / max(1.0, float(node.get_content_width())))
+            if not state.owned_scroll:
+                ratio = min(ratio, node.size.y / max(1.0, float(node.get_content_height())))
+            if ratio >= 0.99:
+                break
+            for name in state.sizes:
+                var size = state.sizes[name]
+                size.owned = max(min(size.base, max(10, int(ceil(size.base * 0.5)))), int(floor(size.owned * ratio)))
+                node.add_theme_font_size_override(name, size.owned)
+        state.layout_key = key
+        _redraw_viewport(node.get_viewport())
+    entry.font_style_dirty = false
+
 func _rich_sync_style(node, display, entry):
     # theme_changed on the game control invalidates this snapshot. Reassigning
     # theme/font overrides every frame would repeatedly reshape every glyph.
@@ -2016,7 +2445,10 @@ func _rich_refresh(node, entry, source):
             else:
                 entry.erase("rich_reveal_key")
             request_source = document.text
+    if not waiting_reveal:
+        _config_observe_control(node, request_source, entry)
     var translated = null
+    var character = null
     var menu = _rich_menu_document(source) if enabled and entry.get("rich_bbcode", false) else null
     if menu != null:
         if lookup_dirty:
@@ -2027,7 +2459,8 @@ func _rich_refresh(node, entry, source):
             translated = _rich_menu_present_text(source, menu, menu_words)
             entry.rich_layout_text = JSON.stringify(menu_words)
     elif enabled and _valid(request_source):
-        translated = _lookup(request_source)
+        character = _character_row(node, entry, source, request_source) if character_runtime else null
+        translated = character.text if character != null and character.text != null else _lookup(request_source)
         if translated == null and document != null:
             translated = rich_style_cache.get(request_source)
         if translated != null and document != null:
@@ -2037,11 +2470,14 @@ func _rich_refresh(node, entry, source):
             entry.rich_layout_text = translated
         if waiting_reveal and translated == null:
             request_source = ""
-    if translated != null and translated != source:
+    if independent_font and custom_font != null and translated == null:
+        translated = source
+    if translated != null and (translated != source or (independent_font and custom_font != null)):
         _rich_present(node, entry, translated)
     else:
         _rich_release(node, entry)
-        if enabled and _valid(request_source) and translated == null and pending.size() < 4096:
+        var role_waiting = character != null and not character.fallback and _ticks() <= character.deadline
+        if enabled and _valid(request_source) and translated == null and not role_waiting and pending.size() < 4096:
             pending[request_source] = true
     entry.last = str(node.get(entry.property))
     entry.last_parsed = node.get_parsed_text()
@@ -2126,20 +2562,27 @@ func _font_preferences(q):
         path = ""
         family = ""
     # Validation completed before touching any preference, text or owned font.
-    var changed = mode != font_preference_mode or path != font_preference_path or family != font_preference_family
+    var independent = q.get("independent", false) == true
+    var changed = mode != font_preference_mode or path != font_preference_path or family != font_preference_family or independent != independent_font
     var was_enabled = enabled
-    if changed and was_enabled:
+    if changed and (was_enabled or independent_font):
         enabled = false
+        independent_font = false
         _refresh(true)
     if changed:
         custom_font = selected
+        independent_font = independent
         font_preference_mode = mode
         font_preference_path = path
         font_preference_family = family
     enabled = was_enabled
-    if changed and was_enabled:
+    # A font-only request discovers visible controls without starting resource
+    # extraction or translation. No catalog thread or API queue is required.
+    if independent_font and custom_font != null and is_inside_tree():
+        _collect(get_tree().root)
+    if changed and (was_enabled or independent_font):
         _refresh(true)
-    return {"accepted":true,"mode":mode,"enabled":enabled,"writebackPending":changed and enabled,"restorePending":changed and enabled and mode == "default","restartRequired":false}
+    return {"accepted":true,"mode":mode,"enabled":enabled,"independent":independent_font,"writebackPending":changed and (enabled or independent_font),"restorePending":changed and (enabled or independent_font) and mode == "default","restartRequired":false}
 
 func _prepare_font():
     var custom_path = OS.get_environment("FUSION_GAME_FONT_PATH").replace("\\", "/")
@@ -2148,11 +2591,11 @@ func _prepare_font():
     chinese_font.font_names = ["Microsoft YaHei", "Microsoft YaHei UI", "DengXian"]
     chinese_font.allow_system_fallback = true
     if custom_path != "" or custom_family != "":
-        _font_preferences({"mode":"custom","path":custom_path,"family":custom_family})
+        _font_preferences({"mode":"custom","path":custom_path,"family":custom_family,"independent":OS.get_environment("FUSION_GAME_FONT_INDEPENDENT") == "1"})
 
 func _font(node, entry, translated):
     if node is Label3D:
-        if enabled and translated != "" and (custom_font != null or chinese_font != null):
+        if (independent_font and custom_font != null) or (enabled and translated != "" and (custom_font != null or chinese_font != null)):
             if not entry.has("world_font") or node.font != entry.world_font.owned:
                 var original = node.font
                 var replacement = FontVariation.new()
@@ -2177,7 +2620,7 @@ func _font(node, entry, translated):
                 entry.font_cjk = true
                 break
     var names = ["normal_font", "bold_font", "italics_font", "bold_italics_font", "mono_font"] if node is RichTextLabel else ["font"]
-    if enabled and (translated != "" if custom_font != null else (chinese_font != null and entry.get("font_cjk", false))):
+    if (independent_font and custom_font != null) or (enabled and (translated != "" if custom_font != null else (chinese_font != null and entry.get("font_cjk", false)))):
         for name in names:
             if entry.fonts.has(name):
                 var owned = entry.fonts[name]
@@ -2511,7 +2954,34 @@ func _regex_escape(value):
         result += ("\\" if c in ["\\", ".", "^", "$", "|", "?", "*", "+", "(", ")", "[", "]", "{", "}"] else "") + c
     return result
 
+var leading_style_cache = {}
+
 func _index_cache():
+    leading_style_cache.clear()
+    var leading_ambiguous = {}
+    # Derived formatting aliases are rebuilt from each current cache tier.
+    # Keys and persisted values stay unchanged; exact current/manual entries win.
+    var leading_values = startup_exact.duplicate()
+    for source in activation_exact:
+        leading_values[source] = activation_exact[source]
+    for source in cache:
+        leading_values[source] = cache[source]
+    for source in leading_values:
+        var original_leading = _leading_rich_text(source)
+        var translated_leading = _leading_rich_text(leading_values[source])
+        if original_leading == null or translated_leading == null or original_leading.tags != translated_leading.tags:
+            continue
+        var body = original_leading.text
+        if leading_values.has(body):
+            leading_style_cache[body] = leading_values[body]
+            continue
+        if leading_ambiguous.has(body):
+            continue
+        if leading_style_cache.has(body) and leading_style_cache[body] != translated_leading.text:
+            leading_style_cache.erase(body)
+            leading_ambiguous[body] = true
+        else:
+            leading_style_cache[body] = translated_leading.text
     template_buckets.clear()
     lookup_memo.clear()
     plain_cache.clear()
@@ -2602,6 +3072,28 @@ func _match_template(candidate, value):
         position = end + delimiter.length()
     return values if position == value.length() else null
 
+func _leading_rich_text(value):
+    # Some engines keep a simple emphasis/color stack open for the entire
+    # line. Only peel a contiguous leading formatting prefix; internal tags,
+    # links, images, effects and arbitrary placeholders remain exact-only.
+    if not value.begins_with("[") or value.length() > 12000:
+        return null
+    var pattern = RegEx.new()
+    pattern.compile("\\[(b|i|u|s|color|font|font_size|outline_color|outline_size)(?:=[^\\]\\r\\n]*)?\\]")
+    var position = 0
+    var tags = []
+    for found in pattern.search_all(value):
+        if found.get_start() != position or tags.size() >= 8:
+            break
+        tags.append(found.get_string())
+        position = found.get_end()
+    if position == 0 or position >= value.length():
+        return null
+    var text = value.substr(position)
+    if text.find("[") >= 0 or text.find("]") >= 0:
+        return null
+    return {"prefix":value.substr(0, position), "text":text, "tags":tags}
+
 func _lookup(value, depth = 0):
     if cache.has(value):
         return cache[value]
@@ -2618,6 +3110,8 @@ func _lookup(value, depth = 0):
         _index_cache()
     if plain_cache.has(value):
         return plain_cache[value]
+    if leading_style_cache.has(value):
+        return leading_style_cache[value]
     if lookup_memo.has(value):
         return lookup_memo[value]
     if depth > 8:
@@ -2633,6 +3127,16 @@ func _lookup(value, depth = 0):
         var found = _lookup(body, depth + 1)
         if found != null:
             translated = value.substr(0, match_tag.get_start(3)) + found + value.substr(match_tag.get_end(3))
+    if translated == null:
+        var leading = _leading_rich_text(value)
+        if leading != null:
+            var found = _lookup(leading.text, depth + 1)
+            if found == null and activation_exact.has(leading.text):
+                found = activation_exact[leading.text]
+            if found == null and startup_exact.has(leading.text):
+                found = startup_exact[leading.text]
+            if found != null:
+                translated = leading.prefix + found
     var trimmed = value.strip_edges()
     if translated == null and trimmed != value and trimmed != "":
         var found = _lookup(trimmed, depth + 1)
@@ -2717,6 +3221,18 @@ func _refresh(all = false):
         var current = str(node.get(entry.property))
         if node is RichTextLabel and entry.property == "text":
             var parsed = node.get_parsed_text()
+            if entry.has("rich_mask"):
+                if current == entry.rich_mask.owned_text and parsed == entry.get("last_parsed", parsed):
+                    current = entry.rich_mask.source
+                    parsed = _plain_rich_text(current, false) if node.bbcode_enabled else current
+                    if parsed == null:
+                        parsed = current
+                else:
+                    # Reused controls/game script edits supersede our last
+                    # display. Release only overrides still owned by Fusion.
+                    _rich_mask_release(node, entry, false)
+                    current = str(node.get(entry.property))
+                    parsed = node.get_parsed_text()
             var property_plain = _plain_rich_text(current, false) if node.bbcode_enabled else current
             var appended = current == "" or (property_plain != null and property_plain != parsed) or (entry.has("last_parsed") and current == entry.last and parsed != entry.last_parsed)
             if current != entry.last:
@@ -2731,6 +3247,8 @@ func _refresh(all = false):
             entry.source = current
         var result = entry.source
         if enabled and _valid(result):
+            if entry.property in ["text", "bbcode_text"]:
+                _config_observe_control(node, result, entry)
             var localized = str(TranslationServer.translate(result))
             var translated = _lookup(localized)
             if translated == null and localized != result:
@@ -2740,7 +3258,7 @@ func _refresh(all = false):
             elif pending.size() < 4096:
                 pending[localized] = true
         if node is Label and entry.property == "text":
-            if result != entry.source:
+            if result != entry.source or (independent_font and custom_font != null):
                 _label_present(node, entry, result)
             else:
                 _label_release(node, entry)
@@ -2788,11 +3306,11 @@ func _finish_redraw():
             dirty_viewports.erase(id)
 
 func _schedule_draw():
-    if enabled:
+    if enabled or (independent_font and custom_font != null):
         call_deferred("_before_draw")
 
 func _before_draw():
-    if enabled:
+    if enabled or (independent_font and custom_font != null):
         _refresh()
 
 # Explicit modification authorization; translation alone never reads the clock.
@@ -2936,6 +3454,7 @@ func _command(q):
         "fontPreferences":
             return _font_preferences(q)
         "translationPrepare":
+            _character_reset(q.get("characterRuntimeContract") == "fusion-character-runtime-1")
             _ensure_collection()
             var preserve = startup_loaded and q.get("preserveStartup", false) == true
             startup_loaded = false
@@ -2954,7 +3473,7 @@ func _command(q):
             lookup_dirty = true
             pending.clear()
             _prepare_catalog_language(str(q.get("sourceLanguage", "Auto")))
-            return {"epoch": epoch, "exactStartupPrime": true}
+            return {"epoch": epoch, "exactStartupPrime": true, "characterRuntimeContract": "fusion-character-runtime-1" if character_runtime else null}
         "translationEnable":
             if q.has("epoch") and int(q.epoch) != epoch:
                 return {"epoch": epoch, "stale": true}
@@ -2975,6 +3494,8 @@ func _command(q):
             _refresh(true)
             return {"epoch": epoch}
         "translationDisable":
+            _config_clear_evidence()
+            _character_reset(false)
             enabled = false
             startup_loaded = false
             startup_exact.clear()
@@ -3001,7 +3522,7 @@ func _command(q):
                     break
                 texts.append(text)
                 pending.erase(text)
-            return {"epoch": epoch, "texts": texts, "ahead": [], "activeTextLanguage": selected_language if selected_language == _locale_language(current_locale) else "", "entryRefreshMaxMs":entry_refresh_max_ms, "slotBindings":slot_rows, "slotRefreshMaxMs":slot_max_ms, "runtimeWarning":"本次运行部分列表文字达到读取容量上限" if slot_limit_hits > 0 else ""}
+            return _character_poll(q, {"epoch": epoch, "texts": texts, "ahead": [], "activeTextLanguage": selected_language if selected_language == _locale_language(current_locale) else "", "catalogRevision": language_revision, "catalogRebuilding": not scan_complete or built_language_revision != language_revision, "entryRefreshMaxMs":entry_refresh_max_ms, "slotBindings":slot_rows, "slotRefreshMaxMs":slot_max_ms, "runtimeWarning":"本次运行部分列表文字达到读取容量上限" if slot_limit_hits > 0 else ""})
         "translationApply":
             var exact_prime = q.get("exactOnly", false) == true
             if exact_prime and (not preparing or q.get("prime", false) != true):
@@ -3048,6 +3569,7 @@ func _command(q):
 func _exit_tree():
     _speed_restore()
     speed_authorized = false
+    independent_font = false
     catalog_mutex.lock()
     scan_stop = true
     catalog_mutex.unlock()
@@ -3092,7 +3614,7 @@ func _process(delta):
         catalog_mutex.unlock()
         epoch += 1
         activation_observed.clear()
-    if enabled:
+    if enabled or (independent_font and custom_font != null):
         _refresh()
         call_deferred("_before_draw")
     if session == "":
@@ -3105,6 +3627,8 @@ func _process(delta):
     if _read(session + "/stop", 1024) == secret or ((enabled or speed_authorized) and _ticks() - last_request > 60000):
         _speed_restore()
         speed_authorized = false
+        if _read(session + "/stop", 1024) == secret:
+            independent_font = false
         enabled = false
         epoch += 1
         _refresh(true)

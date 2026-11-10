@@ -16,18 +16,31 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
     private readonly WC.Border sidebar;
     private readonly WC.Grid right;
     private readonly WpfLibraryPageViewport page;
+    private readonly WpfLibraryTagPanel? tagPanel;
+    private readonly WC.Button? classificationSettings;
+    private readonly WC.Button? batchTags;
     private WpfGameSessionWorkspace? detail;
     private bool refreshing;
-    private (ThemePalette Palette, ApplicationLanguage Language, Font Font, int Dpi)? canvasPresentation;
+    private (ThemePalette Palette, ApplicationLanguage Language, Font Font, int Dpi, UiIconColorMode IconColorMode, int IconSize)? canvasPresentation;
     internal WpfLibraryWorkspace(ILibraryWorkspaceHost host)
     {
         this.host=host;ClipToBounds=true;
         sidebarColumn=new(){Width=new W.GridLength(host.WpfSidebarWidth),MinWidth=190,MaxWidth=460};
         ColumnDefinitions.Add(sidebarColumn);ColumnDefinitions.Add(new(){Width=new W.GridLength(4)});ColumnDefinitions.Add(new(){Width=new W.GridLength(1,W.GridUnitType.Star)});
         var side=new WC.Grid{Margin=new W.Thickness(0,12,0,0)};
-        side.RowDefinitions.Add(new(){Height=new W.GridLength(30)});side.RowDefinitions.Add(new(){Height=new W.GridLength(1,W.GridUnitType.Star)});
+        side.RowDefinitions.Add(new(){Height=new W.GridLength(30)});side.RowDefinitions.Add(new(){Height=new W.GridLength(1,W.GridUnitType.Star)});side.RowDefinitions.Add(new(){Height=W.GridLength.Auto});
         navigationTitle.Margin=new W.Thickness(14,4,0,4);side.Children.Add(navigationTitle);
         var tree=host.WpfLibraryTree;WC.Grid.SetRow(tree,1);side.Children.Add(tree);
+        if(host.LibraryTags is {} sidebarTags)
+        {
+            classificationSettings=WpfThemeResources.Button("分类显示设置","settings",sidebarTags.ConfigureLibraryTags);
+            classificationSettings.HorizontalContentAlignment=W.HorizontalAlignment.Left;classificationSettings.BorderThickness=new(0);classificationSettings.MinHeight=32;
+            classificationSettings.Padding=new(8,3,8,3);classificationSettings.FontSize=12;
+            W.Automation.AutomationProperties.SetAutomationId(classificationSettings,"LibraryClassificationSettings");
+            var footer=new WC.Border{Child=classificationSettings,Padding=new(8,4,8,4),BorderThickness=new(0,1,0,0)};
+            footer.SetResourceReference(WC.Border.BorderBrushProperty,"Fusion.Border");
+            W.Automation.AutomationProperties.SetAutomationId(footer,"LibrarySidebarFooter");WC.Grid.SetRow(footer,2);side.Children.Add(footer);
+        }
         sidebar=new WC.Border{Child=side,BorderThickness=new W.Thickness(0,0,1,0)};Children.Add(sidebar);
         var split=new WC.GridSplitter{Width=4,Background=WM.Brushes.Transparent,FocusVisualStyle=null,HorizontalAlignment=W.HorizontalAlignment.Stretch,VerticalAlignment=W.VerticalAlignment.Stretch,ResizeDirection=WC.GridResizeDirection.Columns,ResizeBehavior=WC.GridResizeBehavior.PreviousAndNext};
         W.Automation.AutomationProperties.SetAutomationId(split,"LibrarySidebarSplitter");
@@ -39,10 +52,17 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
           """);
         split.DragCompleted+=(_,_)=>host.WpfSaveSidebar((int)Math.Round(sidebarColumn.ActualWidth));WC.Grid.SetColumn(split,1);Children.Add(split);
         right=new WC.Grid();right.RowDefinitions.Add(new(){Height=new W.GridLength(1,W.GridUnitType.Star)});right.RowDefinitions.Add(new(){Height=W.GridLength.Auto});WC.Grid.SetColumn(right,2);Children.Add(right);
-        foreach(var height in new[]{78d,56d,-1d,42d})body.RowDefinitions.Add(new(){Height=height>=0?new W.GridLength(height):W.GridLength.Auto});
+        foreach(var height in new[]{78d,56d,-1d,-1d,42d})body.RowDefinitions.Add(new(){Height=height>=0?new W.GridLength(height):W.GridLength.Auto});
         var top=new WC.Grid{Margin=new W.Thickness(0,18,0,12)};top.ColumnDefinitions.Add(new(){Width=new W.GridLength(1,W.GridUnitType.Star)});top.ColumnDefinitions.Add(new(){Width=W.GridLength.Auto});
         var title=new WC.StackPanel{Orientation=WC.Orientation.Horizontal,VerticalAlignment=W.VerticalAlignment.Center};heading.FontSize=26.667;heading.FontWeight=W.FontWeights.Bold;count.Margin=new W.Thickness(20,0,0,0);count.VerticalAlignment=W.VerticalAlignment.Center;title.Children.Add(heading);title.Children.Add(count);top.Children.Add(title);
         var actions=new WC.StackPanel{Orientation=WC.Orientation.Horizontal,VerticalAlignment=W.VerticalAlignment.Center};
+        if(host.LibraryTags is { } tags)
+        {
+            tagPanel=new(tags);WC.Grid.SetRow(tagPanel,2);body.Children.Add(tagPanel);
+            batchTags=WpfThemeResources.Button("批量打标签",null,()=>tags.SetLibraryTagBatch(!tags.LibraryTagBatchMode));
+            W.Automation.AutomationProperties.SetAutomationId(batchTags,"LibraryBeginBatchTags");actions.Children.Add(batchTags);
+            tags.LibraryTagBatchChanged+=RefreshBatch;
+        }
         import=WpfThemeResources.Button("导入游戏","plus",host.WpfImport,true);importMenu=WpfThemeResources.Button("","down",host.WpfImportMenu,true);importMenu.Margin=new W.Thickness(8,0,0,0);importMenu.Padding=new W.Thickness(7);
         actions.Children.Add(import);actions.Children.Add(importMenu);WC.Grid.SetColumn(actions,1);top.Children.Add(actions);body.Children.Add(top);
         var filters=new WC.Grid{Margin=new W.Thickness(0,0,0,12)};filters.ColumnDefinitions.Add(new(){Width=new W.GridLength(1,W.GridUnitType.Star)});filters.ColumnDefinitions.Add(new(){Width=W.GridLength.Auto});
@@ -58,8 +78,8 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
         covers.Margin=list.Margin=new W.Thickness(10,0,0,0);covers.Padding=list.Padding=new W.Thickness(7);view.Children.Add(covers);view.Children.Add(list);WC.Grid.SetColumn(view,1);filters.Children.Add(view);WC.Grid.SetRow(filters,1);body.Children.Add(filters);
         shelf.RowDefinitions.Add(new(){Height=new W.GridLength(40)});shelf.RowDefinitions.Add(new(){Height=W.GridLength.Auto});shelf.Margin=new W.Thickness(0,0,0,12);
         upperTitle=WpfThemeResources.Button("我的游戏","down",()=>host.WpfSectionMenu(true));upperTitle.HorizontalAlignment=W.HorizontalAlignment.Left;upperTitle.BorderThickness=new W.Thickness(0);upperTitle.Padding=new W.Thickness(0,4,8,4);shelf.Children.Add(upperTitle);
-        var recent=host.WpfRecentGrid;WC.Grid.SetRow(recent,1);shelf.Children.Add(recent);WC.Grid.SetRow(shelf,2);body.Children.Add(shelf);
-        lowerTitle=WpfThemeResources.Button("我的游戏","down",()=>host.WpfSectionMenu(false));lowerTitle.HorizontalAlignment=W.HorizontalAlignment.Left;lowerTitle.BorderThickness=new W.Thickness(0);lowerTitle.Padding=new W.Thickness(0,4,8,4);WC.Grid.SetRow(lowerTitle,3);body.Children.Add(lowerTitle);
+        var recent=host.WpfRecentGrid;WC.Grid.SetRow(recent,1);shelf.Children.Add(recent);WC.Grid.SetRow(shelf,3);body.Children.Add(shelf);
+        lowerTitle=WpfThemeResources.Button("我的游戏","down",()=>host.WpfSectionMenu(false));lowerTitle.HorizontalAlignment=W.HorizontalAlignment.Left;lowerTitle.BorderThickness=new W.Thickness(0);lowerTitle.Padding=new W.Thickness(0,4,8,4);WC.Grid.SetRow(lowerTitle,4);body.Children.Add(lowerTitle);
         retention=WpfThemeResources.Button("保留数量",null,host.WpfEditRetention);retention.HorizontalAlignment=W.HorizontalAlignment.Left;
         page=new(host.WpfMainGrid,body,retention){Margin=new W.Thickness(24,0,24,0)};right.Children.Add(page);
         status.FontSize=10.667;status.MinHeight=22;status.Visibility=W.Visibility.Collapsed;status.VerticalAlignment=W.VerticalAlignment.Center;status.Margin=new W.Thickness(4,0,0,0);WC.Grid.SetRow(status,1);right.Children.Add(status);
@@ -102,15 +122,18 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
             placeholder.Text=UiLanguage.Text("搜索名称、标签或便签");placeholder.Foreground=WpfDrawing.Brush(p.SecondaryText);placeholder.Visibility=search.Text.Length==0?W.Visibility.Visible:W.Visibility.Collapsed;
             var items=host.WpfFilterItems.Select(UiLanguage.Text).ToArray();if(!filter.Items.Cast<string>().SequenceEqual(items)){filter.Items.Clear();foreach(var item in items)filter.Items.Add(item);}filter.SelectedIndex=host.WpfFilterIndex;
             shelf.Visibility=host.WpfShowShelf?W.Visibility.Visible:W.Visibility.Collapsed;
+            tagPanel?.Refresh();
+            RefreshBatch();
+            if(classificationSettings is not null){WpfThemeResources.SetButton(classificationSettings,"分类显示设置","settings",compact:true);classificationSettings.Background=WpfDrawing.Brush(UiTheme.Sidebar);}
             WpfThemeResources.SetButton(import,"导入游戏","plus",true);WpfThemeResources.SetButton(importMenu,"","down",true);
-            WpfThemeResources.SetButton(upperTitle,host.WpfUpperSection,"down",trailingIcon:true);WpfThemeResources.SetButton(lowerTitle,host.WpfLowerSection,"down",trailingIcon:true);
+            WpfThemeResources.SetButton(upperTitle,host.WpfUpperSection,"down",trailingIcon:true);WpfThemeResources.SetButton(lowerTitle,host.LibraryTags?.TagUi.Browser==true?host.WpfLibraryCount:host.WpfLowerSection,"down",trailingIcon:true);
             WpfThemeResources.SetButton(covers,"","grid",!host.WpfListMode);WpfThemeResources.SetButton(list,"","list",host.WpfListMode);
             W.Automation.AutomationProperties.SetName(covers,UiLanguage.Text("封面视图"));W.Automation.AutomationProperties.SetName(list,UiLanguage.Text("列表视图"));W.Automation.AutomationProperties.SetName(importMenu,UiLanguage.Text("更多导入方式"));
             retention.Visibility=host.WpfFilterIndex==2?W.Visibility.Visible:W.Visibility.Collapsed;WpfThemeResources.SetButton(retention,host.WpfRetentionText,null);
             // Each model already invalidates its native canvas when its data,
             // selection, images or viewport change. A stable workspace refresh
             // should not discard all three retained drawings.
-            var presentation = (p, UiLanguage.Current, host.Font, host.DeviceDpi);
+            var presentation = (p, UiLanguage.Current, host.Font, host.DeviceDpi, UiIconAppearance.Current, UiIconAppearance.Size);
             if (canvasPresentation != presentation)
             {
                 canvasPresentation = presentation;host.NativeLibraryPresentation();
@@ -119,7 +142,17 @@ internal sealed class WpfLibraryWorkspace : WC.Grid, IDisposable
         }
         finally{refreshing=false;}
     }
-    public void Dispose() { host.WpfStatusChanged-=RefreshStatus; page.Dispose(); detail?.Dispose(); }
+    private void RefreshBatch()
+    {
+        if (host.LibraryTags is not { } tags || batchTags is null) return;
+        bool browser = tags.TagUi.Browser;
+        batchTags.Visibility = browser && tags.LibraryTagBatchAvailable ? W.Visibility.Visible : W.Visibility.Collapsed;
+        WpfThemeResources.SetButton(batchTags,tags.LibraryTagBatchMode?"完成选择":"批量打标签",null);
+        import.Visibility=importMenu.Visibility=browser?W.Visibility.Collapsed:W.Visibility.Visible;
+        count.Visibility=browser?W.Visibility.Collapsed:W.Visibility.Visible;
+        tagPanel?.Refresh();
+    }
+    public void Dispose() { host.WpfStatusChanged-=RefreshStatus; if(host.LibraryTags is {} tags)tags.LibraryTagBatchChanged-=RefreshBatch; page.Dispose(); detail?.Dispose(); }
 }
 
 public sealed partial class MainForm

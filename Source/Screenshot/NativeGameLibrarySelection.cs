@@ -11,14 +11,23 @@ internal sealed partial class NativeGameLibraryGrid
     private System.Windows.Threading.DispatcherTimer? boxScrollTimer;
     private static bool SamePath(string? a,string? b)=>string.Equals(a,b,StringComparison.OrdinalIgnoreCase);
     public RecentGame[] SelectedGames=>tiles.Where(t=>selection.Contains(t.Game.Id)).Select(t=>t.Game).ToArray();
+    internal bool BatchSelection { get; private set; }
+    internal event Action? SelectionChanged;
+    internal void SetBatchSelection(bool enabled)
+    {
+        if (BatchSelection == enabled) return;
+        BatchSelection = enabled; ClearSelection();
+    }
+    internal void ClearSelection() { selection.Clear(); selectionAnchor = -1; Invalidate(); SelectionChanged?.Invoke(); }
+    internal void SelectAllVisible() { selection = tiles.Select(t => t.Game.Id).ToHashSet(); Invalidate(); SelectionChanged?.Invoke(); }
     public void SelectIndex(int index,Keys modifiers)
     {
         if(index<0||index>=tiles.Length)return;
         if((modifiers&Keys.Shift)!=0&&selectionAnchor>=0&&selectionAnchor<tiles.Length)
         {if((modifiers&Keys.Control)==0)selection.Clear();for(int i=Math.Min(index,selectionAnchor);i<=Math.Max(index,selectionAnchor);i++)selection.Add(tiles[i].Game.Id);}
-        else if((modifiers&Keys.Control)!=0){if(!selection.Add(tiles[index].Game.Id))selection.Remove(tiles[index].Game.Id);selectionAnchor=index;}
+        else if(BatchSelection||(modifiers&Keys.Control)!=0){if(!selection.Add(tiles[index].Game.Id))selection.Remove(tiles[index].Game.Id);selectionAnchor=index;}
         else{selection.Clear();selection.Add(tiles[index].Game.Id);selectionAnchor=index;}
-        selected=tiles[index].Game.ExePath;Invalidate();GameSelected?.Invoke(tiles[index].Game);
+        selected=tiles[index].Game.ExePath;Invalidate();SelectionChanged?.Invoke();if(!BatchSelection)GameSelected?.Invoke(tiles[index].Game);
     }
     private void BeginBoxSelection(Point point,Keys modifiers)
     {
@@ -40,7 +49,7 @@ internal sealed partial class NativeGameLibraryGrid
         var box=Rectangle.FromLTRB(Math.Min(boxStart.X,end.X),Math.Min(boxStart.Y,end.Y),Math.Max(boxStart.X,end.X),Math.Max(boxStart.Y,end.Y));
         selectionBox=new(box.X-scrollOffset.X,box.Y-scrollOffset.Y,box.Width,box.Height);selection=new(boxBefore);
         for(int i=0;i<tiles.Length;i++)if(selectionBox.IntersectsWith(BoundsFor(i)))selection.Add(tiles[i].Game.Id);
-        Invalidate();
+        Invalidate();SelectionChanged?.Invoke();
     }
 
 }

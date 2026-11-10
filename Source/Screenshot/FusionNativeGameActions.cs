@@ -1,6 +1,6 @@
 namespace ScreenshotTranslationUiTester;
 
-internal enum GameDetailAction { Back, Rename, Cover, Folder, Launch, Return, Restart, Toggle, TranslateLaunch, Install, Retry, PrepareText, Manage, Diagnostics, Report, Keys, Screen, Profile, Files, TranslationTab, ModificationTab, CaptureCover, Exit, Font }
+internal enum GameDetailAction { Back, Rename, Cover, Folder, Launch, Return, Restart, Toggle, TranslateLaunch, Install, Retry, PrepareText, Manage, Diagnostics, Report, Keys, Screen, Profile, Files, TranslationTab, ModificationTab, CaptureCover, Exit, Font, NotesTab, Relink, Media }
 
 public sealed partial class MainForm
 {
@@ -14,6 +14,8 @@ public sealed partial class MainForm
                 case GameDetailAction.Rename: await EditLibraryNoteAsync(); break;
                 case GameDetailAction.Cover: await EditGameArtworkAsync(); break;
                 case GameDetailAction.CaptureCover: await EditGameArtworkAsync(capture:true); break;
+                case GameDetailAction.Media: await OpenGameMediaAsync(); break;
+                case GameDetailAction.Relink: await RelocateSelectedLibraryGameAsync(); break;
                 case GameDetailAction.Folder: await OpenSelectedGameFolderAsync(); break;
                 case GameDetailAction.Launch:
                     if(!GameDetail.SelectionPending&&GameDetail.Launch.Visible&&GameDetail.Launch.Enabled)
@@ -38,6 +40,7 @@ public sealed partial class MainForm
                 case GameDetailAction.Profile: EditModeProfile(true); break;
                 case GameDetailAction.Font: if(GameDetail.FontEdit.Enabled)EditGameFont(); break;
                 case GameDetailAction.Files: GameDetail.FileDetails=!GameDetail.FileDetails; break;
+                case GameDetailAction.NotesTab: SelectGameSessionSection(0); break;
                 case GameDetailAction.TranslationTab: SelectGameSessionSection(1); break;
                 case GameDetailAction.ModificationTab: SelectGameSessionSection(2); break;
             }

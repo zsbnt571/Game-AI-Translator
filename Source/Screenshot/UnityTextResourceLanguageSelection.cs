@@ -40,6 +40,8 @@ internal sealed class UnityTextResourceLanguageSelection
     internal HashSet<string> UnlocalizedSourceTexts {get;}=new(StringComparer.Ordinal);
     internal HashSet<UInt128> ExcludedSourceIdentities {get;}=new();
     internal Action<string,string,string,string?>? ObserveOrigin {get;set;}
+    internal Action<string,UnityFrameworkText.CharacterSource>? ObserveCharacter {get;set;}
+    internal Action<string>? ObserveNaninovelSource {get;set;}
     private static readonly Regex DisplayField=new(@"(?:^m_?text$|dialog|speech|subtitle|caption|description|display.?name|localized|localised|(?:^|_)message$|^(?:m_?)?(?:desc|helpText|body|prompt|title|label|text|content|sentence|originalText|sourceText)$)",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex IdentifierField=new(@"^(?:m_)?(?:id|key|guid|path|file|fileName|asset|speakerId|lineId|choiceId|identifier|type|command|locale|language|culture|languageCode|sourceLanguage|originalLanguage|baseLanguage|condition|conditions|script|onClick|callback|eventName|targetId|nextId|expression|variable|variables)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
     private static readonly Regex ResourceContext=new(@"dialog|locali[sz]|language|translation|subtitle|story|scenario|conversation|\.(?:ink|yarn)$",RegexOptions.IgnoreCase|RegexOptions.Compiled);
@@ -323,7 +325,8 @@ internal sealed class UnityTextResourceLanguageSelection
             if(!families.TryGetValue(family,out var resourceFamily))families[family]=resourceFamily=new();
             resourceFamily.PossibleLocaleFamily=possible;
         }
-        if(UnityFrameworkText.ReadNaninovel(name,body,(text,path)=>AddValue(family,resourceLocale,text,location:path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))return;
+        if(UnityFrameworkText.ReadNaninovel(name,body,(text,path)=>AddValue(family,resourceLocale,text,location:path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))
+        {ObserveNaninovelSource?.Invoke(body);return;}
         if(UnityFrameworkText.ReadTaggedLines(name,body,(text,path)=>AddValue(family,resourceLocale,text,location:originPrefix+path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))return;
         if(XmlDisplayText.Read(name,body,(text,locale)=>AddValue(family,locale??resourceLocale,text),cancellation,reportIssue))return;
         if(StructuredStoryText.ReadSource(name,body,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
@@ -339,7 +342,7 @@ internal sealed class UnityTextResourceLanguageSelection
             try
             {
                 using var document=JsonDocument.Parse(trimmed,new JsonDocumentOptions{MaxDepth=64,CommentHandling=JsonCommentHandling.Skip,AllowTrailingCommas=true});
-                if(UnityFrameworkText.Read(document.RootElement,(text,locale,path)=>AddValue(family,locale??resourceLocale,text,location:originPrefix+path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason)))return;
+                if(UnityFrameworkText.Read(document.RootElement,(text,locale,path)=>AddValue(family,locale??resourceLocale,text,location:originPrefix+path),cancellation,reason=>reportIssue?.Invoke(CatalogIssueKind.Unsupported,reason),source=>ObserveCharacter?.Invoke(name+"\0"+originPrefix,source)))return;
                 if(StructuredStoryText.ReadCompiledInk(document.RootElement,text=>AddValue(family,resourceLocale,text),cancellation,reportIssue))return;
                 void Visit(JsonElement element,bool context,string parent,string? locale,int depth,string path="",bool actionContext=false)
                 {

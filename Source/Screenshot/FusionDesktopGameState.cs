@@ -56,9 +56,11 @@ internal sealed partial class FusionAdapterInstaller
     }
     private readonly object selectionCacheGate=new();
     private readonly Dictionary<string,(GameInfo Game,string Stamp)> selectionCache=new(StringComparer.OrdinalIgnoreCase);
-    internal (GameInfo Game,string Stamp) DetectDesktopSelection(string path)
+    internal (GameInfo Game,string Stamp) DetectDesktopSelection(string path,RecentGame? libraryRecord=null)
     {
         path=RecentGameStore.Normalize(path);
+        if(!File.Exists(path)&&libraryRecord is not null&&StringComparer.OrdinalIgnoreCase.Equals(path,libraryRecord.ExePath))
+            return (LibraryGameAvailability.Unavailable(path,libraryRecord.Name),"missing|"+path);
         (GameInfo Game,string Stamp) previous;
         lock(selectionCacheGate)selectionCache.TryGetValue(path,out previous);
         if(previous.Game is not null&&DetectionStamp(previous.Game)==previous.Stamp)return previous;
@@ -68,6 +70,7 @@ internal sealed partial class FusionAdapterInstaller
     }
     internal DesktopGameState InspectDesktop(GameInfo game,ApiSettings settings,string key,bool force,string? selectionStamp=null)
     {
+        if(!File.Exists(game.ExePath))return LibraryGameAvailability.State(game);
         var detection=DetectionStamp(game);
         if(selectionStamp==detection){detectedGame=game;detectionStamp=detection;}
         if(detection!=detectionStamp||detectedGame is null)
@@ -118,7 +121,7 @@ public sealed partial class MainForm
     private Task SelectFusionGameAsync(string path,string? relinkId=null,bool recordSelection=true)
     {
         if(relinkId is null&&_gameDetecting&&SameGame(path,_pendingGamePath))return _selectGameTask;
-        if(relinkId is null&&!_gameDetecting&&SameGame(path,_selectedGame?.ExePath)){RenderGameState();return Task.CompletedTask;}
+        if(relinkId is null&&!_gameDetecting&&SameGame(path,_selectedGame?.ExePath)&&File.Exists(path)!=LibraryGameAvailability.Missing(_selectedGame)){RenderGameState();return Task.CompletedTask;}
         return _selectGameTask=SelectFusionGameCoreAsync(path,relinkId,recordSelection);
     }
     private async Task SelectFusionGameCoreAsync(string path,string? relinkId,bool recordSelection)
@@ -131,15 +134,15 @@ public sealed partial class MainForm
         var selection=++_gameSelectionEpoch;_gameQueryEpoch++;_gameDetecting=true;RenderGameState();
         try
         {
+            var store=await RecentStore();
+            var displayRecord=store.Find(path);
             await _selectionDetectionGate.WaitAsync(token);
             (GameInfo Game,string Stamp) detected;
-            try{detected=await Task.Run(()=>_adapter.DetectDesktopSelection(path),token);}
+            try{detected=await Task.Run(()=>_adapter.DetectDesktopSelection(path,displayRecord),token);}
             finally{_selectionDetectionGate.Release();}
             token.ThrowIfCancellationRequested();
             var game=detected.Game;
-            var store=await RecentStore();
-            var displayRecord=store.Find(game.ExePath);
-            game=game with{Name=displayRecord is {NameSource:"window" or "manual"}?displayRecord.Name:GameWindowNames.Fallback(game.ExePath,game.DataDirectory)};
+            game=game with{Name=displayRecord is not null&&(LibraryGameAvailability.Missing(game)||displayRecord.NameSource is "window" or "manual")?displayRecord.Name:GameWindowNames.Fallback(game.ExePath,game.DataDirectory)};
             var artwork=WpfWorkspace.Enabled&&displayRecord is not null?await LoadLibraryArtworkAsync(store,displayRecord):null;
             if(IsDisposed||Disposing||selection!=_gameSelectionEpoch||token.IsCancellationRequested)return;
             // Resolve this game's settings without changing the visible game.

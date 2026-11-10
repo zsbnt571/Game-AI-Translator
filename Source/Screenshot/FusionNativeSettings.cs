@@ -5,7 +5,7 @@ public sealed partial class MainForm
     private readonly DesktopSettingsDraft _desktopDraft = new();
     internal DesktopSettingsDraft DesktopDraft => _desktopDraft;
     internal ApiSettings NativeDraftSnapshot() => ReadNativeUiSettings();
-    internal static string NativeSettingsDescription(int page) => SettingsDescriptions[page];
+    internal static string NativeSettingsDescription(int page) => page == 10 ? AiUiText.Text("SettingsDescription") : SettingsDescriptions[page];
     internal LibraryPreferences NativeLibraryPreferences => _libraryPreferences;
     internal void NativeSaveLibraryPreferences(LibraryPreferences preferences) => SaveLibraryPreferences(preferences);
     internal void NativeSaveDesktopSettings() => SaveSettings(true);
@@ -25,7 +25,7 @@ public sealed partial class MainForm
         EnsureSettingsCategory(index); CancelBindingCapture(); _lastSettingsCategory = index;
         UpdateSettingsSaveState(); RecordPageLocation(); _wpfWindow?.RefreshWorkspace();
     }
-    internal static readonly string[] NativeSettingsNames = ["外观", "软件通用", "按键", "翻译方案", "截图处理", "预览窗口", "历史与缓存", "游戏库与图片", "存储位置", "帮助与诊断"];
+    internal static readonly string[] NativeSettingsNames = ["外观", "软件通用", "按键", "翻译方案", "截图处理", "预览窗口", "历史与缓存", "游戏库与图片", "存储位置", "帮助与诊断", "AI 工具"];
     internal bool NativeDefaultLaunch
     {
         get => _fusion?.State.DefaultGameLaunchWithTranslation == true;
@@ -65,9 +65,25 @@ public sealed partial class MainForm
     }
     internal void NativeSetTheme(ApplicationThemeMode theme)
     { if (_desktopDraft.Get<ApplicationThemeMode>(nameof(ApiSettings.ThemeMode)) == theme) return; _desktopDraft.Set(nameof(ApiSettings.ThemeMode), theme); SaveSettings(false); }
+    internal void NativeSetIconColorMode(UiIconColorMode mode)
+        =>NativeSetIconAppearance(mode,_desktopDraft.Get<int>(nameof(ApiSettings.IconSize)));
+    internal void NativeSetIconAppearance(UiIconColorMode mode,int size)
+    {
+        if(!Enum.IsDefined(mode))return;size=Math.Clamp(size,16,28);
+        if(_desktopDraft.Get<UiIconColorMode>(nameof(ApiSettings.IconColorMode))==mode&&_desktopDraft.Get<int>(nameof(ApiSettings.IconSize))==size)return;
+        _desktopDraft.Set(nameof(ApiSettings.IconColorMode),mode);_desktopDraft.Set(nameof(ApiSettings.IconSize),size);SaveSettings(false);
+    }
+    internal void NativePreviewIcons()
+    {
+        using var dialog=new NativeIconAppearanceDialog(_desktopDraft.Get<UiIconColorMode>(nameof(ApiSettings.IconColorMode)),
+            _desktopDraft.Get<int>(nameof(ApiSettings.IconSize)),NativeSetIconAppearance);
+        dialog.ShowDialog(this);
+    }
     internal void NativeResetLibraryAppearance()
     {
         _desktopDraft.Set(nameof(ApiSettings.ThemeMode), ApplicationThemeMode.Day);
+        _desktopDraft.Set(nameof(ApiSettings.IconColorMode), UiIconColorMode.Monochrome);
+        _desktopDraft.Set(nameof(ApiSettings.IconSize),17);
         _desktopDraft.Set(nameof(ApiSettings.UiFontMode), UiFontMode.CurrentDefault);
         _desktopDraft.Set(nameof(ApiSettings.UiFontSize), 10f);
         _settingsDirty = true; SaveSettings(false); SaveLibraryPreferences(_libraryPreferences with { Portrait = true, CoverWidth = 158 });
@@ -105,6 +121,11 @@ public sealed partial class MainForm
         if (picker.ShowDialog(this) != DialogResult.OK) return null;
         PortableDataStorage.RequestLocation(picker.SelectedPath);
         return "已设置：" + picker.SelectedPath + "\n下次启动时复制并校验数据；当前仍使用原目录，原文件不会删除。";
+    }
+    internal string? NativeChooseAiStorageLocation147()
+    {
+        using var picker = new FolderBrowserDialog { Description = AiStorageText147.Text(AiStoragePaths147.GetCurrent().ErrorCode=="ai_storage_unavailable"?"LocateHelp":"ChooseRoot"), UseDescriptionForTitle = true };
+        return picker.ShowDialog(this) == DialogResult.OK ? picker.SelectedPath : null;
     }
     internal void NativeSettingsError(Exception ex) => ShowFusionError(ex);
 }

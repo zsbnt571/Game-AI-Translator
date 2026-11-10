@@ -15,15 +15,17 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
     private readonly List<Action> refresh = [];
     private readonly List<Action> detach = [];
     private WC.StackPanel section = null!;
+    private readonly string pageSaveHint;
     internal WC.StackPanel Content { get; } = new();
     internal static bool Supports(int page) => page is 0 or 1 or 2 or 4 or 5 or 6 or 7 or 8 or 9;
 
     internal WpfDesktopSettingsPage(IDesktopSettingsHost host, int page)
     {
         this.host = host; state = host.DesktopDraft;
-        var heading = Text(host.WpfSettingsNames[page], false); heading.FontSize = 28; heading.FontWeight = W.FontWeights.Bold;
+        pageSaveHint = page is 0 or 1 or 2 or 4 or 5 or 6 ? "修改后保存" : page == 7 ? "立即保存" : "";
+        var heading = Text(host.WpfSettingsNames[page], false); heading.FontSize = 26; heading.FontWeight = W.FontWeights.Bold;
         heading.Margin = new(0, 0, 0, 8); Content.Children.Add(heading);
-        var description = Text(host.NativeSettingsDescription(page)); description.Margin = new(0, 0, 0, 24); Content.Children.Add(description);
+        var description = Text(host.NativeSettingsDescription(page)); description.Margin = new(0, 0, 0, 16); Content.Children.Add(description);
         switch (page)
         {
             case 0: Appearance(); break;
@@ -39,16 +41,25 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
         Refresh();
     }
     internal void Refresh() { foreach (var action in refresh) action(); }
-    private void Section(string title)
+    private void Section(string title, string? behavior = null)
     {
-        section = new(); var heading = Text(title, false); heading.FontWeight = W.FontWeights.Bold; heading.FontSize = 16;
-        heading.Margin = new(0, 0, 0, 20); section.Children.Add(heading);
-        var card = new WC.Border { Child = section, CornerRadius = new(8), Padding = new(20, 20, 20, 8), BorderThickness = new(1), Margin = new(0, 0, 0, 16) };
+        section = new(); var heading = Text(title, false);
+        refresh.Add(() => heading.Text = WpfSettingsLayout.Text(title)); heading.FontWeight = W.FontWeights.Bold; heading.FontSize = 16;
+        heading.Margin = new(0, 0, 14, 0);
+        var header = new WC.WrapPanel { Margin = new(0, 0, 0, 16) }; header.Children.Add(heading);
+        behavior ??= pageSaveHint;
+        if (behavior.Length > 0)
+        {
+            string hint = behavior; var badge = Text(hint); badge.FontSize = 12; badge.VerticalAlignment = W.VerticalAlignment.Center;
+            refresh.Add(() => badge.Text = WpfSettingsLayout.Text(hint)); header.Children.Add(badge);
+        }
+        section.Children.Add(header);
+        var card = new WC.Border { Child = section, CornerRadius = new(8), Padding = new(16, 16, 16, 4), BorderThickness = new(1), Margin = new(0, 0, 0, 16) };
         card.SetResourceReference(WC.Border.BackgroundProperty, "Fusion.Secondary"); card.SetResourceReference(WC.Border.BorderBrushProperty, "Fusion.Border"); Content.Children.Add(card);
     }
     private void Row(string label, W.FrameworkElement value)
     {
-        var row = new FieldRow { Margin = new(0, 0, 0, label.Length == 0 ? 12 : 16) };
+        var row = new WpfSettingsFieldRow { Margin = new(0, 0, 0, label.Length == 0 ? 12 : 16) };
         row.ColumnDefinitions.Add(new() { Width = new(206) }); row.ColumnDefinitions.Add(new() { Width = new(1, W.GridUnitType.Star) });
         var title = Text(label, false); title.Margin = new(0, 6, 16, 0);
         row.Children.Add(title); WC.Grid.SetColumn(value, 1); row.Children.Add(value); section.Children.Add(row);
@@ -147,11 +158,11 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
         view.Click += async (_, _) => { view.IsEnabled = false; try { await action(); } catch (Exception ex) { host.NativeSettingsError(ex); } finally { view.IsEnabled = true; } };
         refresh.Add(() => WpfThemeResources.SetButton(view, text, null)); return view;
     }
-    private static WC.WrapPanel Flow(params W.UIElement[] children) { var panel = new WC.WrapPanel(); foreach (var child in children) { if (child is W.FrameworkElement element && element.Margin == new W.Thickness()) element.Margin = new(0, 0, 12, 4); panel.Children.Add(child); } return panel; }
+    private static WC.WrapPanel Flow(params W.UIElement[] children) => WpfActionLayout.Row(children.Cast<W.FrameworkElement>().ToArray());
     private T Enabled<T>(T view, string property, Func<bool> enabled) where T : W.FrameworkElement { Watch(property, () => view.IsEnabled = enabled()); return view; }
     private void Appearance()
     {
-        Section("主题与文字"); var themes = new List<WC.Button>();
+        Section("主题与图标", "立即保存"); var themes = new List<WC.Button>();
         foreach (var mode in new[] { ApplicationThemeMode.Day, ApplicationThemeMode.Night })
         {
             var button = Button(mode == ApplicationThemeMode.Day ? "日间" : "夜间", () => host.NativeSetTheme(mode)); button.MinWidth = 96; themes.Add(button);
@@ -159,6 +170,12 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
             Watch(nameof(ApiSettings.ThemeMode), Update); refresh.Add(Update);
         }
         Row("主题", Flow(themes.ToArray()));
+        var iconColors=Choice(nameof(ApiSettings.IconColorMode),()=>Get<UiIconColorMode>(nameof(ApiSettings.IconColorMode)),
+            value=>host.NativeSetIconColorMode((UiIconColorMode)value),
+            ()=>[new(UiIconColorMode.Monochrome,UiLanguage.Text("黑白")),new(UiIconColorMode.Original,UiLanguage.Text("原色"))]);
+        Watch(nameof(ApiSettings.IconColorMode),()=>iconColors.SelectedValue=Get<UiIconColorMode>(nameof(ApiSettings.IconColorMode)));
+        Row("图标风格",Flow(iconColors,Button("图标预览与大小",host.NativePreviewIcons)));
+        Section("界面文字");
         Row("字体模式", Choice(nameof(ApiSettings.UiFontMode), ["产品默认", "自定义字体"]));
         var fonts = Font(nameof(ApiSettings.UiFontFamily)); fonts.MinHeight = 40;
         var actual = DynamicText(() => FontManager.ResolveUiProfile(host.NativeDraftSnapshot()).PrimaryFamily, false); actual.VerticalAlignment = W.VerticalAlignment.Center;
@@ -170,9 +187,10 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
         Watch(nameof(ApiSettings.UiFontMode), () => { bool custom = Get<UiFontMode>(nameof(ApiSettings.UiFontMode)) == UiFontMode.Custom; fonts.Visibility = custom ? W.Visibility.Visible : W.Visibility.Collapsed; defaultFont.Visibility = custom ? W.Visibility.Collapsed : W.Visibility.Visible; });
         var fontSize = Number(nameof(ApiSettings.UiFontSize), 7, 24, .5m, 1); fontSize.VerticalAlignment = W.VerticalAlignment.Center;
         Row("字体 / 字号", Flow(fontSlot, fontSize));
-        Section("游戏库外观"); Row("封面样式", Choice("LibraryCoverStyle", () => host.NativeLibraryPreferences.Portrait, x => host.NativeSaveLibraryPreferences(host.NativeLibraryPreferences with { Portrait = (bool)x }), () => [new(true, UiLanguage.Text("海报封面")), new(false, UiLanguage.Text("横向封面"))]));
+        Section("游戏库外观", "立即保存"); Row("封面样式", Choice("LibraryCoverStyle", () => host.NativeLibraryPreferences.Portrait, x => host.NativeSaveLibraryPreferences(host.NativeLibraryPreferences with { Portrait = (bool)x }), () => [new(true, UiLanguage.Text("海报封面")), new(false, UiLanguage.Text("横向封面"))]));
         Row("封面大小", Choice("LibraryCoverSize", () => LibraryCoverSizes.IndexFor(host.NativeLibraryPreferences.CoverWidth), x => host.NativeSaveLibraryPreferences(host.NativeLibraryPreferences with { CoverWidth = LibraryCoverSizes.Widths[(int)x] }), () => LibraryCoverSizes.Labels.Select((x, i) => new ChoiceItem(i, UiLanguage.Text(x))).ToArray()));
         Row("", Text("封面视图按窗口宽度自动排满每行；列表缩略图、行高和首页最近使用也跟随大小设置，选择后立即保存。"));
+        Section("自定义主题", "预览后保存");
         var advanced = new WC.StackPanel { Visibility = W.Visibility.Collapsed };
         advanced.Children.Add(Choice(nameof(ApiSettings.ThemeMode), ["日间", "夜间", "自定义"]));
         var colors = new[] { ("主背景", nameof(ApiSettings.CustomThemeMainBackground)), ("次级背景", nameof(ApiSettings.CustomThemeSecondaryBackground)), ("正文", nameof(ApiSettings.CustomThemeText)), ("次级文字", nameof(ApiSettings.CustomThemeSecondaryText)), ("强调色", nameof(ApiSettings.CustomThemeAccent)), ("边框", nameof(ApiSettings.CustomThemeBorder)) };
@@ -188,15 +206,15 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
             ()=>UiLanguage.Options.Select(x=>new ChoiceItem(x.Value,x.ToString())).ToArray());
         Watch(nameof(ApiSettings.InterfaceLanguage),()=>language.SelectedValue=Get<ApplicationLanguage>(nameof(ApiSettings.InterfaceLanguage)));
         Row("界面语言",language);Row("",Text(UiLanguage.SelectionHelp));
-        Section("启动与关闭"); Row("游戏启动方式", CheckAction("默认翻译并启动游戏", () => host.NativeDefaultLaunch, value => host.NativeDefaultLaunch = value));
-        Row("关闭主窗口时", Choice(nameof(ApiSettings.CloseMainWindowBehavior), ["退出程序", "最小化到托盘"])); Row("", Text("启动方式立即保存。切换游戏时，已经运行的游戏会继续运行。"));
+        Section("游戏启动方式", "立即保存"); Row("", CheckAction("默认翻译并启动游戏", () => host.NativeDefaultLaunch, value => host.NativeDefaultLaunch = value));
+        Section("关闭主窗口时"); Row("关闭主窗口时", Choice(nameof(ApiSettings.CloseMainWindowBehavior), ["退出程序", "最小化到托盘"])); Row("", Text("启动方式立即保存。切换游戏时，已经运行的游戏会继续运行。"));
     }
     private void Shortcuts()
     {
-        Section("截图快捷键");
+        Section("截图翻译", "立即保存");
         foreach (var (label, action) in new[] { ("开始截图", InputActionId.StartCapture), ("取消当前截图", InputActionId.CancelCapture), ("显示 / 隐藏截图结果", InputActionId.ToggleResults), ("预览放大", InputActionId.PreviewZoomIn), ("预览缩小", InputActionId.PreviewZoomOut), ("预览恢复适应", InputActionId.PreviewResetFit) })
         {
-            if (action == InputActionId.PreviewZoomIn) Section("预览操作");
+            if (action == InputActionId.PreviewZoomIn) Section("预览操作", "立即保存");
             var display = new WC.TextBlock { MinWidth = 145, MinHeight = 36, VerticalAlignment = W.VerticalAlignment.Center, TextWrapping = W.TextWrapping.Wrap };
             display.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Text"); Identify(display, "Binding_" + action);
             var frame = new WC.Border { Child = display, Padding = new(10, 6, 10, 0), BorderThickness = new(1), CornerRadius = new(6), Margin = new(0, 0, 12, 4) };
@@ -213,7 +231,14 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
             frame.ContextMenu=menu;
             Row(label, Flow(frame, edit, clear, reset));
         }
-        Section("游戏内快捷键"); var game = Button("F8", host.NativeBeginGameShortcut); Identify(game, "EmbeddedToggleKey"); game.MinWidth = 200;
+        Section("游戏截图与录像", "立即保存");
+        var media=Text("");Identify(media,"GameMediaGlobalShortcuts");
+        void UpdateMedia()=>media.Text=host.NativeMediaShortcutStatus;
+        host.NativeShortcutsChanged+=UpdateMedia;detach.Add(()=>host.NativeShortcutsChanged-=UpdateMedia);refresh.Add(UpdateMedia);
+        var mediaEdit=Button("修改快捷键",host.NativeConfigureMediaKeys);Identify(mediaEdit,"ConfigureGameMediaKeys");
+        Row("快捷键",Flow(media,mediaEdit));
+        Row("",Text("Fusion 运行时，在游戏窗口中直接截图或开始／停止录像，无需打开媒体窗口。截图保存到 data/screenshot，录像保存到 data/video。"));
+        Section("游戏内快捷键", "保存后，下次启动游戏生效"); var game = Button("F8", host.NativeBeginGameShortcut); Identify(game, "EmbeddedToggleKey"); game.MinWidth = 200;
         void UpdateGame() => WpfThemeResources.SetButton(game, host.NativeGameShortcutText, null);
         host.NativeShortcutsChanged += UpdateGame; detach.Add(() => host.NativeShortcutsChanged -= UpdateGame); refresh.Add(UpdateGame);
         Row("游戏内扫描开关", Flow(game, Button("恢复默认", () => host.NativeSetGameShortcut("F8"))));
@@ -264,14 +289,34 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
         Row("", Text("网上匹配使用游戏名称查找 Steam 图片；名称不唯一时请手动选择。\n本地模式提取程序图标，并在游戏启动后尝试截图。手动图片不会被自动覆盖。")); Row("已有游戏", AsyncButton("补齐默认图片", host.NativeFillLibraryArtwork));
         Section("记录与名称"); Row("最近记录", AsyncButton("设置保留数量", host.NativeEditLibraryRetention));
         Row("游戏名称", CheckAction("自动补齐本地化名称", () => host.NativeLibraryPreferences.AutomaticChineseNames, value => host.NativeSaveLibraryPreferences(host.NativeLibraryPreferences with { AutomaticChineseNames = value })));
-        Row("", Text("使用各游戏选择的翻译方案，按当前界面语言在后台补齐译名，只发送游戏名称。不同语言的译名分别保存，手动名称会保留。\n未配置方案时保留原名。右键“标签与便签”可编辑名字或重新生成译名。")); Row("", AsyncButton("重试补齐译名", host.NativeRetryLibraryNames));
+        Row("", Text("使用各游戏选择的翻译方案，按当前界面语言在后台补齐译名，只发送游戏名称。不同语言的译名分别保存，手动名称会保留。\n未配置方案时保留原名。右键“编辑游戏资料”可编辑名字或重新生成译名。")); Row("", AsyncButton("重试补齐译名", host.NativeRetryLibraryNames));
     }
     private void Storage()
     {
+        Section("常用数据");
+        Row("",Text("软件资料默认保存在 Fusion 文件夹中。按用途打开即可，无需记住内部文件名。"));
+        void Folder(string label,string relative,string description)
+        {
+            string folder=Path.Combine(AppDataPaths.Root,relative);
+            var caption=Text("",localize:false);refresh.Add(()=>caption.Text="data\\"+relative+" · "+UiLanguage.Text(description));
+            Row(label,Flow(caption,Button("打开文件夹",()=>{AppDataPaths.RejectReparsePoints(folder);Directory.CreateDirectory(folder);host.NativeOpenFolder(folder);})));
+        }
+        Folder("游戏截图","screenshot","按游戏名称保存 PNG");
+        Folder("游戏录像","video","按游戏名称保存 MP4");
+        Folder("游戏库与封面","recent-games-v1","已登记游戏及图片");
+        Row("游戏笔记",Text("保存在 data\\game-library-notes.json；在游戏详情的“游戏笔记”中查看和编辑。"));
+        Folder("游戏译文","translation-memory","译文记录；修改译文请用游戏详情的“译文与术语”");
+        Folder("截图翻译历史","history","截图翻译的历史记录");
+        Folder("导出资料","output","软件生成的输出资料");
+        Folder("缓存","cache","可重新生成的缓存文件");
+        Folder("诊断报告","diagnostics","游戏运行诊断");
+        Folder("运行日志","logs","问题排查记录");
         Section("软件数据"); var path = new WC.TextBox { Text = AppDataPaths.Root, IsReadOnly = true, MinHeight = 36, VerticalContentAlignment = W.VerticalAlignment.Center };
         Identify(path, "DataDirectory"); Row("当前数据目录", path);
         Row("", Button("打开数据文件夹", () => host.NativeOpenFolder(AppDataPaths.Root)));
-        Row("", Text("设置、游戏库、图片、截图历史、缓存及日志统一存放在这里。")); string? pending = null;
+        Row("", AiStorageTextView147("GeneralDataHelp")); string? pending = null;
+        AiStorageSettings147();
+        int migrationStart = Content.Children.Count;
         var chooseLocation = Button("迁移当前数据到空目录", () => { pending = host.NativeChooseStorageLocation() ?? pending; Refresh(); });
         DataMigration(chooseLocation);
         Section("更改当前数据存储位置");
@@ -279,6 +324,14 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
         Row("", chooseLocation);
         var notice = new WC.TextBlock { TextWrapping = W.TextWrapping.Wrap }; notice.SetResourceReference(WC.TextBlock.ForegroundProperty, "Fusion.Muted");
         refresh.Add(() => notice.Text = pending ?? ""); Row("", notice);
+        var migration = new WC.StackPanel();
+        while (Content.Children.Count > migrationStart)
+        {
+            var child = Content.Children[migrationStart]; Content.Children.RemoveAt(migrationStart); migration.Children.Add(child);
+        }
+        var disclosure = new WC.Expander { Content = migration, Margin = new(0, 0, 0, 16) };
+        Identify(disclosure, "SettingsDataMigrationDisclosure");
+        refresh.Add(() => disclosure.Header = WpfSettingsLayout.Text("导入或迁移数据")); Content.Children.Add(disclosure);
         Section("存储说明"); Row("默认位置", Text("软件文件夹内的 data。目录不可写时会报告错误，不会转存到 C 盘。")); Row("游戏原存档", Text("游戏自己保存的存档仍在原位置，本软件不会移动。"));
     }
     private void Help()
@@ -302,9 +355,4 @@ internal sealed partial class WpfDesktopSettingsPage : IDisposable
     }
     public void Dispose() { foreach (var action in detach) action(); detach.Clear(); }
     private sealed record ChoiceItem(object Value, string Text) { public override string ToString() => Text; }
-    private sealed class FieldRow : WC.Grid
-    {
-        protected override W.Size MeasureOverride(W.Size availableSize)
-        { if (double.IsFinite(availableSize.Width)) ColumnDefinitions[0].Width = new(Math.Clamp(availableSize.Width / 4, 164, 206)); return base.MeasureOverride(availableSize); }
-    }
 }

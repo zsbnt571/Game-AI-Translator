@@ -12,7 +12,7 @@ internal static class UiDiagnosticText
         // or model-generated text. Translate the reason before template matching.
         foreach(var prefix in new[]{"翻译内容保存失败：","日志摘要读取失败：","失败："})
             if(source.StartsWith(prefix,StringComparison.Ordinal)&&source.Length>prefix.Length)
-                return UiLanguage.Text(prefix)+UiLanguage.Text(source[prefix.Length..]);
+                return UiLanguage.Text(prefix)+UiOperationText.Diagnostic(source[prefix.Length..]);
         // These are composed exclusively from product statuses. Split before
         // wildcard templates can consume a second, still-Chinese status.
         if(source.StartsWith("原文：",StringComparison.Ordinal)&&source.Contains(" · "))
@@ -47,16 +47,16 @@ internal static class UiDiagnosticText
         if(process.Success)return UiLanguage.Format($"PID {process.Groups[1].Value}；退出码 {UiLanguage.Text(process.Groups[2].Value)}");
         var failed = Regex.Match(source, @"^测试失败 · ([\d.,]+) 秒[：:](.*)$", RegexOptions.Singleline);
         if (failed.Success)
-            return UiLanguage.Format($"测试失败 · {failed.Groups[1].Value} 秒：{UiLanguage.Text(failed.Groups[2].Value)}");
+            return UiLanguage.Format($"测试失败 · {failed.Groups[1].Value} 秒：{UiOperationText.Diagnostic(failed.Groups[2].Value)}");
         const string missing = "无法测试，请填写：";
         if (source.StartsWith(missing, StringComparison.Ordinal))
             return UiLanguage.Format($"无法测试，请填写：{string.Join(", ", source[missing.Length..].Split('、').Select(UiLanguage.Text))}");
         var exception = Regex.Match(source, @"^([A-Za-z][A-Za-z0-9.]*Exception): (.+)$", RegexOptions.Singleline);
         if (exception.Success)
-            return exception.Groups[1].Value + ": " + UiLanguage.Text(exception.Groups[2].Value);
+            return UiOperationText.Diagnostic(source);
         var response = Regex.Match(source, @"^API 返回 (\d+)[：:]\s*(.*)$", RegexOptions.Singleline);
         if (response.Success)
-            return UiLanguage.Format($"API 返回 {response.Groups[1].Value}：{UiLanguage.Text(response.Groups[2].Value)}");
+            return UiOperationText.Diagnostic(source);
         return null;
     }
 }

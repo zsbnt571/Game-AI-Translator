@@ -48,7 +48,7 @@ internal sealed class WpfScreenshotPane : WC.Grid, IDisposable
         smaller = WpfThemeResources.Button("", "minus", () => model.FontSize--); larger = WpfThemeResources.Button("", "plus", () => model.FontSize++);
         actions.AddRange([(copy, "复制", "copy"), (edit, "详细编辑", "edit"), (smaller, "", "minus"), (larger, "", "plus")]);
         foreach (var b in new[] { copy, edit, smaller }) { b.MinHeight = 36; b.Margin = new(0, 0, 5, 3); b.MinWidth = 36; b.Padding = new(10, 5, 10, 5); textTools.Children.Add(b); }
-        fontSize.VerticalAlignment = W.VerticalAlignment.Center; textTools.Children.Add(fontSize); larger.Margin = new(5, 0, 0, 3); larger.MinHeight = 36; larger.MinWidth = 36; textTools.Children.Add(larger);
+        fontSize.VerticalAlignment = W.VerticalAlignment.Center; textTools.Children.Add(fontSize); larger.Margin = new(5, 0, 0, 3); larger.MinHeight = 36; larger.MinWidth = 36; larger.Padding = smaller.Padding; textTools.Children.Add(larger);
         var transforms = new WM.TransformGroup(); transforms.Children.Add(scale); transforms.Children.Add(translate); image.RenderTransform = transforms;
         // Arrange the full source image before transforming it. Grid clips a
         // large child to its layout slot before RenderTransform is applied.

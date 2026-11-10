@@ -1,33 +1,31 @@
-# Game AI Translator · Fusion 1.1.128
+# Game AI Translator · Fusion 1.1.165
 
 **简体中文** | [English](README.en.md) | [Русский](README.ru.md)
 
-Fusion 是面向 Windows x64 的游戏翻译工具，提供支持引擎的游戏内翻译、截图 OCR 翻译、游戏库和可选游戏工具。
+Fusion 是 Windows x64 游戏翻译、截图 OCR、游戏库与实验性 AI 工具软件。
 
-## 下载和使用
+## 下载与开始
 
-从[发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.128)下载 **Fusion-1.1.128.zip**，完整解压后运行 **GameTranslator.exe**。保留整个文件夹，不要只取出 EXE。程序包已包含 .NET、Python 和 OCR 组件，无需另外安装这些组件。
+从[1.1.165 发布页](https://github.com/zsbnt571/Game-AI-Translator/releases/tag/v1.1.165)下载 **Fusion-1.1.165.zip**，完整解压后运行 **GameTranslator.exe**。本版本为预发布版。
 
-1. 在“设置 → 翻译方案”中配置兼容的翻译 API，或连接已经运行的本地模型服务。
-2. 选择目标翻译语言，保存并测试连接。服务确实不需要密钥时，勾选“不需要 API 密钥”。
-3. 导入游戏，使用对应引擎可用的翻译功能；也可以使用截图翻译。
+1. 在“设置 → 翻译方案”填写兼容的 API 或已运行的本地模型服务，并测试连接。
+2. 选择目标语言、提示词预设与需要的词库，保存设置。
+3. 导入游戏，使用该引擎支持的翻译方式，或使用截图翻译。
 
-程序包不包含大语言模型或模型服务器，翻译服务的账号和费用另计。可选的 Google 封面图片搜索使用 Windows 的 WebView2 Runtime，与主翻译组件分开。
+本包包含所需 .NET、Python 与 OCR 组件，不包含大语言模型。API 服务及其费用由你自行选择。部分网页功能需要 Windows WebView2 Runtime。
 
-## 本版功能
+## 这次有什么
 
-- 九种界面语言；新配置默认跟随系统，调整菜单顺序后保留已保存的语言选择。界面语言与目标翻译语言独立。
-- 改进支持引擎的资源读取、预翻译和缓存复用。
-- 改进普通启动后的翻译控制，翻译和游戏修改分别开关。
-- 在支持的适配器中选择、预览和恢复自定义字体，默认字体适配保持原有行为。
-- **自动性别语法辅助，无需额外设置。** 共用流程可利用同一条英文原文中的明确证据，辅助英、西、法、德、俄翻译；部分 Ren'Py 场景还可利用跨台词角色信息。未知或冲突时保持正常流程，目前不支持所有引擎的跨台词角色识别。
+九语言界面与近期通知/报错完善；6 个提示词预设、6 个词库；长笔记与标签浏览；引擎图标外观；截图与无声录像；统一按键设置；翻译测试区与实验性 AI 工具。
 
-中文、日语、韩语和普通翻译缓存保持原有行为。详见[更新说明](docs/RELEASE-NOTES-1.1.128.md)和[已知限制](docs/KNOWN-ISSUES.md)。
+详见[累计更新清单](docs/RELEASE-NOTES-1.1.165.md)与[验收范围](docs/VALIDATION-1.1.165.md)。最终主程序 3,967 项检查通过，0 失败；不等于所有游戏和模型均完成实测。
 
-## 更新与开发资料
+## 数据、升级与源码
 
-更新前正常退出 Fusion，备份软件实际使用的数据目录，再单独解压新包。保留旧版本，避免两个版本同时写同一数据目录。
+默认数据保存在软件目录的 `data`，聊天保存在 `AI chat`；截图与录像分别在 `data/screenshot`、`data/video`。自定义数据位置继续按配置使用。
 
-**Fusion-1.1.128-Source.zip** 是完整开发源码附件。GitHub 自动生成的 Source code 压缩包不含全部二进制构建输入，也不是运行程序包。[编译说明](docs/BUILD.md)仅供开发者使用，普通用户运行软件不需要编译。
+升级前从托盘退出软件并备份整个旧目录。先单独解压新包，再迁移自己的数据；不要让两个版本同时使用同一份数据。公开包不含个人密钥、数据或聊天记录。
 
-项目自有代码采用 GPL-3.0-only，其他组件见[第三方声明](THIRD_PARTY_NOTICES.md)。[验证说明](docs/VALIDATION-1.1.128.md)列出实际检查范围。可在 [Issues](https://github.com/zsbnt571/Game-AI-Translator/issues) 提交复现步骤，请勿附带密钥或个人数据。
+开发者下载 **Fusion-1.1.165-Source.zip**；GitHub 自动生成的 Source code 压缩包不含二进制构建输入。[构建说明](docs/BUILD.md)列出所需工具和仍未完成的完整辅助组件重建验证。
+
+项目自有代码为 GPL-3.0-only，依赖遵循各自许可证。参阅[第三方声明](THIRD_PARTY_NOTICES.md)。问题可提交到 [Issues](https://github.com/zsbnt571/Game-AI-Translator/issues)，请去掉密钥与私人数据。

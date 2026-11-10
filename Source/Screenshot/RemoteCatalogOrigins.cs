@@ -29,7 +29,7 @@ internal sealed class RemoteCatalogOrigins
                     ||source.ValueKind!=JsonValueKind.String||source.GetString()!=text)continue;
                 string file=Text(item,"path",2048),key=Text(item,"key",2048),kind=Text(item,"kind",64);
                 if(!ResourcePath(file)||kind is not ("scene" or "scene_binary" or "resource_text" or "script" or "script_tr" or "script_display" or "script_display_unconfirmed"
-                    or "json" or "translation_text" or "gettext" or "gettext_source" or "optimized_value" or "translation" or "translation_plural"))continue;
+                    or "json" or "config_text" or "translation_text" or "gettext" or "gettext_source" or "optimized_value" or "translation" or "translation_plural"))continue;
                 // Requested locale is diagnostic context, never the language of
                 // a TranslationServer fallback result or scheduling authority.
                 var localeContext=new Dictionary<string,string>();

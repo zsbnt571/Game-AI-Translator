@@ -24,7 +24,7 @@ internal static class DefoldWire
     internal static byte[] Replace(byte[] b,int n,byte[] v)=>Write(Read(b).Where(x=>x.Number!=n).Append(Bytes(n,v)));
 }
 
-// Standard bundled v4 resources only. The alternate project keeps the game's
+// Standard bundled v4/v5 resources. The alternate project keeps the game's
 // original archive, scripts, identifiers and files untouched.
 internal sealed class DefoldArchive : IDisposable
 {
@@ -36,13 +36,14 @@ internal sealed class DefoldArchive : IDisposable
     {
         string root=Path.GetDirectoryName(exe)!;
         byte[] Bounded(string name,int limit){string p=GameMakerGameAdapter.InGame(exe,name);if(new FileInfo(p).Length>limit)throw new InvalidDataException("资源索引超过上限。");return File.ReadAllBytes(p);}
-        index=Bounded("game.arci",16*1024*1024);if(index.Length<32||U32(index,0)!=4)throw new InvalidDataException("当前内嵌接入支持 Defold v4 资源包。");
+        index=Bounded("game.arci",16*1024*1024);if(index.Length<32||U32(index,0) is not (4 or 5))throw new InvalidDataException("当前内嵌接入支持 Defold v4/v5 资源包。");
         count=checked((int)U32(index,16));entryOffset=checked((int)U32(index,20));hashOffset=checked((int)U32(index,24));hashSize=checked((int)U32(index,28));
         if(count<1||count>100000||entryOffset<32||hashOffset<32||hashSize is <16 or >64||entryOffset+count*16L>index.Length||hashOffset+count*64L>index.Length)throw new InvalidDataException("资源索引越界。");
         var hashes=new Dictionary<string,int>(StringComparer.Ordinal);for(int i=0;i<count;i++)hashes.TryAdd(Convert.ToHexString(index.AsSpan(hashOffset+i*64,hashSize)),i);
         foreach(var item in DefoldWire.Read(DefoldWire.One(Bounded("game.dmanifest",32*1024*1024),1)).Where(x=>x.Number==3))
         {
-            string name=new UTF8Encoding(false,true).GetString(DefoldWire.One(item.Data,1));string digest=Convert.ToHexString(DefoldWire.One(DefoldWire.One(item.Data,3),1));
+            bool modern=U32(index,0)==5;
+            string name=new UTF8Encoding(false,true).GetString(DefoldWire.One(item.Data,modern?2:1));string digest=Convert.ToHexString(DefoldWire.One(DefoldWire.One(item.Data,modern?1:3),1));
             if(name.Length>512||!name.StartsWith('/')||name.Contains('\\')||name.Split('/').Any(x=>x is "." or "..")||!hashes.TryGetValue(digest,out int i))throw new InvalidDataException("资源引用无效。");names.TryAdd(name,i);
         }
         archive=File.OpenRead(GameMakerGameAdapter.InGame(exe,"game.arcd"));if(archive.Length>2L*1024*1024*1024){archive.Dispose();throw new InvalidDataException("资源包超过本次接入上限。");}
@@ -50,7 +51,7 @@ internal sealed class DefoldArchive : IDisposable
     internal byte[] Read(string name)
     {
         int i=names[name],p=entryOffset+i*16;uint off=U32(index,p),size=U32(index,p+4),compressed=U32(index,p+8),flags=U32(index,p+12);uint stored=compressed==uint.MaxValue?size:compressed;
-        if(size>64*1024*1024||stored>64*1024*1024||off+stored>(ulong)archive.Length||(flags&~1u)!=0)throw new InvalidDataException("资源范围或格式未支持。");archive.Position=off;byte[] b=new byte[stored];archive.ReadExactly(b);if((flags&1)!=0)b=DefoldTextCatalog.DecodeScript(b,()=>{});if(compressed!=uint.MaxValue)b=DefoldTextCatalog.Decompress(b,checked((int)size));return b;
+        if(size>64*1024*1024||stored>64*1024*1024||(ulong)off+stored>(ulong)archive.Length||(flags&~3u)!=0)throw new InvalidDataException("资源范围或格式未支持。");archive.Position=off;byte[] b=new byte[stored];archive.ReadExactly(b);if((flags&1)!=0)b=DefoldTextCatalog.DecodeScript(b,()=>{});if(compressed!=uint.MaxValue)b=DefoldTextCatalog.Decompress(b,checked((int)size));return b;
     }
     internal void Write(string folder,IReadOnlyDictionary<string,byte[]> changes)
     {

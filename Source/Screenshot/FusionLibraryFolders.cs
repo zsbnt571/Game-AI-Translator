@@ -31,12 +31,6 @@ public sealed partial class MainForm
     {
         var next=_libraryPreferences with{Folders=folders.ToArray()};LibraryPreferencesStore.Save(next);_libraryPreferences=next;ScheduleLibraryRefresh();
     }
-    private void CreateLibraryFolder()
-    {
-        var name=AskLibraryFolderName("新建游戏库文件夹");if(name is null)return;
-        try{var folder=new LibraryFolder(Guid.NewGuid().ToString("N"),name);SaveLibraryFolders(LibraryFolders.All(_libraryPreferences).Append(folder));NavigateLibrary(new("collection",folder.Id));}
-        catch(Exception ex){ShowFusionError(ex);}
-    }
     private void RegisterLibraryRoots(IEnumerable<string> roots)
     {
         var folders=LibraryFolders.All(_libraryPreferences).ToList();bool changed=false;
@@ -61,10 +55,18 @@ public sealed partial class MainForm
             catch(Exception ex){if(!IsDisposed)ShowFusionError(ex);}
             return;
         }
+        if(target.Kind=="collection"&&LibraryCategories.LegacyCollections(_libraryPreferences).FirstOrDefault(f=>f.Id==target.Value) is {} legacy)
+        {ShowLibraryCategoryContext(new("tag",legacy.Name),point);return;}
         if(target.Kind is "tag" or "new-category"||target is {Kind:"heading",Value:"categories"})
         {ShowLibraryCategoryContext(target,point);return;}
+        if(target.Kind is "tag-browser" or "group-tag" or "tag-settings"||target is {Kind:"heading",Value:"tag-primary" or "tag-secondary"})
+        {
+            _folderContext.ClearActions();_folderContext.Font=Font;
+            _folderContext.AddAction("管理标签组","tag",(_,_)=>ManageLibraryTags());
+            if(WpfWorkspace.Enabled)WpfNativeMenus.Show(_folderContext,point:point,nativeAnchor:_libraryNavigation.NativeView);else _folderContext.Show((Control)_libraryNavigation,point);
+            return;
+        }
         _folderContext.ClearActions();_folderContext.Font=Font;
-        _folderContext.AddAction("新建游戏库文件夹","plus",(_,_)=>CreateLibraryFolder());
         _folderContext.AddAction("添加游戏总目录…","folder",async(_,_)=>await ChooseLibraryRootAsync());
         if(target.Kind=="collection"&&LibraryFolders.All(_libraryPreferences).FirstOrDefault(f=>f.Id==target.Value) is { } folder)
         {
@@ -83,21 +85,5 @@ public sealed partial class MainForm
             });
         }
         if(WpfWorkspace.Enabled)WpfNativeMenus.Show(_folderContext,point:point,nativeAnchor:_libraryNavigation.NativeView);else _folderContext.Show((Control)_libraryNavigation,point);
-    }
-    private void AddLibraryFolderMembershipMenu(WorkspaceMenu menu,RecentGame game)
-    {
-        var group=menu.AddGroup("收纳到文件夹","folder");
-        foreach(var folder in LibraryFolders.All(_libraryPreferences).Where(f=>f.Root is null))
-        {
-            bool member=LibraryFolders.Contains(folder,game);
-            group.AddAction(folder.Name,member?"check":"folder",(_,_)=>
-            {
-                try{var games=(folder.Games??[]).ToHashSet(StringComparer.OrdinalIgnoreCase);if(!games.Add(game.Id))games.Remove(game.Id);
-                    SaveLibraryFolders(LibraryFolders.All(_libraryPreferences).Select(f=>f.Id==folder.Id?f with{Games=games.ToArray()}:f));}
-                catch(Exception ex){ShowFusionError(ex);}
-            });
-        }
-        group.Items.Add(new ToolStripSeparator());group.AddAction("新建文件夹…","plus",(_,_)=>
-        {var name=AskLibraryFolderName("新建文件夹并收纳此游戏");if(name is null)return;try{SaveLibraryFolders(LibraryFolders.All(_libraryPreferences).Append(new(Guid.NewGuid().ToString("N"),name,Games:[game.Id])));}catch(Exception ex){ShowFusionError(ex);}});
     }
 }

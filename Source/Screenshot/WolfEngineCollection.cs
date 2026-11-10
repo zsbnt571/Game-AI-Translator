@@ -152,14 +152,18 @@ internal static class WolfEngineCollection
             rows.Add(row with
             {
                 Texts=row.Texts+count,
-                Status=count>0?"已补充引擎候选":row.Status,
+                // Supplementary candidates do not turn a successful read into
+                // a failure, and cannot erase a static parse/limit failure.
+                Status=map.Ok&&row.Status is "读取完成" or "未发现可提取字段"
+                    ?count>0?"已补充引擎候选":row.Status
+                    :!map.Ok&&row.Status is "读取完成" or "未发现可提取字段"?"部分读取":row.Status,
                 Detail=$"静态读取：{row.Status}，{row.Texts:N0} 处；引擎读取：{(map.Ok?"成功":"未完成")}，补充 {count:N0} 处候选。"+row.Detail
             });
         }
         foreach(var map in document.Maps.Where(m=>!seen.Contains(m.File)))
         {
             int count=additions.GetValueOrDefault(map.File);
-            rows.Add(new(map.File,count>0?"已补充引擎候选":map.Ok?"未发现候选":"部分读取",count,$"原引擎读取{(map.Ok?"成功":"未完成")}。候选字符串仍需按当前翻译方案筛选；地图加载成功不代表所有显示文字均已覆盖。"));
+            rows.Add(new(map.File,map.Ok?count>0?"已补充引擎候选":"未发现候选":"部分读取",count,$"原引擎读取{(map.Ok?"成功":"未完成")}。候选字符串仍需按当前翻译方案筛选；地图加载成功不代表所有显示文字均已覆盖。"));
         }
         return rows.ToArray();
     }

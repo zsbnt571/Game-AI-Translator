@@ -74,6 +74,8 @@ public sealed partial class MainForm
             {if(!IsDisposed&&!Disposing){session.Feedback=progress;RenderGameSessionState();}});
             if(!connection.Connected)throw new IOException("游戏连接尚未确认，翻译保持关闭。");
             session.Feedback="游戏已连接，翻译关闭。可在游玩时开启，无需重启。";
+            var fontWarning=await GameFontLive.ReconcileIndependentAsync(game,connection);
+            if(fontWarning.Length>0)session.Feedback+=" · "+fontWarning;
         }
         catch(Exception ex)
         {

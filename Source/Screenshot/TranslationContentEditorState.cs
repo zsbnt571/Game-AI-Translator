@@ -6,11 +6,21 @@ namespace ScreenshotTranslationUiTester;
 // A page-local draft; persistence and translation policy remain in their existing services.
 internal sealed class TranslationContentEditorState : INotifyPropertyChanged
 {
+    private string presetId="",presetText="";
+    private string[] packIds=[];
+    public string PresetId { get=>presetId; set=>SetDraft(ref presetId,value??""); }
+    public string PresetText { get=>presetText; set=>SetDraft(ref presetText,value??""); }
+    public string[] PackIds { get=>[..packIds]; set=>SetDraft(ref packIds,value.Distinct().ToArray()); }
+    internal void Choose(TranslationPreset preset)
+    {
+        if(preset.LegacyStyle is {} old) { Style=old; PresetText=""; PresetId=""; }
+        else { PresetText=preset.Instructions; PresetId=preset.Id; }
+    }
     private string targetLanguage = "zh-CN", prompt = "", status = "";
     private SourceLanguageMode sourceMode;
     private TranslationStyle style = TranslationStyle.GameLocalization;
     private string[] sourceLanguages = ["en", "ja"];
-    private bool preserveIdentifiers = true, preserveNumbers = true, preserveVariables = true, loading;
+    private bool preserveIdentifiers = true, preserveNumbers = true, preserveVariables = true, characterGenderEnhancementEnabled, loading;
     public event PropertyChangedEventHandler? PropertyChanged;
     internal event Action? DraftChanged;
 
@@ -22,6 +32,7 @@ internal sealed class TranslationContentEditorState : INotifyPropertyChanged
     public bool PreserveIdentifiers { get => preserveIdentifiers; set => SetDraft(ref preserveIdentifiers, value); }
     public bool PreserveNumbers { get => preserveNumbers; set => SetDraft(ref preserveNumbers, value); }
     public bool PreserveVariables { get => preserveVariables; set => SetDraft(ref preserveVariables, value); }
+    public bool CharacterGenderEnhancementEnabled { get => characterGenderEnhancementEnabled; set => SetDraft(ref characterGenderEnhancementEnabled, value); }
     public string Status { get => status; set => Set(ref status, value); }
 
     internal void SetSourceLanguages(IEnumerable<string>? values)
@@ -35,9 +46,11 @@ internal sealed class TranslationContentEditorState : INotifyPropertyChanged
         loading = true;
         try
         {
+            PresetId=content.PromptPresetId;PresetText=content.PromptPresetText;PackIds=content.GlossaryPackIds??[];
             TargetLanguage = content.TargetLanguage; SourceMode = content.SourceLanguage;
             SetSourceLanguages(content.SourceLanguages); Style = content.TranslationStyle; Prompt = content.CustomTranslationPrompt;
             PreserveIdentifiers = content.PreserveIdentifiers; PreserveNumbers = content.PreserveNumbers; PreserveVariables = content.PreserveVariables;
+            CharacterGenderEnhancementEnabled = content.CharacterGenderEnhancementEnabled;
         }
         finally { loading = false; }
         PropertyChanged?.Invoke(this, new(null));
@@ -45,8 +58,10 @@ internal sealed class TranslationContentEditorState : INotifyPropertyChanged
     internal TranslationContentSettings Snapshot() => new()
     {
         TargetLanguage = TargetLanguage, SourceLanguage = SourceMode, SourceLanguages = SourceLanguages,
+        PromptPresetId=PresetId,PromptPresetText=PresetText,GlossaryPackIds=PackIds,
         TranslationStyle = Style, CustomTranslationPrompt = Prompt,
-        PreserveIdentifiers = PreserveIdentifiers, PreserveNumbers = PreserveNumbers, PreserveVariables = PreserveVariables
+        PreserveIdentifiers = PreserveIdentifiers, PreserveNumbers = PreserveNumbers, PreserveVariables = PreserveVariables,
+        CharacterGenderEnhancementEnabled = CharacterGenderEnhancementEnabled
     };
     private bool Set<T>(ref T field, T value, [CallerMemberName] string? property = null)
     {

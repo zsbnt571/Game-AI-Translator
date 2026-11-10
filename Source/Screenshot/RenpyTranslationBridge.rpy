@@ -81,6 +81,11 @@ init 999 python hide:
                 self.nonoriginal_nodes = set()
                 self.ahead = []
                 self.last_current = None
+                self.character_runtime = False
+                self.character_runtime_row = None
+                self.character_runtime_displayable = None
+                self.character_runtime_serial = 0
+                self.character_runtime_facts = {}
                 self.catalog_requested = startup_translation
                 self.collect_catalog()
                 self.previous_periodic = config.periodic_callback
@@ -98,6 +103,7 @@ init 999 python hide:
                 # Explicit per-game selection only. Empty means the existing
                 # original-font/missing-glyph behavior, including style metrics.
                 self.custom_font = os.environ.get('FUSION_GAME_FONT_PATH', '').replace('\\', '/')
+                self.independent_font = os.environ.get('FUSION_GAME_FONT_INDEPENDENT', '') == '1'
                 if not self.custom_font or not os.path.isfile(self.custom_font):
                     self.custom_font = None
                 self.font_maps = {}
@@ -627,6 +633,9 @@ init 999 python hide:
                 self.dialogue_contexts = {}
                 self.dialogue_roles = {}
                 self.dialogue_speakers = set()
+                self.character_bindings = {}
+                self.character_names = {}
+                self.character_binding_generation = getattr(self, 'character_binding_generation', 0) + 1
                 self.dialogue_roles_ready = False
                 self.catalog_iter = self.catalog_steps() if self.catalog_requested else None
 
@@ -666,6 +675,7 @@ init 999 python hide:
                             binding = origin['key'][len('character:'):]
                             node_bindings.append(binding)
                             declarations[binding] = declarations.get(binding, 0) + 1
+                            self.character_names[binding] = origin['source']
                         if type(node).__name__ in ('Define', 'Default'):
                             binding = getattr(node, 'varname', '')
                             writes[binding] = writes.get(binding, 0) + 1
@@ -740,7 +750,7 @@ init 999 python hide:
                     except Exception as error:
                         self.catalog_issue('context-links', node, error)
                     yield None
-                contexts, roles = {}, {}
+                contexts, roles, characters = {}, {}, {}
                 transparent = ('Show', 'Hide', 'With', 'Voice', 'Pass', 'Window', 'Translate', 'EndTranslate')
                 for node in nodes:
                     try:
@@ -760,6 +770,20 @@ init 999 python hide:
                                 previous_speakers.append(self.dialogue_speaker(current))
                                 if len(previous) == 3: break
                             elif type(current).__name__ not in transparent: break
+                        speaker = self.dialogue_speaker(node)
+                        if speaker and speaker != 'narrator' and getattr(self, 'character_bindings_requested', False):
+                            # The original occurrence must be unique, even when
+                            # there is no preceding gender evidence. A manual
+                            # profile may then apply without guessing a speaker.
+                            filename = getattr(node, 'filename', '').replace('\\', '/')
+                            if '/game/' in filename: filename = filename.split('/game/', 1)[1]
+                            elif filename.startswith('game/'): filename = filename[5:]
+                            location = str(getattr(node, 'linenumber', 0))
+                            evidence = [text for text, who in zip(reversed(previous), reversed(previous_speakers)) if who == speaker]
+                            scoped = json.dumps([filename, location, source, speaker, evidence], ensure_ascii=True).encode('utf8')
+                            characters[source] = {'source': source, 'unique': True, 'characterId': 'renpy:' + speaker,
+                                'displayName': self.character_names.get(speaker, speaker),
+                                'scope': hashlib.sha256(scoped).hexdigest().upper(), 'evidence': evidence}
                         if previous and sum(len(text) for text in previous) <= 1200:
                             contexts[source] = list(reversed(previous))
                             speaker = self.dialogue_speaker(node)
@@ -779,6 +803,7 @@ init 999 python hide:
                     yield None
                 self.dialogue_contexts = contexts
                 self.dialogue_roles = roles
+                self.character_bindings = characters
 
             def context_fields(self, texts):
                 rows, size, seen = [], 0, set()
@@ -798,6 +823,20 @@ init 999 python hide:
                 if getattr(self, 'dialogue_roles_requested', False):
                     result.update({'speakerAttributionContract': 'renpy-ast-speaker-v1',
                         'speakerAttributionReady': self.dialogue_roles_ready})
+                if getattr(self, 'character_bindings_requested', False):
+                    character_rows, character_size, character_seen = [], 0, set()
+                    for source in texts:
+                        if source in character_seen: continue
+                        character_seen.add(source)
+                        row = getattr(self, 'character_bindings', {}).get(source)
+                        if row is None: continue
+                        cost = len(json.dumps(row, ensure_ascii=True))
+                        if character_size + cost > 24000: continue
+                        character_rows.append(row); character_size += cost
+                        if len(character_rows) == 64: break
+                    result.update({'characterBindingContract': 'fusion-character-bindings-1',
+                        'characterBindingEpoch': str(getattr(self, 'character_binding_generation', 0)),
+                        'characterBindingsReady': self.dialogue_roles_ready, 'characterBindings': character_rows})
                 return result
 
             def catalog_steps(self):
@@ -915,7 +954,7 @@ init 999 python hide:
                         yield None
                     extras.append(node)
                     yield None
-                if getattr(self, 'dialogue_roles_requested', False):
+                if getattr(self, 'dialogue_roles_requested', False) or getattr(self, 'character_bindings_requested', False):
                     for step in self.collect_dialogue_speakers(nodes): yield None
                 else:
                     self.dialogue_speakers = set()
@@ -1057,13 +1096,15 @@ init 999 python hide:
             def tokenize(self, displayable, text):
                 if isinstance(displayable, renpy.display.behavior.Input) or getattr(displayable, 'tokenized', False) or self.layout_only(displayable):
                     return self.original_tokenize(displayable, text)
+                self.update_character_runtime()
                 keys = set(self.scopes.get(displayable, (None, set()))[1])
                 mapped, prepared = [], set()
                 with self.lock:
                     for value in text:
-                        translated = self.resolve(value, keys)
+                        translated, attributed = self.character_runtime_text(displayable, value, keys)
+                        if not attributed: translated = self.resolve(value, keys)
                         mapped.append(translated)
-                        if isinstance(value, string_type) and value != translated:
+                        if isinstance(value, string_type) and (value != translated or attributed):
                             prepared.update(self.fragments(translated))
                     # Decorated values were produced by the game, not evaluated by
                     # Fusion. Translate their visible text before custom tags can
@@ -1072,6 +1113,73 @@ init 999 python hide:
                 self.pretranslated[displayable] = prepared
                 self.dependencies[displayable] = keys
                 return self.original_tokenize(displayable, mapped)
+
+            def character_runtime_text(self, displayable, value, keys):
+                row = self.character_runtime_row
+                if not self.enabled or not self.character_runtime or not row or self.character_runtime_displayable is not displayable or row['source'] != value:
+                    return value, False
+                keys.add(value)
+                if row.get('text') is not None: return row['text'], True
+                ordinary = self.resolve(value, keys)
+                if ordinary != value: return ordinary, True
+                if row.get('fallback') or time.time() > row['deadline']: return value, False
+                return value, True
+
+            def update_character_runtime(self):
+                # Only the actual say-screen "what" Text is attributed. A menu,
+                # history view, name label or same-text sibling cannot borrow it.
+                if not self.enabled or not self.character_runtime: return
+                row = None
+                try:
+                    current = getattr(renpy.game.context(), 'current', None)
+                    node = renpy.game.script.namemap.get(current)
+                    speaker = self.dialogue_speaker(node)
+                    widget = renpy.display.screen.get_widget('say', 'what')
+                    source = getattr(node, 'what', None)
+                    if (isinstance(node, renpy.ast.Say) and speaker and speaker != 'narrator' and self.valid(source) and widget is not None
+                        and isinstance(widget, renpy.text.text.Text) and list(widget.text) == [source]):
+                        old = self.character_runtime_row
+                        if old and self.character_runtime_displayable is widget and old['source'] == source and old['characterId'] == 'renpy:' + speaker:
+                            return
+                        self.character_runtime_serial += 1
+                        facts = self.character_runtime_facts.get(speaker, [])
+                        row = {'requestId': 'r' + str(self.character_runtime_serial), 'source': source, 'characterId': 'renpy:' + speaker,
+                            'displayName': self.character_names.get(speaker, speaker), 'evidence': facts[-3:], 'text': None,
+                            'deadline': time.time() + 3.0, 'fallback': False}
+                        if len(source) <= 600 and (not facts or facts[-1] != source) and (len(self.character_runtime_facts) < 256 or speaker in self.character_runtime_facts):
+                            self.character_runtime_facts[speaker] = (facts + [source])[-3:]
+                except Exception:
+                    widget = None
+                with self.lock:
+                    if self.character_runtime_row != row:
+                        self.character_runtime_row = row
+                        self.character_runtime_displayable = widget if row else None
+                        self.refresh_all = True
+                        if row: self.pending.pop(row['source'], None)
+
+            def character_runtime_poll(self, request):
+                row = self.character_runtime_row
+                accepted = []
+                if self.character_runtime and request.get('characterRuntimeContract') == 'fusion-character-runtime-1':
+                    results = request.get('characterResults', [])
+                    if isinstance(results, list):
+                        for result in results[:16]:
+                            if not isinstance(result, dict) or not row or any(result.get(k) != row.get(k) for k in ('requestId', 'source', 'characterId')): continue
+                            if result.get('pending') is True: row['deadline'] = time.time() + 3.0
+                            elif result.get('fallback') is True:
+                                row['text'] = None; row['fallback'] = True; self.refresh_all = True
+                            elif self.valid_pair(row['source'], result.get('text')):
+                                if row.get('text') != result['text']: self.refresh_all = True
+                                row['text'] = result['text']; row['fallback'] = False
+                            else: continue
+                            accepted.append(row['requestId'])
+                # A missing/older host must not leave an idle say screen waiting
+                # forever for its first redraw after the bounded role wait.
+                if row and row.get('text') is None and not row.get('fallback') and time.time() > row['deadline']:
+                    row['fallback'] = True; self.refresh_all = True
+                visible = [{k: row[k] for k in ('requestId', 'source', 'characterId', 'displayName', 'evidence')}] if self.character_runtime and row else []
+                return {'characterRuntimeContract': 'fusion-character-runtime-1' if self.character_runtime else None,
+                    'characterRequests': visible, 'characterAccepted': accepted}
 
             def display_string(self, value):
                 # Some Python 2 Chinese localizations hand Text a legacy byte
@@ -1267,7 +1375,7 @@ init 999 python hide:
                 # Local glyph fallback only. Never assign style.font or style.size:
                 # Ren'Py shares styles between unrelated controls, including menu buttons.
                 for original, value in self.original_subsegment(segment, text):
-                    if self.enabled and self.custom_font:
+                    if (self.enabled or getattr(self, 'independent_font', False)) and self.custom_font:
                         # Clone only this render segment. Styles, saves, font size,
                         # bold/italic and the game's reusable segment stay intact.
                         # Keep icon/unsupported glyph runs in their original face.
@@ -1417,6 +1525,7 @@ init 999 python hide:
                     self.cursor_health()
                 if self.previous_periodic is not None:
                     self.previous_periodic()
+                self.update_character_runtime()
                 current = getattr(renpy.game.context(), 'current', None)
                 if self.enabled and self.catalog_marked and current != self.last_current:
                     self.last_current = current
@@ -1531,12 +1640,14 @@ init 999 python hide:
                             self.cancel_font_request(job, 'Font request expired or connection closed')
                             return
                         self.custom_font = selected
+                        self.independent_font = request.get('independent') is True
                         self.glyph_maps.clear()
-                        if self.enabled:
+                        if self.enabled or self.independent_font:
                             self.refresh_all = True
                         job['result'] = {'accepted': True, 'mode': mode, 'enabled': self.enabled,
-                            'fontLoaded': selected is not None, 'writebackPending': self.enabled,
-                            'restorePending': self.enabled and mode == 'default', 'restartRequired': False}
+                            'independent': self.independent_font, 'fontLoaded': selected is not None,
+                            'writebackPending': self.enabled or self.independent_font,
+                            'restorePending': (self.enabled or self.independent_font) and mode == 'default', 'restartRequired': False}
                         self.font_pending = None
                         job['done'].set()
                 except Exception as error:
@@ -1552,10 +1663,17 @@ init 999 python hide:
                 with self.lock:
                     op = request.get('op')
                     if op == 'translationPrepare':
+                        self.character_runtime = request.get('characterRuntimeContract') == 'fusion-character-runtime-1'
+                        self.character_runtime_row = None
+                        self.character_runtime_displayable = None
+                        self.character_runtime_facts = {}
                         roles_requested = request.get('speakerAttributionContract') == 'renpy-ast-speaker-v1'
                         newly_requested_roles = roles_requested and not getattr(self, 'dialogue_roles_requested', False)
                         self.dialogue_roles_requested = roles_requested
-                        if not self.catalog_requested or newly_requested_roles:
+                        characters_requested = request.get('characterBindingContract') == 'fusion-character-bindings-1'
+                        newly_requested_characters = characters_requested and not getattr(self, 'character_bindings_requested', False)
+                        self.character_bindings_requested = characters_requested
+                        if not self.catalog_requested or newly_requested_roles or newly_requested_characters:
                             self.catalog_requested = True
                             self.collect_catalog()
                         preserve = self.startup_loaded and request.get('preserveStartup') is True
@@ -1578,7 +1696,7 @@ init 999 python hide:
                         self.ahead = []
                         self.last_current = None
                         self.refresh_all = True
-                        return {'epoch': self.epoch}
+                        return {'epoch': self.epoch, 'characterRuntimeContract': 'fusion-character-runtime-1' if self.character_runtime else None}
                     if op == 'translationEnable':
                         if not self.catalog_requested:
                             self.catalog_requested = True
@@ -1597,6 +1715,10 @@ init 999 python hide:
                         return {'epoch': self.epoch}
                     if op == 'translationDisable':
                         self.enabled = False
+                        self.character_runtime = False
+                        self.character_runtime_row = None
+                        self.character_runtime_displayable = None
+                        self.character_runtime_facts = {}
                         self.epoch += 1
                         self.startup_loaded = False
                         self.startup_exact.clear()
@@ -1625,6 +1747,9 @@ init 999 python hide:
                                 # of a source dispatched in that same page.
                                 trial = self.context_fields(texts + [text])['dialogueContexts']
                                 if not any(row['source'] == text for row in trial): break
+                            if texts and getattr(self, 'character_bindings_requested', False) and text in getattr(self, 'character_bindings', {}):
+                                trial = self.context_fields(texts + [text])['characterBindings']
+                                if not any(row['source'] == text for row in trial): break
                             texts.append(text)
                             size += cost
                         response = {'texts': texts, 'next': offset + len(texts), 'total': len(self.catalog), 'scanning': self.catalog_iter is not None, 'skipped': self.catalog_skipped, 'sourceLanguage': self.source_language, 'skippedByLanguage': len(self.language_excluded), 'epoch': self.epoch, 'activeSourceTexts': [text for text in texts if text in self.catalog_active_sources]}
@@ -1635,11 +1760,13 @@ init 999 python hide:
                         response.update(self.context_fields(texts))
                         return response
                     if op == 'translationPoll':
+                        role = self.character_runtime_poll(request)
                         texts = list(self.pending.keys())[:128]
                         for text in texts:
                             self.pending.pop(text, None)
                         response = {'epoch': self.epoch, 'texts': texts, 'ahead': self.ahead, 'activeTextLanguage': self.locale_language(self.active_text_language)}
                         response.update(self.context_fields(texts + self.ahead))
+                        response.update(role)
                         return response
                     if op == 'translationApply':
                         if request.get('epoch') != self.epoch:

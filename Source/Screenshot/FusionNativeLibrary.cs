@@ -7,6 +7,7 @@ public sealed partial class MainForm
         BuildGameSessionWorkspace(legacyPage!);
         _libraryGrid.Portrait=_libraryPreferences.Portrait;
         _libraryGrid.CoverWidth=_recentShelf.CoverWidth=_libraryPreferences.CoverWidth;
+        if (_libraryGrid is NativeGameLibraryGrid selectionGrid) selectionGrid.SelectionChanged += () => _libraryTagBatchChanged?.Invoke();
         foreach(var grid in new[]{_libraryGrid,_recentShelf})
         {
             grid.GameSelected+=game=>SelectFusionGame(game.ExePath,recordSelection:false);

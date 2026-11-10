@@ -25,30 +25,42 @@ public sealed partial class MainForm
     }
     private void AddLibraryOrganizingMenu(WorkspaceMenu menu,RecentGame[] games,ILibraryGridSession source)
     {
-        bool allFavorite=games.All(g=>_libraryMetadata!.Get(g.Id).Bookmark);
-        menu.AddAction(allFavorite?"取消收藏":"收藏","tag",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Bookmark=!allFavorite},allFavorite?"已取消收藏。":"已收藏所选游戏。"));
-        if(!allFavorite&&games.Any(g=>_libraryMetadata!.Get(g.Id).Bookmark))
-            menu.AddAction("取消所选游戏的收藏","tag",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Bookmark=false},"已取消所选游戏的收藏。"));
-        var categories=menu.AddGroup("添加到分类","tag");
-        foreach(var tag in (_libraryPreferences.Categories??[]).Concat(games.SelectMany(g=>CategoryTokens(_libraryMetadata!.Get(g.Id).Tags))).Distinct().OrderBy(x=>x))
-            categories.AddAction(tag,"tag",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Tags=string.Join(", ",CategoryTokens(a.Tags).Append(tag).Distinct())},$"已添加到“{tag}”。"));
+        menu.AddAction("编辑分类标签","tag",(_,_)=>EditLibraryClassificationTags(games));
+        var categories=menu.AddGroup("添加到分类","layers");
+        foreach(var tag in LibraryCategories.Names(_libraryPreferences,games,_libraryMetadata!))
+            categories.AddAction(tag,"layers",(_,_)=>SetLibraryCategoryMembership(games,tag,true));
         if(categories.Items.Count==0)categories.AddAction("请先在左侧新建分类","plus",(_,_)=>{},false);
-        var folders=menu.AddGroup("收纳到文件夹","folder");
-        foreach(var folder in LibraryFolders.All(_libraryPreferences).Where(f=>f.Root is null))
-            folders.AddAction(folder.Name,"folder",(_,_)=>{try{SetLibraryMembership(games,folder.Id,true);}catch(Exception ex){ShowFusionError(ex);}});
-        folders.AddAction("新建文件夹并收纳…","plus",(_,_)=>
-        {
-            var name=AskLibraryFolderName("新建文件夹并收纳所选游戏");if(name is null)return;
-            try{SaveLibraryFolders(LibraryFolders.All(_libraryPreferences).Append(new(Guid.NewGuid().ToString("N"),name,Games:games.Select(g=>g.Id).ToArray())));}catch(Exception ex){ShowFusionError(ex);}
-        });
+        bool allFavorite=games.All(g=>_libraryMetadata!.Get(g.Id).Bookmark);
+        menu.AddAction(allFavorite?"取消收藏":"收藏","star",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Bookmark=!allFavorite},allFavorite?"已取消收藏。":"已收藏所选游戏。"));
+        if(!allFavorite&&games.Any(g=>_libraryMetadata!.Get(g.Id).Bookmark))
+            menu.AddAction("取消所选游戏的收藏","star",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Bookmark=false},"已取消所选游戏的收藏。"));
         string scope=_libraryTag.Length>0?"tag:"+_libraryTag:_libraryCollection.Length>0?"collection:"+_libraryCollection:
             source==_recentShelf?_libraryPreferences.RecentSection:_libraryPreferences.MainSection;
+        if(scope.StartsWith("collection:")&&LibraryCategories.LegacyCollections(_libraryPreferences).FirstOrDefault(f=>f.Id==scope[11..]) is {} legacy)scope="tag:"+legacy.Name;
         if(scope.StartsWith("tag:"))
         {
-            string tag=scope[4..];menu.AddAction("移出当前分类","minus",(_,_)=>UpdateLibraryAnnotations(games,a=>a with{Tags=string.Join(", ",CategoryTokens(a.Tags).Where(t=>t!=tag))},$"已移出“{tag}”，游戏仍在库中。"));
+            string tag=scope[4..];menu.AddAction("移出当前分类","minus",(_,_)=>SetLibraryCategoryMembership(games,tag,false));
         }
         else if(scope.StartsWith("collection:"))
             menu.AddAction("移出当前文件夹","minus",(_,_)=>{try{SetLibraryMembership(games,scope[11..],false);DesktopStatus="已移出当前文件夹，游戏仍在库中。";}catch(Exception ex){ShowFusionError(ex);}});
+    }
+    private void SetLibraryCategoryMembership(RecentGame[] games,string category,bool member)
+    {
+        try
+        {
+            var current=LibraryPreferencesStore.Load();
+            var legacy=LibraryCategories.LegacyCollections(current).Where(f=>f.Name==category).ToArray();
+            // Preserve names containing punctuation in old collections without
+            // splitting them into the older comma-delimited annotation format.
+            if(member&&legacy.Length>0)SetLibraryMembership(games,legacy[0].Id,true);
+            else
+            {
+                _libraryMetadata!.UpdateMany(games.Select(g=>g.Id),a=>a with{Tags=string.Join(", ",member?CategoryTokens(a.Tags).Append(category).Distinct():CategoryTokens(a.Tags).Where(t=>t!=category))});
+                if(!member)foreach(var collection in legacy)SetLibraryMembership(games,collection.Id,false);
+            }
+            ScheduleLibraryRefresh();DesktopStatus=member?$"已添加到“{category}”。":$"已移出“{category}”，游戏仍在库中。";
+        }
+        catch(Exception ex){ShowFusionError(ex);}
     }
     private async Task RemoveLibraryGamesAsync(RecentGame[] games)
     {

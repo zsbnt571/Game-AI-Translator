@@ -41,6 +41,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
     private readonly CheckBox _preserveIdentifiersBox = WpfWorkspace.Enabled ? null! : new() { Text = "保留 ID / Code", AutoSize = true };
     private readonly CheckBox _preserveNumbersBox = WpfWorkspace.Enabled ? null! : new() { Text = "保留数字", AutoSize = true };
     private readonly CheckBox _preserveVariablesBox = WpfWorkspace.Enabled ? null! : new() { Text = "保留变量 / 占位符", AutoSize = true };
+    private readonly CheckBox _characterGenderEnhancementBox = WpfWorkspace.Enabled ? null! : new() { Text = "角色与性别增强", Name = "CharacterGenderEnhancementEnabled", AccessibleName = "角色与性别增强", AutoSize = false };
     private readonly ComboBox _previewSizingBox=WpfWorkspace.Enabled ? null! : new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly NumericUpDown _fixedPreviewWidthBox=WpfWorkspace.Enabled ? null! : new(){Minimum=820,Maximum=10000};private readonly NumericUpDown _fixedPreviewHeightBox=WpfWorkspace.Enabled ? null! : new(){Minimum=560,Maximum=10000};
     private readonly ComboBox _uiFontModeBox=WpfWorkspace.Enabled ? null! : new GamePlanBox(){DropDownStyle=ComboBoxStyle.DropDownList};private readonly ComboBox _uiFontBox=WpfWorkspace.Enabled ? null! : new FontChoiceBox(){Name="uiFontFamily"};private readonly NumericUpDown _uiFontSizeBox=WpfWorkspace.Enabled ? null! : new(){Minimum=7,Maximum=24};
     private readonly Label _typographyStatus=WpfWorkspace.Enabled ? null! : new(){AutoSize=true,MaximumSize=new Size(620,0)};
@@ -168,6 +169,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
                 _prewarmedPreview.SuppressAutoOcrForE2E();_=_prewarmedPreview.Handle;
             }
             ApplyHotKey(false);
+            _ = MediaController;
             if(CursorCaptureStageDump.Enabled)
             {
                 if(_homeOcrStatus is not null)_homeOcrStatus.Text="Cursor Stage Dump：Rapid = NOT REQUIRED · PP-S = NOT REQUIRED";
@@ -263,7 +265,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         PreviewWindowHeight = _translationOptions.PreviewWindowHeight,
         PreviewWindowMaximized = _translationOptions.PreviewWindowMaximized,
         HasLastUserPreviewBounds=_translationOptions.HasLastUserPreviewBounds,LastUserPreviewX=_translationOptions.LastUserPreviewX,LastUserPreviewY=_translationOptions.LastUserPreviewY,LastUserPreviewWidth=_translationOptions.LastUserPreviewWidth,LastUserPreviewHeight=_translationOptions.LastUserPreviewHeight,LastUserPreviewMaximized=_translationOptions.LastUserPreviewMaximized,
-        ThemeMode=_themeModeBox.SelectedIndex>=0?(ApplicationThemeMode)_themeModeBox.SelectedIndex:_translationOptions.ThemeMode,CustomThemeMainBackground=_translationOptions.CustomThemeMainBackground,CustomThemeSecondaryBackground=_translationOptions.CustomThemeSecondaryBackground,CustomThemeText=_translationOptions.CustomThemeText,CustomThemeSecondaryText=_translationOptions.CustomThemeSecondaryText,CustomThemeAccent=_translationOptions.CustomThemeAccent,CustomThemeBorder=_translationOptions.CustomThemeBorder,
+        ThemeMode=_themeModeBox.SelectedIndex>=0?(ApplicationThemeMode)_themeModeBox.SelectedIndex:_translationOptions.ThemeMode,IconColorMode=_translationOptions.IconColorMode,IconSize=_translationOptions.IconSize,CustomThemeMainBackground=_translationOptions.CustomThemeMainBackground,CustomThemeSecondaryBackground=_translationOptions.CustomThemeSecondaryBackground,CustomThemeText=_translationOptions.CustomThemeText,CustomThemeSecondaryText=_translationOptions.CustomThemeSecondaryText,CustomThemeAccent=_translationOptions.CustomThemeAccent,CustomThemeBorder=_translationOptions.CustomThemeBorder,
         CloseMainWindowBehavior=_closeBehaviorBox.SelectedIndex>=0?(CloseMainWindowBehavior)_closeBehaviorBox.SelectedIndex:_translationOptions.CloseMainWindowBehavior,HistoryCleanupByCount=_historyByCountBox.Checked,HistoryCleanupByAge=_historyByAgeBox.Checked,HistoryRetentionDays=(int)_historyDaysBox.Value,HistoryCleanupBySpace=_historyBySpaceBox.Checked,HistoryMaximumMegabytes=(int)_historySpaceBox.Value,HistoryThumbnailSize=_historyThumbnailBox.SelectedIndex>=0?(HistoryThumbnailSize)_historyThumbnailBox.SelectedIndex:_translationOptions.HistoryThumbnailSize,HistoryTextSize=(float)_historyTextSizeBox.Value,
         PreviewWindowSizingMode=(PreviewWindowSizingMode)Math.Max(0,_previewSizingBox.SelectedIndex),FixedPreviewWidth=(int)_fixedPreviewWidthBox.Value,FixedPreviewHeight=(int)_fixedPreviewHeightBox.Value,LastPreviewWidth=_translationOptions.LastPreviewWidth,LastPreviewHeight=_translationOptions.LastPreviewHeight,
         UiFontMode=(UiFontMode)Math.Max(0,_uiFontModeBox.SelectedIndex),UiFontFamily=_uiFontBox.Text,UiFontSize=(float)_uiFontSizeBox.Value,PreviewTextFontMode=(PreviewTextFontMode)Math.Max(0,_previewFontModeBox.SelectedIndex),PreviewTextFontFamily=_previewFontBox.Text,PreviewTextFontSize=(float)_previewFontSizeBox.Value,
@@ -281,7 +283,8 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         CustomTranslationPrompt = WpfWorkspace.Enabled ? _contentDraft.Prompt : _customPromptBox.Text,
         PreserveIdentifiers = WpfWorkspace.Enabled ? _contentDraft.PreserveIdentifiers : _preserveIdentifiersBox.Checked,
         PreserveNumbers = WpfWorkspace.Enabled ? _contentDraft.PreserveNumbers : _preserveNumbersBox.Checked,
-        PreserveVariables = WpfWorkspace.Enabled ? _contentDraft.PreserveVariables : _preserveVariablesBox.Checked
+        PreserveVariables = WpfWorkspace.Enabled ? _contentDraft.PreserveVariables : _preserveVariablesBox.Checked,
+        CharacterGenderEnhancementEnabled = WpfWorkspace.Enabled ? _contentDraft.CharacterGenderEnhancementEnabled : _characterGenderEnhancementBox.Checked
     };
 
     private void BuildFeatureCompleteUi() => BuildFusionShell();
@@ -292,6 +295,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         using var uiTiming=UiPerformanceTrace.Measure("main-navigation" );
         if(name=="设置"){using var timing=DesktopStages.MeasureOnce("settings-first-entry-prepared");EnsureSettingsCategory(WpfWorkspace.Enabled ? _lastSettingsCategory : Math.Max(0,_settingsNavigation.SelectedIndex));}
         if(_currentMainPage=="设置"&&name!="设置"&&!ConfirmSettingsLeave())return;
+        if(name=="AI工具"&&_currentMainPage!=name&&!ConfirmAiExperimentalEntry())return;
         CancelBindingCapture();
         _lastNavigationEvent=$"{DateTimeOffset.Now:O} NavigationClick:{name}";
         if(WpfWorkspace.Enabled)
@@ -952,6 +956,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         _preserveIdentifiersBox.Checked = settings.PreserveIdentifiers;
         _preserveNumbersBox.Checked = settings.PreserveNumbers;
         _preserveVariablesBox.Checked = settings.PreserveVariables;
+        _characterGenderEnhancementBox.Checked = settings.CharacterGenderEnhancementEnabled;
         }
         _modifierBox.SelectedItem = _modifierBox.Items.Contains(settings.HotKeyModifiers) ? settings.HotKeyModifiers : "Ctrl + Alt";
         _keyBox.SelectedItem = _keyBox.Items.Contains(settings.HotKeyKey) ? settings.HotKeyKey : "Z";
@@ -1004,6 +1009,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
             {
             _targetLanguageBox.SelectedItem = UiTargetLanguageDisplay.DisplayFromCode(updated.TargetLanguage);
             _sourceLanguageBox.SelectedIndex=(int)updated.SourceLanguage;_sourceLanguageChoices.SelectLanguages(updated.SourceLanguages);TranslationStyleSelection.Select(_translationStyleBox,updated.TranslationStyle);_customPromptBox.Text=updated.CustomTranslationPrompt;_preserveIdentifiersBox.Checked=updated.PreserveIdentifiers;_preserveNumbersBox.Checked=updated.PreserveNumbers;_preserveVariablesBox.Checked=updated.PreserveVariables;
+            _characterGenderEnhancementBox.Checked=updated.CharacterGenderEnhancementEnabled;
             }
         }
         finally { _applyingSettings = false; }
@@ -1047,6 +1053,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         _preserveIdentifiersBox.CheckedChanged += SettingsControlChanged;
         _preserveNumbersBox.CheckedChanged += SettingsControlChanged;
         _preserveVariablesBox.CheckedChanged += SettingsControlChanged;
+        _characterGenderEnhancementBox.CheckedChanged += SettingsControlChanged;
         _modifierBox.SelectedIndexChanged += SettingsControlChanged;
         _keyBox.SelectedIndexChanged += SettingsControlChanged;
         foreach(var box in new[]{_previewSizingBox,_uiFontModeBox,_uiFontBox,_previewFontModeBox,_previewFontBox,_overlayFontModeBox,_overlayFontBox,_overlayBackgroundBox})box.SelectedIndexChanged+=SettingsControlChanged;
@@ -1706,10 +1713,12 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
         if(!_trueExit&&e.CloseReason==CloseReason.UserClosing&&CurrentSettings.CloseMainWindowBehavior==CloseMainWindowBehavior.MinimizeToTray)
         {
             e.Cancel=true;_hotKeyHost.Log("Tray Hide");Hide();ShowInTaskbar=false;_trayIcon.Visible=!AppDataPaths.DisableGlobalInput;
-            if(!AppDataPaths.DisableGlobalInput)_trayIcon.ShowBalloonTip(1500,"截图翻译器","程序仍在后台运行，截图快捷键继续可用。",ToolTipIcon.Info);
+            if(!AppDataPaths.DisableGlobalInput)_trayIcon.ShowBalloonTip(1500,UiLanguage.Text("截图翻译器"),UiLanguage.Text("程序仍在后台运行，截图快捷键继续可用。"),ToolTipIcon.Info);
             return;
         }
         if(!e.Cancel&&!ConfirmSettingsLeave()){e.Cancel=true;_trueExit=false;_trayIcon.Visible=!AppDataPaths.DisableGlobalInput;return;}
+        if(_mediaController is { } media && (media.Busy||media.Recording||_mediaClosing))
+        { e.Cancel=true;_trueExit=true;_ = FinishMediaBeforeExitAsync();return; }
         _profileTestCancellation?.Cancel();
         if(!e.Cancel)
         {
@@ -1731,6 +1740,7 @@ public sealed partial class MainForm : DesktopApplicationController, IMessageFil
             CaptureFlashDiagnosticLog.Write(
                 $"OnFormClosed settings save skipped loaded={_settingsLoadCompleted} succeeded={_settingsLoadSucceeded} dirty={_settingsDirty}");
         RemoveHotKey();
+        _mediaController?.Dispose();
         _hotKeyHost.Dispose();_cancelHotKeyHost.Dispose();_toggleHotKeyHost.Dispose();
         _inputRuntime.Dispose();
 
